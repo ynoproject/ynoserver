@@ -1,7 +1,7 @@
 @font-face {
   font-family: 'Gothic';
-  src: url('ms-gothic.woff2') format('woff2'),
-       url('ms-gothic.woff') format('woff');
+  src: url('fonts/ms-gothic.woff2') format('woff2'),
+       url('fonts/ms-gothic.woff') format('woff');
 }
 
 html {
