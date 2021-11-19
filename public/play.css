@@ -1,13 +1,14 @@
 @font-face {
-  font-family: 'MS Gothic';
+  font-family: 'Gothic';
   src: url('ms-gothic.woff2') format('woff2'),
        url('ms-gothic.woff') format('woff');
 }
 
 html {
-  font-family: 'MS Gothic';
-  color: white;
-  background-color: black;
+  font-family: 'MS Gothic', 'Gothic';
+  font-size: 16px;
+  color: rgba(216, 216, 216, 1);
+  background: url('images/ui/containerbg.png') !important;
 }
 
 #game_frame {
@@ -21,26 +22,49 @@ html {
   height: 617px;
 }
 
+#messages, #chatInputContainer, #enterNameContainer {
+  border: 8px solid transparent;
+  border-image: url('images/ui/border.png') 8 repeat !important;
+}
+
 #messages {
   margin-right: 1px;
   width: 283px;
   height: 70%;
-  border: 2px solid white;
   overflow-y: auto;
+}
+
+#messages::-webkit-scrollbar {
+  width: 18px;
+}
+
+#messages::-webkit-scrollbar-track {
+  border: 8px solid transparent;
+  border-image: url('images/ui/border.png') 8 repeat !important;
+  background-color: rgba(45, 17, 23, 1);
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+#messages::-webkit-scrollbar-thumb {
+  border: 8px solid transparent;
+  border-image: url('images/ui/border.png') 6 round !important;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 #chatInputContainer {
   width: auto;
-  height: 26px;
+  height: 36px;
   margin-right: 1px;
   margin-top: 2px;
   margin-bottom: 5px;
 }
 
 #chatInput {
-  width: -webkit-calc(100% - 7px);
-  width:    -moz-calc(100% - 7px);
-  width:         calc(100% - 7px);
+  width: -webkit-calc(100% - 11px);
+  width:    -moz-calc(100% - 11px);
+  width:         calc(100% - 11px);
   height: 26px;
 }
 
@@ -48,7 +72,14 @@ html {
   margin-right: 1px;
   width: auto;
   height: auto;
-  border: 2px solid white;
+}
+
+#enterNameInstruction, .message {
+  background-image: url('images/ui/font1.png') !important;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(1.5px 1.5px black);
 }
 
 #instructions {
@@ -56,12 +87,20 @@ html {
 }
 
 .message {
+  border-bottom: 4px solid transparent;
+  border-image: url('images/ui/border.png') 8 repeat !important;
   word-wrap: break-word;
-  border: 1px solid #b0b0b0;
 }
 
-table, tr, td {
-  border: 1px solid white;
+tr, td, div, input[type='text'] {
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+tr, td {
+  background: url('images/ui/containerbg.png') !important;
+  border-image: url('images/ui/border.png') 10 repeat !important;
+  border: 24px solid transparent;
 }
 
 table {
@@ -70,3 +109,10 @@ table {
   height: 623px;
 }
 
+input[type='text'] {
+  border: 4px solid transparent;
+  border-image: url('images/ui/border.png') 8 repeat !important;
+  color: white;
+  background-color: transparent;
+  text-shadow: 1.5px 1.5px black;
+}
