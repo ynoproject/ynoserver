@@ -1,13 +1,14 @@
 @font-face {
   font-family: 'MS Gothic';
   src: url('ms-gothic.woff2') format('woff2'),
-       url('ms-gothic.woff') format ('woff');
+       url('ms-gothic.woff') format('woff');
 }
 
 html {
   font-family: 'MS Gothic';
+  color: white;
+  background-color: black;
 }
-
 
 #game_frame {
   display: block;
@@ -24,7 +25,7 @@ html {
   margin-right: 1px;
   width: 283px;
   height: 70%;
-  border: 2px solid black;
+  border: 2px solid white;
   overflow-y: auto;
 }
 
@@ -41,14 +42,14 @@ html {
   width:    -moz-calc(100% - 7px);
   width:         calc(100% - 7px);
   height: 26px;
-  border: 1px solid black;
+  border: 1px solid white;
 }
 
 #enterNameContainer {
   margin-right: 1px;
   width: auto;
   height: auto;
-  border: 2px solid black;
+  border: 2px solid white;
 }
 
 #instructions {
@@ -61,7 +62,7 @@ html {
 }
 
 table, tr, td {
-  border: 1px solid black;
+  border: 1px solid white;
 }
 
 table {
