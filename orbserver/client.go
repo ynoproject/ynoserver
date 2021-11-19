@@ -45,7 +45,7 @@ type Client struct {
 	banned bool
 
 	id int
-	x, y int
+	x, y, f int
 	spd int
 	name string
 

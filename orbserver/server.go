@@ -185,7 +185,7 @@ func (h *Hub) Run() {
 			//send the new client info about the game state
 			for other_client := range h.clients {
 				client.send <- []byte("c" + delimstr + strconv.Itoa(other_client.id))
-				client.send <- []byte("m" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.x) + delimstr + strconv.Itoa(other_client.y));
+				client.send <- []byte("m" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.x) + delimstr + strconv.Itoa(other_client.y) + delimstr + strconv.Itoa(other_client.f));
 				client.send <- []byte("spd" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.spd));
 				if other_client.name != "" {
 					client.send <- []byte("name" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.name);
@@ -281,8 +281,8 @@ func (h *Hub) processMsg(msg *Message) error {
 	}
 
 	switch msgFields[0] {
-	case "m": //"i moved to x y"
-		if len(msgFields) != 3 {
+	case "m": //"i moved to x y facing"
+		if len(msgFields) != 4 {
 			return err
 		}
 		//check if the coordinates are valid
@@ -290,13 +290,18 @@ func (h *Hub) processMsg(msg *Message) error {
 		if errconv != nil {
 			return err
 		}
-		y, errconv := strconv.Atoi(msgFields[2]);
+		y, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil {
+			return err
+		}
+		f, errconv := strconv.Atoi(msgFields[3])
 		if errconv != nil {
 			return err
 		}
 		msg.sender.x = x
 		msg.sender.y = y
-		h.broadcast([]byte("m" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2])) //user %id% moved to x y
+		msg.sender.f = f
+		h.broadcast([]byte("m" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2] + delimstr + msgFields[3])) //user %id% moved to x y
 	case "spd": //change my speed to spd
 		if len(msgFields) != 2 {
 			return err
