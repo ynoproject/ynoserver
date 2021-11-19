@@ -42,7 +42,6 @@ html {
   width:    -moz-calc(100% - 7px);
   width:         calc(100% - 7px);
   height: 26px;
-  border: 1px solid white;
 }
 
 #enterNameContainer {
