@@ -1,3 +1,14 @@
+@font-face {
+  font-family: 'MS Gothic';
+  src: url('ms-gothic.woff2') format('woff2'),
+       url('ms-gothic.woff') format ('woff');
+}
+
+html {
+  font-family: 'MS Gothic';
+}
+
+
 #game_frame {
   display: block;
   width: 100%;
@@ -40,6 +51,10 @@
   border: 2px solid black;
 }
 
+#instructions {
+  text-align: center;
+}
+
 .message {
   word-wrap: break-word;
   border: 1px solid #b0b0b0;
@@ -54,3 +69,4 @@ table {
   margin: 0 auto;
   height: 623px;
 }
+
