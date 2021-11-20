@@ -8,7 +8,7 @@ html {
   font-family: 'MS Gothic', 'Gothic';
   font-size: 16px;
   color: rgba(216, 216, 216, 1);
-  background: url('images/ui/containerbg.png') !important;
+  background-color: black;
 }
 
 #game_frame {
@@ -24,7 +24,7 @@ html {
 
 #messages, #chatInputContainer, #enterNameContainer {
   border: 8px solid transparent;
-  border-image: url('images/ui/border.png') 8 repeat !important;
+  border-image: url('images/ui/border.png') 10 repeat !important;
 }
 
 #messages {
