@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	res_index_path = "public/play/gamesdefault/index.json"
+	res_index_path = "games/default/index.json"
 	NUM_ROOMS = 180 //!!! change this if not hosting yume nikki
 )
 
@@ -21,7 +21,7 @@ func main() {
 	log.Println("test" + delimchar + "test")
 
 	port := os.Getenv("PORT")
-	
+
 	if (port == "") {
 		//log.Fatal("$PORT must be set")
 		port = "8080"
@@ -47,14 +47,22 @@ func main() {
 		}
 	}
 
+	//list of valid system resource keys
+	var systemNames []string
+	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
+		if k != "_dirname" {
+			systemNames = append(systemNames, k)
+		}
+	}
+
 	var roomNames []string
 
 	for i:=0; i < NUM_ROOMS; i++ {
 		roomNames = append(roomNames, strconv.Itoa(i))
 	}
-	
+
 	for name := range roomNames {
-		hub := orbserver.NewHub(roomNames[name], spriteNames)
+		hub := orbserver.NewHub(roomNames[name], spriteNames, systemNames)
 		go hub.Run()
 	}
 
