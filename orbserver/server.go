@@ -48,11 +48,12 @@ type Hub struct {
 	unregister chan *Client
 
 	roomName string
-	//list of valid game character sprite resource keys 
+	//list of valid game character sprite resource keys
 	spriteNames []string
+	systemNames []string
 }
 
-func NewHub(roomName string, spriteNames []string) *Hub {
+func NewHub(roomName string, spriteNames []string, systemNames []string) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
 		connect:   make(chan *websocket.Conn),
@@ -61,6 +62,7 @@ func NewHub(roomName string, spriteNames []string) *Hub {
 		id: make(map[int]bool),
 		roomName: roomName,
 		spriteNames: spriteNames,
+		systemNames: systemNames,
 	}
 }
 
@@ -87,8 +89,14 @@ func (h *Hub) Run() {
 				client.send <- []byte("c" + delimstr + strconv.Itoa(other_client.id))
 				client.send <- []byte("m" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.x) + delimstr + strconv.Itoa(other_client.y));
 				client.send <- []byte("spd" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.spd));
+				if other_client.name != "" {
+					client.send <- []byte("name" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.name);
+				}
 				if other_client.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
 					client.send <- []byte("spr" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.spriteName + delimstr + strconv.Itoa(other_client.spriteIndex));
+				}
+				if other_client.systemName != "" {
+					client.send <- []byte("sys" + delimstr + strconv.Itoa(other_client.id) + other_client.systemName);
 				}
 			}
 			//register client in the structures
@@ -170,7 +178,7 @@ func (h *Hub) processMsg(msg *Message) error {
 			return err
 		}
 		if spd < 0 || spd > 10 { //something's not right
-			return err	
+			return err
 		}
 		msg.sender.spd = spd
 		h.broadcast([]byte("spd" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]));
@@ -188,6 +196,15 @@ func (h *Hub) processMsg(msg *Message) error {
 		msg.sender.spriteName = msgFields[1]
 		msg.sender.spriteIndex = index
 		h.broadcast([]byte("spr" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2]));
+	case "sys": //change my system graphic
+		if len(msgFields) != 2 {
+			return err
+		}
+		if !h.isValidSystemName(msgFields[1]) {
+			return err
+		}
+		msg.sender.systemName = msgFields[1];
+		h.broadcast([]byte("sys" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]));
 	case "say":
 		if len(msgFields) != 2 {
 			return err
@@ -196,11 +213,12 @@ func (h *Hub) processMsg(msg *Message) error {
 			return err
 		}
 		h.broadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + msgFields[1]))
-	case "name":
+	case "name": // nick set
 		if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 7 {
 			return err
 		}
 		msg.sender.name = msgFields[1]
+		h.broadcast([]byte("name" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msg.sender.name));
 	default:
 		return err
 	}
@@ -210,7 +228,16 @@ func (h *Hub) processMsg(msg *Message) error {
 
 func (h *Hub) isValidSpriteName(name string) bool {
 	for _, otherName := range h.spriteNames {
-		if otherName == name {
+		if otherName == strings.ToLower(name) {
+			return true
+		}
+	}
+	return false
+}
+
+func (h *Hub) isValidSystemName(name string) bool {
+	for _, otherName := range h.systemNames {
+		if otherName == strings.ToLower(name) {
 			return true
 		}
 	}

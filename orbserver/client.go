@@ -45,9 +45,11 @@ type Client struct {
 	x, y int
 	spd int
 	name string
-	
+
 	spriteName string
 	spriteIndex int
+
+	systemName string
 }
 
 type Message struct {
