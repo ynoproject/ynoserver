@@ -159,7 +159,11 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	hub.connect <- &ConnInfo{Connect: conn, Ip: strings.Split(r.RemoteAddr, ":")[0]}
+	ip := r.Header.Get("x-forwarded-for")
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+	hub.connect <- &ConnInfo{Connect: conn, Ip: strings.Split(ip, ":")[0]}
 }
 
 func (h *Hub) broadcast(data []byte) {
