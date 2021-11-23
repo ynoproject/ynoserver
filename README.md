@@ -13,6 +13,7 @@ Set the PORT environment variable. If you don't, it defaults to 8080.
 git clone https://github.com/twig33/orbs
 cd orbs
 go mod download github.com/gorilla/websocket
+go get gopkg.in/natefinch/lumberjack.v2
 go build
 ```
 
