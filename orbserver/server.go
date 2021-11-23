@@ -92,6 +92,24 @@ func (h *Hub) Run() {
 					break
 				}
 			}
+
+			ip_limit := 2
+			same_ip := 0
+			for other_client := range h.clients {
+				log.Println(other_client.ip, conn.Ip)
+				if other_client.ip == conn.Ip {
+					same_ip++
+				}
+				if same_ip >= ip_limit {
+					writeErrLog(conn.Ip, "max client in room exceeded")
+					break
+				}
+			}
+			if same_ip >= ip_limit {
+				conn.Connect.Close()
+				return
+			}
+
 			//sprite index < 0 means none
 			client := &Client{hub: h, conn: conn.Connect, ip: conn.Ip, send: make(chan []byte, 256), id: id, x: 0, y: 0, name: "", spd: 3, spriteName: "none", spriteIndex: -1}
 			go client.writePump()
@@ -167,7 +185,6 @@ func (h *Hub) processMsg(msg *Message) error {
 	}
 
 	for _, v := range msg.data {
-		log.Println(v)
 		if v < 32 {
 			return errors.New("Bad byte sequence")
 		}
