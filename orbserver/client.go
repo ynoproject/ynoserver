@@ -42,6 +42,7 @@ type Client struct {
 
 	// IP address of the client
 	ip string
+	banned bool
 
 	id int
 	x, y int

@@ -105,13 +105,21 @@ func (h *Hub) Run() {
 					break
 				}
 			}
-			if same_ip >= ip_limit {
-				conn.Connect.Close()
-				return
-			}
 
 			//sprite index < 0 means none
-			client := &Client{hub: h, conn: conn.Connect, ip: conn.Ip, send: make(chan []byte, 256), id: id, x: 0, y: 0, name: "", spd: 3, spriteName: "none", spriteIndex: -1}
+			client := &Client{
+				hub: h,
+				conn: conn.Connect,
+				ip: conn.Ip,
+				banned: same_ip >= ip_limit,
+				send: make(chan []byte, 256),
+				id: id,
+				x: 0,
+				y: 0,
+				name: "",
+				spd: 3,
+				spriteName:	"none",
+				spriteIndex: -1}
 			go client.writePump()
 			go client.readPump()
 
@@ -135,7 +143,10 @@ func (h *Hub) Run() {
 			h.id[id] = true
 			h.clients[client] = true
 			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
+			if !client.banned {
+				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
+			}
+
 			writeLog(conn.Ip, "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
@@ -184,6 +195,10 @@ func (h *Hub) deleteClient(client *Client) {
 }
 
 func (h *Hub) processMsg(msg *Message) error {
+	if msg.sender.banned {
+		return errors.New("Banned")
+	}
+
 	if len(msg.data) > 1024 {
 		return errors.New("Request too long")
 	}
