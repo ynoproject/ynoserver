@@ -60,7 +60,7 @@ type Hub struct {
 }
 
 func writeLog(ip string, payload string, errorcode int) {
-	log.Printf("%v \"%v\" %v\n", ip, payload, errorcode)
+	log.Printf("%v \"%v\" %v\n", ip, strings.Replace(payload, "\"", "'", -1), errorcode)
 }
 
 func writeErrLog(ip string, payload string) {
