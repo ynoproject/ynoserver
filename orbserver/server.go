@@ -114,6 +114,7 @@ func NewHub(roomName string, spriteNames []string, systemNames []string, h *HubC
 		roomName: roomName,
 		spriteNames: spriteNames,
 		systemNames: systemNames,
+		controller: h,
 	}
 }
 
