@@ -14,7 +14,7 @@ import (
 
 var (
 	res_index_path = "games/default/index.json"
-	log_file = "orbs.log"
+	log_file = "logs/orbs.log"
 	NUM_ROOMS = 180 //!!! change this if not hosting yume nikki
 )
 
