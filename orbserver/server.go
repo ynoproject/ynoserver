@@ -5,6 +5,7 @@
 package orbserver
 
 import (
+	"fmt"
 	"net/http"
 	"log"
 	"strconv"
@@ -36,6 +37,28 @@ type ConnInfo struct {
 	Ip string
 }
 
+type HubController struct {
+	hubs []*Hub
+	authUUID string
+}
+
+func (h *HubController) addHub(roomName string, spriteNames, systemNames []string) {
+	hub := NewHub(roomName, spriteNames, systemNames, h)
+	h.hubs = append(h.hubs, hub)
+	go hub.Run()
+}
+
+func (h *HubController) auth(inpUUID string) bool {
+	return inpUUID == h.authUUID
+}
+
+func (h *HubController) globalBroadcast(inpData []byte) {
+	for _, hub := range h.hubs {
+		hub.broadcast(inpData)
+	}
+}
+
+
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
@@ -58,6 +81,8 @@ type Hub struct {
 	//list of valid game character sprite resource keys
 	spriteNames []string
 	systemNames []string
+
+	controller *HubController
 }
 
 func writeLog(ip string, roomName string, payload string, errorcode int) {
@@ -68,7 +93,18 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func NewHub(roomName string, spriteNames []string, systemNames []string) *Hub {
+func CreateAllHubs(roomNames, spriteNames, systemNames []string, authUUID string) {
+	h := HubController{
+		authUUID: authUUID,
+	}
+
+	for _, roomName := range roomNames {
+		h.addHub(roomName, spriteNames, systemNames)
+	}
+}
+
+
+func NewHub(roomName string, spriteNames []string, systemNames []string, h *HubController) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
 		connect:   make(chan *ConnInfo),
@@ -134,6 +170,8 @@ func (h *Hub) Run() {
 				close(client.send)
 				continue
 			}
+
+			client.send <- []byte("say" + delimstr + fmt.Sprintf("This room has %d players.", len(h.clients) + 1))
 
 			client.send <- []byte("s" + delimstr + strconv.Itoa(id)) //"your id is %id%" message
 			//send the new client info about the game state
@@ -294,7 +332,30 @@ func (h *Hub) processMsg(msg *Message) error {
 		if msg.sender.name == "" {
 			return err
 		}
-		h.broadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + msgFields[1]))
+
+		msgContents := msgFields[1]
+
+		// If it's a global message, broadcast it to every hub
+		// Otherwise, broadcast only to the current hub
+		switch {
+		case strings.HasPrefix(msgContents, "!login "):
+			msgContents := msgContents[7:]
+			log.Printf("Trying to login with %s", msgContents)
+			if h.controller.auth(msgContents) {
+				msg.sender.send <- []byte("say" + delimstr + "Login successful")
+				msg.sender.privilegedSession = true
+			} else {
+				msg.sender.send <- []byte("say" + delimstr + "Login unsuccessful")
+			}
+
+		case strings.HasPrefix(msgContents, "!global ") && msg.sender.privilegedSession:
+			msgContents := msgContents[8:]
+			h.controller.globalBroadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + fmt.Sprintf("(GLOBAL) %s", msgContents)))
+		case strings.HasPrefix(msgContents, "!"):
+			// do nothing
+		default:
+			h.broadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + msgContents))
+		}
 	case "name": // nick set
 		if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 7 {
 			return err
