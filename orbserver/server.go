@@ -11,6 +11,7 @@ import (
 	"strings"
 	"regexp"
 	"errors"
+	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
 )
@@ -29,6 +30,11 @@ var (
 	delimrune = '\uffff'
 )
 
+type ConnInfo struct {
+	Connect *websocket.Conn
+	Ip string
+}
+
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
@@ -42,7 +48,7 @@ type Hub struct {
 	processMsgCh chan *Message
 
 	// Connection requests from the clients.
-	connect chan *websocket.Conn
+	connect chan *ConnInfo
 
 	// Unregister requests from clients.
 	unregister chan *Client
@@ -53,10 +59,18 @@ type Hub struct {
 	systemNames []string
 }
 
+func writeLog(ip string, payload string, errorcode int) {
+	log.Printf("%v \"%v\" %v\n", ip, strings.Replace(payload, "\"", "'", -1), errorcode)
+}
+
+func writeErrLog(ip string, payload string) {
+	writeLog(ip, payload, 400)
+}
+
 func NewHub(roomName string, spriteNames []string, systemNames []string) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
-		connect:   make(chan *websocket.Conn),
+		connect:   make(chan *ConnInfo),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
 		id: make(map[int]bool),
@@ -78,8 +92,34 @@ func (h *Hub) Run() {
 					break
 				}
 			}
+
+			ip_limit := 2
+			same_ip := 0
+			for other_client := range h.clients {
+				log.Println(other_client.ip, conn.Ip)
+				if other_client.ip == conn.Ip {
+					same_ip++
+				}
+				if same_ip >= ip_limit {
+					writeErrLog(conn.Ip, "max client in room exceeded")
+					break
+				}
+			}
+
 			//sprite index < 0 means none
-			client := &Client{hub: h, conn: conn, send: make(chan []byte, 256), id: id, x: 0, y: 0, name: "", spd: 3, spriteName: "none", spriteIndex: -1}
+			client := &Client{
+				hub: h,
+				conn: conn.Connect,
+				ip: conn.Ip,
+				banned: same_ip >= ip_limit,
+				send: make(chan []byte, 256),
+				id: id,
+				x: 0,
+				y: 0,
+				name: "",
+				spd: 3,
+				spriteName:	"none",
+				spriteIndex: -1}
 			go client.writePump()
 			go client.readPump()
 
@@ -103,15 +143,20 @@ func (h *Hub) Run() {
 			h.id[id] = true
 			h.clients[client] = true
 			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
+			if !client.banned {
+				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
+			}
+
+			writeLog(conn.Ip, "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				h.deleteClient(client)
 			}
+			writeLog(client.ip, "disconnect", 200)
 		case message := <-h.processMsgCh:
 			err := h.processMsg(message)
 			if err != nil {
-				log.Println(err)
+				writeErrLog(message.sender.ip, err.Error())
 			}
 		}
 	}
@@ -125,7 +170,11 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	hub.connect <- conn
+	ip := r.Header.Get("x-forwarded-for")
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+	hub.connect <- &ConnInfo{Connect: conn, Ip: strings.Split(ip, ":")[0]}
 }
 
 func (h *Hub) broadcast(data []byte) {
@@ -146,8 +195,27 @@ func (h *Hub) deleteClient(client *Client) {
 }
 
 func (h *Hub) processMsg(msg *Message) error {
+	if msg.sender.banned {
+		return errors.New("Banned")
+	}
+
+	if len(msg.data) > 1024 {
+		return errors.New("Request too long")
+	}
+
+	for _, v := range msg.data {
+		if v < 32 {
+			return errors.New("Bad byte sequence")
+		}
+	}
+
+	if !utf8.Valid(msg.data) {
+		return errors.New("Invalid UTF-8")
+	}
+
 	msgStr := string(msg.data[:])
-	err := errors.New("Invalid message: " + msgStr)
+
+	err := errors.New(msgStr)
 	msgFields := strings.FieldsFunc(msgStr, func(c rune) bool {
 		return c == delimrune
 	}) //split message string on delimiting character
@@ -226,6 +294,8 @@ func (h *Hub) processMsg(msg *Message) error {
 	default:
 		return err
 	}
+
+	writeLog(msg.sender.ip, msgStr, 200)
 
 	return nil
 }

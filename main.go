@@ -9,17 +9,20 @@ import (
 	"strconv"
 	"io/ioutil"
 	"encoding/json"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
 	res_index_path = "games/default/index.json"
+	log_file = "orbs.log"
 	NUM_ROOMS = 180 //!!! change this if not hosting yume nikki
 )
 
-func main() {
-	delimchar := "\uffff";
-	log.Println("test" + delimchar + "test")
+func writeLog(ip string, payload string, errorcode int) {
+	log.Printf("%v \"%v\" %v\n", ip, payload, errorcode)
+}
 
+func main() {
 	port := os.Getenv("PORT")
 
 	if (port == "") {
@@ -67,9 +70,18 @@ func main() {
 	}
 
 	//http.Handle("/", httpfileserver.New("/", "public/"))
+
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   log_file,
+		MaxSize:    100, // MB
+		MaxBackups: 6,
+		MaxAge:     28, //days
+	})
+	log.SetFlags(log.Ldate | log.Ltime)
+
 	http.Handle("/", http.FileServer(http.Dir("public/")))
 	//http.HandleFunc("/", Handler)
-	log.Fatal(http.ListenAndServe(":" + port, nil))
+	log.Fatalf("%v \"%v\" %v", "127.0.0.1", http.ListenAndServe(":" + port, nil), 500)
 }
 
 /*func Handler(w http.ResponseWriter, r *http.Request) {
