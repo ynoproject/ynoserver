@@ -220,6 +220,10 @@ func (h *Hub) processMsg(msg *Message) error {
 		return c == delimrune
 	}) //split message string on delimiting character
 
+	if len(msgFields) == 0 {
+		return err
+	}
+
 	switch msgFields[0] {
 	case "m": //"i moved to x y"
 		if len(msgFields) != 3 {
