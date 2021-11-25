@@ -172,7 +172,14 @@ func (h *Hub) Run() {
 				continue
 			}
 
-			client.send <- []byte("say" + delimstr + fmt.Sprintf("This room has %d players.", len(h.clients) + 1))
+			numPlayers := len(h.clients) + 1
+
+			switch {
+			case numPlayers == 1:
+				client.send <- []byte("say" + delimstr + "You are alone in this room")
+			default:
+				client.send <- []byte("say" + delimstr + fmt.Sprintf("This room has %d players", numPlayers))
+			}
 
 			client.send <- []byte("s" + delimstr + strconv.Itoa(id)) //"your id is %id%" message
 			//send the new client info about the game state
@@ -341,13 +348,16 @@ func (h *Hub) processMsg(msg *Message) error {
 		switch {
 		case strings.HasPrefix(msgContents, "!login "):
 			msgContents := msgContents[7:]
-			log.Printf("Trying to login with %s", msgContents)
 			if h.controller.auth(msgContents) {
 				msg.sender.send <- []byte("say" + delimstr + "Login successful")
 				msg.sender.privilegedSession = true
+				writeLog(msg.sender.ip, fmt.Sprintf("room %s: %s", h.roomName, "login ok"), 200)
 			} else {
 				msg.sender.send <- []byte("say" + delimstr + "Login unsuccessful")
+				writeErrLog(msg.sender.ip, fmt.Sprintf("room %s: %s", h.roomName, "login failed"))
+				return err
 			}
+
 
 		case strings.HasPrefix(msgContents, "!global ") && msg.sender.privilegedSession:
 			msgContents := msgContents[8:]
