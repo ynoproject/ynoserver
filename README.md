@@ -14,6 +14,7 @@ git clone https://github.com/twig33/orbs
 cd orbs
 go mod download github.com/gorilla/websocket
 go get gopkg.in/natefinch/lumberjack.v2
+go get gopkg.in/yaml.v2
 go build
 ```
 

@@ -4,18 +4,12 @@ import (
 	"net/http"
 	//"github.com/schollz/httpfileserver"
 	"log"
-	"os"
 	"orbs/orbserver"
 	"strconv"
 	"io/ioutil"
+	"flag"
 	"encoding/json"
 	"gopkg.in/natefinch/lumberjack.v2"
-)
-
-var (
-	res_index_path = "games/default/index.json"
-	log_file = "logs/orbs.log"
-	NUM_ROOMS = 180 //!!! change this if not hosting yume nikki
 )
 
 func writeLog(ip string, payload string, errorcode int) {
@@ -23,14 +17,12 @@ func writeLog(ip string, payload string, errorcode int) {
 }
 
 func main() {
-	port := os.Getenv("PORT")
+	config_file := flag.String("config", "config.yml", "Path to the configuration file")
+	flag.Parse()
 
-	if (port == "") {
-		//log.Fatal("$PORT must be set")
-		port = "8080"
-	}
+	config := orbserver.ParseConfig(*config_file)
 
-	res_index_data, err := ioutil.ReadFile(res_index_path)
+	res_index_data, err := ioutil.ReadFile(config.IndexPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,7 +52,7 @@ func main() {
 
 	var roomNames []string
 
-	for i:=0; i < NUM_ROOMS; i++ {
+	for i:=0; i < config.NumRooms; i++ {
 		roomNames = append(roomNames, strconv.Itoa(i))
 	}
 
@@ -72,16 +64,16 @@ func main() {
 	//http.Handle("/", httpfileserver.New("/", "public/"))
 
 	log.SetOutput(&lumberjack.Logger{
-		Filename:   log_file,
-		MaxSize:    100, // MB
-		MaxBackups: 6,
-		MaxAge:     28, //days
+		Filename:   config.Logging.File,
+		MaxSize:    config.Logging.MaxSize,
+		MaxBackups: config.Logging.MaxBackups,
+		MaxAge:     config.Logging.MaxAge,
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
 	http.Handle("/", http.FileServer(http.Dir("public/")))
 	//http.HandleFunc("/", Handler)
-	log.Fatalf("%v \"%v\" %v", "127.0.0.1", http.ListenAndServe(":" + port, nil), 500)
+	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":" + strconv.Itoa(config.Port), nil), 500)
 }
 
 /*func Handler(w http.ResponseWriter, r *http.Request) {

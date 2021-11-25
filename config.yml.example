@@ -1,0 +1,25 @@
+## IP to listen on
+#ip: "127.0.0.1"
+
+## Port to listen on
+#port: 8080
+
+## Path to index.json
+#index_path: "games/default/index.json"
+
+## Number of maps the game has
+#num_rooms: 100
+
+## Logging settings
+logging:
+  ## Path to log file written by orbs
+  #file: "orbs.log"
+
+  ## Size of log file (MB)
+  #max_size: 50
+
+  ## Log files to keep
+  #max_backups: 6
+
+  ## After how many days to remove logs
+  #max_age: 28
