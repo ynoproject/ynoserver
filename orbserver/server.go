@@ -59,12 +59,12 @@ type Hub struct {
 	systemNames []string
 }
 
-func writeLog(ip string, payload string, errorcode int) {
-	log.Printf("%v \"%v\" %v\n", ip, strings.Replace(payload, "\"", "'", -1), errorcode)
+func writeLog(ip string, roomName string, payload string, errorcode int) {
+	log.Printf("%v %v \"%v\" %v\n", ip, roomName, strings.Replace(payload, "\"", "'", -1), errorcode)
 }
 
-func writeErrLog(ip string, payload string) {
-	writeLog(ip, payload, 400)
+func writeErrLog(ip string, roomName string, payload string) {
+	writeLog(ip, roomName, payload, 400)
 }
 
 func NewHub(roomName string, spriteNames []string, systemNames []string) *Hub {
@@ -96,12 +96,11 @@ func (h *Hub) Run() {
 			ip_limit := 2
 			same_ip := 0
 			for other_client := range h.clients {
-				log.Println(other_client.ip, conn.Ip)
 				if other_client.ip == conn.Ip {
 					same_ip++
 				}
 				if same_ip >= ip_limit {
-					writeErrLog(conn.Ip, "max client in room exceeded")
+					writeErrLog(conn.Ip, h.roomName, "max client in room exceeded")
 					break
 				}
 			}
@@ -147,16 +146,16 @@ func (h *Hub) Run() {
 				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
 			}
 
-			writeLog(conn.Ip, "connect", 200)
+			writeLog(conn.Ip, h.roomName, "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				h.deleteClient(client)
 			}
-			writeLog(client.ip, "disconnect", 200)
+			writeLog(client.ip, h.roomName, "disconnect", 200)
 		case message := <-h.processMsgCh:
 			err := h.processMsg(message)
 			if err != nil {
-				writeErrLog(message.sender.ip, err.Error())
+				writeErrLog(message.sender.ip, h.roomName, err.Error())
 			}
 		}
 	}
@@ -295,7 +294,7 @@ func (h *Hub) processMsg(msg *Message) error {
 		return err
 	}
 
-	writeLog(msg.sender.ip, msgStr, 200)
+	writeLog(msg.sender.ip, h.roomName, msgStr, 200)
 
 	return nil
 }
