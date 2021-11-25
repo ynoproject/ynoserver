@@ -174,8 +174,8 @@ func (h *Hub) Run() {
 
 			numPlayers := len(h.clients) + 1
 
-			switch {
-			case numPlayers == 1:
+			switch numPlayers {
+			case 1:
 				client.send <- []byte("say" + delimstr + "You are alone in this room")
 			default:
 				client.send <- []byte("say" + delimstr + fmt.Sprintf("This room has %d players", numPlayers))
@@ -351,10 +351,10 @@ func (h *Hub) processMsg(msg *Message) error {
 			if h.controller.auth(msgContents) {
 				msg.sender.send <- []byte("say" + delimstr + "Login successful")
 				msg.sender.privilegedSession = true
-				writeLog(msg.sender.ip, fmt.Sprintf("room %s: %s", h.roomName, "login ok"), 200)
+				writeLog(msg.sender.ip, h.roomName, "login ok", 200)
 			} else {
 				msg.sender.send <- []byte("say" + delimstr + "Login unsuccessful")
-				writeErrLog(msg.sender.ip, fmt.Sprintf("room %s: %s", h.roomName, "login failed"))
+				writeErrLog(msg.sender.ip,  h.roomName, "login failed")
 				return err
 			}
 
