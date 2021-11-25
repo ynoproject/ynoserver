@@ -357,8 +357,6 @@ func (h *Hub) processMsg(msg *Message) error {
 				writeErrLog(msg.sender.ip,  h.roomName, "login failed")
 				return err
 			}
-
-
 		case strings.HasPrefix(msgContents, "!global ") && msg.sender.privilegedSession:
 			msgContents := msgContents[8:]
 			h.controller.globalBroadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + fmt.Sprintf("(GLOBAL) %s", msgContents)))
