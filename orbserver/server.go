@@ -86,7 +86,7 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			id := 0
+			id := -1
 			for i := 0; i <= maxID; i++ {
 				if !h.id[i] {
 					id = i
@@ -118,10 +118,22 @@ func (h *Hub) Run() {
 				y: 0,
 				name: "",
 				spd: 3,
-				spriteName:	"none",
+				spriteName: "none",
 				spriteIndex: -1}
 			go client.writePump()
 			go client.readPump()
+
+			if same_ip >= 5 {
+				writeErrLog(conn.Ip, h.roomName, "too many connections")
+				close(client.send)
+				continue
+			}
+
+			if id == -1 {
+				writeErrLog(conn.Ip, h.roomName, "room is full")
+				close(client.send)
+				continue
+			}
 
 			client.send <- []byte("s" + delimstr + strconv.Itoa(id)) //"your id is %id%" message
 			//send the new client info about the game state
