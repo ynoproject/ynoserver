@@ -11,7 +11,9 @@ import (
 	"strings"
 	"regexp"
 	"errors"
+	"unicode"
 	"unicode/utf8"
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,7 +29,6 @@ var (
 	}
 	isOkName = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
 	delimstr = "\uffff"
-	delimrune = '\uffff'
 )
 
 type ConnInfo struct {
@@ -215,9 +216,7 @@ func (h *Hub) processMsg(msg *Message) error {
 	msgStr := string(msg.data[:])
 
 	err := errors.New(msgStr)
-	msgFields := strings.FieldsFunc(msgStr, func(c rune) bool {
-		return c == delimrune
-	}) //split message string on delimiting character
+	msgFields := strings.Split(msgStr, delimstr)
 
 	if len(msgFields) == 0 {
 		return err
@@ -299,10 +298,30 @@ func (h *Hub) processMsg(msg *Message) error {
 	return nil
 }
 
+func normalize(str string) string {
+	var (
+		r   rune
+		it  norm.Iter
+		out []byte
+	)
+	it.InitString(norm.NFKC, str)
+	for !it.Done() {
+		ruf := it.Next()
+		r, _ = utf8.DecodeRune(ruf)
+		r = unicode.ToLower(r)
+		buf := make([]byte, utf8.RuneLen(r))
+		utf8.EncodeRune(buf, r)
+		out = norm.NFC.Append(out, buf...)
+	}
+	return string(out)
+}
+
 func (h *Hub) isValidSpriteName(name string) bool {
 	if name == "" {
 		return true
 	}
+
+	name = normalize(name)
 
 	for _, otherName := range h.spriteNames {
 		if otherName == strings.ToLower(name) {
@@ -313,6 +332,8 @@ func (h *Hub) isValidSpriteName(name string) bool {
 }
 
 func (h *Hub) isValidSystemName(name string) bool {
+	name = normalize(name)
+
 	for _, otherName := range h.systemNames {
 		if otherName == strings.ToLower(name) {
 			return true
