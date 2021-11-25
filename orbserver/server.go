@@ -300,6 +300,10 @@ func (h *Hub) processMsg(msg *Message) error {
 }
 
 func (h *Hub) isValidSpriteName(name string) bool {
+	if name == "" {
+		return true
+	}
+
 	for _, otherName := range h.spriteNames {
 		if otherName == strings.ToLower(name) {
 			return true
