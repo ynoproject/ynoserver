@@ -77,7 +77,7 @@ func (c *Client) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				writeLog("127.0.0.1", err.Error(), 500)
+				writeLog(c.ip, c.hub.roomName, err.Error(), 500)
 			}
 			break
 		}

@@ -11,7 +11,9 @@ import (
 	"strings"
 	"regexp"
 	"errors"
+	"unicode"
 	"unicode/utf8"
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,7 +29,6 @@ var (
 	}
 	isOkName = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
 	delimstr = "\uffff"
-	delimrune = '\uffff'
 )
 
 type ConnInfo struct {
@@ -59,12 +60,12 @@ type Hub struct {
 	systemNames []string
 }
 
-func writeLog(ip string, payload string, errorcode int) {
-	log.Printf("%v \"%v\" %v\n", ip, strings.Replace(payload, "\"", "'", -1), errorcode)
+func writeLog(ip string, roomName string, payload string, errorcode int) {
+	log.Printf("%v %v \"%v\" %v\n", ip, roomName, strings.Replace(payload, "\"", "'", -1), errorcode)
 }
 
-func writeErrLog(ip string, payload string) {
-	writeLog(ip, payload, 400)
+func writeErrLog(ip string, roomName string, payload string) {
+	writeLog(ip, roomName, payload, 400)
 }
 
 func NewHub(roomName string, spriteNames []string, systemNames []string) *Hub {
@@ -85,7 +86,7 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			id := 0
+			id := -1
 			for i := 0; i <= maxID; i++ {
 				if !h.id[i] {
 					id = i
@@ -96,12 +97,11 @@ func (h *Hub) Run() {
 			ip_limit := 2
 			same_ip := 0
 			for other_client := range h.clients {
-				log.Println(other_client.ip, conn.Ip)
 				if other_client.ip == conn.Ip {
 					same_ip++
 				}
 				if same_ip >= ip_limit {
-					writeErrLog(conn.Ip, "max client in room exceeded")
+					writeErrLog(conn.Ip, h.roomName, "max client in room exceeded")
 					break
 				}
 			}
@@ -118,10 +118,22 @@ func (h *Hub) Run() {
 				y: 0,
 				name: "",
 				spd: 3,
-				spriteName:	"none",
+				spriteName: "none",
 				spriteIndex: -1}
 			go client.writePump()
 			go client.readPump()
+
+			if same_ip >= 5 {
+				writeErrLog(conn.Ip, h.roomName, "too many connections")
+				close(client.send)
+				continue
+			}
+
+			if id == -1 {
+				writeErrLog(conn.Ip, h.roomName, "room is full")
+				close(client.send)
+				continue
+			}
 
 			client.send <- []byte("s" + delimstr + strconv.Itoa(id)) //"your id is %id%" message
 			//send the new client info about the game state
@@ -147,16 +159,16 @@ func (h *Hub) Run() {
 				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
 			}
 
-			writeLog(conn.Ip, "connect", 200)
+			writeLog(conn.Ip, h.roomName, "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				h.deleteClient(client)
 			}
-			writeLog(client.ip, "disconnect", 200)
+			writeLog(client.ip, h.roomName, "disconnect", 200)
 		case message := <-h.processMsgCh:
 			err := h.processMsg(message)
 			if err != nil {
-				writeErrLog(message.sender.ip, err.Error())
+				writeErrLog(message.sender.ip, h.roomName, err.Error())
 			}
 		}
 	}
@@ -174,7 +186,7 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 	if ip == "" {
 		ip = r.RemoteAddr
 	}
-	hub.connect <- &ConnInfo{Connect: conn, Ip: strings.Split(ip, ":")[0]}
+	hub.connect <- &ConnInfo{Connect: conn, Ip: ip}
 }
 
 func (h *Hub) broadcast(data []byte) {
@@ -216,9 +228,7 @@ func (h *Hub) processMsg(msg *Message) error {
 	msgStr := string(msg.data[:])
 
 	err := errors.New(msgStr)
-	msgFields := strings.FieldsFunc(msgStr, func(c rune) bool {
-		return c == delimrune
-	}) //split message string on delimiting character
+	msgFields := strings.Split(msgStr, delimstr)
 
 	if len(msgFields) == 0 {
 		return err
@@ -295,12 +305,36 @@ func (h *Hub) processMsg(msg *Message) error {
 		return err
 	}
 
-	writeLog(msg.sender.ip, msgStr, 200)
+	writeLog(msg.sender.ip, h.roomName, msgStr, 200)
 
 	return nil
 }
 
+func normalize(str string) string {
+	var (
+		r   rune
+		it  norm.Iter
+		out []byte
+	)
+	it.InitString(norm.NFKC, str)
+	for !it.Done() {
+		ruf := it.Next()
+		r, _ = utf8.DecodeRune(ruf)
+		r = unicode.ToLower(r)
+		buf := make([]byte, utf8.RuneLen(r))
+		utf8.EncodeRune(buf, r)
+		out = norm.NFC.Append(out, buf...)
+	}
+	return string(out)
+}
+
 func (h *Hub) isValidSpriteName(name string) bool {
+	if name == "" {
+		return true
+	}
+
+	name = normalize(name)
+
 	for _, otherName := range h.spriteNames {
 		if otherName == strings.ToLower(name) {
 			return true
@@ -310,6 +344,8 @@ func (h *Hub) isValidSpriteName(name string) bool {
 }
 
 func (h *Hub) isValidSystemName(name string) bool {
+	name = normalize(name)
+
 	for _, otherName := range h.systemNames {
 		if otherName == strings.ToLower(name) {
 			return true
