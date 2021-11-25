@@ -174,7 +174,7 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 	if ip == "" {
 		ip = r.RemoteAddr
 	}
-	hub.connect <- &ConnInfo{Connect: conn, Ip: strings.Split(ip, ":")[0]}
+	hub.connect <- &ConnInfo{Connect: conn, Ip: ip}
 }
 
 func (h *Hub) broadcast(data []byte) {
