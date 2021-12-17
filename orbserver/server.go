@@ -203,9 +203,6 @@ func (h *Hub) Run() {
 			//tell everyone that a new client has connected
 			if !client.banned {
 				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
-				if client.name != "" {
-					h.broadcast([]byte("say" + delimstr + fmt.Sprintf("%s entered this room", client.name))) //join message
-				}
 			}
 
 			writeLog(conn.Ip, h.roomName, "connect", 200)
@@ -253,9 +250,6 @@ func (h *Hub) deleteClient(client *Client) {
 	close(client.send)
 	delete(h.clients, client)
 	h.broadcast([]byte("d" + delimstr + strconv.Itoa(client.id))) //user %id% has disconnected message
-	if client.name != "" {
-		h.broadcast([]byte("say" + delimstr + fmt.Sprintf("%s left this room", client.name))) //leave message
-	}
 }
 
 func (h *Hub) processMsg(msg *Message) error {
