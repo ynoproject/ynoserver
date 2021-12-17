@@ -176,9 +176,9 @@ func (h *Hub) Run() {
 
 			switch numPlayers {
 			case 1:
-				client.send <- []byte("say" + delimstr + "You are alone in this room")
+				client.send <- []byte("say" + delimstr + "You are alone in this room.")
 			default:
-				client.send <- []byte("say" + delimstr + fmt.Sprintf("This room has %d players", numPlayers))
+				client.send <- []byte("say" + delimstr + fmt.Sprintf("This room has %d players.", numPlayers))
 			}
 
 			client.send <- []byte("s" + delimstr + strconv.Itoa(id)) //"your id is %id%" message
