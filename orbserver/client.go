@@ -53,7 +53,6 @@ type Client struct {
 	spriteIndex int
 
 	systemName string
-	privilegedSession bool
 }
 
 type Message struct {

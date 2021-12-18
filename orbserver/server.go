@@ -48,16 +48,6 @@ func (h *HubController) addHub(roomName string, spriteNames, systemNames []strin
 	go hub.Run()
 }
 
-func (h *HubController) auth(inpUUID string) bool {
-	return inpUUID == h.authUUID
-}
-
-func (h *HubController) globalBroadcast(inpData []byte) {
-	for _, hub := range h.hubs {
-		hub.broadcast(inpData)
-	}
-}
-
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
@@ -344,28 +334,7 @@ func (h *Hub) processMsg(msg *Message) error {
 
 		msgContents := msgFields[1]
 
-		// If it's a global message, broadcast it to every hub
-		// Otherwise, broadcast only to the current hub
-		switch {
-		case strings.HasPrefix(msgContents, "!login "):
-			msgContents := msgContents[7:]
-			if h.controller.auth(msgContents) {
-				msg.sender.send <- []byte("say" + delimstr + "Login successful")
-				msg.sender.privilegedSession = true
-				writeLog(msg.sender.ip, h.roomName, "login ok", 200)
-			} else {
-				msg.sender.send <- []byte("say" + delimstr + "Login unsuccessful")
-				writeErrLog(msg.sender.ip,  h.roomName, "login failed")
-				return err
-			}
-		case strings.HasPrefix(msgContents, "!global ") && msg.sender.privilegedSession:
-			msgContents := msgContents[8:]
-			h.controller.globalBroadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + fmt.Sprintf("(GLOBAL) %s", msgContents)))
-		case strings.HasPrefix(msgContents, "!"):
-			// do nothing
-		default:
-			h.broadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + msgContents))
-		}
+		h.broadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + msgContents))
 	case "name": // nick set
 		if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 7 {
 			return err
