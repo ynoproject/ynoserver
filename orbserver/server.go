@@ -319,7 +319,7 @@ func (h *Hub) processMsg(msg *Message) error {
 		}
 		h.broadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + msgContents))
 	case "name": // nick set
-		if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 7 {
+		if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
 			return err
 		}
 		msg.sender.name = msgFields[1]
