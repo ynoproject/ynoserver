@@ -39,7 +39,6 @@ type ConnInfo struct {
 
 type HubController struct {
 	hubs []*Hub
-	authUUID string
 }
 
 func (h *HubController) addHub(roomName string, spriteNames, systemNames []string) {
@@ -83,10 +82,8 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames, systemNames []string, authUUID string) {
-	h := HubController{
-		authUUID: authUUID,
-	}
+func CreateAllHubs(roomNames, spriteNames, systemNames []string) {
+	h := HubController{}
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName, spriteNames, systemNames)

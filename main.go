@@ -10,7 +10,6 @@ import (
 	"flag"
 	"encoding/json"
 	"gopkg.in/natefinch/lumberjack.v2"
-	guuid "github.com/google/uuid"
 
 )
 
@@ -58,14 +57,7 @@ func main() {
 		roomNames = append(roomNames, strconv.Itoa(i))
 	}
 
-	uuid, err := guuid.NewUUID()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Authentication uuid is: %s", uuid.String())
-
-	orbserver.CreateAllHubs(roomNames, spriteNames, systemNames, uuid.String())
+	orbserver.CreateAllHubs(roomNames, spriteNames, systemNames)
 
 	//http.Handle("/", httpfileserver.New("/", "public/"))
 
