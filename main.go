@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	//"github.com/schollz/httpfileserver"
 	"log"
 	"orbs/orbserver"
 	"strconv"
@@ -59,8 +58,6 @@ func main() {
 
 	orbserver.CreateAllHubs(roomNames, spriteNames, systemNames)
 
-	//http.Handle("/", httpfileserver.New("/", "public/"))
-
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,
 		MaxSize:    config.Logging.MaxSize,
@@ -70,10 +67,5 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime)
 
 	http.Handle("/", http.FileServer(http.Dir("public/")))
-	//http.HandleFunc("/", Handler)
 	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":" + strconv.Itoa(config.Port), nil), 500)
 }
-
-/*func Handler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html")
-}*/

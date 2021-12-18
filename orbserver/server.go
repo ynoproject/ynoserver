@@ -47,7 +47,6 @@ func (h *HubController) addHub(roomName string, spriteNames, systemNames []strin
 	go hub.Run()
 }
 
-
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
@@ -89,7 +88,6 @@ func CreateAllHubs(roomNames, spriteNames, systemNames []string) {
 		h.addHub(roomName, spriteNames, systemNames)
 	}
 }
-
 
 func NewHub(roomName string, spriteNames []string, systemNames []string, h *HubController) *Hub {
 	return &Hub{
