@@ -131,7 +131,7 @@ func (h *Hub) Run() {
 				}
 			}
 
-			ip_limit := 2
+			ip_limit := 3
 			same_ip := 0
 			for other_client := range h.clients {
 				if other_client.ip == conn.Ip {
