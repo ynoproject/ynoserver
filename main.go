@@ -9,11 +9,21 @@ import (
 	"flag"
 	"encoding/json"
 	"gopkg.in/natefinch/lumberjack.v2"
-
+	"strings"
 )
 
 func writeLog(ip string, payload string, errorcode int) {
 	log.Printf("%v \"%v\" %v\n", ip, payload, errorcode)
+}
+
+func contains(s []string, num int) bool {
+	for _, v := range s {
+		if v == strconv.Itoa(num) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func main() {
@@ -51,8 +61,9 @@ func main() {
 	}
 
 	var roomNames []string
+	badRooms := strings.Split(config.BadRooms, ",")
 
-	for i:=0; i < config.NumRooms; i++ {
+	for i:=0; i < config.NumRooms && !contains(badRooms, i); i++ {
 		roomNames = append(roomNames, strconv.Itoa(i))
 	}
 

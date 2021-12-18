@@ -10,6 +10,9 @@
 ## Number of maps the game has
 #num_rooms: 100
 
+## Maps to exclude from multiplayer
+#bad_rooms: ""
+
 ## Logging settings
 logging:
   ## Path to log file written by orbs
