@@ -5,7 +5,6 @@
 package orbserver
 
 import (
-	"fmt"
 	"net/http"
 	"log"
 	"strconv"
@@ -151,15 +150,6 @@ func (h *Hub) Run() {
 				writeErrLog(conn.Ip, h.roomName, "room is full")
 				close(client.send)
 				continue
-			}
-
-			numPlayers := len(h.clients) + 1
-
-			switch numPlayers {
-			case 1:
-				client.send <- []byte("say" + delimstr + "You are alone in this room.")
-			default:
-				client.send <- []byte("say" + delimstr + fmt.Sprintf("This room has %d players.", numPlayers))
 			}
 
 			client.send <- []byte("s" + delimstr + strconv.Itoa(id)) //"your id is %id%" message
