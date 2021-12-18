@@ -258,17 +258,17 @@ func (h *Hub) processMsg(msg *Message) error {
 	}
 
 	if len(msg.data) > 1024 {
-		return errors.New("Request too long")
+		return errors.New("request too long")
 	}
 
 	for _, v := range msg.data {
 		if v < 32 {
-			return errors.New("Bad byte sequence")
+			return errors.New("bad byte sequence")
 		}
 	}
 
 	if !utf8.Valid(msg.data) {
-		return errors.New("Invalid UTF-8")
+		return errors.New("invalid UTF-8")
 	}
 
 	msgStr := string(msg.data[:])
