@@ -63,8 +63,10 @@ func main() {
 	var roomNames []string
 	badRooms := strings.Split(config.BadRooms, ",")
 
-	for i:=0; i < config.NumRooms && !contains(badRooms, i); i++ {
-		roomNames = append(roomNames, strconv.Itoa(i))
+	for i:=0; i < config.NumRooms; i++ {
+		if !contains(badRooms, i) {
+			roomNames = append(roomNames, strconv.Itoa(i))
+		}
 	}
 
 	orbserver.CreateAllHubs(roomNames, spriteNames, systemNames)
