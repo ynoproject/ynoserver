@@ -313,12 +313,10 @@ func (h *Hub) processMsg(msg *Message) error {
 		if len(msgFields) != 2 {
 			return err
 		}
-		if msg.sender.name == "" {
+		msgContents := msgFields[1]
+		if msg.sender.name == "" || msgContents == "" {
 			return err
 		}
-
-		msgContents := msgFields[1]
-
 		h.broadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + msgContents))
 	case "name": // nick set
 		if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 7 {
