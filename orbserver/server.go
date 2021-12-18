@@ -137,10 +137,6 @@ func (h *Hub) Run() {
 				if other_client.ip == conn.Ip {
 					same_ip++
 				}
-				if same_ip >= ip_limit {
-					writeErrLog(conn.Ip, h.roomName, "max client in room exceeded")
-					break
-				}
 			}
 
 			//sprite index < 0 means none
@@ -160,7 +156,7 @@ func (h *Hub) Run() {
 			go client.writePump()
 			go client.readPump()
 
-			if same_ip >= 5 {
+			if same_ip >= ip_limit {
 				writeErrLog(conn.Ip, h.roomName, "too many connections")
 				close(client.send)
 				continue
