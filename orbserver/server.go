@@ -250,7 +250,7 @@ func (h *Hub) deleteClient(client *Client) {
 
 func (h *Hub) processMsg(msg *Message) error {
 	if msg.sender.banned {
-		return errors.New("Banned")
+		return errors.New("banned")
 	}
 
 	if len(msg.data) > 1024 {
