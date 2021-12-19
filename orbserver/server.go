@@ -258,15 +258,15 @@ func (h *Hub) processMsg(msg *Message) error {
 		}
 		//check if the coordinates are valid
 		x, errconv := strconv.Atoi(msgFields[1])
-		if errconv != nil || x < 0 || x > 10000 {
+		if errconv != nil {
 			return err
 		}
 		y, errconv := strconv.Atoi(msgFields[2])
-		if errconv != nil || y < 0 || y > 10000 {
+		if errconv != nil {
 			return err
 		}
 		f, errconv := strconv.Atoi(msgFields[3])
-		if errconv != nil || f < 0 || f > 10000 {
+		if errconv != nil {
 			return err
 		}
 		msg.sender.x = x
