@@ -258,15 +258,15 @@ func (h *Hub) processMsg(msg *Message) error {
 		}
 		//check if the coordinates are valid
 		x, errconv := strconv.Atoi(msgFields[1])
-		if errconv != nil {
+		if errconv != nil || x > 10000 {
 			return err
 		}
 		y, errconv := strconv.Atoi(msgFields[2])
-		if errconv != nil {
+		if errconv != nil || y > 10000 {
 			return err
 		}
 		f, errconv := strconv.Atoi(msgFields[3])
-		if errconv != nil {
+		if errconv != nil || f > 10000 {
 			return err
 		}
 		msg.sender.x = x
@@ -352,7 +352,7 @@ func normalize(str string) string {
 }
 
 func (h *Hub) isValidSpriteName(name string) bool {
-	if name == "" || name == "#null" {
+	if name == "" {
 		return true
 	}
 
