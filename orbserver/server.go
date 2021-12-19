@@ -352,7 +352,7 @@ func normalize(str string) string {
 }
 
 func (h *Hub) isValidSpriteName(name string) bool {
-	if name == "" {
+	if name == "" || name == "#null" {
 		return true
 	}
 
