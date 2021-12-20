@@ -1,1 +1,1 @@
-web: orbs
+web: ynoserver

@@ -15,8 +15,8 @@
 
 ## Logging settings
 logging:
-  ## Path to log file written by orbs
-  #file: "orbs.log"
+  ## Path to log file written by ynoserver
+  #file: "ynoserver.log"
 
   ## Size of log file (MB)
   #max_size: 50

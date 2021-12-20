@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 	"log"
-	"orbs/orbserver"
+	"ynoserver/server"
 	"strconv"
 	"io/ioutil"
 	"flag"
@@ -30,7 +30,7 @@ func main() {
 	config_file := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
-	config := orbserver.ParseConfig(*config_file)
+	config := server.ParseConfig(*config_file)
 
 	res_index_data, err := ioutil.ReadFile(config.IndexPath)
 	if err != nil {
@@ -69,7 +69,7 @@ func main() {
 		}
 	}
 
-	orbserver.CreateAllHubs(roomNames, spriteNames, systemNames)
+	server.CreateAllHubs(roomNames, spriteNames, systemNames)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,

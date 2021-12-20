@@ -1,4 +1,4 @@
-package orbserver
+package server
 
 import (
 	"io/ioutil"
@@ -45,7 +45,7 @@ func ParseConfig(file string) ServerConfig {
 		config.NumRooms = 100
 	}
 	if config.Logging.File == "" {
-		config.Logging.File = "orbs.log"
+		config.Logging.File = "server.log"
 	}
 	if config.Logging.MaxSize == 0 {
 		config.Logging.MaxSize = 50 // MB

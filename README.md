@@ -1,5 +1,5 @@
-## orbs
-Server for https://github.com/twig33/ynoclient
+## ynoserver
+Server for https://github.com/ynoproject/ynoclient
 
 ## Configuring
 Change the number of rooms in main.go:
@@ -10,8 +10,8 @@ Set the PORT environment variable. If you don't, it defaults to 8080.
 
 ## Building
 ```
-git clone https://github.com/twig33/orbs
-cd orbs
+git clone https://github.com/ynoproject/ynoserver
+cd ynoserver
 go mod download github.com/gorilla/websocket
 go get gopkg.in/natefinch/lumberjack.v2
 go get gopkg.in/yaml.v2
@@ -20,11 +20,11 @@ go build
 ```
 
 ## Setting up
-1) Build https://github.com/twig33/ynoclient
+1) Build https://github.com/ynoproject/ynoclient
 2) Put index.js and index.wasm in public/
 3) Put the game files in public/play/gamesdefault
 4) Run gencache in public/play/gamesdefault (can be found here https://easyrpg.org/player/guide/webplayer/)
-5) Run orbs (or push to heroku)
+5) Run ynoserver (or push to heroku)
 
 ## Credits
 Based on https://github.com/gorilla/websocket/tree/master/examples/chat
