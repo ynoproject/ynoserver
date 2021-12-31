@@ -13,6 +13,9 @@
 ## Maps to exclude from multiplayer
 #bad_rooms: ""
 
+## Set to 1 if hosting Yume 2kki
+#yume_2kki: 0
+
 ## Logging settings
 logging:
   ## Path to log file written by ynoserver

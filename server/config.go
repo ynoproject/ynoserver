@@ -12,6 +12,7 @@ type ServerConfig struct {
 	IndexPath string `yaml:"index_path"`
 	NumRooms  int    `yaml:"num_rooms"`
 	BadRooms  string `yaml:"bad_rooms"`
+	Yume2kki  int    `yaml:"yume_2kki"`
 	Logging   struct {
 		File       string `yaml:"file"`
 		MaxSize    int    `yaml:"max_size"`
