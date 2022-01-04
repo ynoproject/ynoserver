@@ -49,7 +49,7 @@ func main() {
 	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
 		if k != "_dirname" {
 			if config.Yume2kki == 1 {
-				if strings.Contains(k, "syujinkou") || strings.Contains(k, "39ninme") {
+				if strings.Contains(k, "syujinkou") || strings.Contains(k, "39ninme_Charset_GB_") || strings.Contains(k, "effect") || strings.Contains(k, "game") || strings.Contains(k, "kodomo") || strings.Contains(k, "mushi") {
 					spriteNames = append(spriteNames, k)
 				}
 			} else {
