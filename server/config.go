@@ -21,6 +21,8 @@ type ServerConfig struct {
 	} `yaml:"logging"`
 }
 
+var config ServerConfig
+
 func ParseConfig(file string) ServerConfig {
 	yamlFile, err := ioutil.ReadFile(file)
 	if err != nil {

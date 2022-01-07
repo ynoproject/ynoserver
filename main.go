@@ -48,13 +48,7 @@ func main() {
 	var spriteNames []string
 	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
 		if k != "_dirname" {
-			if config.Yume2kki == 1 {
-				if strings.Contains(k, "syujinkou") || strings.Contains(k, "game") {
-					spriteNames = append(spriteNames, k)
-				}
-			} else {
-				spriteNames = append(spriteNames, k)
-			}
+			spriteNames = append(spriteNames, k)
 		}
 	}
 
