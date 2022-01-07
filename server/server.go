@@ -303,7 +303,7 @@ func (h *Hub) processMsg(msg *Message) error {
 			return err
 		}
 		if config.Yume2kki == 1 {
-			if !strings.Contains(msgFields[1], "syujinkou") || !strings.Contains(msgFields[1], "game") || !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
+			if !strings.Contains(msgFields[1], "syujinkou") || !strings.Contains(msgFields[1], "yukihitsuji_game") || !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
 				return err
 			}
 			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "MAP0176 ぜんまいヶ原店"  {
