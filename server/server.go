@@ -288,6 +288,14 @@ func (h *Hub) processMsg(msg *Message) error {
 		if !h.isValidSpriteName(msgFields[1]) {
 			return err
 		}
+		if config.Yume2kki == 1 {
+			if !strings.Contains(msgFields[1], "syujinkou") || !strings.Contains(msgFields[1], "yukihitsuji_game") || !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
+				return err
+			}
+			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "MAP0176 ぜんまいヶ原店"  {
+				return err
+			}
+		}
 		index, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || index < 0 {
 			return err
@@ -301,14 +309,6 @@ func (h *Hub) processMsg(msg *Message) error {
 		}
 		if !h.isValidSystemName(msgFields[1]) {
 			return err
-		}
-		if config.Yume2kki == 1 {
-			if !strings.Contains(msgFields[1], "syujinkou") || !strings.Contains(msgFields[1], "yukihitsuji_game") || !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
-				return err
-			}
-			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "MAP0176 ぜんまいヶ原店"  {
-				return err
-			}
 		}
 		msg.sender.systemName = msgFields[1];
 		h.broadcast([]byte("sys" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]));
