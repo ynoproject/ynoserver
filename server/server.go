@@ -289,7 +289,7 @@ func (h *Hub) processMsg(msg *Message) error {
 			return err
 		}
 		if h.isValidSpriteName("syujinkou1") { //totally normal yume 2kki check
-			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
+			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && !strings.Contains(msgFields[1], "#null"){
 				return err
 			}
 			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "MAP0176 ぜんまいヶ原店"  {
