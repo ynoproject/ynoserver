@@ -176,7 +176,7 @@ func (h *Hub) Run() {
 			h.clients[client] = true
 			//tell everyone that a new client has connected
 			if !client.banned {
-				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
+				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id) + delimstr + strconv.Itoa(totalPlayerCount))) //user %id% has connected (and player count) message
 			}
 
 			writeLog(conn.Ip, h.roomName, "connect", 200)
