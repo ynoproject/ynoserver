@@ -155,8 +155,7 @@ func (h *Hub) Run() {
 
 			totalPlayerCount = totalPlayerCount + 1
 
-			client.send <- []byte("s" + delimstr + strconv.Itoa(id)) //"your id is %id%" message
-			client.send <- []byte("p" + delimstr + strconv.Itoa(totalPlayerCount)) //player count update
+			client.send <- []byte("s" + delimstr + strconv.Itoa(id) + delimstr + strconv.Itoa(totalPlayerCount)) //"your id is %id%" message (and player count)
 			//send the new client info about the game state
 			for other_client := range h.clients {
 				client.send <- []byte("c" + delimstr + strconv.Itoa(other_client.id))
