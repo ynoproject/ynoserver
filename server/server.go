@@ -156,9 +156,10 @@ func (h *Hub) Run() {
 			totalPlayerCount = totalPlayerCount + 1
 
 			client.send <- []byte("s" + delimstr + strconv.Itoa(id)) //"your id is %id%" message
+			client.send <- []byte("p" + delimstr + strconv.Itoa(totalPlayerCount)) //player count update
 			//send the new client info about the game state
 			for other_client := range h.clients {
-				client.send <- []byte("c" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(totalPlayerCount))
+				client.send <- []byte("c" + delimstr + strconv.Itoa(other_client.id))
 				client.send <- []byte("m" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.x) + delimstr + strconv.Itoa(other_client.y));
 				client.send <- []byte("spd" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.spd));
 				if other_client.name != "" {
@@ -176,7 +177,7 @@ func (h *Hub) Run() {
 			h.clients[client] = true
 			//tell everyone that a new client has connected
 			if !client.banned {
-				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id) + delimstr + strconv.Itoa(totalPlayerCount))) //user %id% has connected
+				h.broadcast([]byte("c" + delimstr + strconv.Itoa(id))) //user %id% has connected
 			}
 
 			writeLog(conn.Ip, h.roomName, "connect", 200)
@@ -226,7 +227,7 @@ func (h *Hub) deleteClient(client *Client) {
 	delete(h.id, client.id)
 	close(client.send)
 	delete(h.clients, client)
-	h.broadcast([]byte("d" + delimstr + strconv.Itoa(client.id) + delimstr + strconv.Itoa(totalPlayerCount))) //user %id% has disconnected message
+	h.broadcast([]byte("d" + delimstr + strconv.Itoa(client.id))) //user %id% has disconnected message
 }
 
 func (h *Hub) processMsg(msg *Message) error {
