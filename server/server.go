@@ -336,6 +336,9 @@ func (h *Hub) processMsg(msg *Message) error {
 		if (msgLength == 2) {
 			h.broadcast([]byte("name" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msg.sender.name));
 		} else {
+			if !h.isValidSystemName(msgFields[2]) {
+				return err
+			}
 			msg.sender.systemName = msgFields[2]
 			h.broadcast([]byte("name" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msg.sender.name + delimstr + msg.sender.systemName))
 		}
