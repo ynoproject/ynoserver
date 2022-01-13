@@ -168,7 +168,7 @@ func (h *Hub) Run() {
 					client.send <- []byte("spr" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.spriteName + delimstr + strconv.Itoa(other_client.spriteIndex));
 				}
 				if other_client.systemName != "" {
-					client.send <- []byte("sys" + delimstr + strconv.Itoa(other_client.id) + other_client.systemName);
+					client.send <- []byte("sys" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.systemName);
 				}
 			}
 			//register client in the structures
@@ -328,20 +328,11 @@ func (h *Hub) processMsg(msg *Message) error {
 		}
 		h.broadcast([]byte("say" + delimstr + "<" + msg.sender.name + "> " + msgContents))
 	case "name": // nick set
-		msgLength := len(msgFields)
-		if msg.sender.name != "" || msgLength < 2 || msgLength > 3 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
+		if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
 			return err
 		}
 		msg.sender.name = msgFields[1]
-		if (msgLength == 2) {
-			h.broadcast([]byte("name" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msg.sender.name));
-		} else {
-			if !h.isValidSystemName(msgFields[2]) {
-				return err
-			}
-			msg.sender.systemName = msgFields[2]
-			h.broadcast([]byte("name" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msg.sender.name + delimstr + msg.sender.systemName))
-		}
+		h.broadcast([]byte("name" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msg.sender.name));
 	default:
 		return err
 	}
