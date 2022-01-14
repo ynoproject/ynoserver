@@ -134,6 +134,7 @@ func (h *Hub) Run() {
 				id: id,
 				x: 0,
 				y: 0,
+				facing: 0,
 				name: "",
 				spd: 3,
 				spriteName: "none",
@@ -160,6 +161,7 @@ func (h *Hub) Run() {
 			for other_client := range h.clients {
 				client.send <- []byte("c" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(totalPlayerCount))
 				client.send <- []byte("m" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.x) + delimstr + strconv.Itoa(other_client.y));
+				client.send <- []byte("f" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.facing));
 				client.send <- []byte("spd" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.spd));
 				if other_client.name != "" {
 					client.send <- []byte("name" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.name);
@@ -274,6 +276,20 @@ func (h *Hub) processMsg(msg *Message) error {
 		msg.sender.x = x
 		msg.sender.y = y
 		h.broadcast([]byte("m" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2])) //user %id% moved to x y
+	case "f": //change facing direction
+		if len(msgFields) != 2 {
+			return err
+		}
+		//check if direction is valid
+		facing, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return err
+		}
+		if facing < 0 || facing > 3 { //something's not right
+			return err
+		}
+		msg.sender.facing = facing
+		h.broadcast([]byte("f" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1])) //user %id% facing changed to f
 	case "spd": //change my speed to spd
 		if len(msgFields) != 2 {
 			return err

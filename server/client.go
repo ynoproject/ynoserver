@@ -46,7 +46,9 @@ type Client struct {
 
 	id int
 	x, y int
+	facing int
 	spd int
+	
 	name string
 
 	spriteName string
