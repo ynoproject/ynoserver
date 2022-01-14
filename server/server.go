@@ -171,8 +171,8 @@ func (h *Hub) Run() {
 				if other_client.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
 					client.send <- []byte("spr" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.spriteName + delimstr + strconv.Itoa(other_client.spriteIndex));
 				}
-				if other_client.animType >= 0 {
-					client.send <- []byte("a" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.animType));
+				if other_client.systemName != "" {
+					client.send <- []byte("sys" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.systemName);
 				}
 			}
 			//register client in the structures
