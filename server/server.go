@@ -41,8 +41,8 @@ type HubController struct {
 	hubs []*Hub
 }
 
-func (h *HubController) addHub(roomName string, spriteNames, systemNames []string) {
-	hub := NewHub(roomName, spriteNames, systemNames, h)
+func (h *HubController) addHub(roomName string, spriteNames, systemNames []string, ignoredSoundNames []string) {
+	hub := NewHub(roomName, spriteNames, systemNames, ignoredSoundNames, h)
 	h.hubs = append(h.hubs, hub)
 	go hub.Run()
 }
@@ -69,6 +69,7 @@ type Hub struct {
 	//list of valid game character sprite resource keys
 	spriteNames []string
 	systemNames []string
+	ignoredSoundNames []string
 
 	controller *HubController
 }
@@ -81,15 +82,15 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames, systemNames []string) {
+func CreateAllHubs(roomNames, spriteNames, systemNames []string, ignoredSoundNames []string) {
 	h := HubController{}
 
 	for _, roomName := range roomNames {
-		h.addHub(roomName, spriteNames, systemNames)
+		h.addHub(roomName, spriteNames, systemNames, ignoredSoundNames)
 	}
 }
 
-func NewHub(roomName string, spriteNames []string, systemNames []string, h *HubController) *Hub {
+func NewHub(roomName string, spriteNames []string, systemNames []string, ignoredSoundNames []string, h *HubController) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
 		connect:   make(chan *ConnInfo),
@@ -99,6 +100,7 @@ func NewHub(roomName string, spriteNames []string, systemNames []string, h *HubC
 		roomName: roomName,
 		spriteNames: spriteNames,
 		systemNames: systemNames,
+		ignoredSoundNames: ignoredSoundNames,
 		controller: h,
 	}
 }
@@ -138,9 +140,7 @@ func (h *Hub) Run() {
 				name: "",
 				spd: 3,
 				spriteName: "none",
-				spriteIndex: -1,
-				animType: -1,
-				animFrame: -1}
+				spriteIndex: -1}
 			go client.writePump()
 			go client.readPump()
 
@@ -173,12 +173,6 @@ func (h *Hub) Run() {
 				}
 				if other_client.animType >= 0 {
 					client.send <- []byte("a" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.animType));
-				}
-				if other_client.animFrame >= 0 {
-					client.send <- []byte("af" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.animFrame));
-				}
-				if other_client.systemName != "" {
-					client.send <- []byte("sys" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.systemName);
 				}
 			}
 			//register client in the structures
@@ -344,7 +338,6 @@ func (h *Hub) processMsg(msg *Message) error {
 		if animType < 0 {
 			return err
 		}
-		msg.sender.animType = animType
 		h.broadcast([]byte("a" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]))
 	case "af": //animation frame set
 		if len(msgFields) != 2 {
@@ -357,7 +350,6 @@ func (h *Hub) processMsg(msg *Message) error {
 		if animFrame < 0 {
 			return err
 		}
-		msg.sender.animFrame = animFrame
 		h.broadcast([]byte("af" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]))
 	case "sys": //change my system graphic
 		if len(msgFields) != 2 {
@@ -368,6 +360,26 @@ func (h *Hub) processMsg(msg *Message) error {
 		}
 		msg.sender.systemName = msgFields[1];
 		h.broadcast([]byte("sys" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]));
+	case "se": //play sound effect
+		if len(msgFields) != 5 || msgFields[1] == "" {
+			return err
+		}
+		if !h.isValidSoundName(msgFields[1]) {
+			return err
+		}
+		volume, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil || volume < 0 || volume > 100 {
+			return err
+		}
+		tempo, errconv := strconv.Atoi(msgFields[3])
+		if errconv != nil || tempo < 10 || tempo > 400 {
+			return err
+		}
+		balance, errconv := strconv.Atoi(msgFields[4])
+		if errconv != nil || balance < 0 || balance > 100 {
+			return err
+		}
+		h.broadcast([]byte("se" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2] + delimstr + msgFields[3] + delimstr + msgFields[4]));
 	case "say":
 		if len(msgFields) != 2 {
 			return err
@@ -434,4 +446,13 @@ func (h *Hub) isValidSystemName(name string) bool {
 		}
 	}
 	return false
+}
+
+func (h *Hub) isValidSoundName(name string) bool {
+	for _, otherName := range h.ignoredSoundNames {
+		if otherName == strings.ToLower(name) {
+			return false
+		}
+	}
+	return true
 }
