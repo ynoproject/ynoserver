@@ -53,9 +53,6 @@ type Client struct {
 
 	spriteName string
 	spriteIndex int
-	
-	animType int
-	animFrame int
 
 	systemName string
 }

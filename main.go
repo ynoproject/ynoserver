@@ -59,6 +59,9 @@ func main() {
 			systemNames = append(systemNames, k)
 		}
 	}
+	
+	//list of invalid sound names
+	var ignoredSoundNames []string
 
 	var roomNames []string
 	badRooms := strings.Split(config.BadRooms, ",")
@@ -69,7 +72,7 @@ func main() {
 		}
 	}
 
-	server.CreateAllHubs(roomNames, spriteNames, systemNames)
+	server.CreateAllHubs(roomNames, spriteNames, systemNames, ignoredSoundNames)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,
