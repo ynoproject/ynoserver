@@ -138,7 +138,9 @@ func (h *Hub) Run() {
 				name: "",
 				spd: 3,
 				spriteName: "none",
-				spriteIndex: -1}
+				spriteIndex: -1,
+				animType: -1,
+				animFrame: -1}
 			go client.writePump()
 			go client.readPump()
 
@@ -168,6 +170,12 @@ func (h *Hub) Run() {
 				}
 				if other_client.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
 					client.send <- []byte("spr" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.spriteName + delimstr + strconv.Itoa(other_client.spriteIndex));
+				}
+				if other_client.animType >= 0 {
+					client.send <- []byte("a" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.animType));
+				}
+				if other_client.animFrame >= 0 {
+					client.send <- []byte("af" + delimstr + strconv.Itoa(other_client.id) + delimstr + strconv.Itoa(other_client.animFrame));
 				}
 				if other_client.systemName != "" {
 					client.send <- []byte("sys" + delimstr + strconv.Itoa(other_client.id) + delimstr + other_client.systemName);
@@ -325,6 +333,32 @@ func (h *Hub) processMsg(msg *Message) error {
 		msg.sender.spriteName = msgFields[1]
 		msg.sender.spriteIndex = index
 		h.broadcast([]byte("spr" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2]));
+	case "a": //animation type set
+		if len(msgFields) != 2 {
+			return err
+		}
+		animType, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return err
+		}
+		if animType < 0 {
+			return err
+		}
+		msg.sender.animType = animType
+		h.broadcast([]byte("a" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]))
+	case "af": //animation frame set
+		if len(msgFields) != 2 {
+			return err
+		}
+		animFrame, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return err
+		}
+		if animFrame < 0 {
+			return err
+		}
+		msg.sender.animFrame = animFrame
+		h.broadcast([]byte("af" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]))
 	case "sys": //change my system graphic
 		if len(msgFields) != 2 {
 			return err
