@@ -13,6 +13,9 @@
 ## Maps to exclude from multiplayer
 #bad_rooms: ""
 
+## Sounds to exclude from multiplayer
+#bad_sounds: ""
+
 ## Set to 1 if hosting Yume 2kki
 #yume_2kki: 0
 

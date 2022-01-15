@@ -61,7 +61,7 @@ func main() {
 	}
 	
 	//list of invalid sound names
-	var ignoredSoundNames []string
+	ignoredSoundNames := strings.Split(config.BadSounds, ",")
 
 	var roomNames []string
 	badRooms := strings.Split(config.BadRooms, ",")

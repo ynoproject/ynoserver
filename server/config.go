@@ -12,6 +12,7 @@ type ServerConfig struct {
 	IndexPath string `yaml:"index_path"`
 	NumRooms  int    `yaml:"num_rooms"`
 	BadRooms  string `yaml:"bad_rooms"`
+	BadSounds string `yaml:"bad_sounds"`
 	Yume2kki  int    `yaml:"yume_2kki"`
 	Logging   struct {
 		File       string `yaml:"file"`
@@ -20,8 +21,6 @@ type ServerConfig struct {
 		MaxAge     int    `yaml:"max_age"`
 	} `yaml:"logging"`
 }
-
-var config ServerConfig
 
 func ParseConfig(file string) ServerConfig {
 	yamlFile, err := ioutil.ReadFile(file)
