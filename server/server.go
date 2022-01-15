@@ -450,7 +450,7 @@ func (h *Hub) isValidSystemName(name string) bool {
 
 func (h *Hub) isValidSoundName(name string) bool {
 	for _, otherName := range h.ignoredSoundNames {
-		if otherName == strings.ToLower(name) {
+		if strings.ToLower(otherName) == strings.ToLower(name) {
 			return false
 		}
 	}
