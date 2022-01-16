@@ -41,8 +41,8 @@ type HubController struct {
 	hubs []*Hub
 }
 
-func (h *HubController) addHub(roomName string, spriteNames, systemNames []string, ignoredSoundNames []string) {
-	hub := NewHub(roomName, spriteNames, systemNames, ignoredSoundNames, h)
+func (h *HubController) addHub(roomName string, spriteNames, systemNames []string, ignoredSoundNames []string, gameName string) {
+	hub := NewHub(roomName, spriteNames, systemNames, ignoredSoundNames, gameName, h)
 	h.hubs = append(h.hubs, hub)
 	go hub.Run()
 }
@@ -71,6 +71,8 @@ type Hub struct {
 	systemNames []string
 	ignoredSoundNames []string
 
+	gameName string
+
 	controller *HubController
 }
 
@@ -82,15 +84,15 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames, systemNames []string, ignoredSoundNames []string) {
+func CreateAllHubs(roomNames, spriteNames, systemNames []string, ignoredSoundNames []string, gameName string) {
 	h := HubController{}
 
 	for _, roomName := range roomNames {
-		h.addHub(roomName, spriteNames, systemNames, ignoredSoundNames)
+		h.addHub(roomName, spriteNames, systemNames, ignoredSoundNames, gameName)
 	}
 }
 
-func NewHub(roomName string, spriteNames []string, systemNames []string, ignoredSoundNames []string, h *HubController) *Hub {
+func NewHub(roomName string, spriteNames []string, systemNames []string, ignoredSoundNames []string, gameName string, h *HubController) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
 		connect:   make(chan *ConnInfo),
@@ -101,6 +103,7 @@ func NewHub(roomName string, spriteNames []string, systemNames []string, ignored
 		spriteNames: spriteNames,
 		systemNames: systemNames,
 		ignoredSoundNames: ignoredSoundNames,
+		gameName: gameName,
 		controller: h,
 	}
 }
@@ -312,7 +315,7 @@ func (h *Hub) processMsg(msg *Message) error {
 		if !h.isValidSpriteName(msgFields[1]) {
 			return err
 		}
-		if h.isValidSpriteName("syujinkou1") { //totally normal yume 2kki check
+		if h.gameName == "2kki" { //totally normal yume 2kki check
 			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && !strings.Contains(msgFields[1], "#null") {
 				return err
 			}

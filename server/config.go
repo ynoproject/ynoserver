@@ -13,7 +13,7 @@ type ServerConfig struct {
 	NumRooms  int    `yaml:"num_rooms"`
 	BadRooms  string `yaml:"bad_rooms"`
 	BadSounds string `yaml:"bad_sounds"`
-	Yume2kki  int    `yaml:"yume_2kki"`
+	GameName  string `yaml:"game_name"`
 	Logging   struct {
 		File       string `yaml:"file"`
 		MaxSize    int    `yaml:"max_size"`

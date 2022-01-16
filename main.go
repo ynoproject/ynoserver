@@ -72,7 +72,7 @@ func main() {
 		}
 	}
 
-	server.CreateAllHubs(roomNames, spriteNames, systemNames, ignoredSoundNames)
+	server.CreateAllHubs(roomNames, spriteNames, systemNames, ignoredSoundNames, config.GameName)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,
