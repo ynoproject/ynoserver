@@ -17,7 +17,7 @@
 #bad_sounds: ""
 
 ## Set to name of game
-#game_name: 0
+#game_name: ""
 
 ## Logging settings
 logging:
