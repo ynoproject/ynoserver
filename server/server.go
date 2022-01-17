@@ -330,6 +330,30 @@ func (h *Hub) processMsg(msg *Message) error {
 		msg.sender.spriteName = msgFields[1]
 		msg.sender.spriteIndex = index
 		h.broadcast([]byte("spr" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2]));
+	case "a": //animation type set
+		if len(msgFields) != 2 {
+			return err
+		}
+		animType, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return err
+		}
+		if animType < 0 {
+			return err
+		}
+		h.broadcast([]byte("a" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]))
+	case "af": //animation frame set
+		if len(msgFields) != 2 {
+			return err
+		}
+		animFrame, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return err
+		}
+		if animFrame < 0 {
+			return err
+		}
+		h.broadcast([]byte("af" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]))
 	case "sys": //change my system graphic
 		if len(msgFields) != 2 {
 			return err
