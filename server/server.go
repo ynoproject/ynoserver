@@ -356,6 +356,35 @@ func (h *Hub) processMsg(msg *Message) error {
 			return err
 		}
 		h.broadcast([]byte("se" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2] + delimstr + msgFields[3] + delimstr + msgFields[4]));
+	case "ap": // picture shown
+		fallthrough
+	case "mp": // picture moved
+		isShow := msgFields[0] == "ap"
+		msgLength := 17
+		if (isShow) {
+			msgLength++
+		}
+		if len(msgFields) != msgLength {
+			return err
+		}
+		picId, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil || picId < 1 || picId > 50 {
+			return err
+		}
+		message := msgFields[0] + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1] + delimstr + msgFields[2] + delimstr + msgFields[3] + delimstr + msgFields[4] + delimstr + msgFields[5] + delimstr + msgFields[6] + delimstr + msgFields[7] + delimstr + msgFields[8] + delimstr + msgFields[9] + delimstr + msgFields[10] + delimstr + msgFields[11] + delimstr + msgFields[12] + delimstr + msgFields[13] + delimstr + msgFields[14] + delimstr + msgFields[15] + delimstr + msgFields[16]
+		if (isShow) {
+			message += delimstr + msgFields[17]
+		}
+		h.broadcast([]byte(message));
+	case "rp": // picture erased
+		if len(msgFields) != 2 {
+			return err
+		}
+		picId, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil || picId < 1 {
+			return err
+		}
+		h.broadcast([]byte("rp" + delimstr + strconv.Itoa(msg.sender.id) + delimstr + msgFields[1]));
 	case "say":
 		if len(msgFields) != 3 {
 			return err
