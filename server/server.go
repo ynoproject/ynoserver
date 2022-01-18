@@ -287,10 +287,7 @@ func (h *Hub) processMsg(msg *Message) error {
 		}
 		//check if direction is valid
 		facing, errconv := strconv.Atoi(msgFields[1])
-		if errconv != nil {
-			return err
-		}
-		if facing < 0 || facing > 3 { //something's not right
+		if errconv != nil || facing < 0 || facing > 3 {
 			return err
 		}
 		msg.sender.facing = facing
@@ -405,6 +402,9 @@ func normalize(str string) string {
 func (h *Hub) isValidSpriteName(name string) bool {
 	if name == "" {
 		return true
+	}
+	if strings.Contains(name, "/") {
+		return false
 	}
 
 	name = normalize(name)
