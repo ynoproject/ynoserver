@@ -239,7 +239,7 @@ func (h *Hub) deleteClient(client *Client) {
 	h.broadcast([]byte("d" + paramDelimStr + strconv.Itoa(client.id) + paramDelimStr + strconv.Itoa(totalPlayerCount))) //user %id% has disconnected (and new player count) message
 }
 
-func (h *Hub) processMsg(msg *Message) error {
+func (h *Hub) processMsg(msg *Message) []error {
 	var errs []error
 
 	if msg.sender.banned {
