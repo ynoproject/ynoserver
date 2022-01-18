@@ -403,7 +403,7 @@ func (h *Hub) isValidSpriteName(name string) bool {
 	if name == "" {
 		return true
 	}
-	if strings.Contains(name, "/") {
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
 	}
 
@@ -429,7 +429,7 @@ func (h *Hub) isValidSystemName(name string) bool {
 }
 
 func (h *Hub) isValidSoundName(name string) bool {
-	if strings.Contains(name, "/") {
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
 	}
 
