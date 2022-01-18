@@ -429,6 +429,10 @@ func (h *Hub) isValidSystemName(name string) bool {
 }
 
 func (h *Hub) isValidSoundName(name string) bool {
+	if strings.Contains(name, "/") {
+		return false
+	}
+
 	for _, otherName := range h.ignoredSoundNames {
 		if strings.ToLower(otherName) == strings.ToLower(name) {
 			return false
