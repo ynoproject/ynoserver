@@ -255,7 +255,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 		return errs
 	}
 
-	if len(msg.data) < 14 || len(msg.data) > 512 {
+	if len(msg.data) < 12 || len(msg.data) > 512 {
 		errs = append(errs, errors.New("bad request size"))
 		return errs
 	}
@@ -279,19 +279,19 @@ func (h *Hub) processMsg(msg *Message) []error {
 	hashStr := sha1.New()
 	hashStr.Write(byteKey)
 	hashStr.Write(byteSecret)
-	hashStr.Write(msg.data[7:])
+	hashStr.Write(msg.data[6:])
 
 	hashDigestStr := fmt.Sprintf("%x", hashStr.Sum(nil))
 	
-	if string(msg.data[:7]) != hashDigestStr[:7] {
+	if string(msg.data[:6]) != hashDigestStr[:6] {
 		//errs = append(errs, errors.New("bad signature"))
-		errs = append(errs, errors.New(("SIGNATURE FAIL: " + string(msg.data[:7])) + " compared to " + hashDigestStr[:7] + " CONTENTS: " + string(msg.data[7:])))
+		errs = append(errs, errors.New(("SIGNATURE FAIL: " + string(msg.data[:6])) + " compared to " + hashDigestStr[:6] + " CONTENTS: " + string(msg.data[6:])))
 		return errs
 	}
 
 	//counter validation
 
-	playerMsgIndex, err := strconv.Atoi(string(msg.data[7:7]))
+	playerMsgIndex, err := strconv.Atoi(string(msg.data[6:6]))
 	if err != nil {
 		errs = append(errs, errors.New("counter not numerical"))
 		return errs
@@ -305,7 +305,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 	}
 
 	//message processing
-	msgsStr := string(msg.data[14:])
+	msgsStr := string(msg.data[12:])
 	msgs := strings.Split(msgsStr, msgDelimStr)
 	
 	for _, msgStr := range msgs {
