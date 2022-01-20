@@ -247,8 +247,8 @@ func (h *Hub) processMsg(msg *Message) []error {
 		return errs
 	}
 
-	if len(msg.data) > 512 {
-		errs = append(errs, errors.New("request too long"))
+	if len(msg.data) > 512 || len(msg.data) < 8 {
+		errs = append(errs, errors.New("bad request size"))
 		return errs
 	}
 
