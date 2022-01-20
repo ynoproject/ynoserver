@@ -285,14 +285,15 @@ func (h *Hub) processMsg(msg *Message) []error {
 	
 	if string(msg.data[:6]) != hashDigestStr[:6] {
 		//errs = append(errs, errors.New("bad signature"))
-		errs = append(errs, errors.New(("SIGNATURE FAIL: " + string(msg.data[:6])) + " compared to " + hashDigestStr[:6] + " CONTENTS: " + string(msg.data[6:])))
+		errs = append(errs, errors.New("SIGNATURE FAIL: " + string(msg.data[:6]) + " compared to " + hashDigestStr[:6] + " CONTENTS: " + string(msg.data[6:])))
 		return errs
 	}
 
 	//counter validation
 	playerMsgIndex, err := strconv.Atoi(string(msg.data[6:6]))
 	if err != nil {
-		errs = append(errs, errors.New("counter not numerical"))
+		//errs = append(errs, errors.New("counter not numerical"))
+		errs = append(errs, errors.New("COUNTER FAIL: " + string(msg.data[6:6]) + " compared to " + strconv.Itoa(msg.sender.counter) + " CONTENTS: " + string(msg.data[12:])))
 		return errs
 	}
 
