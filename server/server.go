@@ -549,7 +549,7 @@ func (h *Hub) isValidSoundName(name string) bool {
 	}
 
 	for _, otherName := range h.ignoredSoundNames {
-		if strings.ToLower(otherName) == strings.ToLower(name) {
+		if strings.EqualFold(otherName, name) {
 			return false
 		}
 	}
