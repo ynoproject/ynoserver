@@ -32,6 +32,7 @@ var (
 		},
 	}
 	isOkName = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
+	isNumString = regexp.MustCompile("^\\d+$").MatchString
 	paramDelimStr = "\uffff"
 	msgDelimStr = "\ufffe"
 )
@@ -133,7 +134,7 @@ func (h *Hub) Run() {
 				}
 			}
 
-			key := randstr.String(8)
+			key := randstr.String(8)			
 
 			//sprite index < 0 means none
 			client := &Client{
@@ -150,7 +151,9 @@ func (h *Hub) Run() {
 				spd: 3,
 				spriteName: "none",
 				spriteIndex: -1,
-				key: key}
+				key: key,
+				counter: counter,
+				}
 			go client.writePump()
 			go client.readPump()
 
@@ -253,7 +256,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 		return errs
 	}
 
-	if len(msg.data) < 7 || len(msg.data) > 512 {
+	if len(msg.data) < 14 || len(msg.data) > 512 {
 		errs = append(errs, errors.New("bad request size"))
 		return errs
 	}
@@ -270,8 +273,9 @@ func (h *Hub) processMsg(msg *Message) []error {
 		return errs
 	}
 	
+	//signature validation
 	byteKey := []byte(msg.sender.key)
-	byteSecret := []byte("")
+	const byteSecret := []byte("")
 
 	hashStr := sha1.New()
 	hashStr.Write(byteKey)
@@ -286,7 +290,23 @@ func (h *Hub) processMsg(msg *Message) []error {
 		return errs
 	}
 
-	msgsStr := string(msg.data[7:])
+	//counter validation
+	if isNumString(strconv.Atoi(msg.data[7:7]) { //so people don't crash it
+		playerMsgIndex := strconv.Atoi(msg.data[7:7])
+	} else {
+		errs = append(errs, errors.New("counter not numerical"))
+		return errs
+	}
+
+	if playerMsgIndex > msg.sender.counter { //counter in messages should be higher than what we have stored
+		playerMsgIndex = msg.sender.counter
+	} else {
+		errs = append(errs, errors.New("counter too low"))
+		return errs
+	}
+
+	//message processing
+	msgsStr := string(msg.data[14:])
 	msgs := strings.Split(msgsStr, msgDelimStr)
 	
 	for _, msgStr := range msgs {

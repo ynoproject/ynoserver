@@ -57,6 +57,7 @@ type Client struct {
 	systemName string
 
 	key string
+	counter int
 }
 
 type Message struct {
