@@ -32,7 +32,6 @@ var (
 		},
 	}
 	isOkName = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
-	isNumString = regexp.MustCompile("^\\d+$").MatchString
 	paramDelimStr = "\uffff"
 	msgDelimStr = "\ufffe"
 )
@@ -152,7 +151,7 @@ func (h *Hub) Run() {
 				spriteName: "none",
 				spriteIndex: -1,
 				key: key,
-				counter: counter,
+				counter: 0,
 				}
 			go client.writePump()
 			go client.readPump()
@@ -275,7 +274,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 	
 	//signature validation
 	byteKey := []byte(msg.sender.key)
-	const byteSecret := []byte("")
+	byteSecret := []byte("")
 
 	hashStr := sha1.New()
 	hashStr.Write(byteKey)
@@ -291,15 +290,15 @@ func (h *Hub) processMsg(msg *Message) []error {
 	}
 
 	//counter validation
-	if isNumString(strconv.Atoi(msg.data[7:7]) { //so people don't crash it
-		playerMsgIndex := strconv.Atoi(msg.data[7:7])
-	} else {
+
+	playerMsgIndex, err := strconv.Atoi(string(msg.data[7:7]))
+	if err != nil {
 		errs = append(errs, errors.New("counter not numerical"))
 		return errs
 	}
 
-	if playerMsgIndex > msg.sender.counter { //counter in messages should be higher than what we have stored
-		playerMsgIndex = msg.sender.counter
+	if msg.sender.counter < playerMsgIndex  { //counter in messages should be higher than what we have stored
+		msg.sender.counter = playerMsgIndex
 	} else {
 		errs = append(errs, errors.New("counter too low"))
 		return errs
