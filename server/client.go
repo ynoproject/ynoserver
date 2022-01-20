@@ -55,6 +55,8 @@ type Client struct {
 	spriteIndex int
 
 	systemName string
+
+	key string
 }
 
 type Message struct {

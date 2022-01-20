@@ -12,7 +12,10 @@ import (
 	"regexp"
 	"errors"
 	"unicode"
+	"fmt"
 	"unicode/utf8"
+	"crypto/sha1"
+	"github.com/thanhpk/randstr"
 	"golang.org/x/text/unicode/norm"
 
 	"github.com/gorilla/websocket"
@@ -130,6 +133,8 @@ func (h *Hub) Run() {
 				}
 			}
 
+			key := randstr.String(8)
+
 			//sprite index < 0 means none
 			client := &Client{
 				hub: h,
@@ -144,7 +149,8 @@ func (h *Hub) Run() {
 				name: "",
 				spd: 3,
 				spriteName: "none",
-				spriteIndex: -1}
+				spriteIndex: -1,
+				key: key}
 			go client.writePump()
 			go client.readPump()
 
@@ -162,7 +168,7 @@ func (h *Hub) Run() {
 
 			totalPlayerCount = totalPlayerCount + 1
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + strconv.Itoa(totalPlayerCount)) //"your id is %id%" (and player count) message
+			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + strconv.Itoa(totalPlayerCount) + paramDelimStr + key) //"your id is %id%" (and player count) message
 			//send the new client info about the game state
 			for other_client := range h.clients {
 				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(totalPlayerCount))
@@ -264,8 +270,23 @@ func (h *Hub) processMsg(msg *Message) []error {
 		return errs
 	}
 	
+	byteKey := []byte(msg.sender.key)
+	byteSecret := []byte("")
 
-	msgsStr := string(msg.data[:])
+	hashStr := sha1.New()
+	hashStr.Write(byteKey)
+	hashStr.Write(byteSecret)
+	hashStr.Write(msg.data[7:])
+
+	hashDigestStr := fmt.Sprintf("%x", hashStr.Sum(nil))
+	
+	if string(msg.data[:7]) != hashDigestStr[:7] {
+		//errs = append(errs, errors.New("bad signature"))
+		errs = append(errs, errors.New(("SIGNATURE FAIL: " + string(msg.data[:7])) + " compared to " + hashDigestStr[:7] + " CONTENTS: " + string(msg.data[7:])))
+		return errs
+	}
+
+	msgsStr := string(msg.data[7:])
 	msgs := strings.Split(msgsStr, msgDelimStr)
 	
 	for _, msgStr := range msgs {
