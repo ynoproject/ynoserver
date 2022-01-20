@@ -474,7 +474,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 			}
 			systemName := msgFields[1]
 			msgContents := msgFields[2]
-			if msg.sender.name == "" || systemName == "" || msgContents == "" || len(msgContents) > 150 {
+			if msg.sender.name == "" || !h.isValidSystemName(systemName) || msgContents == "" || len(msgContents) > 150 {
 				errs = append(errs, err)
 				continue
 			}
