@@ -290,8 +290,8 @@ func (h *Hub) processMsg(msg *Message) []error {
 	}
 
 	//counter validation
-	playerMsgIndex, err := strconv.Atoi(string(msg.data[6:12]))
-	if err != nil {
+	playerMsgIndex, errconv := strconv.Atoi(string(msg.data[6:12]))
+	if errconv != nil {
 		//errs = append(errs, errors.New("counter not numerical"))
 		errs = append(errs, errors.New("COUNTER FAIL: " + string(msg.data[6:12]) + " compared to " + strconv.Itoa(msg.sender.counter) + " CONTENTS: " + string(msg.data[12:])))
 		return errs
