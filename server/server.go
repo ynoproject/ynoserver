@@ -547,8 +547,14 @@ func (h *Hub) isValidSoundName(name string) bool {
 
 	name = normalize(name)
 
-	for _, otherName := range h.ignoredSoundNames {
+	for _, otherName := range h.soundNames {
 		if otherName == name {
+			for _, otherName := range h.ignoredSoundNames {
+				if otherName == name {
+					return false
+				}
+			}
+		} else {
 			return false
 		}
 	}
