@@ -56,7 +56,7 @@ func main() {
 	var soundNames []string
 	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
 		if k != "_dirname" {
-			soundNames = append(soundNames, k[:len(k)-4])
+			soundNames = append(soundNames, k)
 		}
 	}
 
