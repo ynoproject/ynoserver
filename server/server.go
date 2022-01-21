@@ -471,20 +471,20 @@ func (h *Hub) processMsg(msg *Message) []error {
 		case "say":
 			if len(msgFields) != 3 {
 				errs = append(errs, err)
-				continue
+				break
 			}
 			systemName := msgFields[1]
 			msgContents := msgFields[2]
 			if msg.sender.name == "" || !h.isValidSystemName(systemName) || msgContents == "" || len(msgContents) > 150 {
 				errs = append(errs, err)
-				continue
+				break
 			}
 			h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + msg.sender.name + "> " + msgContents));
 			terminate = true
 		case "name": // nick set
 			if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
 				errs = append(errs, err)
-				continue
+				break
 			}
 			msg.sender.name = msgFields[1]
 			h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msg.sender.name));
