@@ -530,10 +530,8 @@ func (h *Hub) isValidSpriteName(name string) bool {
 		return false
 	}
 
-	name = normalize(name)
-
 	for _, otherName := range h.spriteNames {
-		if otherName == strings.ToLower(name) {
+		if strings.EqualFold(otherName, name) {
 			return true
 		}
 	}
@@ -544,13 +542,11 @@ func (h *Hub) isValidSoundName(name string) bool {
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
 	}
-
-	name = normalize(name)
-
+	
 	for _, otherName := range h.soundNames {
-		if otherName == name {
-			for _, otherName := range h.ignoredSoundNames {
-				if otherName == strings.ToLower(name) {
+		if strings.EqualFold(otherName, name) {
+			for _, ignoredName := range h.ignoredSoundNames {
+				if strings.EqualFold(ignoredName, name) {
 					return false
 				}
 			}
@@ -562,10 +558,8 @@ func (h *Hub) isValidSoundName(name string) bool {
 }
 
 func (h *Hub) isValidSystemName(name string) bool {
-	name = normalize(name)
-
 	for _, otherName := range h.systemNames {
-		if otherName == strings.ToLower(name) {
+		if strings.EqualFold(otherName, name) {
 			return true
 		}
 	}
