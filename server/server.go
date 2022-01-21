@@ -531,7 +531,7 @@ func (h *Hub) isValidSpriteName(name string) bool {
 	name = normalize(name)
 
 	for _, otherName := range h.spriteNames {
-		if otherName == strings.ToLower(name) {
+		if otherName == name {
 			return true
 		}
 	}
@@ -542,7 +542,7 @@ func (h *Hub) isValidSystemName(name string) bool {
 	name = normalize(name)
 
 	for _, otherName := range h.systemNames {
-		if otherName == strings.ToLower(name) {
+		if otherName == name {
 			return true
 		}
 	}
@@ -557,7 +557,7 @@ func (h *Hub) isValidSoundName(name string) bool {
 	name = normalize(name)
 
 	for _, otherName := range h.ignoredSoundNames {
-		if otherName == strings.ToLower(name) {
+		if otherName == name {
 			return false
 		}
 	}
