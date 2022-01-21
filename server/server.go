@@ -307,6 +307,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 	//message processing
 	msgsStr := string(msg.data[14:])
 	msgs := strings.Split(msgsStr, msgDelimStr)
+	terminate := false
 	
 	for _, msgStr := range msgs {
 
@@ -479,6 +480,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 				continue
 			}
 			h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + msg.sender.name + "> " + msgContents));
+			terminate = true
 		case "name": // nick set
 			if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
 				errs = append(errs, err)
@@ -486,11 +488,16 @@ func (h *Hub) processMsg(msg *Message) []error {
 			}
 			msg.sender.name = msgFields[1]
 			h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msg.sender.name));
+			terminate = true
 		default:
 			errs = append(errs, err)
 		}
 
 		writeLog(msg.sender.ip, h.roomName, msgStr, 200)
+		
+		if terminate {
+			break
+		}
 	}
 
 	return errs
