@@ -476,9 +476,15 @@ func (h *Hub) processMsg(msg *Message) []error {
 			}
 			systemName := msgFields[1]
 			msgContents := msgFields[2]
-			if msg.sender.name == "" || !h.isValidSystemName(systemName) || msgContents == "" || len(msgContents) > 150 {
+			if msg.sender.name == "" || msgContents == "" || len(msgContents) > 150 {
 				errs = append(errs, err)
 				break
+			}
+			if h.gameName == "2kki" || h.gameName == "yume" || h.gameName == "flow" {
+				if !h.isValidSystemName(systemName) {
+					errs = append(errs, err)
+					break
+				}
 			}
 			h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + msg.sender.name + "> " + msgContents));
 			terminate = true
