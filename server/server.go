@@ -551,10 +551,11 @@ func (h *Hub) isValidSystemName(name string) bool {
 }
 
 func (h *Hub) isValidSoundName(name string) bool {
-	name = normalize(name)
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
 	}
+
+	name = normalize(name)
 
 	for _, otherName := range h.ignoredSoundNames {
 		if otherName == strings.ToLower(name) {
