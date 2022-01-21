@@ -279,21 +279,21 @@ func (h *Hub) processMsg(msg *Message) []error {
 	hashStr := sha1.New()
 	hashStr.Write(byteKey)
 	hashStr.Write(byteSecret)
-	hashStr.Write(msg.data[6:])
+	hashStr.Write(msg.data[8:])
 
-	hashDigestStr := hex.EncodeToString(hashStr.Sum(nil)[:3])
+	hashDigestStr := hex.EncodeToString(hashStr.Sum(nil)[:4])
 	
-	if string(msg.data[:6]) != hashDigestStr {
+	if string(msg.data[:8]) != hashDigestStr {
 		//errs = append(errs, errors.New("bad signature"))
-		errs = append(errs, errors.New("SIGNATURE FAIL: " + string(msg.data[:6]) + " compared to " + hashDigestStr + " CONTENTS: " + string(msg.data[6:])))
+		errs = append(errs, errors.New("SIGNATURE FAIL: " + string(msg.data[:8]) + " compared to " + hashDigestStr + " CONTENTS: " + string(msg.data[8:])))
 		return errs
 	}
 
 	//counter validation
-	playerMsgIndex, errconv := strconv.Atoi(string(msg.data[6:12]))
+	playerMsgIndex, errconv := strconv.Atoi(string(msg.data[8:14]))
 	if errconv != nil {
 		//errs = append(errs, errors.New("counter not numerical"))
-		errs = append(errs, errors.New("COUNTER FAIL: " + string(msg.data[6:12]) + " compared to " + strconv.Itoa(msg.sender.counter) + " CONTENTS: " + string(msg.data[12:])))
+		errs = append(errs, errors.New("COUNTER FAIL: " + string(msg.data[8:14]) + " compared to " + strconv.Itoa(msg.sender.counter) + " CONTENTS: " + string(msg.data[14:])))
 		return errs
 	}
 
@@ -305,7 +305,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 	}
 
 	//message processing
-	msgsStr := string(msg.data[12:])
+	msgsStr := string(msg.data[14:])
 	msgs := strings.Split(msgsStr, msgDelimStr)
 	
 	for _, msgStr := range msgs {
