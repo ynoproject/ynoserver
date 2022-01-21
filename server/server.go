@@ -45,8 +45,8 @@ type HubController struct {
 	hubs []*Hub
 }
 
-func (h *HubController) addHub(roomName string, spriteNames, systemNames []string, ignoredSoundNames []string, gameName string) {
-	hub := NewHub(roomName, spriteNames, systemNames, ignoredSoundNames, gameName, h)
+func (h *HubController) addHub(roomName string, spriteNames []string, soundNames []string, systemNames []string, ignoredSoundNames []string, gameName string) {
+	hub := NewHub(roomName, spriteNames, soundNames, systemNames, ignoredSoundNames, gameName, h)
 	h.hubs = append(h.hubs, hub)
 	go hub.Run()
 }
@@ -72,6 +72,7 @@ type Hub struct {
 	roomName string
 	//list of valid game character sprite resource keys
 	spriteNames []string
+	soundNames []string
 	systemNames []string
 	ignoredSoundNames []string
 
@@ -88,15 +89,15 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames, systemNames []string, ignoredSoundNames []string, gameName string) {
+func CreateAllHubs(roomNames, spriteNames []string, soundNames []string, systemNames []string, ignoredSoundNames []string, gameName string) {
 	h := HubController{}
 
 	for _, roomName := range roomNames {
-		h.addHub(roomName, spriteNames, systemNames, ignoredSoundNames, gameName)
+		h.addHub(roomName, spriteNames, soundNames, systemNames, ignoredSoundNames, gameName)
 	}
 }
 
-func NewHub(roomName string, spriteNames []string, systemNames []string, ignoredSoundNames []string, gameName string, h *HubController) *Hub {
+func NewHub(roomName string, spriteNames []string, soundNames []string, systemNames []string, ignoredSoundNames []string, gameName string, h *HubController) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
 		connect:   make(chan *ConnInfo),
@@ -105,6 +106,7 @@ func NewHub(roomName string, spriteNames []string, systemNames []string, ignored
 		id: make(map[int]bool),
 		roomName: roomName,
 		spriteNames: spriteNames,
+		soundNames: soundNames,
 		systemNames: systemNames,
 		ignoredSoundNames: ignoredSoundNames,
 		gameName: gameName,
@@ -538,17 +540,6 @@ func (h *Hub) isValidSpriteName(name string) bool {
 	return false
 }
 
-func (h *Hub) isValidSystemName(name string) bool {
-	name = normalize(name)
-
-	for _, otherName := range h.systemNames {
-		if otherName == name {
-			return true
-		}
-	}
-	return false
-}
-
 func (h *Hub) isValidSoundName(name string) bool {
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
@@ -562,4 +553,15 @@ func (h *Hub) isValidSoundName(name string) bool {
 		}
 	}
 	return true
+}
+
+func (h *Hub) isValidSystemName(name string) bool {
+	name = normalize(name)
+
+	for _, otherName := range h.systemNames {
+		if otherName == name {
+			return true
+		}
+	}
+	return false
 }

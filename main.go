@@ -52,6 +52,14 @@ func main() {
 		}
 	}
 
+	//list of valid sound resource keys
+	var soundNames []string
+	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
+		if k != "_dirname" {
+			soundNames = append(soundNames, k)
+		}
+	}
+
 	//list of valid system resource keys
 	var systemNames []string
 	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
@@ -72,7 +80,7 @@ func main() {
 		}
 	}
 
-	server.CreateAllHubs(roomNames, spriteNames, systemNames, ignoredSoundNames, config.GameName)
+	server.CreateAllHubs(roomNames, spriteNames, systemNames, soundNames, ignoredSoundNames, config.GameName)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,
