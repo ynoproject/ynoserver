@@ -310,7 +310,6 @@ func (h *Hub) processMsg(msg *Message) []error {
 	terminate := false
 	
 	for _, msgStr := range msgs {
-
 		err := errors.New(msgStr)
 		msgFields := strings.Split(msgStr, paramDelimStr)
 
