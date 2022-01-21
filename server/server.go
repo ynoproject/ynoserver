@@ -281,7 +281,7 @@ func (h *Hub) processMsg(msg *Message) []error {
 	hashStr.Write(byteSecret)
 	hashStr.Write(msg.data[6:])
 
-	hashDigestStr := fmt.Sprintf("%06x", hashStr.Sum(nil)[:6])
+	hashDigestStr := fmt.Sprintf("%06x", hashStr.Sum(nil)[:3])
 	
 	if string(msg.data[:6]) != hashDigestStr {
 		//errs = append(errs, errors.New("bad signature"))
