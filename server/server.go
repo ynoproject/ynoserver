@@ -281,11 +281,11 @@ func (h *Hub) processMsg(msg *Message) []error {
 	hashStr.Write(byteSecret)
 	hashStr.Write(msg.data[6:])
 
-	hashDigestStr := fmt.Sprintf("%06x", hashStr.Sum(nil))
+	hashDigestStr := fmt.Sprintf("%06x", hashStr.Sum(nil)[:6])
 	
-	if string(msg.data[:6]) != hashDigestStr[:6] {
+	if string(msg.data[:6]) != hashDigestStr {
 		//errs = append(errs, errors.New("bad signature"))
-		errs = append(errs, errors.New("SIGNATURE FAIL: " + string(msg.data[:6]) + " compared to " + hashDigestStr[:6] + " CONTENTS: " + string(msg.data[6:])))
+		errs = append(errs, errors.New("SIGNATURE FAIL: " + string(msg.data[:6]) + " compared to " + hashDigestStr + " CONTENTS: " + string(msg.data[6:])))
 		return errs
 	}
 
