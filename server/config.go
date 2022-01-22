@@ -7,14 +7,16 @@ import (
 )
 
 type ServerConfig struct {
-	IP        string `yaml:"ip"`
-	Port      int    `yaml:"port"`
-	IndexPath string `yaml:"index_path"`
-	NumRooms  int    `yaml:"num_rooms"`
-	BadRooms  string `yaml:"bad_rooms"`
-	BadSounds string `yaml:"bad_sounds"`
-	GameName  string `yaml:"game_name"`
-	Logging   struct {
+	IP              string `yaml:"ip"`
+	Port            int    `yaml:"port"`
+	IndexPath       string `yaml:"index_path"`
+	NumRooms        int    `yaml:"num_rooms"`
+	BadRooms        string `yaml:"bad_rooms"`
+	BadSounds       string `yaml:"bad_sounds"`
+	PictureNames    string `yaml:"picture_names"`
+	PicturePrefixes string `yaml:"picture_prefixes"`
+	GameName        string `yaml:"game_name"`
+	Logging         struct {
 		File       string `yaml:"file"`
 		MaxSize    int    `yaml:"max_size"`
 		MaxBackups int    `yaml:"max_backups"`

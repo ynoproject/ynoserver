@@ -46,7 +46,7 @@ type HubController struct {
 }
 
 func (h *HubController) addHub(roomName string, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
-	hub := NewHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefix, gameName, h)
+	hub := NewHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, gameName, h)
 	h.hubs = append(h.hubs, hub)
 	go hub.Run()
 }
@@ -570,6 +570,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		pic.positionY = positionY
 		pic.mapX = mapX
 		pic.mapY = mapY
+		pic.panX = panX
+		pic.panY = panY
 		pic.magnify = magnify
 		pic.topTrans = topTrans
 		pic.bottomTrans = bottomTrans
@@ -607,8 +609,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		}
 		if h.gameName == "2kki" || h.gameName == "yume" || h.gameName == "flow" {
 			if !h.isValidSystemName(systemName) {
-				errs = append(errs, err)
-				break
+				return err, false
 			}
 		}
 		h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
