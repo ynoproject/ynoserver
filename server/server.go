@@ -45,7 +45,7 @@ type HubController struct {
 	hubs []*Hub
 }
 
-func (h *HubController) addHub(roomName string, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, gameName string) {
+func (h *HubController) addHub(roomName string, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
 	hub := NewHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, gameName, h)
 	h.hubs = append(h.hubs, hub)
 	go hub.Run()
@@ -75,6 +75,8 @@ type Hub struct {
 	systemNames []string
 	soundNames []string
 	ignoredSoundNames []string
+	pictureNames []string
+	picturePrefixes []string
 
 	gameName string
 
@@ -89,7 +91,7 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, gameName string) {
+func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
 	h := HubController{}
 
 	for _, roomName := range roomNames {
@@ -97,7 +99,7 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 	}
 }
 
-func NewHub(roomName string, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, gameName string, h *HubController) *Hub {
+func NewHub(roomName string, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, h *HubController) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
 		connect:   make(chan *ConnInfo),
@@ -109,6 +111,8 @@ func NewHub(roomName string, spriteNames []string, systemNames []string, soundNa
 		systemNames: systemNames,
 		soundNames: soundNames,
 		ignoredSoundNames: ignoredSoundNames,
+		pictureNames: pictureNames,
+		picturePrefixes: picturePrefixes,
 		gameName: gameName,
 		controller: h,
 	}
@@ -152,9 +156,9 @@ func (h *Hub) Run() {
 				spd: 3,
 				spriteName: "none",
 				spriteIndex: -1,
+				pictures: make(map[int]*Picture),
 				key: key,
-				counter: 0,
-				}
+				counter: 0}
 			go client.writePump()
 			go client.readPump()
 
@@ -188,6 +192,17 @@ func (h *Hub) Run() {
 				if other_client.systemName != "" {
 					client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.systemName);
 				}
+				for picId, pic := range other_client.pictures {
+					useTransparentColorBin := 0
+					if pic.useTransparentColor {
+						useTransparentColorBin = 1
+					}
+					fixedToMapBin := 0
+					if pic.fixedToMap {
+						fixedToMapBin = 1
+					}
+					client.send <- []byte("ap" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(picId) + paramDelimStr + strconv.Itoa(pic.positionX) + paramDelimStr + strconv.Itoa(pic.positionY) + paramDelimStr + strconv.Itoa(pic.mapX) + paramDelimStr + strconv.Itoa(pic.mapY) + paramDelimStr + strconv.Itoa(pic.panX) + paramDelimStr + strconv.Itoa(pic.panY) + paramDelimStr + strconv.Itoa(pic.magnify) + paramDelimStr + strconv.Itoa(pic.topTrans) + paramDelimStr + strconv.Itoa(pic.bottomTrans) + paramDelimStr + strconv.Itoa(pic.red) + paramDelimStr + strconv.Itoa(pic.blue) + paramDelimStr + strconv.Itoa(pic.green) + paramDelimStr + strconv.Itoa(pic.saturation) + paramDelimStr + strconv.Itoa(pic.effectMode) + paramDelimStr + strconv.Itoa(pic.effectPower) + paramDelimStr + pic.name + paramDelimStr + strconv.Itoa(useTransparentColorBin) + paramDelimStr + strconv.Itoa(fixedToMapBin))
+				}
 			}
 			//register client in the structures
 			h.id[id] = true
@@ -207,7 +222,7 @@ func (h *Hub) Run() {
 
 			writeLog(client.ip, h.roomName, "disconnect", 200)
 		case message := <-h.processMsgCh:
-			errs := h.processMsg(message)
+			errs := h.processMsgs(message)
 			if len(errs) > 0 {
 				for _, err := range errs {
 					writeErrLog(message.sender.ip, h.roomName, err.Error())
@@ -249,7 +264,7 @@ func (h *Hub) deleteClient(client *Client) {
 	h.broadcast([]byte("d" + paramDelimStr + strconv.Itoa(client.id) + paramDelimStr + strconv.Itoa(totalPlayerCount))) //user %id% has disconnected (and new player count) message
 }
 
-func (h *Hub) processMsg(msg *Message) []error {
+func (h *Hub) processMsgs(msg *Message) []error {
 	var errs []error
 
 	if msg.sender.banned {
@@ -309,205 +324,309 @@ func (h *Hub) processMsg(msg *Message) []error {
 	//message processing
 	msgsStr := string(msg.data[14:])
 	msgs := strings.Split(msgsStr, msgDelimStr)
-	terminate := false
 	
 	for _, msgStr := range msgs {
-		err := errors.New(msgStr)
-		msgFields := strings.Split(msgStr, paramDelimStr)
-
-		if len(msgFields) == 0 {
-			errs = append(errs, err)
-			continue
-		}
-
-		switch msgFields[0] {
-		case "m": //"i moved to x y"
-			if len(msgFields) != 3 {
-				errs = append(errs, err)
-				continue
-			}
-			//check if the coordinates are valid
-			x, errconv := strconv.Atoi(msgFields[1])
-			if errconv != nil {
-				errs = append(errs, err)
-				continue
-			}
-			y, errconv := strconv.Atoi(msgFields[2]);
-			if errconv != nil {
-				errs = append(errs, err)
-				continue
-			}
-			msg.sender.x = x
-			msg.sender.y = y
-			h.broadcast([]byte("m" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2])) //user %id% moved to x y
-		case "f": //change facing direction
-			if len(msgFields) != 2 {
-				errs = append(errs, err)
-				continue
-			}
-			//check if direction is valid
-			facing, errconv := strconv.Atoi(msgFields[1])
-			if errconv != nil || facing < 0 || facing > 3 {
-				errs = append(errs, err)
-				continue
-			}
-			msg.sender.facing = facing
-			h.broadcast([]byte("f" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msgFields[1])) //user %id% facing changed to f
-		case "spd": //change my speed to spd
-			if len(msgFields) != 2 {
-				errs = append(errs, err)
-				continue
-			}
-			spd, errconv := strconv.Atoi(msgFields[1])
-			if errconv != nil {
-				errs = append(errs, err)
-				continue
-			}
-			if spd < 0 || spd > 10 { //something's not right
-				errs = append(errs, err)
-				continue
-			}
-			msg.sender.spd = spd
-			h.broadcast([]byte("spd" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msgFields[1]));
-		case "spr": //change my sprite
-			if len(msgFields) != 3 {
-				errs = append(errs, err)
-				continue
-			}
-			if !h.isValidSpriteName(msgFields[1]) {
-				errs = append(errs, err)
-				continue
-			}
-			if h.gameName == "2kki" { //totally normal yume 2kki check
-				if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
-					errs = append(errs, err)
-					continue
-				}
-				if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "MAP0176 ぜんまいヶ原店"  {
-					errs = append(errs, err)
-					continue
-				}
-			}
-			index, errconv := strconv.Atoi(msgFields[2])
-			if errconv != nil || index < 0 {
-				errs = append(errs, err)
-				continue
-			}
-			msg.sender.spriteName = msgFields[1]
-			msg.sender.spriteIndex = index
-			h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2]));
-		case "sys": //change my system graphic
-			if len(msgFields) != 2 {
-				errs = append(errs, err)
-				continue
-			}
-			if !h.isValidSystemName(msgFields[1]) {
-				errs = append(errs, err)
-				continue
-			}
-			msg.sender.systemName = msgFields[1];
-			h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msgFields[1]));
-		case "se": //play sound effect
-			if len(msgFields) != 5 || msgFields[1] == "" {
-				errs = append(errs, err)
-				continue
-			}
-			if !h.isValidSoundName(msgFields[1]) {
-				errs = append(errs, err)
-				continue
-			}
-			volume, errconv := strconv.Atoi(msgFields[2])
-			if errconv != nil || volume < 0 || volume > 100 {
-				errs = append(errs, err)
-				continue
-			}
-			tempo, errconv := strconv.Atoi(msgFields[3])
-			if errconv != nil || tempo < 10 || tempo > 400 {
-				errs = append(errs, err)
-				continue
-			}
-			balance, errconv := strconv.Atoi(msgFields[4])
-			if errconv != nil || balance < 0 || balance > 100 {
-				errs = append(errs, err)
-				continue
-			}
-			h.broadcast([]byte("se" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4]));
-		case "ap": // picture shown
-			fallthrough
-		case "mp": // picture moved
-			errs = append(errs, err) // temporarily disable this feature
-			continue
-			isShow := msgFields[0] == "ap"
-			msgLength := 17
-			if (isShow) {
-				msgLength++
-			}
-			if len(msgFields) != msgLength {
-				errs = append(errs, err)
-				continue
-			}
-			picId, errconv := strconv.Atoi(msgFields[1])
-			if errconv != nil || picId < 1 {
-				errs = append(errs, err)
-				continue
-			}
-			message := msgFields[0] + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4] + paramDelimStr + msgFields[5] + paramDelimStr + msgFields[6] + paramDelimStr + msgFields[7] + paramDelimStr + msgFields[8] + paramDelimStr + msgFields[9] + paramDelimStr + msgFields[10] + paramDelimStr + msgFields[11] + paramDelimStr + msgFields[12] + paramDelimStr + msgFields[13] + paramDelimStr + msgFields[14] + paramDelimStr + msgFields[15] + paramDelimStr + msgFields[16]
-			if (isShow) {
-				message += paramDelimStr + msgFields[17]
-			}
-			h.broadcast([]byte(message));
-		case "rp": // picture erased
-			errs = append(errs, err) // temporarily disable this feature
-			continue
-			if len(msgFields) != 2 {
-				errs = append(errs, err)
-				continue
-			}
-			picId, errconv := strconv.Atoi(msgFields[1])
-			if errconv != nil || picId < 1 {
-				errs = append(errs, err)
-				continue
-			}
-			h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msgFields[1]));
-		case "say":
-			if len(msgFields) != 3 {
-				errs = append(errs, err)
-				break
-			}
-			systemName := msgFields[1]
-			msgContents := msgFields[2]
-			if msg.sender.name == "" || msgContents == "" || len(msgContents) > 150 {
-				errs = append(errs, err)
-				break
-			}
-			if h.gameName == "2kki" || h.gameName == "yume" || h.gameName == "flow" {
-				if !h.isValidSystemName(systemName) {
-					errs = append(errs, err)
-					break
-				}
-			}
-			h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + msg.sender.name + "> " + msgContents));
-			terminate = true
-		case "name": // nick set
-			if msg.sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
-				errs = append(errs, err)
-				break
-			}
-			msg.sender.name = msgFields[1]
-			h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(msg.sender.id) + paramDelimStr + msg.sender.name));
-			terminate = true
-		default:
+		err, terminate := h.processMsg(msgStr, msg.sender)
+		if err != nil {
 			errs = append(errs, err)
 		}
-
-		writeLog(msg.sender.ip, h.roomName, msgStr, 200)
-		
 		if terminate {
 			break
 		}
 	}
 
 	return errs
+}
+
+func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
+	err := errors.New(msgStr)
+	msgFields := strings.Split(msgStr, paramDelimStr)
+
+	if len(msgFields) == 0 {
+		return err, false
+	}
+
+	switch msgFields[0] {
+	case "m": //"i moved to x y"
+		if len(msgFields) != 3 {
+			return err, false
+		}
+		//check if the coordinates are valid
+		x, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return err, false
+		}
+		y, errconv := strconv.Atoi(msgFields[2]);
+		if errconv != nil {
+			return err, false
+		}
+		sender.x = x
+		sender.y = y
+		h.broadcast([]byte("m" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2])) //user %id% moved to x y
+	case "f": //change facing direction
+		if len(msgFields) != 2 {
+			return err, false
+		}
+		//check if direction is valid
+		facing, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil || facing < 0 || facing > 3 {
+			return err, false
+		}
+		sender.facing = facing
+		h.broadcast([]byte("f" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1])) //user %id% facing changed to f
+	case "spd": //change my speed to spd
+		if len(msgFields) != 2 {
+			return err, false
+		}
+		spd, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return err, false
+		}
+		if spd < 0 || spd > 10 { //something's not right
+			return err, false
+		}
+		sender.spd = spd
+		h.broadcast([]byte("spd" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
+	case "spr": //change my sprite
+		if len(msgFields) != 3 {
+			return err, false
+		}
+		if !h.isValidSpriteName(msgFields[1]) {
+			return err, false
+		}
+		if h.gameName == "2kki" { //totally normal yume 2kki check
+			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
+				return err, false
+			}
+			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "MAP0176 ぜんまいヶ原店"  {
+				return err, false
+			}
+		}
+		index, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil || index < 0 {
+			return err, false
+		}
+		sender.spriteName = msgFields[1]
+		sender.spriteIndex = index
+		h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2]));
+	case "sys": //change my system graphic
+		if len(msgFields) != 2 {
+			return err, false
+		}
+		if !h.isValidSystemName(msgFields[1]) {
+			return err, false
+		}
+		sender.systemName = msgFields[1];
+		h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
+	case "se": //play sound effect
+		if len(msgFields) != 5 || msgFields[1] == "" {
+			return err, false
+		}
+		if !h.isValidSoundName(msgFields[1]) {
+			return err, false
+		}
+		volume, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil || volume < 0 || volume > 100 {
+			return err, false
+		}
+		tempo, errconv := strconv.Atoi(msgFields[3])
+		if errconv != nil || tempo < 10 || tempo > 400 {
+			return err, false
+		}
+		balance, errconv := strconv.Atoi(msgFields[4])
+		if errconv != nil || balance < 0 || balance > 100 {
+			return err, false
+		}
+		h.broadcast([]byte("se" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4]));
+	case "ap": // picture shown
+		fallthrough
+	case "mp": // picture moved
+		isShow := msgFields[0] == "ap"
+		msgLength := 18
+		if isShow {
+			if !h.isValidPicName(msgFields[17]) {
+				return err, false
+			}
+			msgLength = msgLength + 2
+		}
+		if len(msgFields) != msgLength {
+			return err, false
+		}
+		picId, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil || picId < 1 {
+			return err, false
+		}
+
+		positionX, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil {
+			return err, false
+		}
+		positionY, errconv := strconv.Atoi(msgFields[3])
+		if errconv != nil {
+			return err, false
+		}
+		mapX, errconv := strconv.Atoi(msgFields[4])
+		if errconv != nil {
+			return err, false
+		}
+		mapY, errconv := strconv.Atoi(msgFields[5])
+		if errconv != nil {
+			return err, false
+		}
+		panX, errconv := strconv.Atoi(msgFields[6])
+		if errconv != nil {
+			return err, false
+		}
+		panY, errconv := strconv.Atoi(msgFields[7])
+		if errconv != nil {
+			return err, false
+		}
+
+		magnify, errconv := strconv.Atoi(msgFields[8])
+		if errconv != nil || magnify < 0 {
+			return err, false
+		}
+		topTrans, errconv := strconv.Atoi(msgFields[9])
+		if errconv != nil || topTrans < 0 {
+			return err, false
+		}
+		bottomTrans, errconv := strconv.Atoi(msgFields[10])
+		if errconv != nil || bottomTrans < 0 {
+			return err, false
+		}
+
+		red, errconv := strconv.Atoi(msgFields[11])
+		if errconv != nil || red < 0 || red > 200 {
+			return err, false
+		}
+		green, errconv := strconv.Atoi(msgFields[12])
+		if errconv != nil || green < 0 || green > 200 {
+			return err, false
+		}
+		blue, errconv := strconv.Atoi(msgFields[13])
+		if errconv != nil || blue < 0 || blue > 200 {
+			return err, false
+		}
+		saturation, errconv := strconv.Atoi(msgFields[14])
+		if errconv != nil || saturation < 0 || saturation > 200 {
+			return err, false
+		}
+
+		effectMode, errconv := strconv.Atoi(msgFields[15])
+		if errconv != nil || effectMode < 0 {
+			return err, false
+		}
+		effectPower, errconv := strconv.Atoi(msgFields[16])
+		if errconv != nil {
+			return err, false
+		}
+
+		var pic *Picture
+		if isShow {
+			picName := msgFields[17]
+			if picName == "" {
+				return err, false
+			}
+
+			useTransparentColorBin, errconv := strconv.Atoi(msgFields[18])
+			if errconv != nil || useTransparentColorBin < 0 || useTransparentColorBin > 1 {
+				return err, false
+			}
+
+			fixedToMapBin, errconv := strconv.Atoi(msgFields[19])
+			if errconv != nil || fixedToMapBin < 0 || fixedToMapBin > 1 {
+				return err, false
+			}
+
+			var newPic Picture
+			
+			newPic.name = picName
+			newPic.useTransparentColor = useTransparentColorBin == 1
+			newPic.fixedToMap = fixedToMapBin == 1
+			pic = &newPic
+
+			if _, found := sender.pictures[picId]; found {
+				rpErr, rpTerminate := h.processMsg("rp" + paramDelimStr + msgFields[1], sender)
+				if rpErr != nil {
+					return rpErr, rpTerminate
+				}
+			}
+		} else {
+			if _, found := sender.pictures[picId]; found {
+				duration, errconv := strconv.Atoi(msgFields[17])
+				if errconv != nil || duration < 0 {
+					return err, false
+				}
+
+				pic = sender.pictures[picId]
+			} else {
+				var tempPic Picture
+
+				pic = &tempPic
+			}
+		}
+
+		pic.positionX = positionX
+		pic.positionY = positionY
+		pic.mapX = mapX
+		pic.mapY = mapY
+		pic.magnify = magnify
+		pic.topTrans = topTrans
+		pic.bottomTrans = bottomTrans
+		pic.red = red
+		pic.blue = blue
+		pic.green = green
+		pic.saturation = saturation
+		pic.effectMode = effectMode
+		pic.effectPower = effectPower
+
+		message := msgFields[0] + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4] + paramDelimStr + msgFields[5] + paramDelimStr + msgFields[6] + paramDelimStr + msgFields[7] + paramDelimStr + msgFields[8] + paramDelimStr + msgFields[9] + paramDelimStr + msgFields[10] + paramDelimStr + msgFields[11] + paramDelimStr + msgFields[12] + paramDelimStr + msgFields[13] + paramDelimStr + msgFields[14] + paramDelimStr + msgFields[15] + paramDelimStr + msgFields[16] + paramDelimStr + msgFields[17]
+		if isShow {
+			message += paramDelimStr + msgFields[18] + paramDelimStr + msgFields[19]
+		}
+		h.broadcast([]byte(message));
+		sender.pictures[picId] = pic
+	case "rp": // picture erased
+		if len(msgFields) != 2 {
+			return err, false
+		}
+		picId, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil || picId < 1 {
+			return err, false
+		}
+		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
+		delete(sender.pictures, picId)
+	case "say":
+		if len(msgFields) != 3 {
+			return err, true
+		}
+		systemName := msgFields[1]
+		msgContents := msgFields[2]
+		if sender.name == "" || msgContents == "" || len(msgContents) > 150 {
+			return err, true
+		}
+		if h.gameName == "2kki" || h.gameName == "yume" || h.gameName == "flow" {
+			if !h.isValidSystemName(systemName) {
+				errs = append(errs, err)
+				break
+			}
+		}
+		h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+		return nil, true
+	case "name": // nick set
+		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
+			return err, true
+		}
+		sender.name = msgFields[1]
+		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name));
+		return nil, true
+	default:
+		return err, false
+	}
+
+	writeLog(sender.ip, h.roomName, msgStr, 200)
+	
+	return nil, false
 }
 
 func normalize(str string) string {
@@ -568,5 +687,25 @@ func (h *Hub) isValidSoundName(name string) bool {
 			return true
 		}
 	}
+	return false
+}
+
+func (h *Hub) isValidPicName(name string) bool {
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+
+	nameLower := strings.ToLower(name)
+	for _, otherName := range h.pictureNames {
+		if otherName == nameLower {
+			return true
+		}
+	}
+	for _, prefix := range h.picturePrefixes {
+		if strings.HasPrefix(nameLower, prefix) {
+			return true
+		}
+	}
+
 	return false
 }

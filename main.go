@@ -70,6 +70,12 @@ func main() {
 	
 	//list of invalid sound names
 	ignoredSoundNames := strings.Split(config.BadSounds, ",")
+	
+	//list of valid picture names
+	pictureNames := strings.Split(config.PictureNames, ",")
+	
+	// list of valid picture prefixes
+	picturePrefixes := strings.Split(config.PicturePrefixes, ",")
 
 	var roomNames []string
 	badRooms := strings.Split(config.BadRooms, ",")
@@ -80,7 +86,7 @@ func main() {
 		}
 	}
 
-	server.CreateAllHubs(roomNames, spriteNames, systemNames, soundNames, ignoredSoundNames, config.GameName)
+	server.CreateAllHubs(roomNames, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,

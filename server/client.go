@@ -30,6 +30,32 @@ var (
 	space   = []byte{' '}
 )
 
+type Picture struct {
+	name string
+
+	positionX int
+	positionY int
+	mapX int
+	mapY int
+	panX int
+	panY int
+
+	magnify int
+	topTrans int
+	bottomTrans int
+	
+	red int
+	green int
+	blue int
+	saturation int
+
+	effectMode int
+	effectPower int
+
+	useTransparentColor bool
+	fixedToMap bool
+}
+
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	hub *Hub
@@ -53,6 +79,8 @@ type Client struct {
 
 	spriteName string
 	spriteIndex int
+	
+	pictures map[int]*Picture
 
 	systemName string
 

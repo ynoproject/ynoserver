@@ -16,6 +16,12 @@
 ## Sounds to exclude from multiplayer
 #bad_sounds: ""
 
+## Pictures to sync in multiplayer
+#picture_names: ""
+
+## Picture prefixes to sync in multiplayer
+#picture_prefixes: ""
+
 ## Set to name of game
 #game_name: ""
 
