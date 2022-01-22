@@ -560,9 +560,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 
 				pic = sender.pictures[picId]
 			} else {
-				var tempPic Picture
-
-				pic = &tempPic
+				return err, false
 			}
 		}
 
