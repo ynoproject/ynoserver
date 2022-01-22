@@ -46,7 +46,7 @@ type HubController struct {
 }
 
 func (h *HubController) addHub(roomName string, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
-	hub := NewHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, gameName, h)
+	hub := NewHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefix, gameName, h)
 	h.hubs = append(h.hubs, hub)
 	go hub.Run()
 }
