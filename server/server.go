@@ -565,7 +565,8 @@ func (h *Hub) isValidSoundName(name string) bool {
 					return false
 				}
 			}
+			return true
 		}
 	}
-	return true
+	return false
 }
