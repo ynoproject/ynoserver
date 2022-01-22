@@ -95,7 +95,7 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 	h := HubController{}
 
 	for _, roomName := range roomNames {
-		h.addHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, gameName)
+		h.addHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, gameName)
 	}
 }
 
