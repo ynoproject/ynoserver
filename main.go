@@ -69,13 +69,22 @@ func main() {
 	}
 	
 	//list of invalid sound names
-	ignoredSoundNames := strings.Split(config.BadSounds, ",")
+	var ignoredSoundNames []string
+	if config.BadSounds != "" {
+		ignoredSoundNames = strings.Split(config.BadSounds, ",")
+	}
 	
 	//list of valid picture names
-	pictureNames := strings.Split(config.PictureNames, ",")
+	var pictureNames []string
+	if config.PictureNames != "" {
+		pictureNames = strings.Split(config.PictureNames, ",")
+	}
 	
 	// list of valid picture prefixes
-	picturePrefixes := strings.Split(config.PicturePrefixes, ",")
+	var picturePrefixes []string
+	if config.PicturePrefixes != "" {
+		picturePrefixes = strings.Split(config.PicturePrefixes, ",")
+	}
 
 	var roomNames []string
 	badRooms := strings.Split(config.BadRooms, ",")
