@@ -11,12 +11,10 @@ import (
 	"strings"
 	"regexp"
 	"errors"
-	"unicode"
 	"unicode/utf8"
 	"crypto/sha1"
 	"encoding/hex"
 	"github.com/thanhpk/randstr"
-	"golang.org/x/text/unicode/norm"
 
 	"github.com/gorilla/websocket"
 )
@@ -102,7 +100,7 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 	h.pictureNames = pictureNames
 	h.picturePrefixes = picturePrefixes
 	h.gameName = gameName
-	
+
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
 	}
@@ -628,24 +626,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 	writeLog(sender.ip, h.roomName, msgStr, 200)
 	
 	return nil, false
-}
-
-func normalize(str string) string {
-	var (
-		r   rune
-		it  norm.Iter
-		out []byte
-	)
-	it.InitString(norm.NFKC, str)
-	for !it.Done() {
-		ruf := it.Next()
-		r, _ = utf8.DecodeRune(ruf)
-		r = unicode.ToLower(r)
-		buf := make([]byte, utf8.RuneLen(r))
-		utf8.EncodeRune(buf, r)
-		out = norm.NFC.Append(out, buf...)
-	}
-	return string(out)
 }
 
 func (h *HubController) isValidSpriteName(name string) bool {
