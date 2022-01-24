@@ -326,7 +326,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	msgs := strings.Split(msgsStr, msgDelimStr)
 	
 	for _, msgStr := range msgs {
-		err, terminate := h.processMsg(msgStr, msg.sender)
+		terminate, err := h.processMsg(msgStr, msg.sender)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -338,104 +338,104 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	return errs
 }
 
-func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
+func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	err := errors.New(msgStr)
 	msgFields := strings.Split(msgStr, paramDelimStr)
 
 	if len(msgFields) == 0 {
-		return err, false
+		return false, err
 	}
 
 	switch msgFields[0] {
 	case "m": //"i moved to x y"
 		if len(msgFields) != 3 {
-			return err, false
+			return false, err
 		}
 		//check if the coordinates are valid
 		x, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 		y, errconv := strconv.Atoi(msgFields[2]);
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 		sender.x = x
 		sender.y = y
 		h.broadcast([]byte("m" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2])) //user %id% moved to x y
 	case "f": //change facing direction
 		if len(msgFields) != 2 {
-			return err, false
+			return false, err
 		}
 		//check if direction is valid
 		facing, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || facing < 0 || facing > 3 {
-			return err, false
+			return false, err
 		}
 		sender.facing = facing
 		h.broadcast([]byte("f" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1])) //user %id% facing changed to f
 	case "spd": //change my speed to spd
 		if len(msgFields) != 2 {
-			return err, false
+			return false, err
 		}
 		spd, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 		if spd < 0 || spd > 10 { //something's not right
-			return err, false
+			return false, err
 		}
 		sender.spd = spd
 		h.broadcast([]byte("spd" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
 	case "spr": //change my sprite
 		if len(msgFields) != 3 {
-			return err, false
+			return false, err
 		}
 		if !h.controller.isValidSpriteName(msgFields[1]) {
-			return err, false
+			return false, err
 		}
 		if h.controller.gameName == "2kki" { //totally normal yume 2kki check
 			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
-				return err, false
+				return false, err
 			}
 			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "MAP0176 ぜんまいヶ原店"  {
-				return err, false
+				return false, err
 			}
 		}
 		index, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || index < 0 {
-			return err, false
+			return false, err
 		}
 		sender.spriteName = msgFields[1]
 		sender.spriteIndex = index
 		h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2]));
 	case "sys": //change my system graphic
 		if len(msgFields) != 2 {
-			return err, false
+			return false, err
 		}
 		if !h.controller.isValidSystemName(msgFields[1]) {
-			return err, false
+			return false, err
 		}
 		sender.systemName = msgFields[1];
 		h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
 	case "se": //play sound effect
 		if len(msgFields) != 5 || msgFields[1] == "" {
-			return err, false
+			return false, err
 		}
 		if !h.controller.isValidSoundName(msgFields[1]) {
-			return err, false
+			return false, err
 		}
 		volume, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || volume < 0 || volume > 100 {
-			return err, false
+			return false, err
 		}
 		tempo, errconv := strconv.Atoi(msgFields[3])
 		if errconv != nil || tempo < 10 || tempo > 400 {
-			return err, false
+			return false, err
 		}
 		balance, errconv := strconv.Atoi(msgFields[4])
 		if errconv != nil || balance < 0 || balance > 100 {
-			return err, false
+			return false, err
 		}
 		h.broadcast([]byte("se" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4]));
 	case "ap": // picture shown
@@ -445,97 +445,97 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		msgLength := 18
 		if isShow {
 			if !h.controller.isValidPicName(msgFields[17]) {
-				return err, false
+				return false, err
 			}
 			msgLength = msgLength + 2
 		}
 		if len(msgFields) != msgLength {
-			return err, false
+			return false, err
 		}
 		picId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || picId < 1 {
-			return err, false
+			return false, err
 		}
 
 		positionX, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 		positionY, errconv := strconv.Atoi(msgFields[3])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 		mapX, errconv := strconv.Atoi(msgFields[4])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 		mapY, errconv := strconv.Atoi(msgFields[5])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 		panX, errconv := strconv.Atoi(msgFields[6])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 		panY, errconv := strconv.Atoi(msgFields[7])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 
 		magnify, errconv := strconv.Atoi(msgFields[8])
 		if errconv != nil || magnify < 0 {
-			return err, false
+			return false, err
 		}
 		topTrans, errconv := strconv.Atoi(msgFields[9])
 		if errconv != nil || topTrans < 0 {
-			return err, false
+			return false, err
 		}
 		bottomTrans, errconv := strconv.Atoi(msgFields[10])
 		if errconv != nil || bottomTrans < 0 {
-			return err, false
+			return false, err
 		}
 
 		red, errconv := strconv.Atoi(msgFields[11])
 		if errconv != nil || red < 0 || red > 200 {
-			return err, false
+			return false, err
 		}
 		green, errconv := strconv.Atoi(msgFields[12])
 		if errconv != nil || green < 0 || green > 200 {
-			return err, false
+			return false, err
 		}
 		blue, errconv := strconv.Atoi(msgFields[13])
 		if errconv != nil || blue < 0 || blue > 200 {
-			return err, false
+			return false, err
 		}
 		saturation, errconv := strconv.Atoi(msgFields[14])
 		if errconv != nil || saturation < 0 || saturation > 200 {
-			return err, false
+			return false, err
 		}
 
 		effectMode, errconv := strconv.Atoi(msgFields[15])
 		if errconv != nil || effectMode < 0 {
-			return err, false
+			return false, err
 		}
 		effectPower, errconv := strconv.Atoi(msgFields[16])
 		if errconv != nil {
-			return err, false
+			return false, err
 		}
 
 		var pic *Picture
 		if isShow {
 			picName := msgFields[17]
 			if picName == "" {
-				return err, false
+				return false, err
 			}
 
 			useTransparentColorBin, errconv := strconv.Atoi(msgFields[18])
 			if errconv != nil || useTransparentColorBin < 0 || useTransparentColorBin > 1 {
-				return err, false
+				return false, err
 			}
 
 			fixedToMapBin, errconv := strconv.Atoi(msgFields[19])
 			if errconv != nil || fixedToMapBin < 0 || fixedToMapBin > 1 {
-				return err, false
+				return false, err
 			}
 
 			var newPic Picture
@@ -546,21 +546,21 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 			pic = &newPic
 
 			if _, found := sender.pictures[picId]; found {
-				rpErr, rpTerminate := h.processMsg("rp" + paramDelimStr + msgFields[1], sender)
+				rpTerminate, rpErr := h.processMsg("rp" + paramDelimStr + msgFields[1], sender)
 				if rpErr != nil {
-					return rpErr, rpTerminate
+					return rpTerminate, rpErr
 				}
 			}
 		} else {
 			if _, found := sender.pictures[picId]; found {
 				duration, errconv := strconv.Atoi(msgFields[17])
 				if errconv != nil || duration < 0 {
-					return err, false
+					return false, err
 				}
 
 				pic = sender.pictures[picId]
 			} else {
-				return err, false
+				return false, err
 			}
 		}
 
@@ -588,44 +588,44 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		sender.pictures[picId] = pic
 	case "rp": // picture erased
 		if len(msgFields) != 2 {
-			return err, false
+			return false, err
 		}
 		picId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || picId < 1 {
-			return err, false
+			return false, err
 		}
 		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
 		delete(sender.pictures, picId)
 	case "say":
 		if len(msgFields) != 3 {
-			return err, true
+			return true, err
 		}
 		systemName := msgFields[1]
 		msgContents := msgFields[2]
 		if sender.name == "" || msgContents == "" || len(msgContents) > 150 {
-			return err, true
+			return true, err
 		}
 		if h.controller.gameName == "2kki" || h.controller.gameName == "yume" || h.controller.gameName == "flow" {
 			if !h.controller.isValidSystemName(systemName) {
-				return err, false
+				return false, err
 			}
 		}
 		h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
-		return nil, true
+		return true, nil
 	case "name": // nick set
 		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
-			return err, true
+			return true, err
 		}
 		sender.name = msgFields[1]
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name));
-		return nil, true
+		return true, nil
 	default:
-		return err, false
+		return false, err
 	}
 
 	writeLog(sender.ip, h.roomName, msgStr, 200)
 	
-	return nil, false
+	return false, nil
 }
 
 func (h *HubController) isValidSpriteName(name string) bool {
