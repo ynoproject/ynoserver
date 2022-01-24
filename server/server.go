@@ -398,7 +398,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
 				return false, err
 			}
-			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "MAP0176 ぜんまいヶ原店"  {
+			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "176"  {
 				return false, err
 			}
 		}
