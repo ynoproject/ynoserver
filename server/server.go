@@ -43,10 +43,20 @@ type ConnInfo struct {
 
 type HubController struct {
 	hubs []*Hub
+
+	//asset lists go here since they don't need to be duplicated for every hub
+	spriteNames []string
+	systemNames []string
+	soundNames []string
+	ignoredSoundNames []string
+	pictureNames []string
+	picturePrefixes []string
+
+	gameName string
 }
 
-func (h *HubController) addHub(roomName string, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
-	hub := NewHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, gameName, h)
+func (h *HubController) addHub(roomName string) {
+	hub := NewHub(roomName, h)
 	h.hubs = append(h.hubs, hub)
 	go hub.Run()
 }
@@ -70,15 +80,6 @@ type Hub struct {
 	unregister chan *Client
 
 	roomName string
-	//list of valid game character sprite resource keys
-	spriteNames []string
-	systemNames []string
-	soundNames []string
-	ignoredSoundNames []string
-	pictureNames []string
-	picturePrefixes []string
-
-	gameName string
 
 	controller *HubController
 }
@@ -94,12 +95,20 @@ func writeErrLog(ip string, roomName string, payload string) {
 func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
 	h := HubController{}
 
+	h.spriteNames = spriteNames
+	h.systemNames = systemNames
+	h.soundNames = soundNames
+	h.ignoredSoundNames = ignoredSoundNames
+	h.pictureNames = pictureNames
+	h.picturePrefixes = picturePrefixes
+	h.gameName = gameName
+	
 	for _, roomName := range roomNames {
-		h.addHub(roomName, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, gameName)
+		h.addHub(roomName)
 	}
 }
 
-func NewHub(roomName string, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, h *HubController) *Hub {
+func NewHub(roomName string, h *HubController) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
 		connect:   make(chan *ConnInfo),
@@ -107,13 +116,6 @@ func NewHub(roomName string, spriteNames []string, systemNames []string, soundNa
 		clients:    make(map[*Client]bool),
 		id: make(map[int]bool),
 		roomName: roomName,
-		spriteNames: spriteNames,
-		systemNames: systemNames,
-		soundNames: soundNames,
-		ignoredSoundNames: ignoredSoundNames,
-		pictureNames: pictureNames,
-		picturePrefixes: picturePrefixes,
-		gameName: gameName,
 		controller: h,
 	}
 }
@@ -391,10 +393,10 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		if len(msgFields) != 3 {
 			return err, false
 		}
-		if !h.isValidSpriteName(msgFields[1]) {
+		if !h.controller.isValidSpriteName(msgFields[1]) {
 			return err, false
 		}
-		if h.gameName == "2kki" { //totally normal yume 2kki check
+		if h.controller.gameName == "2kki" { //totally normal yume 2kki check
 			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
 				return err, false
 			}
@@ -413,7 +415,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		if len(msgFields) != 2 {
 			return err, false
 		}
-		if !h.isValidSystemName(msgFields[1]) {
+		if !h.controller.isValidSystemName(msgFields[1]) {
 			return err, false
 		}
 		sender.systemName = msgFields[1];
@@ -422,7 +424,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		if len(msgFields) != 5 || msgFields[1] == "" {
 			return err, false
 		}
-		if !h.isValidSoundName(msgFields[1]) {
+		if !h.controller.isValidSoundName(msgFields[1]) {
 			return err, false
 		}
 		volume, errconv := strconv.Atoi(msgFields[2])
@@ -444,7 +446,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		isShow := msgFields[0] == "ap"
 		msgLength := 18
 		if isShow {
-			if !h.isValidPicName(msgFields[17]) {
+			if !h.controller.isValidPicName(msgFields[17]) {
 				return err, false
 			}
 			msgLength = msgLength + 2
@@ -605,8 +607,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (error, bool) {
 		if sender.name == "" || msgContents == "" || len(msgContents) > 150 {
 			return err, true
 		}
-		if h.gameName == "2kki" || h.gameName == "yume" || h.gameName == "flow" {
-			if !h.isValidSystemName(systemName) {
+		if h.controller.gameName == "2kki" || h.controller.gameName == "yume" || h.controller.gameName == "flow" {
+			if !h.controller.isValidSystemName(systemName) {
 				return err, false
 			}
 		}
@@ -646,7 +648,7 @@ func normalize(str string) string {
 	return string(out)
 }
 
-func (h *Hub) isValidSpriteName(name string) bool {
+func (h *HubController) isValidSpriteName(name string) bool {
 	if name == "" {
 		return true
 	}
@@ -662,7 +664,7 @@ func (h *Hub) isValidSpriteName(name string) bool {
 	return false
 }
 
-func (h *Hub) isValidSystemName(name string) bool {
+func (h *HubController) isValidSystemName(name string) bool {
 	for _, otherName := range h.systemNames {
 		if strings.EqualFold(otherName, name) {
 			return true
@@ -671,7 +673,7 @@ func (h *Hub) isValidSystemName(name string) bool {
 	return false
 }
 
-func (h *Hub) isValidSoundName(name string) bool {
+func (h *HubController) isValidSoundName(name string) bool {
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
 	}
@@ -689,7 +691,7 @@ func (h *Hub) isValidSoundName(name string) bool {
 	return false
 }
 
-func (h *Hub) isValidPicName(name string) bool {
+func (h *HubController) isValidPicName(name string) bool {
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
 	}
