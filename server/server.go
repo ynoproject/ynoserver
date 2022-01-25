@@ -126,7 +126,7 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			if h.blockIps {
+			if h.controller.blockIps {
 				err := h.checkIp(conn.Ip)
 				if err != nil {
 					writeErrLog(conn.Ip, h.roomName, err.Error())
