@@ -444,12 +444,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		isShow := msgFields[0] == "ap"
 		msgLength := 18
 		if isShow {
-			if !h.controller.isValidPicName(msgFields[17]) {
-				return false, err
-			}
 			msgLength = msgLength + 2
 		}
 		if len(msgFields) != msgLength {
+			return false, err
+		}
+		if !h.controller.isValidPicName(msgFields[17]) {
 			return false, err
 		}
 		picId, errconv := strconv.Atoi(msgFields[1])
