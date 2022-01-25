@@ -16,6 +16,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"database/sql"
 	"github.com/thanhpk/randstr"
 	"github.com/gorilla/websocket"
 	_ "github.com/go-sql-driver/mysql"
