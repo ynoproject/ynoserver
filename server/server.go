@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"github.com/thanhpk/randstr"
 	"github.com/gorilla/websocket"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -253,6 +254,32 @@ type IpHubResponse struct {
 }
 
 func (hub *Hub) checkIp (ip string) error {
+	dbPass = ""
+	db, err := sql.Open("mysql", "yno:" + dbPass + "@localhost/ynodb")
+	if err != nil {
+		return err
+	}
+	
+	defer db.Close()
+	
+	results, err := db.Query("SELECT blocked FROM blocklist WHERE ip = '" + ip + "'")
+    if err != nil {
+        return err
+    }
+
+    for results.Next() {
+        var blocked int
+        err = results.Scan(&blocked)
+        if err != nil {
+            return err
+        }
+		if blocked == 0 {
+			return nil
+		} else {
+			return errors.New("connection blocked (cached)")
+		}
+    }
+	
 	apiKey := ""
 	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
 	if err != nil {
@@ -271,6 +298,20 @@ func (hub *Hub) checkIp (ip string) error {
 
 	var response IpHubResponse
 	if err := json.Unmarshal(body, &response); err != nil {
+		return err
+	}
+	
+	var blockedIp int
+	if response.Block == 0 {
+		blockedIp = 0
+	} else {
+		blockedIp = 1
+	}
+	
+	insertQuery := "INSERT INTO blocklist(ip, blocked) VALUES ('" + ip + "', " + blockedIp + ")"
+	res, err := db.Exec(insertQuery)
+
+	if err != nil {
 		return err
 	}
 	
