@@ -11,11 +11,11 @@ import (
 	"strings"
 	"regexp"
 	"errors"
+	"io/ioutil"
 	"unicode/utf8"
 	"crypto/sha1"
 	"encoding/hex"
 	"github.com/thanhpk/randstr"
-
 	"github.com/gorilla/websocket"
 )
 
@@ -256,7 +256,7 @@ func (hub *Hub) checkIp (ip string) error {
 		return err
 	}
 
-	req.Header.set("X-Key", apiKey)
+	req.Header.Set("X-Key", apiKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -266,13 +266,13 @@ func (hub *Hub) checkIp (ip string) error {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 
-	var resp IpHubResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
+	var response IpHubResponse
+	if err := json.Unmarshal(body, &response); err != nil {
 		return err
 	}
 	
-	if resp.Block > 0 {
-		writeLog("Connection Blocked", resp.IP, resp.CountryName, resp.ISP, resp.Block)
+	if response.Block > 0 {
+		log.Printf("Connection Blocked %v %v %v %v\n", response.IP, response.CountryName, response.Isp, response.Block)
 		return errors.New("connection blocked")
 	}
 	
