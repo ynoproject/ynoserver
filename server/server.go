@@ -255,7 +255,7 @@ type IpHubResponse struct {
 }
 
 func (hub *Hub) checkIp (ip string) error {
-	dbPass = ""
+	dbPass := ""
 	db, err := sql.Open("mysql", "yno:" + dbPass + "@localhost/ynodb")
 	if err != nil {
 		return err
@@ -309,7 +309,7 @@ func (hub *Hub) checkIp (ip string) error {
 		blockedIp = 1
 	}
 	
-	insertQuery := "INSERT INTO blocklist(ip, blocked) VALUES ('" + ip + "', " + blockedIp + ")"
+	insertQuery := "INSERT INTO blocklist(ip, blocked) VALUES ('" + ip + "', " + strconv.Itoa(blockedIp) + ")"
 	res, err := db.Exec(insertQuery)
 
 	if err != nil {
