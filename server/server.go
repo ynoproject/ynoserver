@@ -15,6 +15,7 @@ import (
 	"unicode/utf8"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"github.com/thanhpk/randstr"
 	"github.com/gorilla/websocket"
 )
