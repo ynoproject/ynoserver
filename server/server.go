@@ -310,7 +310,7 @@ func (hub *Hub) checkIp (ip string) error {
 	}
 	
 	insertQuery := "INSERT INTO blocklist(ip, blocked) VALUES ('" + ip + "', " + strconv.Itoa(blockedIp) + ")"
-	res, err := db.Exec(insertQuery)
+	_, err := db.Exec(insertQuery)
 
 	if err != nil {
 		return err
