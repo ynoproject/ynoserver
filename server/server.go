@@ -256,7 +256,7 @@ type IpHubResponse struct {
 
 func (hub *Hub) checkIp (ip string) error {
 	dbPass := ""
-	db, err := sql.Open("mysql", "yno:" + dbPass + "@unix("/var/run/mysqld/mysqld.sock")")
+	db, err := sql.Open("mysql", "yno:" + dbPass + "@tcp(localhost)/ynodb")
 	if err != nil {
 		return err
 	}
