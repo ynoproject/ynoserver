@@ -126,10 +126,12 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			err := h.checkIp(conn.Ip)
-			if err != nil {
-				writeErrLog(conn.Ip, h.roomName, err.Error())
-				continue
+			if h.blockIps {
+				err := h.checkIp(conn.Ip)
+				if err != nil {
+					writeErrLog(conn.Ip, h.roomName, err.Error())
+					continue
+				}
 			}
 		
 			id := -1
