@@ -51,6 +51,7 @@ type HubController struct {
 	picturePrefixes []string
 
 	gameName string
+	blockIps bool
 }
 
 func (h *HubController) addHub(roomName string) {
@@ -90,7 +91,7 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
+func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, blockIps bool) {
 	h := HubController{}
 
 	h.spriteNames = spriteNames
@@ -100,6 +101,7 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 	h.pictureNames = pictureNames
 	h.picturePrefixes = picturePrefixes
 	h.gameName = gameName
+	h.blockIps = blockIps
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
@@ -123,6 +125,12 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
+			err := h.checkIp(conn.Ip)
+			if err != nil {
+				writeErrLog(conn.Ip, h.roomName, err.Error())
+				continue
+			}
+		
 			id := -1
 			for i := 0; i <= maxID; i++ {
 				if !h.id[i] {
@@ -230,6 +238,45 @@ func (h *Hub) Run() {
 			}
 		}
 	}
+}
+
+type IpHubResponse struct {
+	IP          string `json:"ip"`
+	CountryCode string `json:"countryCode"`
+	CountryName string `json:"countryName"`
+	Asn         int    `json:"asn"`
+	Isp         string `json:"isp"`
+	Block       int    `json:"block"`
+}
+
+func (hub *Hub) checkIp (ip string) error {
+	apiKey := ""
+	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.set("X-Key", apiKey)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	var resp IpHubResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return err
+	}
+	
+	if resp.Block > 0 {
+		writeLog("Connection Blocked", resp.IP, resp.CountryName, resp.ISP, resp.Block)
+		return errors.New("connection blocked")
+	}
+	
+	return nil
 }
 
 // serveWs handles websocket requests from the peer.
