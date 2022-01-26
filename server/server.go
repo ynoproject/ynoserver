@@ -187,8 +187,6 @@ func (h *Hub) Run() {
 				continue
 			}
 
-			totalPlayerCount = totalPlayerCount + 1
-
 			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + strconv.Itoa(totalPlayerCount) + paramDelimStr + key) //"your id is %id%" (and player count) message
 			//send the new client info about the game state
 			for other_client := range h.clients {
@@ -220,6 +218,9 @@ func (h *Hub) Run() {
 			//register client in the structures
 			h.id[id] = true
 			h.clients[client] = true
+			
+			totalPlayerCount = totalPlayerCount + 1
+			
 			//tell everyone that a new client has connected
 			if !client.banned {
 				h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + strconv.Itoa(totalPlayerCount))) //user %id% has connected (and player count) message
@@ -227,10 +228,9 @@ func (h *Hub) Run() {
 
 			writeLog(conn.Ip, h.roomName, "connect", 200)
 		case client := <-h.unregister:
-			totalPlayerCount = totalPlayerCount - 1
-
 			if _, ok := h.clients[client]; ok {
 				h.deleteClient(client)
+				totalPlayerCount = totalPlayerCount - 1
 			}
 
 			writeLog(client.ip, h.roomName, "disconnect", 200)
