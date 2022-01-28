@@ -253,7 +253,7 @@ type IpHubResponse struct {
 	Block       int    `json:"block"`
 }
 
-func (hub *Hub) checkIp (ip string) error {
+func (hub *Hub) checkIp(ip string) error {
 	dbPass := ""
 	db, err := sql.Open("mysql", "yno:" + dbPass + "@tcp(localhost)/ynodb")
 	if err != nil {
