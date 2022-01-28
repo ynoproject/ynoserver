@@ -219,9 +219,10 @@ func (h *Hub) Run() {
 			h.id[id] = true
 			h.clients[client] = true
 			
+			totalPlayerCount = totalPlayerCount + 1
+			
 			//tell everyone that a new client has connected
 			if !client.banned {
-				totalPlayerCount = totalPlayerCount + 1
 				h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + strconv.Itoa(totalPlayerCount))) //user %id% has connected (and player count) message
 			}
 
