@@ -151,6 +151,10 @@ func (h *Hub) Run() {
 					same_ip++
 				}
 			}
+			if same_ip >= ip_limit {
+				writeErrLog(conn.Ip, h.roomName, "too many connections")
+				break //don't bother with handling their connection
+			}
 
 			key := randstr.String(8)			
 
@@ -159,7 +163,6 @@ func (h *Hub) Run() {
 				hub: h,
 				conn: conn.Connect,
 				ip: conn.Ip,
-				banned: same_ip >= ip_limit,
 				send: make(chan []byte, 256),
 				id: id,
 				x: 0,
@@ -174,12 +177,6 @@ func (h *Hub) Run() {
 				counter: 0}
 			go client.writePump()
 			go client.readPump()
-
-			if same_ip >= ip_limit {
-				writeErrLog(conn.Ip, h.roomName, "too many connections")
-				close(client.send)
-				continue
-			}
 
 			if id == -1 {
 				writeErrLog(conn.Ip, h.roomName, "room is full")
@@ -222,9 +219,7 @@ func (h *Hub) Run() {
 			totalPlayerCount = totalPlayerCount + 1
 			
 			//tell everyone that a new client has connected
-			if !client.banned {
-				h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + strconv.Itoa(totalPlayerCount))) //user %id% has connected (and player count) message
-			}
+			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + strconv.Itoa(totalPlayerCount))) //user %id% has connected (and player count) message
 
 			writeLog(conn.Ip, h.roomName, "connect", 200)
 		case client := <-h.unregister:
@@ -360,11 +355,6 @@ func (h *Hub) deleteClient(client *Client) {
 
 func (h *Hub) processMsgs(msg *Message) []error {
 	var errs []error
-
-	if msg.sender.banned {
-		errs = append(errs, errors.New("banned"))
-		return errs
-	}
 
 	if len(msg.data) < 12 || len(msg.data) > 4096 {
 		errs = append(errs, errors.New("bad request size"))
