@@ -225,8 +225,9 @@ func (h *Hub) Run() {
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				h.deleteClient(client)
-				totalPlayerCount = totalPlayerCount - 1
 			}
+
+			totalPlayerCount = totalPlayerCount - 1
 
 			writeLog(client.ip, h.roomName, "disconnect", 200)
 		case message := <-h.processMsgCh:
