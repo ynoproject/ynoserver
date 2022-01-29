@@ -213,7 +213,7 @@ func (h *Hub) Run() {
 				}
 			}
 
-			if !h.clients[client] {
+			if _, ok := !h.clients[client]; ok {
 				totalPlayerCount = totalPlayerCount + 1
 
 				//register client in the structures
