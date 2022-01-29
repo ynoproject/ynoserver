@@ -215,11 +215,11 @@ func (h *Hub) Run() {
 
 			if _, ok := !h.clients[client]; ok {
 				totalPlayerCount = totalPlayerCount + 1
-
-				//register client in the structures
-				h.id[id] = true
-				h.clients[client] = true
 			}
+
+			//register client in the structures
+			h.id[id] = true
+			h.clients[client] = true
 
 			//tell everyone that a new client has connected
 			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + strconv.Itoa(totalPlayerCount))) //user %id% has connected (and player count) message
