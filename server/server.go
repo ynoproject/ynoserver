@@ -24,7 +24,7 @@ import (
 
 var (
 	maxID = 512
-	totalPlayerCount = 0
+	totalPlayerCount = 1
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
