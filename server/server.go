@@ -536,7 +536,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		
 		if isShow && !h.controller.isValidPicName(msgFields[17]) {
-			return false, nil
+			return false, err
 		}
 		
 		picId, errconv := strconv.Atoi(msgFields[1])
