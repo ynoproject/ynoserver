@@ -536,7 +536,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		
 		if isShow && !h.controller.isValidPicName(msgFields[17]) {
-			return false, err
+			return false, nil
 		}
 		
 		picId, errconv := strconv.Atoi(msgFields[1])
@@ -647,7 +647,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 
 				pic = sender.pictures[picId]
 			} else {
-				return false, err
+				return false, nil
 			}
 		}
 
