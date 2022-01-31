@@ -430,6 +430,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	if len(msgFields) == 0 {
 		return false, err
 	}
+	
+	terminate := false
 
 	switch msgFields[0] {
 	case "m": //"i moved to x y"
@@ -698,21 +700,21 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		}
 		h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
-		return true, nil
+		terminate = true
 	case "name": // nick set
 		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
 			return true, err
 		}
 		sender.name = msgFields[1]
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name));
-		return true, nil
+		terminate = true
 	default:
 		return false, err
 	}
 
 	writeLog(sender.ip, h.roomName, msgStr, 200)
 	
-	return false, nil
+	return terminate, nil
 }
 
 func (h *HubController) isValidSpriteName(name string) bool {
