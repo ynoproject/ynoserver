@@ -694,7 +694,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if sender.name == "" || msgContents == "" || len(msgContents) > 150 {
 			return true, err
 		}
-		if h.controller.gameName == "2kki" || h.controller.gameName == "yume" || h.controller.gameName == "flow" {
+		if h.controller.gameName == "2kki" || h.controller.gameName == "yume" || h.controller.gameName == "flow" || h.controller.gameName == "unevendream" {
 			if !h.controller.isValidSystemName(systemName) {
 				return false, err
 			}
