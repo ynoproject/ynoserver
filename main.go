@@ -64,7 +64,7 @@ func main() {
 	var systemNames []string
 	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
 		if k != "_dirname" {
-			systemNames = append(systemNames, k,)
+			systemNames = append(systemNames, k)
 		}
 	}
 	
