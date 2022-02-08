@@ -294,6 +294,9 @@ func (hub *Hub) checkIp(ip string) error {
 	
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 
 	var response IpHubResponse
 	if err := json.Unmarshal(body, &response); err != nil {
@@ -796,4 +799,8 @@ func (h *HubController) isValidPicName(name string) bool {
 	}
 
 	return false
+}
+
+func GetPlayerCount() int {
+	return totalPlayerCount
 }

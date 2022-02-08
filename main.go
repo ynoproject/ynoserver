@@ -106,5 +106,8 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime)
 
 	http.Handle("/", http.FileServer(http.Dir("public/")))
+	http.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
+		print(server.GetPlayerCount())
+	})
 	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":" + strconv.Itoa(config.Port), nil), 500)
 }
