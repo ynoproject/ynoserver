@@ -717,7 +717,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if !h.controller.isValidSystemName(systemName) {
 			return false, err
 		}
-		h.globalBroadcast([]byte("gsay" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+		h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		terminate = true
 	case "name": // nick set
 		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
