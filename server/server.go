@@ -347,6 +347,12 @@ func (h *Hub) broadcast(data []byte) {
 	}
 }
 
+func (h *HubController) globalBroadcast(inpData []byte) {
+	for _, hub := range h.hubs {
+		hub.broadcast(inpData)
+	}
+}
+
 func (h *Hub) deleteClient(client *Client) {
 	delete(h.id, client.id)
 	close(client.send)
@@ -698,6 +704,20 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			return false, err
 		}
 		h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+		terminate = true
+	case "gsay": //global say
+		if len(msgFields) != 3 {
+			return true, err
+		}
+		systemName := msgFields[1]
+		msgContents := msgFields[2]
+		if sender.name == "" || msgContents == "" || len(msgContents) > 150 {
+			return true, err
+		}
+		if !h.controller.isValidSystemName(systemName) {
+			return false, err
+		}
+		h.globalBroadcast([]byte("gsay" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		terminate = true
 	case "name": // nick set
 		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
