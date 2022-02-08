@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"strings"
+	"fmt"
 )
 
 func writeLog(ip string, payload string, errorcode int) {
@@ -107,7 +108,7 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir("public/")))
 	http.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
-		print(strconv.Itoa(server.GetPlayerCount()))
+		fmt.Fprint(w, strconv.Itoa(server.GetPlayerCount()))
 	})
 	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":" + strconv.Itoa(config.Port), nil), 500)
 }
