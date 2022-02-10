@@ -709,18 +709,18 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		terminate = true
 	case "gsay": //global say
-		if len(msgFields) != 5 || len(msgFields[1]) != 4 || len(msgFields[2]) != 4 {
+		if len(msgFields) != 6 || len(msgFields[1]) != 4 || len(msgFields[2]) != 4 {
 			return true, err
 		}
-		systemName := msgFields[3]
-		msgContents := msgFields[4]
+		systemName := msgFields[4]
+		msgContents := msgFields[5]
 		if sender.name == "" || msgContents == "" || len(msgContents) > 150 {
 			return true, err
 		}
 		if !h.controller.isValidSystemName(systemName) {
 			return true, err
 		}
-		h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+		h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		terminate = true
 	case "name": // nick set
 		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
