@@ -153,7 +153,7 @@ func (h *Hub) Run() {
 			}
 			if same_ip >= ip_limit {
 				writeErrLog(conn.Ip, h.roomName, "too many connections")
-				break //don't bother with handling their connection
+				return //don't bother with handling their connection
 			}
 
 			key := randstr.String(8)
