@@ -637,7 +637,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 
 			var newPic Picture
-			
+
 			newPic.name = picName
 			newPic.useTransparentColor = useTransparentColorBin == 1
 			newPic.fixedToMap = fixedToMapBin == 1
@@ -734,7 +734,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	}
 
 	writeLog(sender.ip, h.roomName, msgStr, 200)
-	
+
 	return terminate, nil
 }
 
@@ -767,7 +767,7 @@ func (h *HubController) isValidSoundName(name string) bool {
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
 	}
-	
+
 	for _, otherName := range h.soundNames {
 		if strings.EqualFold(otherName, name) {
 			for _, ignoredName := range h.ignoredSoundNames {
