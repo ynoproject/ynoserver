@@ -256,14 +256,14 @@ func (hub *Hub) checkIp(ip string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	defer db.Close()
-	
+
 	results, err := db.Query("SELECT blocked FROM blocklist WHERE ip = '" + ip + "'")
 	if err != nil {
 		return err
 	}
-	
+
 	defer results.Close()
 
 	for results.Next() {
@@ -278,7 +278,7 @@ func (hub *Hub) checkIp(ip string) error {
 			return errors.New("connection blocked (cached)")
 		}
 	}
-	
+
 	apiKey := ""
 	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
 	if err != nil {
@@ -291,7 +291,7 @@ func (hub *Hub) checkIp(ip string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -302,7 +302,7 @@ func (hub *Hub) checkIp(ip string) error {
 	if err := json.Unmarshal(body, &response); err != nil {
 		return err
 	}
-	
+
 	var blockedIp int
 	if response.Block == 0 {
 		blockedIp = 0
@@ -382,7 +382,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 		errs = append(errs, errors.New("invalid UTF-8"))
 		return errs
 	}
-	
+
 	//signature validation
 	byteKey := []byte(msg.sender.key)
 	byteSecret := []byte("")
@@ -393,7 +393,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	hashStr.Write(msg.data[8:])
 
 	hashDigestStr := hex.EncodeToString(hashStr.Sum(nil)[:4])
-	
+
 	if string(msg.data[:8]) != hashDigestStr {
 		//errs = append(errs, errors.New("bad signature"))
 		errs = append(errs, errors.New("SIGNATURE FAIL: " + string(msg.data[:8]) + " compared to " + hashDigestStr + " CONTENTS: " + string(msg.data[8:])))
@@ -418,7 +418,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	//message processing
 	msgsStr := string(msg.data[14:])
 	msgs := strings.Split(msgsStr, msgDelimStr)
-	
+
 	for _, msgStr := range msgs {
 		terminate, err := h.processMsg(msgStr, msg.sender)
 		if err != nil {
@@ -439,7 +439,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	if len(msgFields) == 0 {
 		return false, err
 	}
-	
+
 	terminate := false
 
 	switch msgFields[0] {
@@ -545,11 +545,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if len(msgFields) != msgLength {
 			return false, err
 		}
-		
+
 		if isShow && !h.controller.isValidPicName(msgFields[17]) {
 			return false, err
 		}
-		
+
 		picId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || picId < 1 {
 			return false, err
