@@ -135,7 +135,7 @@ func (h *Hub) Run() {
 					continue
 				}
 			}
-		
+
 			id := -1
 			for i := 0; i <= maxID; i++ {
 				if !h.id[i] {
@@ -156,7 +156,7 @@ func (h *Hub) Run() {
 				break //don't bother with handling their connection
 			}
 
-			key := randstr.String(8)			
+			key := randstr.String(8)
 
 			//sprite index < 0 means none
 			client := &Client{
@@ -215,9 +215,9 @@ func (h *Hub) Run() {
 			//register client in the structures
 			h.id[id] = true
 			h.clients[client] = true
-			
+
 			totalPlayerCount = totalPlayerCount + 1
-			
+
 			//tell everyone that a new client has connected
 			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id))) //user %id% has connected message
 
@@ -309,19 +309,19 @@ func (hub *Hub) checkIp(ip string) error {
 	} else {
 		blockedIp = 1
 	}
-	
+
 	insertQuery := "INSERT INTO blocklist(ip, blocked) VALUES ('" + ip + "', " + strconv.Itoa(blockedIp) + ")"
 	_, insertErr := db.Exec(insertQuery)
 
 	if insertErr != nil {
 		return insertErr
 	}
-	
+
 	if response.Block > 0 {
 		log.Printf("Connection Blocked %v %v %v %v\n", response.IP, response.CountryName, response.Isp, response.Block)
 		return errors.New("connection blocked")
 	}
-	
+
 	return nil
 }
 
