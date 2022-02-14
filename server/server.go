@@ -260,24 +260,24 @@ func (hub *Hub) checkIp(ip string) error {
 	defer db.Close()
 	
 	results, err := db.Query("SELECT blocked FROM blocklist WHERE ip = '" + ip + "'")
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 	
 	defer results.Close()
 
-    for results.Next() {
-        var blocked int
-        err = results.Scan(&blocked)
-        if err != nil {
-            return err
-        }
+	for results.Next() {
+		var blocked int
+		err = results.Scan(&blocked)
+		if err != nil {
+			return err
+		}
 		if blocked == 0 {
 			return nil
 		} else {
 			return errors.New("connection blocked (cached)")
 		}
-    }
+	}
 	
 	apiKey := ""
 	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
