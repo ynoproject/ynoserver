@@ -82,6 +82,9 @@ type Client struct {
 	pictures map[int]*Picture
 
 	systemName string
+	
+	prevMapId string
+	prevLocations string
 
 	key string
 	counter int
