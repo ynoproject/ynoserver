@@ -695,32 +695,24 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
 		delete(sender.pictures, picId)
 	case "say":
-		if len(msgFields) != 3 {
+		if len(msgFields) != 2 {
 			return true, err
 		}
-		systemName := msgFields[1]
-		msgContents := msgFields[2]
-		if sender.name == "" || msgContents == "" || len(msgContents) > 150 {
+		msgContents := msgFields[1]
+		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return true, err
 		}
-		if !h.controller.isValidSystemName(systemName) {
-			return true, err
-		}
-		h.broadcast([]byte("say" + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+		h.broadcast([]byte("say" + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		terminate = true
 	case "gsay": //global say
-		if len(msgFields) != 6 || len(msgFields[1]) != 4 || len(msgFields[2]) != 4 {
+		if len(msgFields) != 5 || len(msgFields[1]) != 4 || len(msgFields[2]) != 4 {
 			return true, err
 		}
-		systemName := msgFields[4]
 		msgContents := msgFields[5]
-		if sender.name == "" || msgContents == "" || len(msgContents) > 150 {
+		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return true, err
 		}
-		if !h.controller.isValidSystemName(systemName) {
-			return true, err
-		}
-		h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+		h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		terminate = true
 	case "name": // nick set
 		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
