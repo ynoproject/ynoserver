@@ -714,7 +714,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if msgFields[0] == "say" {
 			h.broadcast([]byte("say" + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		} else {
-			h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + fmt.Sprintf("%04d", sender.roomName) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+			h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + fmt.Sprintf("%04d", h.roomName) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		}
 		terminate = true
 	case "name": // nick set
