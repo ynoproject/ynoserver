@@ -715,7 +715,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			h.broadcast([]byte("say" + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		} else {
 			mapId, errconv := strconv.Atoi(h.roomName)
-			if errconv != null {
+			if errconv != nil {
 				return true, err
 			}
 			h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + fmt.Sprintf("%04d", mapId) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
