@@ -9,6 +9,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"fmt"
 	"regexp"
 	"errors"
 	"io/ioutil"
@@ -701,6 +702,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
 		delete(sender.pictures, picId)
 	case "say":
+		fallthrough
+	case "gsay": //global say
 		if len(msgFields) != 2 {
 			return true, err
 		}
@@ -708,17 +711,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return true, err
 		}
-		h.broadcast([]byte("say" + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
-		terminate = true
-	case "gsay": //global say
-		if len(msgFields) != 5 || len(msgFields[1]) != 4 || len(msgFields[2]) != 4 {
-			return true, err
+		if msgFields[0] == "say" {
+			h.broadcast([]byte("say" + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+		} else {
+			h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + fmt.Sprintf("%04d", sender.roomName) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		}
-		msgContents := msgFields[4]
-		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
-			return true, err
-		}
-		h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
 		terminate = true
 	case "name": // nick set
 		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
