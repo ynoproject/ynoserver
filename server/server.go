@@ -166,7 +166,6 @@ func (h *Hub) Run() {
 				ip: conn.Ip,
 				send: make(chan []byte, 256),
 				id: id,
-				spd: 3,
 				spriteIndex: -1,
 				pictures: make(map[int]*Picture),
 				key: key}
