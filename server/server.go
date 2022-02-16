@@ -166,16 +166,10 @@ func (h *Hub) Run() {
 				ip: conn.Ip,
 				send: make(chan []byte, 256),
 				id: id,
-				x: 0,
-				y: 0,
-				facing: 0,
-				name: "",
 				spd: 3,
-				spriteName: "none",
 				spriteIndex: -1,
 				pictures: make(map[int]*Picture),
-				key: key,
-				counter: 0}
+				key: key}
 			go client.writePump()
 			go client.readPump()
 
