@@ -56,6 +56,8 @@ type HubController struct {
 
 	gameName string
 	blockIps bool
+
+	database *sql.DB
 }
 
 func (h *HubController) addHub(roomName string) {
@@ -110,6 +112,11 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
 	}
+
+	db, err := h.openDatabase()
+	if err != nil {
+		h.database = db
+	}
 }
 
 func NewHub(roomName string, h *HubController) *Hub {
@@ -129,12 +136,10 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			if h.controller.blockIps {
-				err := h.checkIp(conn.Ip)
-				if err != nil {
-					writeErrLog(conn.Ip, h.roomName, err.Error())
-					continue
-				}
+			uuid, staff, banned := h.controller.readPlayerData(conn.Ip)
+			if banned {
+				writeErrLog(conn.Ip, h.roomName, "user is banned")
+				continue
 			}
 
 			id := -1
@@ -166,6 +171,9 @@ func (h *Hub) Run() {
 				ip: conn.Ip,
 				send: make(chan []byte, 256),
 				id: id,
+				uuid: uuid,
+				banned: banned,
+				staff: staff,
 				spriteIndex: -1,
 				pictures: make(map[int]*Picture),
 				key: key}
@@ -244,79 +252,44 @@ type IpHubResponse struct {
 	Block       int    `json:"block"`
 }
 
-func (hub *Hub) checkIp(ip string) error {
-	dbPass := ""
-	db, err := sql.Open("mysql", "yno:" + dbPass + "@tcp(localhost)/ynodb")
-	if err != nil {
-		return err
-	}
-
-	defer db.Close()
-
-	results, err := db.Query("SELECT blocked FROM blocklist WHERE ip = '" + ip + "'")
-	if err != nil {
-		return err
-	}
-
-	defer results.Close()
-
-	for results.Next() {
-		var blocked int
-		err = results.Scan(&blocked)
-		if err != nil {
-			return err
-		}
-		if blocked == 0 {
-			return nil
-		} else {
-			return errors.New("connection blocked (cached)")
-		}
-	}
-
+func (h *HubController) isVpn(ip string) (bool, error) {
 	apiKey := ""
 	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	req.Header.Set("X-Key", apiKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	var response IpHubResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return err
+		return false, err
 	}
 
-	var blockedIp int
+	var blockedIp bool
 	if response.Block == 0 {
-		blockedIp = 0
+		blockedIp = false
 	} else {
-		blockedIp = 1
+		blockedIp = true
 	}
-
-	insertQuery := "INSERT INTO blocklist(ip, blocked) VALUES ('" + ip + "', " + strconv.Itoa(blockedIp) + ")"
-	_, insertErr := db.Exec(insertQuery)
-
-	if insertErr != nil {
-		return insertErr
-	}
-
+	
 	if response.Block > 0 {
 		log.Printf("Connection Blocked %v %v %v %v\n", response.IP, response.CountryName, response.Isp, response.Block)
-		return errors.New("connection blocked")
+		return false, errors.New("connection banned")
 	}
 
-	return nil
+	return blockedIp, nil
 }
 
 // serveWs handles websocket requests from the peer.
@@ -795,4 +768,57 @@ func (h *HubController) isValidPicName(name string) bool {
 
 func GetPlayerCount() int {
 	return totalPlayerCount
+}
+
+func (h *HubController) readPlayerData(ip string) (uuid string, staff bool, banned bool) {
+	results, err := h.queryDatabase("SELECT uuid, staff, banned FROM playerdata WHERE ip = '" + ip + "'")
+	if err != nil {
+		return "", false, false
+	}
+
+	err = results.Scan(&uuid, &staff, &banned)
+	if err != nil {
+		return "", false, false
+	}
+
+	if uuid == "" { //register because this player doesn't exist
+		uuid := randstr.String(16)
+		banned, _ := h.isVpn(ip)
+		h.writePlayerData(ip, uuid, false, banned)
+	}
+	return uuid, staff, banned
+}
+
+func (h *HubController) writePlayerData(ip string, uuid string, staff bool, banned bool) error {
+	_, err := h.queryDatabase("INSERT INTO playerdata (ip, uuid, staff, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.FormatBool(staff) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', staff = " + strconv.FormatBool(staff) + ", banned = " + strconv.FormatBool(banned))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *HubController) openDatabase() (*sql.DB, error) {
+	dbUser := ""
+	dbPass := ""
+	dbHost := ""
+	dbName := ""
+
+	db, err := sql.Open("mysql", dbUser + ":" + dbPass + "@tcp(" + dbHost + ")/" + dbName)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func (h *HubController) queryDatabase(query string) (*sql.Rows, error) {
+	results, err := h.database.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer results.Close()
+
+	return results, err
 }

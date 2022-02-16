@@ -70,6 +70,11 @@ type Client struct {
 	ip string
 
 	id int
+
+	uuid string
+	staff bool
+	banned bool
+
 	x, y int
 	facing int
 	spd int
