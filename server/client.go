@@ -72,7 +72,7 @@ type Client struct {
 	id int
 
 	uuid string
-	staff bool
+	rank int
 
 	x, y int
 	facing int

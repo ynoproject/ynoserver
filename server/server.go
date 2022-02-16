@@ -136,7 +136,7 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			uuid, staff, banned := h.controller.readPlayerData(conn.Ip)
+			uuid, rank, banned := h.controller.readPlayerData(conn.Ip)
 			if banned {
 				writeErrLog(conn.Ip, h.roomName, "user is banned")
 				continue
@@ -172,7 +172,7 @@ func (h *Hub) Run() {
 				send: make(chan []byte, 256),
 				id: id,
 				uuid: uuid,
-				staff: staff,
+				rank: rank,
 				spriteIndex: -1,
 				pictures: make(map[int]*Picture),
 				key: key}
@@ -185,7 +185,7 @@ func (h *Hub) Run() {
 				continue
 			}
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid) //"your id is %id%" message
+			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank)) //"your id is %id%" message
 			//send the new client info about the game state
 			for other_client := range h.clients {
 				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.uuid)
@@ -769,27 +769,27 @@ func GetPlayerCount() int {
 	return totalPlayerCount
 }
 
-func (h *HubController) readPlayerData(ip string) (uuid string, staff bool, banned bool) {
-	results, err := h.queryDatabase("SELECT uuid, staff, banned FROM playerdata WHERE ip = '" + ip + "'")
+func (h *HubController) readPlayerData(ip string) (uuid string, rank int, banned bool) {
+	results, err := h.queryDatabase("SELECT uuid, rank, banned FROM playerdata WHERE ip = '" + ip + "'")
 	if err != nil {
-		return "", false, false
+		return "", 0, false
 	}
 
-	err = results.Scan(&uuid, &staff, &banned)
+	err = results.Scan(&uuid, &rank, &banned)
 	if err != nil {
-		return "", false, false
+		return "", 0, false
 	}
 
 	if uuid == "" { //register because this player doesn't exist
 		uuid := randstr.String(16)
 		banned, _ := h.isVpn(ip)
-		h.writePlayerData(ip, uuid, false, banned)
+		h.writePlayerData(ip, uuid, 0, banned)
 	}
-	return uuid, staff, banned
+	return uuid, rank, banned
 }
 
-func (h *HubController) writePlayerData(ip string, uuid string, staff bool, banned bool) error {
-	_, err := h.queryDatabase("INSERT INTO playerdata (ip, uuid, staff, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.FormatBool(staff) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', staff = " + strconv.FormatBool(staff) + ", banned = " + strconv.FormatBool(banned))
+func (h *HubController) writePlayerData(ip string, uuid string, rank int, banned bool) error {
+	_, err := h.queryDatabase("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
 	if err != nil {
 		return err
 	}
