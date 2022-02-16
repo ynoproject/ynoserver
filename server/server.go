@@ -172,7 +172,6 @@ func (h *Hub) Run() {
 				send: make(chan []byte, 256),
 				id: id,
 				uuid: uuid,
-				banned: banned,
 				staff: staff,
 				spriteIndex: -1,
 				pictures: make(map[int]*Picture),

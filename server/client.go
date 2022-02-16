@@ -73,7 +73,6 @@ type Client struct {
 
 	uuid string
 	staff bool
-	banned bool
 
 	x, y int
 	facing int
