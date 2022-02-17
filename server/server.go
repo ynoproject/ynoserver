@@ -777,13 +777,17 @@ func (h *HubController) readPlayerData(ip string) (uuid string, rank int, banned
 		return "", 0, false
 	}
 
-	results.Scan(&uuid, &rank, &banned)
-
-	if uuid == "" { //register because this player doesn't exist
-		uuid := randstr.String(16)
+	if results.Next() {
+		err := results.Scan(&uuid, &rank, &banned)
+		if err != nil {
+			return "", 0, false
+		}
+	} else {
+		uuid = randstr.String(16)
 		banned, _ := h.isVpn(ip)
 		h.writePlayerData(ip, uuid, 0, banned)
-	}
+	} 
+
 	return uuid, rank, banned
 }
 
