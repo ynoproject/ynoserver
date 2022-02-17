@@ -115,8 +115,10 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 
 	db, err := h.openDatabase()
 	if err != nil {
-		h.database = db
+		return
 	}
+
+	h.database = db
 }
 
 func NewHub(roomName string, h *HubController) *Hub {
