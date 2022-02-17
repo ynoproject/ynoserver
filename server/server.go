@@ -799,7 +799,7 @@ func (h *HubController) writePlayerData(ip string, uuid string, rank int, banned
 		return err
 	}
 	
-	defer results.close()
+	defer results.Close()
 
 	return nil
 }
