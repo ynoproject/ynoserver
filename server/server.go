@@ -776,6 +776,8 @@ func (h *HubController) readPlayerData(ip string) (uuid string, rank int, banned
 	if err != nil {
 		return "", 0, false
 	}
+	
+	defer results.Close()
 
 	if results.Next() {
 		err := results.Scan(&uuid, &rank, &banned)
@@ -792,10 +794,12 @@ func (h *HubController) readPlayerData(ip string) (uuid string, rank int, banned
 }
 
 func (h *HubController) writePlayerData(ip string, uuid string, rank int, banned bool) error {
-	_, err := h.queryDatabase("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
+	results, err := h.queryDatabase("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
 	if err != nil {
 		return err
 	}
+	
+	defer results.close()
 
 	return nil
 }
@@ -819,8 +823,6 @@ func (h *HubController) queryDatabase(query string) (*sql.Rows, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	defer results.Close()
 
 	return results, err
 }
