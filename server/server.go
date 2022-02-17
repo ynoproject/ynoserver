@@ -56,6 +56,8 @@ type HubController struct {
 
 	gameName string
 	blockIps bool
+
+	database *sql.DB
 }
 
 func (h *HubController) addHub(roomName string) {
@@ -110,6 +112,11 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
 	}
+
+	db, err := h.openDatabase()
+	if err != nil {
+		h.database = db
+	}
 }
 
 func NewHub(roomName string, h *HubController) *Hub {
@@ -129,12 +136,10 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			if h.controller.blockIps {
-				err := h.checkIp(conn.Ip)
-				if err != nil {
-					writeErrLog(conn.Ip, h.roomName, err.Error())
-					continue
-				}
+			uuid, rank, banned := h.controller.readPlayerData(conn.Ip)
+			if banned {
+				writeErrLog(conn.Ip, h.roomName, "user is banned")
+				continue
 			}
 
 			id := -1
@@ -166,6 +171,8 @@ func (h *Hub) Run() {
 				ip: conn.Ip,
 				send: make(chan []byte, 256),
 				id: id,
+				uuid: uuid,
+				rank: rank,
 				spriteIndex: -1,
 				pictures: make(map[int]*Picture),
 				key: key}
@@ -178,10 +185,10 @@ func (h *Hub) Run() {
 				continue
 			}
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key) //"your id is %id%" message
+			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank)) //"your id is %id%" message
 			//send the new client info about the game state
 			for other_client := range h.clients {
-				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(other_client.id))
+				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.uuid + paramDelimStr + strconv.Itoa(other_client.rank))
 				client.send <- []byte("m" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.x) + paramDelimStr + strconv.Itoa(other_client.y));
 				client.send <- []byte("f" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.facing));
 				client.send <- []byte("spd" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.spd));
@@ -213,7 +220,7 @@ func (h *Hub) Run() {
 			totalPlayerCount = totalPlayerCount + 1
 
 			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id))) //user %id% has connected message
+			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank))) //user %id% has connected message
 
 			writeLog(conn.Ip, h.roomName, "connect", 200)
 		case client := <-h.unregister:
@@ -244,79 +251,44 @@ type IpHubResponse struct {
 	Block       int    `json:"block"`
 }
 
-func (hub *Hub) checkIp(ip string) error {
-	dbPass := ""
-	db, err := sql.Open("mysql", "yno:" + dbPass + "@tcp(localhost)/ynodb")
-	if err != nil {
-		return err
-	}
-
-	defer db.Close()
-
-	results, err := db.Query("SELECT blocked FROM blocklist WHERE ip = '" + ip + "'")
-	if err != nil {
-		return err
-	}
-
-	defer results.Close()
-
-	for results.Next() {
-		var blocked int
-		err = results.Scan(&blocked)
-		if err != nil {
-			return err
-		}
-		if blocked == 0 {
-			return nil
-		} else {
-			return errors.New("connection blocked (cached)")
-		}
-	}
-
+func (h *HubController) isVpn(ip string) (bool, error) {
 	apiKey := ""
 	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	req.Header.Set("X-Key", apiKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	var response IpHubResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return err
+		return false, err
 	}
 
-	var blockedIp int
+	var blockedIp bool
 	if response.Block == 0 {
-		blockedIp = 0
+		blockedIp = false
 	} else {
-		blockedIp = 1
+		blockedIp = true
 	}
-
-	insertQuery := "INSERT INTO blocklist(ip, blocked) VALUES ('" + ip + "', " + strconv.Itoa(blockedIp) + ")"
-	_, insertErr := db.Exec(insertQuery)
-
-	if insertErr != nil {
-		return insertErr
-	}
-
+	
 	if response.Block > 0 {
 		log.Printf("Connection Blocked %v %v %v %v\n", response.IP, response.CountryName, response.Isp, response.Block)
-		return errors.New("connection blocked")
+		return false, errors.New("connection banned")
 	}
 
-	return nil
+	return blockedIp, nil
 }
 
 // serveWs handles websocket requests from the peer.
@@ -795,4 +767,57 @@ func (h *HubController) isValidPicName(name string) bool {
 
 func GetPlayerCount() int {
 	return totalPlayerCount
+}
+
+func (h *HubController) readPlayerData(ip string) (uuid string, rank int, banned bool) {
+	results, err := h.queryDatabase("SELECT uuid, rank, banned FROM playerdata WHERE ip = '" + ip + "'")
+	if err != nil {
+		return "", 0, false
+	}
+
+	err = results.Scan(&uuid, &rank, &banned)
+	if err != nil {
+		return "", 0, false
+	}
+
+	if uuid == "" { //register because this player doesn't exist
+		uuid := randstr.String(16)
+		banned, _ := h.isVpn(ip)
+		h.writePlayerData(ip, uuid, 0, banned)
+	}
+	return uuid, rank, banned
+}
+
+func (h *HubController) writePlayerData(ip string, uuid string, rank int, banned bool) error {
+	_, err := h.queryDatabase("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *HubController) openDatabase() (*sql.DB, error) {
+	dbUser := ""
+	dbPass := ""
+	dbHost := ""
+	dbName := ""
+
+	db, err := sql.Open("mysql", dbUser + ":" + dbPass + "@tcp(" + dbHost + ")/" + dbName)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func (h *HubController) queryDatabase(query string) (*sql.Rows, error) {
+	results, err := h.database.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer results.Close()
+
+	return results, err
 }

@@ -70,6 +70,10 @@ type Client struct {
 	ip string
 
 	id int
+
+	uuid string
+	rank int
+
 	x, y int
 	facing int
 	spd int
