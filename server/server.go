@@ -777,10 +777,7 @@ func (h *HubController) readPlayerData(ip string) (uuid string, rank int, banned
 		return "", 0, false
 	}
 
-	err = results.Scan(&uuid, &rank, &banned)
-	if err != nil {
-		return "", 0, false
-	}
+	results.Scan(&uuid, &rank, &banned)
 
 	if uuid == "" { //register because this player doesn't exist
 		uuid := randstr.String(16)
