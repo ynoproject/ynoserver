@@ -188,7 +188,7 @@ func (h *Hub) Run() {
 			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank)) //"your id is %id%" message
 			//send the new client info about the game state
 			for other_client := range h.clients {
-				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.uuid)
+				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.uuid + paramDelimStr + strconv.Itoa(other_client.rank))
 				client.send <- []byte("m" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.x) + paramDelimStr + strconv.Itoa(other_client.y));
 				client.send <- []byte("f" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.facing));
 				client.send <- []byte("spd" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.spd));
@@ -220,7 +220,7 @@ func (h *Hub) Run() {
 			totalPlayerCount = totalPlayerCount + 1
 
 			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid)) //user %id% has connected message
+			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank))) //user %id% has connected message
 
 			writeLog(conn.Ip, h.roomName, "connect", 200)
 		case client := <-h.unregister:
