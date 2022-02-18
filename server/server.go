@@ -679,7 +679,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			return true, err
 		}
 		if msgFields[0] == "say" {
-			h.broadcast([]byte("say" + paramDelimStr + sender.uuid + paramDelimStr + sender.systemName + paramDelimStr + msgContents));
+			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.systemName + paramDelimStr + msgContents));
 		} else {
 			mapId, errconv := strconv.Atoi(h.roomName)
 			if errconv != nil {
