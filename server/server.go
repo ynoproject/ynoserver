@@ -43,10 +43,7 @@ type ConnInfo struct {
 	Ip string
 }
 
-type HubController struct {
-	hubs []*Hub
-
-	//asset lists go here since they don't need to be duplicated for every hub
+type Config struct {
 	spriteNames []string
 	systemNames []string
 	soundNames []string
@@ -63,6 +60,11 @@ type HubController struct {
 	dbPass string
 	dbHost string
 	dbName string
+}
+
+type HubController struct {
+	hubs []*Hub
+	config *Config
 
 	database *sql.DB
 }
@@ -104,24 +106,28 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) {
-	h := HubController{}
+func SetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) {
+	c := Config{}
 
-	h.spriteNames = spriteNames
-	h.systemNames = systemNames
-	h.soundNames = soundNames
-	h.ignoredSoundNames = ignoredSoundNames
-	h.pictureNames = pictureNames
-	h.picturePrefixes = picturePrefixes
-	h.gameName = gameName
+	c.spriteNames = spriteNames
+	c.systemNames = systemNames
+	c.soundNames = soundNames
+	c.ignoredSoundNames = ignoredSoundNames
+	c.pictureNames = pictureNames
+	c.picturePrefixes = picturePrefixes
+	c.gameName = gameName
 
-	h.signKey = signKey
-	h.ipHubKey = ipHubKey
+	c.signKey = signKey
+	c.ipHubKey = ipHubKey
 	
-	h.dbUser = dbUser
-	h.dbPass = dbPass
-	h.dbHost = dbHost
-	h.dbName = dbName
+	c.dbUser = dbUser
+	c.dbPass = dbPass
+	c.dbHost = dbHost
+	c.dbName = dbName
+}
+
+func CreateAllHubs(roomNames []string) {
+	h := HubController{}
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
@@ -372,7 +378,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 
 	//signature validation
 	byteKey := []byte(msg.sender.key)
-	byteSecret := []byte(h.controller.signKey)
+	byteSecret := []byte(h.controller.config.signKey)
 
 	hashStr := sha1.New()
 	hashStr.Write(byteKey)
@@ -477,7 +483,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if !h.controller.isValidSpriteName(msgFields[1]) {
 			return false, err
 		}
-		if h.controller.gameName == "2kki" { //totally normal yume 2kki check
+		if h.controller.config.gameName == "2kki" { //totally normal yume 2kki check
 			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
 				return false, err
 			}
@@ -731,7 +737,7 @@ func (h *HubController) isValidSpriteName(name string) bool {
 		return false
 	}
 
-	for _, otherName := range h.spriteNames {
+	for _, otherName := range h.config.spriteNames {
 		if strings.EqualFold(otherName, name) {
 			return true
 		}
@@ -740,7 +746,7 @@ func (h *HubController) isValidSpriteName(name string) bool {
 }
 
 func (h *HubController) isValidSystemName(name string) bool {
-	for _, otherName := range h.systemNames {
+	for _, otherName := range h.config.systemNames {
 		if strings.EqualFold(otherName, name) {
 			return true
 		}
@@ -753,9 +759,9 @@ func (h *HubController) isValidSoundName(name string) bool {
 		return false
 	}
 
-	for _, otherName := range h.soundNames {
+	for _, otherName := range h.config.soundNames {
 		if strings.EqualFold(otherName, name) {
-			for _, ignoredName := range h.ignoredSoundNames {
+			for _, ignoredName := range h.config.ignoredSoundNames {
 				if strings.EqualFold(ignoredName, name) {
 					return false
 				}
@@ -772,12 +778,12 @@ func (h *HubController) isValidPicName(name string) bool {
 	}
 
 	nameLower := strings.ToLower(name)
-	for _, otherName := range h.pictureNames {
+	for _, otherName := range h.config.pictureNames {
 		if otherName == nameLower {
 			return true
 		}
 	}
-	for _, prefix := range h.picturePrefixes {
+	for _, prefix := range h.config.picturePrefixes {
 		if strings.HasPrefix(nameLower, prefix) {
 			return true
 		}
@@ -825,7 +831,7 @@ func (h *HubController) writePlayerData(ip string, uuid string, rank int, banned
 
 func (h *HubController) openDatabase() (*sql.DB, error) {
 
-	db, err := sql.Open("mysql", h.dbUser + ":" + h.dbPass + "@tcp(" + h.dbHost + ")/" + h.dbName)
+	db, err := sql.Open("mysql", h.config.dbUser + ":" + h.config.dbPass + "@tcp(" + h.config.dbHost + ")/" + h.config.dbName)
 	if err != nil {
 		return nil, err
 	}
