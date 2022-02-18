@@ -25,9 +25,6 @@
 ## Set to name of game
 #game_name: ""
 
-## Whether to block non-residential IPs
-#block_ips: 0
-
 ## Logging settings
 logging:
   ## Path to log file written by ynoserver

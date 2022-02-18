@@ -55,7 +55,6 @@ type HubController struct {
 	picturePrefixes []string
 
 	gameName string
-	blockIps bool
 
 	database *sql.DB
 }
@@ -97,7 +96,7 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, blockIps bool) {
+func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
 	h := HubController{}
 
 	h.spriteNames = spriteNames
@@ -107,7 +106,6 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 	h.pictureNames = pictureNames
 	h.picturePrefixes = picturePrefixes
 	h.gameName = gameName
-	h.blockIps = blockIps
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName)

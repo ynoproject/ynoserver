@@ -16,7 +16,6 @@ type ServerConfig struct {
 	PictureNames    string `yaml:"picture_names"`
 	PicturePrefixes string `yaml:"picture_prefixes"`
 	GameName        string `yaml:"game_name"`
-	BlockIPs        int    `yaml:"block_ips"`
 	Logging         struct {
 		File       string `yaml:"file"`
 		MaxSize    int    `yaml:"max_size"`
