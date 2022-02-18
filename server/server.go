@@ -679,13 +679,13 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			return true, err
 		}
 		if msgFields[0] == "say" {
-			h.broadcast([]byte("say" + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+			h.broadcast([]byte("say" + paramDelimStr + sender.uuid + paramDelimStr + sender.systemName + paramDelimStr + msgContents));
 		} else {
 			mapId, errconv := strconv.Atoi(h.roomName)
 			if errconv != nil {
 				return true, err
 			}
-			h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + fmt.Sprintf("%04d", mapId) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + sender.systemName + paramDelimStr + "<" + sender.name + "> " + msgContents));
+			h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + fmt.Sprintf("%04d", mapId) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + msgContents));
 		}
 		terminate = true
 	case "name": // nick set
