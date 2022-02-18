@@ -824,6 +824,10 @@ func (h *HubController) openDatabase() (*sql.DB, error) {
 }
 
 func (h *HubController) queryDatabase(query string) (*sql.Rows, error) {
+	if h.database == nil {
+		return nil, nil
+	}
+
 	results, err := h.database.Query(query)
 	if err != nil {
 		return nil, err
