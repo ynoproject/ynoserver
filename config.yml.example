@@ -25,6 +25,23 @@
 ## Set to name of game
 #game_name: ""
 
+## YNOclient signature key
+#sign_key: ""
+
+## IPHub API key, leave blank to disable VPN check
+#iphub_key: ""
+
+## MySQL / MariaDB database settings, leave blank to disable database usage
+database:
+  ## Username for database user
+  #user: ""
+  ## Password for database user
+  #pass: ""
+  ## Address of database server
+  #host: ""
+  ## Name of database
+  #name: ""
+
 ## Logging settings
 logging:
   ## Path to log file written by ynoserver

@@ -56,6 +56,14 @@ type HubController struct {
 
 	gameName string
 
+	signKey string
+	ipHubKey string
+
+	dbUser string
+	dbPass string
+	dbHost string
+	dbName string
+
 	database *sql.DB
 }
 
@@ -96,7 +104,7 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string) {
+func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) {
 	h := HubController{}
 
 	h.spriteNames = spriteNames
@@ -106,6 +114,14 @@ func CreateAllHubs(roomNames, spriteNames []string, systemNames []string, soundN
 	h.pictureNames = pictureNames
 	h.picturePrefixes = picturePrefixes
 	h.gameName = gameName
+
+	h.signKey = signKey
+	h.ipHubKey = ipHubKey
+	
+	h.dbUser = dbUser
+	h.dbPass = dbPass
+	h.dbHost = dbHost
+	h.dbName = dbName
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
@@ -356,7 +372,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 
 	//signature validation
 	byteKey := []byte(msg.sender.key)
-	byteSecret := []byte("")
+	byteSecret := []byte(h.controller.signKey)
 
 	hashStr := sha1.New()
 	hashStr.Write(byteKey)
@@ -808,12 +824,8 @@ func (h *HubController) writePlayerData(ip string, uuid string, rank int, banned
 }
 
 func (h *HubController) openDatabase() (*sql.DB, error) {
-	dbUser := ""
-	dbPass := ""
-	dbHost := ""
-	dbName := ""
 
-	db, err := sql.Open("mysql", dbUser + ":" + dbPass + "@tcp(" + dbHost + ")/" + dbName)
+	db, err := sql.Open("mysql", h.dbUser + ":" + h.dbPass + "@tcp(" + h.dbHost + ")/" + h.dbName)
 	if err != nil {
 		return nil, err
 	}

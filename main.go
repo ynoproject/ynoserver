@@ -96,7 +96,7 @@ func main() {
 		}
 	}
 
-	server.CreateAllHubs(roomNames, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName)
+	server.CreateAllHubs(roomNames, spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName, config.SignKey, config.IPHubKey, config.Database.User, config.Database.Pass, config.Database.Host, config.Database.Name)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,
