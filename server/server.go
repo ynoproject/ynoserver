@@ -830,7 +830,6 @@ func (h *HubController) writePlayerData(ip string, uuid string, rank int, banned
 }
 
 func (h *HubController) openDatabase() (*sql.DB, error) {
-
 	db, err := sql.Open("mysql", h.config.dbUser + ":" + h.config.dbPass + "@tcp(" + h.config.dbHost + ")/" + h.config.dbName)
 	if err != nil {
 		return nil, err
