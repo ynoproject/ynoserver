@@ -64,7 +64,7 @@ type Config struct {
 
 type HubController struct {
 	hubs []*Hub
-	config *Config
+	config Config
 
 	database *sql.DB
 }
@@ -106,7 +106,7 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func SetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) {
+func GetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) (Config) {
 	c := Config{}
 
 	c.spriteNames = spriteNames
@@ -124,10 +124,13 @@ func SetConfig(spriteNames []string, systemNames []string, soundNames []string, 
 	c.dbPass = dbPass
 	c.dbHost = dbHost
 	c.dbName = dbName
+
+	return c
 }
 
-func CreateAllHubs(roomNames []string) {
+func CreateAllHubs(roomNames []string, config Config) {
 	h := HubController{}
+	h.config = config
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
