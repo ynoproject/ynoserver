@@ -255,6 +255,11 @@ type IpHubResponse struct {
 
 func (h *HubController) isVpn(ip string) (bool, error) {
 	apiKey := ""
+
+	if apiKey == "" {
+		return false, nil //VPN checking is not available
+	}
+
 	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
 	if err != nil {
 		return false, err
