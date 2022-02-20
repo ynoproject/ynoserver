@@ -175,7 +175,7 @@ func (h *Hub) Run() {
 				}
 			}
 
-			ip_limit := 3
+			ip_limit := 1 //lower limit from 3 to 1 until issues with multiple connections per ip are resolved
 			same_ip := 0
 			for other_client := range h.clients {
 				if other_client.ip == conn.Ip {
