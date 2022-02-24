@@ -723,6 +723,14 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		sender.name = msgFields[1]
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name));
 		terminate = true
+	case "ban": // ban player
+		if len(msgFields) != 2 {
+			return false, err
+		}
+		err := h.controller.tryBanPlayer(sender.Ip, msgFields[1])
+		if err != nil {
+			return false, err
+		}
 	default:
 		return false, err
 	}
@@ -815,13 +823,51 @@ func (h *HubController) readPlayerData(ip string) (uuid string, rank int, banned
 	} else {
 		uuid = randstr.String(16)
 		banned, _ := h.isVpn(ip)
-		h.writePlayerData(ip, uuid, 0, banned)
+		h.createPlayerData(ip, uuid, 0, banned)
 	} 
 
 	return uuid, rank, banned
 }
 
-func (h *HubController) writePlayerData(ip string, uuid string, rank int, banned bool) error {
+func (h *HubController) readPlayerRank(uuid string) rank int {
+	results, err := h.queryDatabase("SELECT rank FROM playerdata WHERE uuid = '" + uuid + "'")
+	if err != nil {
+		return 0
+	}
+	
+	defer results.Close()
+
+	if results.Next() {
+		err := results.Scan(&rank)
+		if err != nil {
+			return 0
+		}
+	}
+
+	return rank
+}
+
+func (h *HubController) tryBanPlayer(senderIp, uuid string) error {
+	senderUUID, senderRank, _ := h.controller.readPlayerData(senderIp)
+	if senderUUID == uuid {
+		return errors.New("attempted self-ban")
+	}
+	rank := h.controller.readPlayerRank(msgFields[1])
+	if senderRank <= rank {
+		return errors.New("unauthorized ban")
+	}
+
+	results, err := h.queryDatabase("UPDATE playerdata SET banned = true WHERE uuid = '" + uuid + "'")
+	if err != nil {
+		return err
+	}
+	
+	defer results.Close()
+
+	return nil
+}
+
+func (h *HubController) createPlayerData(ip string, uuid string, rank int, banned bool) error {
 	results, err := h.queryDatabase("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
 	if err != nil {
 		return err
