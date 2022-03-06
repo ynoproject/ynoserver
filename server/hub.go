@@ -41,7 +41,7 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			uuid, rank, banned := h.controller.readPlayerData(conn.Ip)
+			uuid, rank, banned := h.controller.database.readPlayerData(conn.Ip)
 			if banned {
 				writeErrLog(conn.Ip, h.roomName, "user is banned")
 				continue
@@ -547,7 +547,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if len(msgFields) != 2 {
 			return false, err
 		}
-		err := h.controller.tryBanPlayer(sender.ip, msgFields[1])
+		err := h.controller.database.tryBanPlayer(sender.ip, msgFields[1])
 		if err != nil {
 			return false, err
 		}

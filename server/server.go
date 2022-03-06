@@ -9,9 +9,10 @@ import (
 	"log"
 	"strings"
 	"regexp"
-	"database/sql"
+	"errors"
+	"io/ioutil"
+	"encoding/json"
 	"github.com/gorilla/websocket"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -86,7 +87,9 @@ func GetConfig(spriteNames []string, systemNames []string, soundNames []string, 
 func CreateAllHubs(roomNames []string, config Config) {
 	h := HubController{
 		config: config,
-		database: getDatabaseHandle(config),
+		database: &Database{
+			handle: getDatabaseHandle(config),
+		},
 	}
 
 	for _, roomName := range roomNames {
@@ -115,15 +118,51 @@ type IpHubResponse struct {
 	Block       int    `json:"block"`
 }
 
-func GetPlayerCount() int {
-	return totalPlayerCount
-}
+func isVpn(ip string) (bool, error) {
+	apiKey := ""
 
-func getDatabaseHandle(c Config) (*sql.DB) {
-	db, err := sql.Open("mysql", c.dbUser + ":" + c.dbPass + "@tcp(" + c.dbHost + ")/" + c.dbName)
-	if err != nil {
-		return nil
+	if apiKey == "" {
+		return false, nil //VPN checking is not available
 	}
 
-	return db
+	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
+	if err != nil {
+		return false, err
+	}
+
+	req.Header.Set("X-Key", apiKey)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
+	var response IpHubResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return false, err
+	}
+
+	var blockedIp bool
+	if response.Block == 0 {
+		blockedIp = false
+	} else {
+		blockedIp = true
+	}
+	
+	if response.Block > 0 {
+		log.Printf("Connection Blocked %v %v %v %v\n", response.IP, response.CountryName, response.Isp, response.Block)
+		return false, errors.New("connection banned")
+	}
+
+	return blockedIp, nil
+}
+
+func GetPlayerCount() int {
+	return totalPlayerCount
 }
