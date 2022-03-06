@@ -73,3 +73,44 @@ func ParseConfig(file string) ServerConfig {
 
 	return config
 }
+
+type Config struct {
+	spriteNames []string
+	systemNames []string
+	soundNames []string
+	ignoredSoundNames []string
+	pictureNames []string
+	picturePrefixes []string
+
+	gameName string
+
+	signKey string
+	ipHubKey string
+
+	dbUser string
+	dbPass string
+	dbHost string
+	dbName string
+}
+
+func GetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) (Config) {
+	c := Config{
+		spriteNames: spriteNames,
+		systemNames: systemNames,
+		soundNames: soundNames,
+		ignoredSoundNames: ignoredSoundNames,
+		pictureNames: pictureNames,
+		picturePrefixes: picturePrefixes,
+		gameName: gameName,
+
+		signKey: signKey,
+		ipHubKey: ipHubKey,
+
+		dbUser: dbUser,
+		dbPass: dbPass,
+		dbHost: dbHost,
+		dbName: dbName,
+	}
+
+	return c
+}

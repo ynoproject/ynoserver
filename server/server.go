@@ -35,53 +35,12 @@ type ConnInfo struct {
 	Ip string
 }
 
-type Config struct {
-	spriteNames []string
-	systemNames []string
-	soundNames []string
-	ignoredSoundNames []string
-	pictureNames []string
-	picturePrefixes []string
-
-	gameName string
-
-	signKey string
-	ipHubKey string
-
-	dbUser string
-	dbPass string
-	dbHost string
-	dbName string
-}
-
 func writeLog(ip string, roomName string, payload string, errorcode int) {
 	log.Printf("%v %v \"%v\" %v\n", ip, roomName, strings.Replace(payload, "\"", "'", -1), errorcode)
 }
 
 func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
-}
-
-func GetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) (Config) {
-	c := Config{
-		spriteNames: spriteNames,
-		systemNames: systemNames,
-		soundNames: soundNames,
-		ignoredSoundNames: ignoredSoundNames,
-		pictureNames: pictureNames,
-		picturePrefixes: picturePrefixes,
-		gameName: gameName,
-
-		signKey: signKey,
-		ipHubKey: ipHubKey,
-
-		dbUser: dbUser,
-		dbPass: dbPass,
-		dbHost: dbHost,
-		dbName: dbName,
-	}
-
-	return c
 }
 
 func CreateAllHubs(roomNames []string, config Config) {
