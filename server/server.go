@@ -131,18 +131,12 @@ func GetConfig(spriteNames []string, systemNames []string, soundNames []string, 
 func CreateAllHubs(roomNames []string, config Config) {
 	h := HubController{
 		config: config,
+		database: getDatabaseHandle(config),
 	}
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
 	}
-
-	db, err := h.openDatabase()
-	if err != nil {
-		return
-	}
-
-	h.database = db
 }
 
 func NewHub(roomName string, h *HubController) *Hub {
@@ -879,13 +873,13 @@ func (h *HubController) createPlayerData(ip string, uuid string, rank int, banne
 	return nil
 }
 
-func (h *HubController) openDatabase() (*sql.DB, error) {
-	db, err := sql.Open("mysql", h.config.dbUser + ":" + h.config.dbPass + "@tcp(" + h.config.dbHost + ")/" + h.config.dbName)
+func getDatabaseHandle(c Config) (*sql.DB) {
+	db, err := sql.Open("mysql", c.dbUser + ":" + c.dbPass + "@tcp(" + c.dbHost + ")/" + c.dbName)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
-	return db, nil
+	return db
 }
 
 func (h *HubController) queryDatabase(query string) (*sql.Rows, error) {
