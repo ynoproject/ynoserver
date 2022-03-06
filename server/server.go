@@ -107,23 +107,23 @@ func writeErrLog(ip string, roomName string, payload string) {
 }
 
 func GetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) (Config) {
-	c := Config{}
+	c := Config{
+		spriteNames: spriteNames,
+		systemNames: systemNames,
+		soundNames: soundNames,
+		ignoredSoundNames: ignoredSoundNames,
+		pictureNames: pictureNames,
+		picturePrefixes: picturePrefixes,
+		gameName: gameName,
 
-	c.spriteNames = spriteNames
-	c.systemNames = systemNames
-	c.soundNames = soundNames
-	c.ignoredSoundNames = ignoredSoundNames
-	c.pictureNames = pictureNames
-	c.picturePrefixes = picturePrefixes
-	c.gameName = gameName
+		signKey: signKey,
+		ipHubKey: ipHubKey,
 
-	c.signKey = signKey
-	c.ipHubKey = ipHubKey
-	
-	c.dbUser = dbUser
-	c.dbPass = dbPass
-	c.dbHost = dbHost
-	c.dbName = dbName
+		dbUser: dbUser,
+		dbPass: dbPass,
+		dbHost: dbHost,
+		dbName: dbName,
+	}
 
 	return c
 }
