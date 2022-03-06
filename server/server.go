@@ -129,8 +129,9 @@ func GetConfig(spriteNames []string, systemNames []string, soundNames []string, 
 }
 
 func CreateAllHubs(roomNames []string, config Config) {
-	h := HubController{}
-	h.config = config
+	h := HubController{
+		config: config,
+	}
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
