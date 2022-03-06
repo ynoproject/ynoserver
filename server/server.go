@@ -728,7 +728,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if len(msgFields) != 2 {
 			return false, err
 		}
-		err := h.controller.tryBanPlayer(sender.Ip, msgFields[1])
+		err := h.controller.tryBanPlayer(sender.ip, msgFields[1])
 		if err != nil {
 			return false, err
 		}
@@ -830,7 +830,7 @@ func (h *HubController) readPlayerData(ip string) (uuid string, rank int, banned
 	return uuid, rank, banned
 }
 
-func (h *HubController) readPlayerRank(uuid string) rank int {
+func (h *HubController) readPlayerRank(uuid string) (rank int) {
 	results, err := h.queryDatabase("SELECT rank FROM playerdata WHERE uuid = '" + uuid + "'")
 	if err != nil {
 		return 0
@@ -849,11 +849,11 @@ func (h *HubController) readPlayerRank(uuid string) rank int {
 }
 
 func (h *HubController) tryBanPlayer(senderIp, uuid string) error {
-	senderUUID, senderRank, _ := h.controller.readPlayerData(senderIp)
+	senderUUID, senderRank, _ := h.readPlayerData(senderIp)
 	if senderUUID == uuid {
 		return errors.New("attempted self-ban")
 	}
-	rank := h.controller.readPlayerRank(msgFields[1])
+	rank := h.readPlayerRank(uuid)
 	if senderRank <= rank {
 		return errors.New("unauthorized ban")
 	}
