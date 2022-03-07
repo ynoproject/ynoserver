@@ -93,8 +93,8 @@ type Config struct {
 	dbName string
 }
 
-func GetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) (Config) {
-	c := Config{
+func SetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) {
+	config = Config{
 		spriteNames: spriteNames,
 		systemNames: systemNames,
 		soundNames: soundNames,
@@ -111,6 +111,4 @@ func GetConfig(spriteNames []string, systemNames []string, soundNames []string, 
 		dbHost: dbHost,
 		dbName: dbName,
 	}
-
-	return c
 }

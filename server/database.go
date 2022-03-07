@@ -8,12 +8,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type Database struct {
-	handle *sql.DB
-}
-
-func getDatabaseHandle(c Config) (*sql.DB) {
-	db, err := sql.Open("mysql", c.dbUser + ":" + c.dbPass + "@tcp(" + c.dbHost + ")/" + c.dbName)
+func getDatabaseHandle() (*sql.DB) {
+	db, err := sql.Open("mysql", config.dbUser + ":" + config.dbPass + "@tcp(" + config.dbHost + ")/" + config.dbName)
 	if err != nil {
 		return nil
 	}
@@ -21,8 +17,8 @@ func getDatabaseHandle(c Config) (*sql.DB) {
 	return db
 }
 
-func (d *Database) readPlayerData(ip string) (uuid string, rank int, banned bool) {
-	results, err := d.queryDatabase("SELECT uuid, rank, banned FROM playerdata WHERE ip = '" + ip + "'")
+func readPlayerData(ip string) (uuid string, rank int, banned bool) {
+	results, err := queryDatabase("SELECT uuid, rank, banned FROM playerdata WHERE ip = '" + ip + "'")
 	if err != nil {
 		return "", 0, false
 	}
@@ -37,14 +33,14 @@ func (d *Database) readPlayerData(ip string) (uuid string, rank int, banned bool
 	} else {
 		uuid = randstr.String(16)
 		banned, _ := isVpn(ip)
-		d.createPlayerData(ip, uuid, 0, banned)
+		createPlayerData(ip, uuid, 0, banned)
 	} 
 
 	return uuid, rank, banned
 }
 
-func (d *Database) readPlayerRank(uuid string) (rank int) {
-	results, err := d.queryDatabase("SELECT rank FROM playerdata WHERE uuid = '" + uuid + "'")
+func readPlayerRank(uuid string) (rank int) {
+	results, err := queryDatabase("SELECT rank FROM playerdata WHERE uuid = '" + uuid + "'")
 	if err != nil {
 		return 0
 	}
@@ -61,17 +57,16 @@ func (d *Database) readPlayerRank(uuid string) (rank int) {
 	return rank
 }
 
-func (d *Database) tryBanPlayer(senderIp, uuid string) error {
-	senderUUID, senderRank, _ := d.readPlayerData(senderIp)
-	if senderUUID == uuid {
+func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by api only
+	if readPlayerRank(senderUUID) <= readPlayerRank(recipientUUID) {
+		return errors.New("insufficient rank")
+	}
+
+	if senderUUID == recipientUUID {
 		return errors.New("attempted self-ban")
 	}
-	rank := d.readPlayerRank(uuid)
-	if senderRank <= rank {
-		return errors.New("unauthorized ban")
-	}
 
-	results, err := d.queryDatabase("UPDATE playerdata SET banned = true WHERE uuid = '" + uuid + "'")
+	results, err := queryDatabase("UPDATE playerdata SET banned = true WHERE uuid = '" + recipientUUID + "'")
 	if err != nil {
 		return err
 	}
@@ -81,8 +76,8 @@ func (d *Database) tryBanPlayer(senderIp, uuid string) error {
 	return nil
 }
 
-func (d *Database) createPlayerData(ip string, uuid string, rank int, banned bool) error {
-	results, err := d.queryDatabase("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
+func createPlayerData(ip string, uuid string, rank int, banned bool) error {
+	results, err := queryDatabase("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
 	if err != nil {
 		return err
 	}
@@ -92,12 +87,12 @@ func (d *Database) createPlayerData(ip string, uuid string, rank int, banned boo
 	return nil
 }
 
-func (d *Database) queryDatabase(query string) (*sql.Rows, error) {
-	if d.handle == nil {
+func queryDatabase(query string) (*sql.Rows, error) {
+	if db == nil {
 		return nil, nil
 	}
 
-	results, err := d.handle.Query(query)
+	results, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}

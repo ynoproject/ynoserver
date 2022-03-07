@@ -41,7 +41,7 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			uuid, rank, banned := h.controller.database.readPlayerData(conn.Ip)
+			uuid, rank, banned := readPlayerData(conn.Ip)
 			if banned {
 				writeErrLog(conn.Ip, h.roomName, "user is banned")
 				continue
@@ -201,7 +201,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 
 	//signature validation
 	byteKey := []byte(msg.sender.key)
-	byteSecret := []byte(h.controller.config.signKey)
+	byteSecret := []byte(config.signKey)
 
 	hashStr := sha1.New()
 	hashStr.Write(byteKey)
@@ -306,7 +306,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if !h.controller.isValidSpriteName(msgFields[1]) {
 			return false, err
 		}
-		if h.controller.config.gameName == "2kki" { //totally normal yume 2kki check
+		if config.gameName == "2kki" { //totally normal yume 2kki check
 			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
 				return false, err
 			}
@@ -543,14 +543,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		sender.name = msgFields[1]
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name));
 		terminate = true
-	case "ban": // ban player
-		if len(msgFields) != 2 {
-			return false, err
-		}
-		err := h.controller.database.tryBanPlayer(sender.ip, msgFields[1])
-		if err != nil {
-			return false, err
-		}
 	default:
 		return false, err
 	}

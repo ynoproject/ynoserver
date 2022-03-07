@@ -6,9 +6,6 @@ import (
 
 type HubController struct {
 	hubs []*Hub
-	config Config
-
-	database *Database
 }
 
 func (h *HubController) addHub(roomName string) {
@@ -31,7 +28,7 @@ func (h *HubController) isValidSpriteName(name string) bool {
 		return false
 	}
 
-	for _, otherName := range h.config.spriteNames {
+	for _, otherName := range config.spriteNames {
 		if strings.EqualFold(otherName, name) {
 			return true
 		}
@@ -40,7 +37,7 @@ func (h *HubController) isValidSpriteName(name string) bool {
 }
 
 func (h *HubController) isValidSystemName(name string) bool {
-	for _, otherName := range h.config.systemNames {
+	for _, otherName := range config.systemNames {
 		if strings.EqualFold(otherName, name) {
 			return true
 		}
@@ -53,9 +50,9 @@ func (h *HubController) isValidSoundName(name string) bool {
 		return false
 	}
 
-	for _, otherName := range h.config.soundNames {
+	for _, otherName := range config.soundNames {
 		if strings.EqualFold(otherName, name) {
-			for _, ignoredName := range h.config.ignoredSoundNames {
+			for _, ignoredName := range config.ignoredSoundNames {
 				if strings.EqualFold(ignoredName, name) {
 					return false
 				}
@@ -72,12 +69,12 @@ func (h *HubController) isValidPicName(name string) bool {
 	}
 
 	nameLower := strings.ToLower(name)
-	for _, otherName := range h.config.pictureNames {
+	for _, otherName := range config.pictureNames {
 		if otherName == nameLower {
 			return true
 		}
 	}
-	for _, prefix := range h.config.picturePrefixes {
+	for _, prefix := range config.picturePrefixes {
 		if strings.HasPrefix(nameLower, prefix) {
 			return true
 		}

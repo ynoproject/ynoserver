@@ -5,13 +5,15 @@
 package server
 
 import (
-	"net/http"
-	"log"
-	"strings"
-	"regexp"
+	"database/sql"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"encoding/json"
+	"log"
+	"net/http"
+	"regexp"
+	"strings"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -28,6 +30,9 @@ var (
 	isOkName = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
 	paramDelimStr = "\uffff"
 	msgDelimStr = "\ufffe"
+
+	config Config
+	db *sql.DB
 )
 
 type ConnInfo struct {
@@ -43,13 +48,10 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func CreateAllHubs(roomNames []string, config Config) {
-	h := HubController{
-		config: config,
-		database: &Database{
-			handle: getDatabaseHandle(config),
-		},
-	}
+func CreateAllHubs(roomNames []string) {
+	h := HubController{}
+
+	db = getDatabaseHandle()
 
 	for _, roomName := range roomNames {
 		h.addHub(roomName)
@@ -120,8 +122,4 @@ func isVpn(ip string) (bool, error) {
 	}
 
 	return blockedIp, nil
-}
-
-func GetPlayerCount() int {
-	return totalPlayerCount
 }

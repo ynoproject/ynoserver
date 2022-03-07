@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"strings"
-	"fmt"
 )
 
 func writeLog(ip string, payload string, errorcode int) {
@@ -96,8 +95,8 @@ func main() {
 		}
 	}
 
-	conf := server.GetConfig(spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName, config.SignKey, config.IPHubKey, config.Database.User, config.Database.Pass, config.Database.Host, config.Database.Name)
-	server.CreateAllHubs(roomNames, conf)
+	server.SetConfig(spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName, config.SignKey, config.IPHubKey, config.Database.User, config.Database.Pass, config.Database.Host, config.Database.Name)
+	server.CreateAllHubs(roomNames)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,
@@ -107,9 +106,6 @@ func main() {
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
-	http.Handle("/", http.FileServer(http.Dir("public/")))
-	http.HandleFunc("/players", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, strconv.Itoa(server.GetPlayerCount()))
-	})
+	server.StartApi()
 	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":" + strconv.Itoa(config.Port), nil), 500)
 }
