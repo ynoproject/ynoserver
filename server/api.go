@@ -14,7 +14,7 @@ func StartApi() {
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	uuid, rank, _ := readPlayerData(r.RemoteAddr)
+	uuid, rank, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
 	if rank == 0 {
 		w.Write([]byte("fail")) //not staff
 		return
