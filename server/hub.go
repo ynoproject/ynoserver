@@ -510,21 +510,40 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	case "say":
 		fallthrough
 	case "gsay": //global say
-		if len(msgFields) != 2 {
+		isGlobal := msgFields[0] == "gsay"
+		msgLength := 2
+		if isGlobal {
+			msgLength++
+		}
+		if len(msgFields) != msgLength {
 			return true, err
 		}
 		msgContents := msgFields[1]
 		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return true, err
 		}
-		if msgFields[0] == "say" {
+		if !isGlobal {
 			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
 		} else {
-			mapId, errconv := strconv.Atoi(h.roomName)
-			if errconv != nil {
-				return true, err
+			enableLocBin, errconv := strconv.Atoi(msgFields[2])
+			if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
+				return false, err
 			}
-			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + fmt.Sprintf("%04d", mapId) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + msgContents))
+
+			mapId := "0000"
+			prevMapId := "0000"
+			prevLocations := ""
+
+			if enableLocBin == 1 {
+				mapIdInt, errconv := strconv.Atoi(h.roomName)
+				if errconv != nil {
+					return true, err
+				}
+				mapId = fmt.Sprintf("%04d", mapIdInt)
+				prevMapId = sender.prevMapId
+				prevLocations = sender.prevLocations
+			}
+			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + msgContents))
 		}
 		terminate = true
 	case "name": // nick set
