@@ -299,7 +299,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if len(msgFields) != 3 {
 			return false, err
 		}
-		if isValidSpriteName(msgFields[1]) {
+		if !isValidSpriteName(msgFields[1]) {
 			return false, err
 		}
 		if config.gameName == "2kki" { //totally normal yume 2kki check
@@ -321,7 +321,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if len(msgFields) != 2 {
 			return false, err
 		}
-		if isValidSystemName(msgFields[1]) {
+		if !isValidSystemName(msgFields[1]) {
 			return false, err
 		}
 		sender.systemName = msgFields[1]
@@ -336,7 +336,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if len(msgFields) != 5 || msgFields[1] == "" {
 			return false, err
 		}
-		if isValidSoundName(msgFields[1]) {
+		if !isValidSoundName(msgFields[1]) {
 			return false, err
 		}
 		volume, errconv := strconv.Atoi(msgFields[2])
