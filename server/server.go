@@ -20,7 +20,7 @@ import (
 var (
 	maxID            = 512
 	totalPlayerCount = 0
-	allClients       = map[string]*Client
+	allClients       = make(map[string]*Client)
 	upgrader         = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -86,7 +86,7 @@ func isVpn(ip string) (bool, error) {
 		return false, nil //VPN checking is not available
 	}
 
-	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/" + ip, nil)
+	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/"+ip, nil)
 	if err != nil {
 		return false, err
 	}
