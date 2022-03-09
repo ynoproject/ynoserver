@@ -32,8 +32,6 @@ type Hub struct {
 	unregister chan *Client
 
 	roomName string
-
-	controller *HubController
 }
 
 func (h *Hub) Run() {
@@ -533,7 +531,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			if errconv != nil {
 				return true, err
 			}
-			h.controller.globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + fmt.Sprintf("%04d", mapId) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + msgContents));
+			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + fmt.Sprintf("%04d", mapId) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + msgContents));
 		}
 		terminate = true
 	case "name": // nick set

@@ -31,6 +31,8 @@ var (
 	paramDelimStr = "\uffff"
 	msgDelimStr = "\ufffe"
 
+	hubs []*Hub
+
 	config Config
 	db *sql.DB
 )
@@ -49,16 +51,14 @@ func writeErrLog(ip string, roomName string, payload string) {
 }
 
 func CreateAllHubs(roomNames []string) {
-	h := HubController{}
-
 	db = getDatabaseHandle()
 
 	for _, roomName := range roomNames {
-		h.addHub(roomName)
+		addHub(roomName)
 	}
 }
 
-func NewHub(roomName string, h *HubController) *Hub {
+func NewHub(roomName string) *Hub {
 	return &Hub{
 		processMsgCh:  make(chan *Message),
 		connect:   make(chan *ConnInfo),
@@ -66,7 +66,6 @@ func NewHub(roomName string, h *HubController) *Hub {
 		clients:    make(map[*Client]bool),
 		id: make(map[int]bool),
 		roomName: roomName,
-		controller: h,
 	}
 }
 
@@ -185,4 +184,16 @@ func isValidPicName(name string) bool {
 	}
 
 	return false
+}
+
+func addHub(roomName string) {
+	hub := NewHub(roomName)
+	hubs = append(hubs, hub)
+	go hub.Run()
+}
+
+func globalBroadcast(inpData []byte) {
+	for _, hub := range hubs {
+		hub.broadcast(inpData)
+	}
 }
