@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/thanhpk/randstr"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/thanhpk/randstr"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -326,12 +327,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		sender.systemName = msgFields[1]
 		h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]))
-	case "ploc": //set previous map ID and previous locations
-		if len(msgFields) != 3 || len(msgFields[1]) != 4 {
-			return false, err
-		}
-		sender.prevMapId = msgFields[1]
-		sender.prevLocations = msgFields[2]
 	case "se": //play sound effect
 		if len(msgFields) != 5 || msgFields[1] == "" {
 			return false, err
