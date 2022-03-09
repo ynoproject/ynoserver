@@ -18,10 +18,9 @@ import (
 )
 
 var (
-	maxID            = 512
-	totalPlayerCount = 0
-	allClients       = make(map[string]*Client)
-	upgrader         = websocket.Upgrader{
+	maxID      = 512
+	allClients = make(map[string]*Client)
+	upgrader   = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
