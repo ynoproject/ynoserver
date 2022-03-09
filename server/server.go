@@ -123,3 +123,66 @@ func isVpn(ip string) (bool, error) {
 
 	return blockedIp, nil
 }
+
+func isValidSpriteName(name string) bool {
+	if name == "" {
+		return true
+	}
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+
+	for _, otherName := range config.spriteNames {
+		if strings.EqualFold(otherName, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidSystemName(name string) bool {
+	for _, otherName := range config.systemNames {
+		if strings.EqualFold(otherName, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidSoundName(name string) bool {
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+
+	for _, otherName := range config.soundNames {
+		if strings.EqualFold(otherName, name) {
+			for _, ignoredName := range config.ignoredSoundNames {
+				if strings.EqualFold(ignoredName, name) {
+					return false
+				}
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func isValidPicName(name string) bool {
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+
+	nameLower := strings.ToLower(name)
+	for _, otherName := range config.pictureNames {
+		if otherName == nameLower {
+			return true
+		}
+	}
+	for _, prefix := range config.picturePrefixes {
+		if strings.HasPrefix(nameLower, prefix) {
+			return true
+		}
+	}
+
+	return false
+}
