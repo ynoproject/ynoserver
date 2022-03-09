@@ -50,14 +50,14 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 	uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
 
 	command, ok := r.URL.Query()["command"]
-	if !ok || len(command) != 3 || len(command[1]) != 4 {
+	if !ok || len(command) != 2 || len(command[0]) != 4 {
 		w.Write([]byte("fail"))
 		return
 	}
 
-	if client, found := allClients[command[0]]; found {
-		client.prevMapId = command[1]
-		client.prevLocations = command[2]
+	if client, found := allClients[uuid]; found {
+		client.prevMapId = command[0]
+		client.prevLocations = command[1]
 	} else {
 		w.Write([]byte("fail"))
 		return
