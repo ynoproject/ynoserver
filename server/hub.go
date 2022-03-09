@@ -1,16 +1,16 @@
 package server
 
 import (
-	"net/http"
-	"github.com/thanhpk/randstr"
-	"strconv"
-	"log"
-	"errors"
-	"unicode/utf8"
 	"crypto/sha1"
 	"encoding/hex"
-	"strings"
+	"errors"
 	"fmt"
+	"github.com/thanhpk/randstr"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
+	"unicode/utf8"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -35,7 +35,7 @@ type Hub struct {
 }
 
 func (h *Hub) Run() {
-	http.HandleFunc("/" + h.roomName, h.serveWs)
+	http.HandleFunc("/"+h.roomName, h.serveWs)
 	for {
 		select {
 		case conn := <-h.connect:
@@ -69,16 +69,16 @@ func (h *Hub) Run() {
 
 			//sprite index < 0 means none
 			client := &Client{
-				hub: h,
-				conn: conn.Connect,
-				ip: conn.Ip,
-				send: make(chan []byte, 256),
-				id: id,
-				uuid: uuid,
-				rank: rank,
+				hub:         h,
+				conn:        conn.Connect,
+				ip:          conn.Ip,
+				send:        make(chan []byte, 256),
+				id:          id,
+				uuid:        uuid,
+				rank:        rank,
 				spriteIndex: -1,
-				pictures: make(map[int]*Picture),
-				key: key}
+				pictures:    make(map[int]*Picture),
+				key:         key}
 			go client.writePump()
 			go client.readPump()
 
@@ -92,17 +92,17 @@ func (h *Hub) Run() {
 			//send the new client info about the game state
 			for other_client := range h.clients {
 				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.uuid + paramDelimStr + strconv.Itoa(other_client.rank))
-				client.send <- []byte("m" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.x) + paramDelimStr + strconv.Itoa(other_client.y));
-				client.send <- []byte("f" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.facing));
-				client.send <- []byte("spd" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.spd));
+				client.send <- []byte("m" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.x) + paramDelimStr + strconv.Itoa(other_client.y))
+				client.send <- []byte("f" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.facing))
+				client.send <- []byte("spd" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.spd))
 				if other_client.name != "" {
-					client.send <- []byte("name" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.name);
+					client.send <- []byte("name" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.name)
 				}
 				if other_client.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
-					client.send <- []byte("spr" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.spriteName + paramDelimStr + strconv.Itoa(other_client.spriteIndex));
+					client.send <- []byte("spr" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.spriteName + paramDelimStr + strconv.Itoa(other_client.spriteIndex))
 				}
 				if other_client.systemName != "" {
-					client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.systemName);
+					client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.systemName)
 				}
 				for picId, pic := range other_client.pictures {
 					useTransparentColorBin := 0
@@ -119,8 +119,7 @@ func (h *Hub) Run() {
 			//register client in the structures
 			h.id[id] = true
 			h.clients[client] = true
-
-			totalPlayerCount = totalPlayerCount + 1
+			allClients[uuid] = client
 
 			//tell everyone that a new client has connected
 			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank))) //user %id% has connected message
@@ -130,8 +129,6 @@ func (h *Hub) Run() {
 			if _, ok := h.clients[client]; ok {
 				h.deleteClient(client)
 			}
-
-			totalPlayerCount = totalPlayerCount - 1
 
 			writeLog(client.ip, h.roomName, "disconnect", 200)
 		case message := <-h.processMsgCh:
@@ -174,6 +171,7 @@ func (h *Hub) deleteClient(client *Client) {
 	delete(h.id, client.id)
 	close(client.send)
 	delete(h.clients, client)
+	delete(allClients, client.uuid)
 	h.broadcast([]byte("d" + paramDelimStr + strconv.Itoa(client.id))) //user %id% has disconnected (and new player count) message
 }
 
@@ -210,7 +208,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 
 	if string(msg.data[:8]) != hashDigestStr {
 		//errs = append(errs, errors.New("bad signature"))
-		errs = append(errs, errors.New("SIGNATURE FAIL: " + string(msg.data[:8]) + " compared to " + hashDigestStr + " CONTENTS: " + string(msg.data[8:])))
+		errs = append(errs, errors.New("SIGNATURE FAIL: "+string(msg.data[:8])+" compared to "+hashDigestStr+" CONTENTS: "+string(msg.data[8:])))
 		return errs
 	}
 
@@ -218,11 +216,11 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	playerMsgIndex, errconv := strconv.Atoi(string(msg.data[8:14]))
 	if errconv != nil {
 		//errs = append(errs, errors.New("counter not numerical"))
-		errs = append(errs, errors.New("COUNTER FAIL: " + string(msg.data[8:14]) + " compared to " + strconv.Itoa(msg.sender.counter) + " CONTENTS: " + string(msg.data[14:])))
+		errs = append(errs, errors.New("COUNTER FAIL: "+string(msg.data[8:14])+" compared to "+strconv.Itoa(msg.sender.counter)+" CONTENTS: "+string(msg.data[14:])))
 		return errs
 	}
 
-	if msg.sender.counter < playerMsgIndex  { //counter in messages should be higher than what we have stored
+	if msg.sender.counter < playerMsgIndex { //counter in messages should be higher than what we have stored
 		msg.sender.counter = playerMsgIndex
 	} else {
 		errs = append(errs, errors.New("counter too low"))
@@ -266,7 +264,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if errconv != nil {
 			return false, err
 		}
-		y, errconv := strconv.Atoi(msgFields[2]);
+		y, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil {
 			return false, err
 		}
@@ -296,7 +294,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			return false, err
 		}
 		sender.spd = spd
-		h.broadcast([]byte("spd" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
+		h.broadcast([]byte("spd" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]))
 	case "spr": //change my sprite
 		if len(msgFields) != 3 {
 			return false, err
@@ -308,7 +306,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			if !strings.Contains(msgFields[1], "syujinkou") && !strings.Contains(msgFields[1], "effect") && !strings.Contains(msgFields[1], "yukihitsuji_game") && !strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") {
 				return false, err
 			}
-			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "176"  {
+			if strings.Contains(msgFields[1], "zenmaigaharaten_kisekae") && h.roomName != "176" {
 				return false, err
 			}
 		}
@@ -318,7 +316,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		sender.spriteName = msgFields[1]
 		sender.spriteIndex = index
-		h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2]));
+		h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2]))
 	case "sys": //change my system graphic
 		if len(msgFields) != 2 {
 			return false, err
@@ -326,8 +324,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if isValidSystemName(msgFields[1]) {
 			return false, err
 		}
-		sender.systemName = msgFields[1];
-		h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
+		sender.systemName = msgFields[1]
+		h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]))
 	case "ploc": //set previous map ID and previous locations
 		if len(msgFields) != 3 || len(msgFields[1]) != 4 {
 			return false, err
@@ -353,7 +351,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if errconv != nil || balance < 0 || balance > 100 {
 			return false, err
 		}
-		h.broadcast([]byte("se" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4]));
+		h.broadcast([]byte("se" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4]))
 	case "ap": // picture shown
 		fallthrough
 	case "mp": // picture moved
@@ -464,7 +462,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			pic = &newPic
 
 			if _, found := sender.pictures[picId]; found {
-				rpTerminate, rpErr := h.processMsg("rp" + paramDelimStr + msgFields[1], sender)
+				rpTerminate, rpErr := h.processMsg("rp"+paramDelimStr+msgFields[1], sender)
 				if rpErr != nil {
 					return rpTerminate, rpErr
 				}
@@ -502,7 +500,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if isShow {
 			message += paramDelimStr + msgFields[18] + paramDelimStr + msgFields[19]
 		}
-		h.broadcast([]byte(message));
+		h.broadcast([]byte(message))
 		sender.pictures[picId] = pic
 	case "rp": // picture erased
 		if len(msgFields) != 2 {
@@ -512,7 +510,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if errconv != nil || picId < 1 {
 			return false, err
 		}
-		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]));
+		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]))
 		delete(sender.pictures, picId)
 	case "say":
 		fallthrough
@@ -525,13 +523,13 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			return true, err
 		}
 		if msgFields[0] == "say" {
-			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents));
+			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
 		} else {
 			mapId, errconv := strconv.Atoi(h.roomName)
 			if errconv != nil {
 				return true, err
 			}
-			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + fmt.Sprintf("%04d", mapId) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + msgContents));
+			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + fmt.Sprintf("%04d", mapId) + paramDelimStr + sender.prevMapId + paramDelimStr + sender.prevLocations + paramDelimStr + msgContents))
 		}
 		terminate = true
 	case "name": // nick set
@@ -539,7 +537,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			return true, err
 		}
 		sender.name = msgFields[1]
-		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name));
+		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
 		terminate = true
 	default:
 		return false, err

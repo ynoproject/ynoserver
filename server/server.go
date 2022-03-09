@@ -18,28 +18,29 @@ import (
 )
 
 var (
-	maxID = 512
+	maxID            = 512
 	totalPlayerCount = 0
-	upgrader = websocket.Upgrader{
+	allClients       = map[string]*Client
+	upgrader         = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
 	}
-	isOkName = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
+	isOkName      = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
 	paramDelimStr = "\uffff"
-	msgDelimStr = "\ufffe"
+	msgDelimStr   = "\ufffe"
 
 	hubs []*Hub
 
 	config Config
-	db *sql.DB
+	db     *sql.DB
 )
 
 type ConnInfo struct {
 	Connect *websocket.Conn
-	Ip string
+	Ip      string
 }
 
 func writeLog(ip string, roomName string, payload string, errorcode int) {
@@ -60,12 +61,12 @@ func CreateAllHubs(roomNames []string) {
 
 func NewHub(roomName string) *Hub {
 	return &Hub{
-		processMsgCh:  make(chan *Message),
-		connect:   make(chan *ConnInfo),
-		unregister: make(chan *Client),
-		clients:    make(map[*Client]bool),
-		id: make(map[int]bool),
-		roomName: roomName,
+		processMsgCh: make(chan *Message),
+		connect:      make(chan *ConnInfo),
+		unregister:   make(chan *Client),
+		clients:      make(map[*Client]bool),
+		id:           make(map[int]bool),
+		roomName:     roomName,
 	}
 }
 
@@ -114,7 +115,7 @@ func isVpn(ip string) (bool, error) {
 	} else {
 		blockedIp = true
 	}
-	
+
 	if response.Block > 0 {
 		log.Printf("Connection Blocked %v %v %v %v\n", response.IP, response.CountryName, response.Isp, response.Block)
 		return false, errors.New("connection banned")

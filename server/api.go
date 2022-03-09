@@ -1,4 +1,4 @@
-package server 
+package server
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ func StartApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(strconv.Itoa(totalPlayerCount)))
+		w.Write([]byte(strconv.Itoa(len(allClients))))
 	})
 }
 
