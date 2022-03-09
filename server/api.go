@@ -49,15 +49,25 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 func handlePloc(w http.ResponseWriter, r *http.Request) {
 	uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
 
-	command, ok := r.URL.Query()["command"]
-	if !ok || len(command) != 2 || len(command[0]) != 4 {
+	prevMapId, ok := r.URL.Query()["prevMapId"]
+	if !ok || len(prevMapId) < 1 || len(prevMapId[0]) != 4 {
+		w.Write([]byte("fail"))
+		return
+	}
+
+	prevLocations, ok := r.URL.Query()["prevLocations"]
+	if !ok {
 		w.Write([]byte("fail"))
 		return
 	}
 
 	if client, found := allClients[uuid]; found {
-		client.prevMapId = command[0]
-		client.prevLocations = command[1]
+		client.prevMapId = prevMapId[0]
+		if len(prevLocations) > 0 {
+			client.prevLocations = prevLocations[0]
+		} else {
+			client.prevLocations = ""
+		}
 	} else {
 		w.Write([]byte("fail"))
 		return
