@@ -87,6 +87,17 @@ func createPlayerData(ip string, uuid string, rank int, banned bool) error {
 	return nil
 }
 
+func updatePlayerData(client *Client) error {
+	results, err := queryDatabase("UPDATE playerdata SET name = \"" + client.name + "\", systemName = \"" + client.systemName + "\", spriteName = \"" + client.spriteName + "\", spriteIndex = " + strconv.Itoa(client.spriteIndex) + " WHERE uuid = \"" + client.uuid + "\"")
+	if err != nil {
+		return err
+	}
+
+	defer results.Close()
+
+	return nil
+}
+
 func queryDatabase(query string) (*sql.Rows, error) {
 	if db == nil {
 		return nil, nil
