@@ -18,40 +18,27 @@ func getDatabaseHandle() (*sql.DB) {
 }
 
 func readPlayerData(ip string) (uuid string, rank int, banned bool) {
-	results, err := queryDatabase("SELECT uuid, rank, banned FROM playerdata WHERE ip = '" + ip + "'")
-	if err != nil {
-		return "", 0, false
-	}
-	
-	defer results.Close()
+	results := db.QueryRow("SELECT uuid, rank, banned FROM playerdata WHERE ip = '" + ip + "'")
+	err := results.Scan(&uuid, &rank, &banned)
 
-	if results.Next() {
-		err := results.Scan(&uuid, &rank, &banned)
+	if uuid == "" {
 		if err != nil {
 			return "", 0, false
-		}
-	} else {
-		uuid = randstr.String(16)
-		banned, _ := isVpn(ip)
-		createPlayerData(ip, uuid, 0, banned)
-	} 
+		} else {
+			uuid = randstr.String(16)
+			banned, _ := isVpn(ip)
+			createPlayerData(ip, uuid, 0, banned)
+		} 
+	}
 
 	return uuid, rank, banned
 }
 
 func readPlayerRank(uuid string) (rank int) {
-	results, err := queryDatabase("SELECT rank FROM playerdata WHERE uuid = '" + uuid + "'")
+	results := db.QueryRow("SELECT rank FROM playerdata WHERE uuid = '" + uuid + "'")
+	err := results.Scan(&rank)
 	if err != nil {
 		return 0
-	}
-	
-	defer results.Close()
-
-	if results.Next() {
-		err := results.Scan(&rank)
-		if err != nil {
-			return 0
-		}
 	}
 
 	return rank
@@ -66,47 +53,28 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		return errors.New("attempted self-ban")
 	}
 
-	results, err := queryDatabase("UPDATE playerdata SET banned = true WHERE uuid = '" + recipientUUID + "'")
+	_, err := db.Exec("UPDATE playerdata SET banned = true WHERE uuid = '" + recipientUUID + "'")
 	if err != nil {
 		return err
 	}
 	
-	defer results.Close()
-
 	return nil
 }
 
 func createPlayerData(ip string, uuid string, rank int, banned bool) error {
-	results, err := queryDatabase("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
+	_, err := db.Exec("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
 	if err != nil {
 		return err
 	}
 	
-	defer results.Close()
-
 	return nil
 }
 
 func updatePlayerData(client *Client) error {
-	results, err := queryDatabase("UPDATE playerdata SET name = \"" + client.name + "\", systemName = \"" + client.systemName + "\", spriteName = \"" + client.spriteName + "\", spriteIndex = " + strconv.Itoa(client.spriteIndex) + " WHERE uuid = \"" + client.uuid + "\"")
+	_, err := db.Exec("UPDATE playerdata SET name = \"" + client.name + "\", systemName = \"" + client.systemName + "\", spriteName = \"" + client.spriteName + "\", spriteIndex = " + strconv.Itoa(client.spriteIndex) + " WHERE uuid = \"" + client.uuid + "\"")
 	if err != nil {
 		return err
 	}
 
-	defer results.Close()
-
 	return nil
-}
-
-func queryDatabase(query string) (*sql.Rows, error) {
-	if db == nil {
-		return nil, nil
-	}
-
-	results, err := db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-
-	return results, err
 }
