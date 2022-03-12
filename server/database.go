@@ -80,7 +80,7 @@ func updatePlayerData(client *Client) error {
 }
 
 func readPlayerPartyId(uuid string) (partyId int) {
-	results := db.QueryRow("SELECT partyId FROM playergamedata WHERE uuid = ?", uuid)
+	results := db.QueryRow("SELECT partyId FROM playergamedata WHERE uuid = ? AND game = ?", uuid, config.gameName)
 	err := results.Scan(&partyId)
 
 	if err != nil {
@@ -238,6 +238,15 @@ func createPartyData(name string, public bool, theme string, description string,
 
 func writePlayerParty(partyId int, playerUuid string) error {
 	_, err := db.Exec("UPDATE playergamedata SET partyId = ? WHERE uuid = ? AND game = ?", partyId, playerUuid, config.gameName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func clearPlayerParty(playerUuid string) error {
+	_, err := db.Exec("UPDATE playergamedata SET partyId = NULL WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 	if err != nil {
 		return err
 	}

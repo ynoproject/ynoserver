@@ -182,7 +182,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "leave":
-		_, err := db.Exec("UPDATE playergamedata SET partyId = NULL WHERE uuid = ? AND game = ?", uuid, config.gameName)
+		err := clearPlayerParty(uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
