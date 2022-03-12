@@ -5,9 +5,29 @@ import (
 	"strconv"
 )
 
+type Party struct {
+	Id			int				`json:"id"`
+	Name		string			`json:"name"`
+	Public		bool			`json:"public"`
+	SystemName	string			`json:"systemName"`
+	Description	string			`json:"description"`
+	OwnerUuid	string			`json:"ownerUuid"`
+	Members		[]PartyMember	`json:"members"`
+}
+
+type PartyMember struct {
+	Uuid		string	`json:"uuid"`
+	Name		string	`json:"name"`
+	Rank		int		`json:"rank"`
+	SystemName	string	`json:"systemName"`
+	SpriteName	string	`json:"spriteName"`
+	SpriteIndex	int		`json:"spriteIndex"`
+	Online		bool	`json:"online"`
+}
+
 func StartApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
-
+	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/ploc", handlePloc)
 
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +61,25 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		handleError(w, r) //invalid command
+	}
+
+	w.Write([]byte("ok"))
+}
+
+func handleParty(w http.ResponseWriter, r *http.Request) {
+	//uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
+
+	command, ok := r.URL.Query()["command"]
+	if !ok || len(command) < 1 {
+		handleError(w, r)
+		return
+	}
+
+	switch command[0] {
+	case "list":
+	case "create":
+	case "join":
+	case "leave":
 	}
 
 	w.Write([]byte("ok"))
