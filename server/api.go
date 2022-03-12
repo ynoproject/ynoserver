@@ -61,7 +61,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 		err := tryBanPlayer(uuid, player[0])
 		if err != nil {
-			handleError(w, r, err.Error())
+			handleInternalError(w, r, err)
 			return
 		}
 	} else {
@@ -93,12 +93,12 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 	case "list":
 		partyListData, err := readAllPartyData(rank < 1, uuid)
 		if err != nil {
-			handleError(w, r, err.Error())
+			handleInternalError(w, r, err)
 			return
 		}
 		partyListDataJson, err := json.Marshal(partyListData)
 		if err != nil {
-			handleError(w, r, err.Error())
+			handleInternalError(w, r, err)
 			return
 		}
 		w.Write([]byte(partyListDataJson))
@@ -112,17 +112,17 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		apiPath += "&partyId=" + partyId[0]
 		partyIdInt, err := strconv.Atoi(partyId[0])
 		if err != nil {
-			handleError(w, r, err.Error())
+			handleInternalError(w, r, err)
 			return
 		}
 		partyData, err := readPartyData(partyIdInt, uuid)
 		if err != nil {
-			handleError(w, r, err.Error())
+			handleInternalError(w, r, err)
 			return
 		}
 		partyDataJson, err := json.Marshal(partyData)
 		if err != nil {
-			handleError(w, r, err.Error())
+			handleInternalError(w, r, err)
 			return
 		}
 		w.Write([]byte(partyDataJson))
@@ -137,13 +137,13 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		apiPath += "&partyId=" + partyId[0]
 		_, err := db.Exec("UPDATE playergamedata SET partyId = ? WHERE uuid = ? AND game = ?", partyId[0], uuid, config.gameName)
 		if err != nil {
-			handleError(w, r, err.Error())
+			handleInternalError(w, r, err)
 			return
 		}
 	case "leave":
 		_, err := db.Exec("UPDATE playergamedata SET partyId = NULL WHERE uuid = ? AND game = ?", uuid, config.gameName)
 		if err != nil {
-			handleError(w, r, err.Error())
+			handleInternalError(w, r, err)
 			return
 		}
 	default:
@@ -191,6 +191,12 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {
 	writeErrLog(r.Header.Get("x-forwarded-for"), r.URL.Path, payload)
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte(payload))
+}
+
+func handleInternalError(w http.ResponseWriter, r *http.Request, err error) {
+	writeErrLog(r.Header.Get("x-forwarded-for"), r.URL.Path, err.Error())
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("400 - Bad Request"))
 }
