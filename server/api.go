@@ -164,6 +164,8 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+		w.Write([]byte(strconv.Itoa(partyId)))
+		return
 	case "join":
 		partyIdParam, ok := r.URL.Query()["partyId"]
 		if !ok || len(partyIdParam) < 1 {
