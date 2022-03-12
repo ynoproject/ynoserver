@@ -86,7 +86,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 
 	switch command[0] {
 	case "list":
-		partyListData := readAllPartyData(rank < 1, uuid)
+		partyListData, err := readAllPartyData(rank < 1, uuid)
+		if err != nil {
+			handleError(w, r)
+			return
+		}
 		partyListDataJson, err := json.Marshal(partyListData)
 		if err != nil {
 			handleError(w, r)
@@ -105,7 +109,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r)
 			return
 		}
-		partyData := readPartyData(partyIdInt, uuid)
+		partyData, err := readPartyData(partyIdInt, uuid)
+		if err != nil {
+			handleError(w, r)
+			return
+		}
 		partyDataJson, err := json.Marshal(partyData)
 		if err != nil {
 			handleError(w, r)

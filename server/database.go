@@ -3,7 +3,6 @@ package server
 import (
 	"database/sql"
 	"errors"
-	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/thanhpk/randstr"
@@ -19,7 +18,7 @@ func getDatabaseHandle() *sql.DB {
 }
 
 func readPlayerData(ip string) (uuid string, rank int, banned bool) {
-	results := db.QueryRow("SELECT uuid, rank, banned FROM playerdata WHERE ip = '" + ip + "'")
+	results := db.QueryRow("SELECT uuid, rank, banned FROM playerdata WHERE ip = ?", ip)
 	err := results.Scan(&uuid, &rank, &banned)
 
 	if uuid == "" {
@@ -36,7 +35,7 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 }
 
 func readPlayerRank(uuid string) (rank int) {
-	results := db.QueryRow("SELECT rank FROM playerdata WHERE uuid = '" + uuid + "'")
+	results := db.QueryRow("SELECT rank FROM playerdata WHERE uuid = ?", uuid)
 	err := results.Scan(&rank)
 	if err != nil {
 		return 0
@@ -54,7 +53,7 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		return errors.New("attempted self-ban")
 	}
 
-	_, err := db.Exec("UPDATE playerdata SET banned = true WHERE uuid = '" + recipientUUID + "'")
+	_, err := db.Exec("UPDATE playerdata SET banned = true WHERE uuid = ?", recipientUUID)
 	if err != nil {
 		return err
 	}
@@ -63,7 +62,7 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 }
 
 func createPlayerData(ip string, uuid string, rank int, banned bool) error {
-	_, err := db.Exec("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES ('" + ip + "', '" + uuid + "', " + strconv.Itoa(rank) + ", " + strconv.FormatBool(banned) + ") ON DUPLICATE KEY UPDATE uuid = '" + uuid + "', rank = " + strconv.Itoa(rank) + ", banned = " + strconv.FormatBool(banned))
+	_, err := db.Exec("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE uuid = ?, rank = ?, banned = ?", ip, uuid, rank, banned, uuid, rank, banned)
 	if err != nil {
 		return err
 	}
@@ -72,7 +71,7 @@ func createPlayerData(ip string, uuid string, rank int, banned bool) error {
 }
 
 func updatePlayerData(client *Client) error {
-	_, err := db.Exec("UPDATE playerdata SET name = '" + client.name + "', systemName = '" + client.systemName + "', spriteName = '" + client.spriteName + "', spriteIndex = " + strconv.Itoa(client.spriteIndex) + " WHERE uuid = '" + client.uuid + "'")
+	_, err := db.Exec("INSERT INTO playergamedata (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", client.uuid, config.gameName, client.name, client.systemName, client.spriteName, client.spriteIndex, client.name, client.systemName, client.spriteName, client.spriteIndex)
 	if err != nil {
 		return err
 	}
@@ -80,9 +79,8 @@ func updatePlayerData(client *Client) error {
 	return nil
 }
 
-func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party) { //called by api only
+func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party, err error) { //called by api only
 	var results *sql.Rows
-	var err error
 	if publicOnly {
 		results, err = db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p LEFT JOIN playergamedata pm ON pm.partyId = p.id WHERE p.game = ? AND (p.public = 1 OR pm.uuid = ?)", config.gameName, playerUuid)
 	} else {
@@ -90,34 +88,37 @@ func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party) { //
 	}
 
 	if err != nil {
-		return parties
+		return parties, err
 	}
 
 	for results.Next() {
 		party := &Party{}
 		err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
 		if err != nil {
-			continue
+			defer results.Close()
+			return parties, err
 		}
 		parties = append(parties, *party)
 	}
 
 	defer results.Close()
 
-	err, partyMembersByParty := readAllPartyMemberDataByParty(publicOnly, playerUuid)
-	if err == nil {
-		for _, party := range parties {
-			partyMembers := partyMembersByParty[party.Id]
-			for _, partyMember := range partyMembers {
-				party.Members = append(party.Members, partyMember)
-			}
+	partyMembersByParty, err := readAllPartyMemberDataByParty(publicOnly, playerUuid)
+	if err != nil {
+		return parties, err
+	}
+
+	for _, party := range parties {
+		partyMembers := partyMembersByParty[party.Id]
+		for _, partyMember := range partyMembers {
+			party.Members = append(party.Members, partyMember)
 		}
 	}
 
-	return parties
+	return parties, nil
 }
 
-func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (err error, partyMembersByParty map[int][]PartyMember) {
+func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMembersByParty map[int][]PartyMember, err error) {
 	partyMembersByParty = make(map[int][]PartyMember)
 
 	var results *sql.Rows
@@ -128,7 +129,7 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (err erro
 	}
 
 	if err != nil {
-		return err, partyMembersByParty
+		return partyMembersByParty, err
 	}
 
 	for results.Next() {
@@ -136,8 +137,10 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (err erro
 		partyMember := &PartyMember{}
 		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
 		if err != nil {
-			continue
+			defer results.Close()
+			return partyMembersByParty, err
 		}
+
 		if client, ok := allClients[partyMember.Uuid]; ok {
 			partyMember.Name = client.name
 			partyMember.SystemName = client.systemName
@@ -150,30 +153,32 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (err erro
 
 	defer results.Close()
 
-	return nil, partyMembersByParty
+	return partyMembersByParty, nil
 }
 
-func readPartyData(partyId int, playerUuid string) (party Party) { //called by api only
+func readPartyData(partyId int, playerUuid string) (party Party, err error) { //called by api only
 	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p LEFT JOIN playerdata pd ON pd.partyId = p.id WHERE p.game = ? AND pd.uuid = ?", config.gameName, playerUuid)
-	err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
+	err = results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
 	if err != nil {
-		return party
+		return party, err
 	}
 
-	err, partyMembers := readPartyMemberData(party.Id)
-	if err == nil {
-		for _, partyMember := range partyMembers {
-			party.Members = append(party.Members, partyMember)
-		}
+	partyMembers, err := readPartyMemberData(party.Id)
+	if err != nil {
+		return party, err
 	}
 
-	return party
+	for _, partyMember := range partyMembers {
+		party.Members = append(party.Members, partyMember)
+	}
+
+	return party, nil
 }
 
-func readPartyMemberData(partyId int) (err error, partyMembers []PartyMember) {
+func readPartyMemberData(partyId int) (partyMembers []PartyMember, err error) {
 	results, err := db.Query("SELECT pm.partyId, pm.uuid, pm.name, pd.rank, pm.systemName, pm.spriteName, pm.spriteIndex FROM playergamedata pm JOIN playerdata pd ON pd.uuid = pm.uuid WHERE pm.partyId = ? AND pm.game = ?", partyId, config.gameName)
 	if err != nil {
-		return err, partyMembers
+		return partyMembers, err
 	}
 
 	for results.Next() {
@@ -181,7 +186,8 @@ func readPartyMemberData(partyId int) (err error, partyMembers []PartyMember) {
 		partyMember := &PartyMember{}
 		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
 		if err != nil {
-			continue
+			defer results.Close()
+			return partyMembers, err
 		}
 		if client, ok := allClients[partyMember.Uuid]; ok {
 			partyMember.Name = client.name
@@ -201,5 +207,5 @@ func readPartyMemberData(partyId int) (err error, partyMembers []PartyMember) {
 
 	defer results.Close()
 
-	return nil, partyMembers
+	return partyMembers, nil
 }
