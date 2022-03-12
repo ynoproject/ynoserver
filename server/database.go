@@ -1,15 +1,16 @@
 package server
 
 import (
+	"database/sql"
 	"errors"
 	"strconv"
-	"database/sql"
-	"github.com/thanhpk/randstr"
+
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/thanhpk/randstr"
 )
 
-func getDatabaseHandle() (*sql.DB) {
-	db, err := sql.Open("mysql", config.dbUser + ":" + config.dbPass + "@tcp(" + config.dbHost + ")/" + config.dbName)
+func getDatabaseHandle() *sql.DB {
+	db, err := sql.Open("mysql", config.dbUser+":"+config.dbPass+"@tcp("+config.dbHost+")/"+config.dbName)
 	if err != nil {
 		return nil
 	}
@@ -57,7 +58,7 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -66,12 +67,12 @@ func createPlayerData(ip string, uuid string, rank int, banned bool) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
 func updatePlayerData(client *Client) error {
-	_, err := db.Exec("UPDATE playerdata SET name = \"" + client.name + "\", systemName = \"" + client.systemName + "\", spriteName = \"" + client.spriteName + "\", spriteIndex = " + strconv.Itoa(client.spriteIndex) + " WHERE uuid = \"" + client.uuid + "\"")
+	_, err := db.Exec("UPDATE playerdata SET name = '" + client.name + "', systemName = '" + client.systemName + "', spriteName = '" + client.spriteName + "', spriteIndex = " + strconv.Itoa(client.spriteIndex) + " WHERE uuid = '" + client.uuid + "'")
 	if err != nil {
 		return err
 	}
