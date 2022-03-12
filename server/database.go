@@ -21,14 +21,14 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 	results := db.QueryRow("SELECT uuid, rank, banned FROM playerdata WHERE ip = '" + ip + "'")
 	err := results.Scan(&uuid, &rank, &banned)
 
-	if uuid == "" {
-		if err != nil {
-			return "", 0, false
-		} else {
+	if err != nil {
+		if err == sql.ErrNoRows {
 			uuid = randstr.String(16)
 			banned, _ := isVpn(ip)
 			createPlayerData(ip, uuid, 0, banned)
-		} 
+		} else {
+			return "", 0, false
+		}
 	}
 
 	return uuid, rank, banned
