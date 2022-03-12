@@ -79,6 +79,17 @@ func updatePlayerData(client *Client) error {
 	return nil
 }
 
+func readPlayerPartyId(uuid string) (partyId int) {
+	results := db.QueryRow("SELECT partyId FROM playergamedata WHERE uuid = ?", uuid)
+	err := results.Scan(&partyId)
+
+	if err != nil {
+		return 0
+	}
+
+	return partyId
+}
+
 func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party, err error) { //called by api only
 	var results *sql.Rows
 	if publicOnly {
@@ -155,7 +166,7 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 }
 
 func readPartyData(partyId int, playerUuid string) (party Party, err error) { //called by api only
-	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p LEFT JOIN playerdata pd ON pd.partyId = p.id WHERE p.game = ? AND pd.uuid = ?", config.gameName, playerUuid)
+	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p JOIN playergamedata pm ON pm.partyId = p.id AND pm.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
 	err = results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
 	if err != nil {
 		return party, err
@@ -205,4 +216,31 @@ func readPartyMemberData(partyId int) (partyMembers []PartyMember, err error) {
 	}
 
 	return partyMembers, nil
+}
+
+func createPartyData(name string, public bool, theme string, description string, playerUuid string) (partyId int, err error) {
+	res, err := db.Exec("INSERT INTO partydata (game, owner, name, public, theme, description) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, playerUuid, name, public, theme, description)
+	if err != nil {
+		return 0, err
+	}
+
+	var partyId64 int64
+
+	partyId64, err = res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	partyId = int(partyId64)
+
+	return partyId, nil
+}
+
+func writePlayerParty(partyId int, playerUuid string) error {
+	_, err := db.Exec("UPDATE playergamedata SET partyId = ? WHERE uuid = ? AND game = ?", partyId, playerUuid, config.gameName)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

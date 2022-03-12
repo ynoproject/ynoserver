@@ -42,7 +42,7 @@ func (h *Hub) Run() {
 		case conn := <-h.connect:
 			uuid, rank, banned := readPlayerData(conn.Ip)
 			if banned {
-				writeErrLog(conn.Ip, h.roomName, "user is banned")
+				writeErrLog(conn.Ip, h.roomName, "player is banned")
 				continue
 			}
 

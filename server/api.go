@@ -46,20 +46,20 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	command, ok := r.URL.Query()["command"]
-	if !ok || len(command) < 1 {
+	commandParam, ok := r.URL.Query()["command"]
+	if !ok || len(commandParam) < 1 {
 		handleError(w, r, "command not specified")
 		return
 	}
 
-	if command[0] == "ban" {
-		player, ok := r.URL.Query()["player"]
-		if !ok || len(player) < 1 {
+	if commandParam[0] == "ban" {
+		playerParam, ok := r.URL.Query()["player"]
+		if !ok || len(playerParam) < 1 {
 			handleError(w, r, "player not specified")
 			return
 		}
 
-		err := tryBanPlayer(uuid, player[0])
+		err := tryBanPlayer(uuid, playerParam[0])
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -73,23 +73,24 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	apiPath := "/api/party"
 	ip := r.Header.Get("x-forwarded-for")
 	uuid, rank, banned := readPlayerData(ip)
 
 	if banned {
-		handleError(w, r, "user is banned")
+		handleError(w, r, "player is banned")
 	}
 
-	command, ok := r.URL.Query()["command"]
-	if !ok || len(command) < 1 {
+	commandParam, ok := r.URL.Query()["command"]
+	if !ok || len(commandParam) < 1 {
 		handleError(w, r, "command not specified")
 		return
 	}
 
-	apiPath += "?command=" + command[0]
-
-	switch command[0] {
+	switch commandParam[0] {
+	case "id":
+		partyId := readPlayerPartyId(uuid)
+		w.Write([]byte(strconv.Itoa(partyId)))
+		return
 	case "list":
 		partyListData, err := readAllPartyData(rank < 1, uuid)
 		if err != nil {
@@ -104,18 +105,17 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(partyListDataJson))
 		return
 	case "get":
-		partyId, ok := r.URL.Query()["partyId"]
-		if !ok || len(partyId) < 1 {
+		partyIdParam, ok := r.URL.Query()["partyId"]
+		if !ok || len(partyIdParam) < 1 {
 			handleError(w, r, "partyId not specified")
 			return
 		}
-		apiPath += "&partyId=" + partyId[0]
-		partyIdInt, err := strconv.Atoi(partyId[0])
+		partyId, err := strconv.Atoi(partyIdParam[0])
 		if err != nil {
-			handleInternalError(w, r, err)
+			handleError(w, r, "invalid partyId value")
 			return
 		}
-		partyData, err := readPartyData(partyIdInt, uuid)
+		partyData, err := readPartyData(partyId, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -128,14 +128,53 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(partyDataJson))
 		return
 	case "create":
+		partyId := readPlayerPartyId(uuid)
+		if partyId > 0 {
+			handleError(w, r, "player already in a party")
+			return
+		}
+		nameParam, ok := r.URL.Query()["name"]
+		if !ok || len(nameParam) < 1 {
+			handleError(w, r, "name not specified")
+			return
+		}
+		if len(nameParam) > 255 {
+			handleError(w, r, "name too long")
+		}
+		var public bool
+		publicParam, ok := r.URL.Query()["public"]
+		if ok && len(publicParam) >= 1 {
+			public = true
+		}
+		themeParam, ok := r.URL.Query()["theme"]
+		if !ok || len(themeParam) < 1 {
+			handleError(w, r, "theme not specified")
+			return
+		}
+		if !isValidSystemName(themeParam[0]) {
+			handleError(w, r, "invalid system name for theme")
+		}
+		partyId, err := createPartyData(nameParam[0], public, themeParam[0], "", uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		err = writePlayerParty(partyId, uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 	case "join":
-		partyId, ok := r.URL.Query()["partyId"]
-		if !ok || len(partyId) < 1 {
+		partyIdParam, ok := r.URL.Query()["partyId"]
+		if !ok || len(partyIdParam) < 1 {
 			handleError(w, r, "partyId not specified")
 			return
 		}
-		apiPath += "&partyId=" + partyId[0]
-		_, err := db.Exec("UPDATE playergamedata SET partyId = ? WHERE uuid = ? AND game = ?", partyId[0], uuid, config.gameName)
+		partyId, err := strconv.Atoi(partyIdParam[0])
+		if err != nil {
+			handleError(w, r, "invalid partyId value")
+		}
+		err = writePlayerParty(partyId, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -157,27 +196,27 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 func handlePloc(w http.ResponseWriter, r *http.Request) {
 	uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
 
-	prevMapId, ok := r.URL.Query()["prevMapId"]
-	if !ok || len(prevMapId) < 1 {
+	prevMapIdParam, ok := r.URL.Query()["prevMapId"]
+	if !ok || len(prevMapIdParam) < 1 {
 		handleError(w, r, "prevMapId not specified")
 		return
 	}
 
-	if len(prevMapId[0]) != 4 {
+	if len(prevMapIdParam[0]) != 4 {
 		handleError(w, r, "invalid prevMapId")
 		return
 	}
 
-	prevLocations, ok := r.URL.Query()["prevLocations"]
+	prevLocationsParam, ok := r.URL.Query()["prevLocations"]
 	if !ok {
 		handleError(w, r, "prevLocations not specified")
 		return
 	}
 
 	if client, found := allClients[uuid]; found {
-		client.prevMapId = prevMapId[0]
-		if len(prevLocations) > 0 {
-			client.prevLocations = prevLocations[0]
+		client.prevMapId = prevMapIdParam[0]
+		if len(prevLocationsParam) > 0 {
+			client.prevLocations = prevLocationsParam[0]
 		} else {
 			client.prevLocations = ""
 		}
