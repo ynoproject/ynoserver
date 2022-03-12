@@ -71,7 +71,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	_, rank, banned := readPlayerData(r.Header.Get("x-forwarded-for"))
+	uuid, rank, banned := readPlayerData(r.Header.Get("x-forwarded-for"))
 
 	if banned {
 		handleError(w, r)
@@ -95,6 +95,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 	case "create":
 	case "join":
 	case "leave":
+		_, err := db.Exec("UPDATE playergamedata SET partyId = NULL WHERE uuid = ? AND game = ?", uuid, config.gameName)
+		if err != nil {
+			handleError(w, r)
+			return
+		}
 	}
 
 	w.Write([]byte("ok"))
