@@ -135,7 +135,7 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 	if publicOnly {
 		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?)", config.gameName, playerUuid)
 	} else {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId IS NOT NULL AND pm.game = ?", config.gameName)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ?", config.gameName)
 	}
 
 	if err != nil {
