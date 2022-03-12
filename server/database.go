@@ -80,7 +80,7 @@ func updatePlayerData(client *Client) error {
 }
 
 func readPlayerPartyId(uuid string) (partyId int) {
-	results := db.QueryRow("SELECT partyId FROM playergamedata WHERE uuid = ? AND game = ?", uuid, config.gameName)
+	results := db.QueryRow("SELECT pm.partyId FROM partymemberdata pm JOIN partydata p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", uuid, config.gameName)
 	err := results.Scan(&partyId)
 
 	if err != nil {
@@ -133,9 +133,9 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 
 	var results *sql.Rows
 	if publicOnly {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pm.name, pd.rank, pm.systemName, pm.spriteName, pm.spriteIndex FROM playergamedata pm JOIN playerdata pd ON pd.uuid = pm.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?)", config.gameName, playerUuid)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?)", config.gameName, playerUuid)
 	} else {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pm.name, pd.rank, pm.systemName, pm.spriteName, pm.spriteIndex FROM playergamedata pm JOIN playerdata pd ON pd.uuid = pm.uuid WHERE pm.partyId IS NOT NULL AND pm.game = ?", config.gameName)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId IS NOT NULL AND pm.game = ?", config.gameName)
 	}
 
 	if err != nil {
@@ -166,7 +166,7 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 }
 
 func readPartyData(partyId int, playerUuid string) (party Party, err error) { //called by api only
-	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p JOIN playergamedata pm ON pm.partyId = p.id AND pm.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
+	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p JOIN partymemberdata pm ON pm.partyId = p.id JOIN playergamedata pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
 	err = results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
 	if err != nil {
 		return party, err
@@ -185,7 +185,7 @@ func readPartyData(partyId int, playerUuid string) (party Party, err error) { //
 }
 
 func readPartyMemberData(partyId int) (partyMembers []PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, pm.name, pd.rank, pm.systemName, pm.spriteName, pm.spriteIndex FROM playergamedata pm JOIN playerdata pd ON pd.uuid = pm.uuid WHERE pm.partyId = ? AND pm.game = ?", partyId, config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId = ? AND pgd.game = ?", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}
@@ -237,7 +237,7 @@ func createPartyData(name string, public bool, theme string, description string,
 }
 
 func writePlayerParty(partyId int, playerUuid string) error {
-	_, err := db.Exec("UPDATE playergamedata SET partyId = ? WHERE uuid = ? AND game = ?", partyId, playerUuid, config.gameName)
+	_, err := db.Exec("INSERT INTO partymemberdata (partyId, uuid) VALUES (?, ?)", partyId, playerUuid)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func writePlayerParty(partyId int, playerUuid string) error {
 }
 
 func clearPlayerParty(playerUuid string) error {
-	_, err := db.Exec("UPDATE playergamedata SET partyId = NULL WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
+	_, err := db.Exec("DELETE pm FROM partymemberdata pm JOIN partydata p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", playerUuid, config.gameName)
 	if err != nil {
 		return err
 	}
