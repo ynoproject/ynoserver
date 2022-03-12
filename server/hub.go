@@ -79,6 +79,7 @@ func (h *Hub) Run() {
 				rank:        rank,
 				spriteIndex: -1,
 				pictures:    make(map[int]*Picture),
+				mapId:       "0000",
 				key:         key}
 			go client.writePump()
 			go client.readPump()
@@ -87,6 +88,11 @@ func (h *Hub) Run() {
 				writeErrLog(conn.Ip, h.roomName, "room is full")
 				close(client.send)
 				continue
+			}
+
+			mapIdInt, errconv := strconv.Atoi(h.roomName)
+			if errconv == nil {
+				client.mapId = fmt.Sprintf("%04d", mapIdInt)
 			}
 
 			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank)) //"your id is %id%" message
@@ -536,11 +542,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			prevLocations := ""
 
 			if enableLocBin == 1 {
-				mapIdInt, errconv := strconv.Atoi(h.roomName)
-				if errconv != nil {
-					return true, err
-				}
-				mapId = fmt.Sprintf("%04d", mapIdInt)
+				mapId = sender.mapId
 				prevMapId = sender.prevMapId
 				prevLocations = sender.prevLocations
 			}

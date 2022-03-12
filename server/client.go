@@ -35,25 +35,25 @@ type Picture struct {
 
 	positionX int
 	positionY int
-	mapX int
-	mapY int
-	panX int
-	panY int
+	mapX      int
+	mapY      int
+	panX      int
+	panY      int
 
-	magnify int
-	topTrans int
+	magnify     int
+	topTrans    int
 	bottomTrans int
-	
-	red int
-	green int
-	blue int
+
+	red        int
+	green      int
+	blue       int
 	saturation int
 
-	effectMode int
+	effectMode  int
 	effectPower int
 
 	useTransparentColor bool
-	fixedToMap bool
+	fixedToMap          bool
 }
 
 // Client is a middleman between the websocket connection and the hub.
@@ -74,28 +74,29 @@ type Client struct {
 	uuid string
 	rank int
 
-	x, y int
+	x, y   int
 	facing int
-	spd int
-	
+	spd    int
+
 	name string
 
-	spriteName string
+	spriteName  string
 	spriteIndex int
-	
+
 	pictures map[int]*Picture
 
 	systemName string
-	
-	prevMapId string
+
+	mapId         string
+	prevMapId     string
 	prevLocations string
 
-	key string
+	key     string
 	counter int
 }
 
 type Message struct {
-	data []byte
+	data   []byte
 	sender *Client //who sent the message
 }
 

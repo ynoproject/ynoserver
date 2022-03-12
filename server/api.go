@@ -1,28 +1,32 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 )
 
 type Party struct {
-	Id			int				`json:"id"`
-	Name		string			`json:"name"`
-	Public		bool			`json:"public"`
-	SystemName	string			`json:"systemName"`
-	Description	string			`json:"description"`
-	OwnerUuid	string			`json:"ownerUuid"`
-	Members		[]PartyMember	`json:"members"`
+	Id          int           `json:"id"`
+	Name        string        `json:"name"`
+	Public      bool          `json:"public"`
+	SystemName  string        `json:"systemName"`
+	Description string        `json:"description"`
+	OwnerUuid   string        `json:"ownerUuid"`
+	Members     []PartyMember `json:"members"`
 }
 
 type PartyMember struct {
-	Uuid		string	`json:"uuid"`
-	Name		string	`json:"name"`
-	Rank		int		`json:"rank"`
-	SystemName	string	`json:"systemName"`
-	SpriteName	string	`json:"spriteName"`
-	SpriteIndex	int		`json:"spriteIndex"`
-	Online		bool	`json:"online"`
+	Uuid          string `json:"uuid"`
+	Name          string `json:"name"`
+	Rank          int    `json:"rank"`
+	SystemName    string `json:"systemName"`
+	SpriteName    string `json:"spriteName"`
+	SpriteIndex   int    `json:"spriteIndex"`
+	MapId         string `json:"mapId"`
+	PrevMapId     string `json:"prevMapId"`
+	PrevLocations string `json:"prevLocations"`
+	Online        bool   `json:"online"`
 }
 
 func StartApi() {
@@ -67,7 +71,11 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	//uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
+	_, rank, banned := readPlayerData(r.Header.Get("x-forwarded-for"))
+
+	if banned {
+		handleError(w, r)
+	}
 
 	command, ok := r.URL.Query()["command"]
 	if !ok || len(command) < 1 {
@@ -77,6 +85,13 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 
 	switch command[0] {
 	case "list":
+		partyData := readAllPartyData(rank < 1)
+		partyDataJson, err := json.Marshal(partyData)
+		if err != nil {
+			handleError(w, r)
+		}
+		w.Write([]byte(partyDataJson))
+		return
 	case "create":
 	case "join":
 	case "leave":

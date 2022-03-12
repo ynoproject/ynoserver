@@ -29,7 +29,7 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 			uuid = randstr.String(16)
 			banned, _ := isVpn(ip)
 			createPlayerData(ip, uuid, 0, banned)
-		} 
+		}
 	}
 
 	return uuid, rank, banned
@@ -78,4 +78,80 @@ func updatePlayerData(client *Client) error {
 	}
 
 	return nil
+}
+
+func readAllPartyData(publicOnly bool) (parties []Party) { //called by api only
+	publicClause := ""
+	if publicOnly {
+		publicClause = " AND public = 1"
+	}
+	results, err := db.Query("SELECT id, owner, name, public, theme, description FROM partydata WHERE game = '" + config.gameName + "'" + publicClause)
+	if err != nil {
+		return parties
+	}
+
+	for results.Next() {
+		party := &Party{}
+		err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
+		if err != nil {
+			continue
+		}
+		parties = append(parties, *party)
+	}
+
+	defer results.Close()
+
+	err, partyMembersByParty := readAllPartyMemberDataByParty(publicOnly)
+	if err != nil {
+		for _, party := range parties {
+			partyMembers := partyMembersByParty[party.Id]
+			for _, partyMember := range partyMembers {
+				party.Members = append(party.Members, partyMember)
+			}
+		}
+	}
+
+	return parties
+}
+
+func readAllPartyMemberDataByParty(publicOnly bool) (err error, partyMembersByParty map[int][]PartyMember) {
+	partyMembersByParty = make(map[int][]PartyMember)
+	publicClause := ""
+	if publicOnly {
+		publicClause = " AND public = 1"
+	}
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, pm.name, p.rank, pm.systemName, pm.spriteName, pm.spriteIndex FROM playergamedata pm JOIN partydata p ON p.id = pm.partyId JOIN playerdata pd ON pd.uuid = p.uuid WHERE game = '" + config.gameName + "'" + publicClause)
+	if err != nil {
+		return err, partyMembersByParty
+	}
+
+	for results.Next() {
+		var partyId int
+		partyMember := &PartyMember{}
+		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
+		if err != nil {
+			continue
+		}
+		if client, ok := allClients[partyMember.Uuid]; ok {
+			partyMember.Name = client.name
+			partyMember.SystemName = client.systemName
+			partyMember.SpriteName = client.spriteName
+			partyMember.SpriteIndex = client.spriteIndex
+			// Will be used for party by ID which requires being in the party
+			/*partyMember.MapId = client.mapId
+			partyMember.PrevMapId = client.prevMapId
+			partyMember.PrevLocations = client.prevLocations*/
+			partyMember.Online = true
+		}
+		// Will be used for party by ID which requires being in the party
+		/* else {
+			partyMember.MapId = "0000"
+			partyMember.PrevMapId = "0000"
+		}*/
+		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], *partyMember)
+	}
+
+	defer results.Close()
+
+	return nil, partyMembersByParty
 }
