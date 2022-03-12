@@ -42,29 +42,30 @@ func StartApi() {
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	uuid, rank, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
 	if rank == 0 {
-		handleError(w, r)
+		handleError(w, r, "access denied")
 		return
 	}
 
 	command, ok := r.URL.Query()["command"]
 	if !ok || len(command) < 1 {
-		handleError(w, r)
+		handleError(w, r, "command not specified")
 		return
 	}
 
 	if command[0] == "ban" {
 		player, ok := r.URL.Query()["player"]
 		if !ok || len(player) < 1 {
-			handleError(w, r)
+			handleError(w, r, "player not specified")
 			return
 		}
 
-		if tryBanPlayer(uuid, player[0]) != nil {
-			handleError(w, r)
+		err := tryBanPlayer(uuid, player[0])
+		if err != nil {
+			handleError(w, r, err.Error())
 			return
 		}
 	} else {
-		handleError(w, r) //invalid command
+		handleError(w, r, "unknown command")
 		return
 	}
 
@@ -72,51 +73,56 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	uuid, rank, banned := readPlayerData(r.Header.Get("x-forwarded-for"))
+	apiPath := "/api/party"
+	ip := r.Header.Get("x-forwarded-for")
+	uuid, rank, banned := readPlayerData(ip)
 
 	if banned {
-		handleError(w, r)
+		handleError(w, r, "user is banned")
 	}
 
 	command, ok := r.URL.Query()["command"]
 	if !ok || len(command) < 1 {
-		handleError(w, r)
+		handleError(w, r, "command not specified")
 		return
 	}
+
+	apiPath += "?command=" + command[0]
 
 	switch command[0] {
 	case "list":
 		partyListData, err := readAllPartyData(rank < 1, uuid)
 		if err != nil {
-			handleError(w, r)
+			handleError(w, r, err.Error())
 			return
 		}
 		partyListDataJson, err := json.Marshal(partyListData)
 		if err != nil {
-			handleError(w, r)
+			handleError(w, r, err.Error())
 			return
 		}
 		w.Write([]byte(partyListDataJson))
 		return
-	case "members":
+	case "get":
 		partyId, ok := r.URL.Query()["partyId"]
 		if !ok || len(partyId) < 1 {
-			handleError(w, r)
+			handleError(w, r, "partyId not specified")
 			return
 		}
+		apiPath += "&partyId=" + partyId[0]
 		partyIdInt, err := strconv.Atoi(partyId[0])
 		if err != nil {
-			handleError(w, r)
+			handleError(w, r, err.Error())
 			return
 		}
 		partyData, err := readPartyData(partyIdInt, uuid)
 		if err != nil {
-			handleError(w, r)
+			handleError(w, r, err.Error())
 			return
 		}
 		partyDataJson, err := json.Marshal(partyData)
 		if err != nil {
-			handleError(w, r)
+			handleError(w, r, err.Error())
 			return
 		}
 		w.Write([]byte(partyDataJson))
@@ -125,22 +131,23 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 	case "join":
 		partyId, ok := r.URL.Query()["partyId"]
 		if !ok || len(partyId) < 1 {
-			handleError(w, r)
+			handleError(w, r, "partyId not specified")
 			return
 		}
+		apiPath += "&partyId=" + partyId[0]
 		_, err := db.Exec("UPDATE playergamedata SET partyId = ? WHERE uuid = ? AND game = ?", partyId[0], uuid, config.gameName)
 		if err != nil {
-			handleError(w, r)
+			handleError(w, r, err.Error())
 			return
 		}
 	case "leave":
 		_, err := db.Exec("UPDATE playergamedata SET partyId = NULL WHERE uuid = ? AND game = ?", uuid, config.gameName)
 		if err != nil {
-			handleError(w, r)
+			handleError(w, r, err.Error())
 			return
 		}
 	default:
-		handleError(w, r)
+		handleError(w, r, "unknown command")
 		return
 	}
 
@@ -151,14 +158,19 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 	uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
 
 	prevMapId, ok := r.URL.Query()["prevMapId"]
-	if !ok || len(prevMapId) < 1 || len(prevMapId[0]) != 4 {
-		handleError(w, r)
+	if !ok || len(prevMapId) < 1 {
+		handleError(w, r, "prevMapId not specified")
+		return
+	}
+
+	if len(prevMapId[0]) != 4 {
+		handleError(w, r, "invalid prevMapId")
 		return
 	}
 
 	prevLocations, ok := r.URL.Query()["prevLocations"]
 	if !ok {
-		handleError(w, r)
+		handleError(w, r, "prevLocations not specified")
 		return
 	}
 
@@ -170,14 +182,15 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 			client.prevLocations = ""
 		}
 	} else {
-		handleError(w, r)
+		handleError(w, r, "client not found")
 		return
 	}
 
 	w.Write([]byte("ok"))
 }
 
-func handleError(w http.ResponseWriter, r *http.Request) {
+func handleError(w http.ResponseWriter, r *http.Request, payload string) {
+	writeErrLog(r.Header.Get("x-forwarded-for"), r.URL.Path, payload)
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("400 - Bad Request"))
 }
