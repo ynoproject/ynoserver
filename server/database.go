@@ -91,17 +91,16 @@ func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party, err 
 		return parties, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		party := &Party{}
 		err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
 		if err != nil {
-			defer results.Close()
 			return parties, err
 		}
 		parties = append(parties, *party)
 	}
-
-	defer results.Close()
 
 	partyMembersByParty, err := readAllPartyMemberDataByParty(publicOnly, playerUuid)
 	if err != nil {
@@ -132,12 +131,13 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 		return partyMembersByParty, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		var partyId int
 		partyMember := &PartyMember{}
 		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
 		if err != nil {
-			defer results.Close()
 			return partyMembersByParty, err
 		}
 
@@ -150,8 +150,6 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 		}
 		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], *partyMember)
 	}
-
-	defer results.Close()
 
 	return partyMembersByParty, nil
 }
@@ -181,12 +179,13 @@ func readPartyMemberData(partyId int) (partyMembers []PartyMember, err error) {
 		return partyMembers, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		var partyId int
 		partyMember := &PartyMember{}
 		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
 		if err != nil {
-			defer results.Close()
 			return partyMembers, err
 		}
 		if client, ok := allClients[partyMember.Uuid]; ok {
@@ -204,8 +203,6 @@ func readPartyMemberData(partyId int) (partyMembers []PartyMember, err error) {
 		}
 		partyMembers = append(partyMembers, *partyMember)
 	}
-
-	defer results.Close()
 
 	return partyMembers, nil
 }
