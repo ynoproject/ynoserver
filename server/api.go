@@ -65,6 +65,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		handleError(w, r) //invalid command
+		return
 	}
 
 	w.Write([]byte("ok"))
@@ -85,21 +86,54 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 
 	switch command[0] {
 	case "list":
-		partyData := readAllPartyData(rank < 1)
+		partyListData := readAllPartyData(rank < 1, uuid)
+		partyListDataJson, err := json.Marshal(partyListData)
+		if err != nil {
+			handleError(w, r)
+			return
+		}
+		w.Write([]byte(partyListDataJson))
+		return
+	case "members":
+		partyId, ok := r.URL.Query()["partyId"]
+		if !ok || len(partyId) < 1 {
+			handleError(w, r)
+			return
+		}
+		partyIdInt, err := strconv.Atoi(partyId[0])
+		if err != nil {
+			handleError(w, r)
+			return
+		}
+		partyData := readPartyData(partyIdInt, uuid)
 		partyDataJson, err := json.Marshal(partyData)
 		if err != nil {
 			handleError(w, r)
+			return
 		}
 		w.Write([]byte(partyDataJson))
 		return
 	case "create":
 	case "join":
+		partyId, ok := r.URL.Query()["partyId"]
+		if !ok || len(partyId) < 1 {
+			handleError(w, r)
+			return
+		}
+		_, err := db.Exec("UPDATE playergamedata SET partyId = ? WHERE uuid = ? AND game = ?", partyId[0], uuid, config.gameName)
+		if err != nil {
+			handleError(w, r)
+			return
+		}
 	case "leave":
 		_, err := db.Exec("UPDATE playergamedata SET partyId = NULL WHERE uuid = ? AND game = ?", uuid, config.gameName)
 		if err != nil {
 			handleError(w, r)
 			return
 		}
+	default:
+		handleError(w, r)
+		return
 	}
 
 	w.Write([]byte("ok"))
