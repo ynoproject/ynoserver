@@ -9,7 +9,7 @@ import (
 type Party struct {
 	Id          int           `json:"id"`
 	Name        string        `json:"name"`
-	Public      int           `json:"public"`
+	Public      bool          `json:"public"`
 	SystemName  string        `json:"systemName"`
 	Description string        `json:"description"`
 	OwnerUuid   string        `json:"ownerUuid"`
@@ -141,10 +141,10 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		if len(nameParam) > 255 {
 			handleError(w, r, "name too long")
 		}
-		var public int
+		var public bool
 		publicParam, ok := r.URL.Query()["public"]
 		if ok && len(publicParam) >= 1 {
-			public = 1
+			public = true
 		}
 		themeParam, ok := r.URL.Query()["theme"]
 		if !ok || len(themeParam) < 1 {

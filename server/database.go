@@ -107,11 +107,9 @@ func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party, err 
 	for results.Next() {
 		party := &Party{}
 		err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
-
 		if err != nil {
 			return parties, err
 		}
-
 		parties = append(parties, *party)
 	}
 
@@ -170,7 +168,6 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 func readPartyData(partyId int, playerUuid string) (party Party, err error) { //called by api only
 	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p JOIN partymemberdata pm ON pm.partyId = p.id JOIN playergamedata pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
 	err = results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
-
 	if err != nil {
 		return party, err
 	}
@@ -221,7 +218,7 @@ func readPartyMemberData(partyId int) (partyMembers []PartyMember, err error) {
 	return partyMembers, nil
 }
 
-func createPartyData(name string, public int, theme string, description string, playerUuid string) (partyId int, err error) {
+func createPartyData(name string, public bool, theme string, description string, playerUuid string) (partyId int, err error) {
 	res, err := db.Exec("INSERT INTO partydata (game, owner, name, public, theme, description) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, playerUuid, name, public, theme, description)
 	if err != nil {
 		return 0, err
