@@ -79,15 +79,15 @@ func updatePlayerData(client *Client) error {
 	return nil
 }
 
-func readPlayerPartyId(uuid string) (partyId int) {
+func readPlayerPartyId(uuid string) (partyId int, err error) {
 	results := db.QueryRow("SELECT pm.partyId FROM partymemberdata pm JOIN partydata p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", uuid, config.gameName)
-	err := results.Scan(&partyId)
+	err = results.Scan(&partyId)
 
 	if err != nil {
-		return 0
+		return 0, err
 	}
 
-	return partyId
+	return partyId, nil
 }
 
 func readAllPartyData(publicOnly bool, playerUuid string) (parties []*Party, err error) { //called by api only
@@ -132,9 +132,9 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 
 	var results *sql.Rows
 	if publicOnly {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?) ORDER BY pm.id", config.gameName, playerUuid)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex, CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?) ORDER BY 8, pm.id", config.gameName, playerUuid)
 	} else {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY pm.id", config.gameName)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName,	pgd.spriteIndex, CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY 8, pm.id", config.gameName)
 	}
 
 	if err != nil {
@@ -184,7 +184,7 @@ func readPartyData(partyId int, playerUuid string) (party Party, err error) { //
 }
 
 func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId = ? AND pgd.game = ?", partyId, config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex, CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY 8, id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}
@@ -251,4 +251,53 @@ func clearPlayerParty(playerUuid string) error {
 	}
 
 	return nil
+}
+
+func readPartyMemberCount(partyId int) (count int, err error) {
+	results := db.QueryRow("SELECT COUNT(*) FROM partymemberdata WHERE partyId = ?", partyId)
+	err = results.Scan(&count)
+
+	if err != nil {
+		return count, err
+	}
+
+	return count, nil
+}
+
+func readPartyOwnerUuid(partyId int) (ownerUuid string, err error) {
+	results := db.QueryRow("SELECT owner FROM partydata WHERE id = ?", partyId)
+	err = results.Scan(&ownerUuid)
+
+	if err != nil {
+		return ownerUuid, err
+	}
+
+	return ownerUuid, nil
+}
+
+func assumeNextPartyOwner(partyId int) error {
+	_, err := db.Exec("UPDATE partydata SET owner = (SELECT uuid FROM partymemberdata WHERE partyId = ? ORDER BY id LIMIT 1) WHERE partyId = ?", partyId, partyId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func checkDeleteOrphanedParty(partyId int) (deleted bool, err error) {
+	var partyMemberCount int
+	partyMemberCount, err = readPartyMemberCount(partyId)
+	if err != nil {
+		return false, err
+	}
+
+	if partyMemberCount == 0 {
+		_, err := db.Exec("DELETE FROM partydata WHERE id = ? AND p.game = ?", partyId, config.gameName)
+		if err != nil {
+			return true, err
+		}
+		return true, nil
+	}
+
+	return false, nil
 }

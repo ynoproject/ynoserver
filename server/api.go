@@ -88,7 +88,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 
 	switch commandParam[0] {
 	case "id":
-		partyId := readPlayerPartyId(uuid)
+		partyId, err := readPlayerPartyId(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 		w.Write([]byte(strconv.Itoa(partyId)))
 		return
 	case "list":
@@ -128,7 +132,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(partyDataJson))
 		return
 	case "create":
-		partyId := readPlayerPartyId(uuid)
+		partyId, err := readPlayerPartyId(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 		if partyId > 0 {
 			handleError(w, r, "player already in a party")
 			return
@@ -154,7 +162,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		if !isValidSystemName(themeParam[0]) {
 			handleError(w, r, "invalid system name for theme")
 		}
-		partyId, err := createPartyData(nameParam[0], public, themeParam[0], "", uuid)
+		partyId, err = createPartyData(nameParam[0], public, themeParam[0], "", uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -182,7 +190,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "leave":
-		err := clearPlayerParty(uuid)
+		err := handlePartyMemberLeave(uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -193,6 +201,33 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("ok"))
+}
+
+func handlePartyMemberLeave(playerUuid string) error {
+	partyId, err := readPlayerPartyId(playerUuid)
+	if err != nil {
+		return err
+	}
+
+	ownerUuid, err := readPartyOwnerUuid(partyId)
+	if err != nil {
+		return err
+	}
+
+	err = clearPlayerParty(playerUuid)
+	if err != nil {
+		return err
+	}
+
+	deleted, err := checkDeleteOrphanedParty(partyId)
+	if err != nil {
+		return err
+	}
+	if !deleted && playerUuid == ownerUuid {
+		err = assumeNextPartyOwner(partyId)
+	}
+
+	return nil
 }
 
 func handlePloc(w http.ResponseWriter, r *http.Request) {
