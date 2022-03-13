@@ -184,7 +184,7 @@ func readPartyData(partyId int, playerUuid string) (party Party, err error) { //
 }
 
 func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, id", partyId, config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pm.id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}
