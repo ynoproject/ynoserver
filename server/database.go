@@ -90,7 +90,7 @@ func readPlayerPartyId(uuid string) (partyId int) {
 	return partyId
 }
 
-func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party, err error) { //called by api only
+func readAllPartyData(publicOnly bool, playerUuid string) (parties []*Party, err error) { //called by api only
 	var results *sql.Rows
 	if publicOnly {
 		results, err = db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p LEFT JOIN playergamedata pm ON pm.partyId = p.id WHERE p.game = ? AND (p.public = 1 OR pm.uuid = ?)", config.gameName, playerUuid)
@@ -110,7 +110,7 @@ func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party, err 
 		if err != nil {
 			return parties, err
 		}
-		parties = append(parties, *party)
+		parties = append(parties, party)
 	}
 
 	partyMembersByParty, err := readAllPartyMemberDataByParty(publicOnly, playerUuid)
@@ -119,23 +119,22 @@ func readAllPartyData(publicOnly bool, playerUuid string) (parties []Party, err 
 	}
 
 	for _, party := range parties {
-		partyMembers := partyMembersByParty[party.Id]
-		for _, partyMember := range partyMembers {
-			party.Members = append(party.Members, partyMember)
+		for _, partyMember := range partyMembersByParty[party.Id] {
+			party.Members = append(party.Members, *partyMember)
 		}
 	}
 
 	return parties, nil
 }
 
-func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMembersByParty map[int][]PartyMember, err error) {
-	partyMembersByParty = make(map[int][]PartyMember)
+func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMembersByParty map[int][]*PartyMember, err error) {
+	partyMembersByParty = make(map[int][]*PartyMember)
 
 	var results *sql.Rows
 	if publicOnly {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?)", config.gameName, playerUuid)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?) ORDER BY pm.id", config.gameName, playerUuid)
 	} else {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ?", config.gameName)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY pm.id", config.gameName)
 	}
 
 	if err != nil {
@@ -159,7 +158,7 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 			partyMember.SpriteIndex = client.spriteIndex
 			partyMember.Online = true
 		}
-		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], *partyMember)
+		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
 	}
 
 	return partyMembersByParty, nil
@@ -178,13 +177,13 @@ func readPartyData(partyId int, playerUuid string) (party Party, err error) { //
 	}
 
 	for _, partyMember := range partyMembers {
-		party.Members = append(party.Members, partyMember)
+		party.Members = append(party.Members, *partyMember)
 	}
 
 	return party, nil
 }
 
-func readPartyMemberData(partyId int) (partyMembers []PartyMember, err error) {
+func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid WHERE pm.partyId = ? AND pgd.game = ?", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
@@ -212,7 +211,7 @@ func readPartyMemberData(partyId int) (partyMembers []PartyMember, err error) {
 			partyMember.MapId = "0000"
 			partyMember.PrevMapId = "0000"
 		}
-		partyMembers = append(partyMembers, *partyMember)
+		partyMembers = append(partyMembers, partyMember)
 	}
 
 	return partyMembers, nil
