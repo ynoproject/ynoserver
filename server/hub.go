@@ -517,9 +517,10 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	case "say":
 		fallthrough
 	case "gsay": //global say
-		isGlobal := msgFields[0] == "gsay"
+		fallthrough
+	case "psay": //party say
 		msgLength := 2
-		if isGlobal {
+		if msgFields[0] == "gsay" {
 			msgLength++
 		}
 		if len(msgFields) != msgLength {
@@ -529,9 +530,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return true, err
 		}
-		if !isGlobal {
-			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
-		} else {
+		switch msgFields[0] {
+		case "gsay":
 			enableLocBin, errconv := strconv.Atoi(msgFields[2])
 			if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
 				return false, err
@@ -547,6 +547,23 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				prevLocations = sender.prevLocations
 			}
 			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + msgContents))
+		case "psay":
+			partyId, err := readPlayerPartyId(sender.uuid)
+			if err != nil {
+				return true, err
+			}
+			if partyId == 0 {
+				return true, errors.New("player not in a party")
+			}
+			partyMemberUuids, err := readPartyMemberUuids(partyId)
+			if err != nil {
+				return true, err
+			}
+			for _, uuid := range partyMemberUuids {
+				directSend(allClients[uuid], []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents))
+			}
+		default:
+			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
 		}
 		terminate = true
 	case "name": // nick set
