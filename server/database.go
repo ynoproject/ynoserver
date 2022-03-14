@@ -153,7 +153,7 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 
 	defer results.Close()
 
-	var offlinePartyMembersByParty map[int][]*PartyMember
+	var offlinePartyMembersByParty map[int][]*PartyMember = make(map[int][]*PartyMember)
 
 	for results.Next() {
 		var partyId int
