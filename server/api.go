@@ -225,6 +225,9 @@ func handlePartyMemberLeave(playerUuid string) error {
 	}
 	if !deleted && playerUuid == ownerUuid {
 		err = assumeNextPartyOwner(partyId)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
