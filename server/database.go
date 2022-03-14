@@ -84,7 +84,11 @@ func readPlayerPartyId(uuid string) (partyId int, err error) {
 	err = results.Scan(&partyId)
 
 	if err != nil {
-		return 0, err
+		if err == sql.ErrNoRows {
+			return 0, nil
+		} else {
+			return 0, err
+		}
 	}
 
 	return partyId, nil
@@ -276,7 +280,7 @@ func readPartyOwnerUuid(partyId int) (ownerUuid string, err error) {
 }
 
 func assumeNextPartyOwner(partyId int) error {
-	_, err := db.Exec("UPDATE partydata SET owner = (SELECT uuid FROM partymemberdata WHERE partyId = ? ORDER BY id LIMIT 1) WHERE partyId = ?", partyId, partyId)
+	_, err := db.Exec("UPDATE partydata p SET p.owner = (SELECT pm.uuid FROM partymemberdata pm WHERE pm.partyId = p.id ORDER BY pm.id LIMIT 1) WHERE p.id = ?", partyId)
 	if err != nil {
 		return err
 	}
