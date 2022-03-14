@@ -257,6 +257,26 @@ func clearPlayerParty(playerUuid string) error {
 	return nil
 }
 
+func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
+	results, err := db.Query("SELECT uuid FROM partymemberdata WHERE partyId = ? ORDER BY id", partyId)
+	if err != nil {
+		return partyMemberUuids, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var uuid string
+		err := results.Scan(&uuid)
+		if err != nil {
+			return partyMemberUuids, err
+		}
+		partyMemberUuids = append(partyMemberUuids, uuid)
+	}
+
+	return partyMemberUuids, nil
+}
+
 func readPartyMemberCount(partyId int) (count int, err error) {
 	results := db.QueryRow("SELECT COUNT(*) FROM partymemberdata WHERE partyId = ?", partyId)
 	err = results.Scan(&count)
