@@ -197,3 +197,7 @@ func globalBroadcast(inpData []byte) {
 		hub.broadcast(inpData)
 	}
 }
+
+func directSend(client *Client, inpData []byte) {
+	client.send <- inpData
+}
