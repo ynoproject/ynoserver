@@ -560,7 +560,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				return true, err
 			}
 			for _, uuid := range partyMemberUuids {
-				directSend(allClients[uuid], []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents))
+				if _, ok := allClients[uuid]; ok {
+					directSend(allClients[uuid], []byte("psay"+paramDelimStr+sender.uuid+paramDelimStr+msgContents))
+				}
 			}
 		default:
 			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
