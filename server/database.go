@@ -95,6 +95,11 @@ func readPlayerPartyId(uuid string) (partyId int, err error) {
 }
 
 func readAllPartyData(publicOnly bool, playerUuid string) (parties []*Party, err error) { //called by api only
+	partyMembersByParty, err := readAllPartyMemberDataByParty(publicOnly, playerUuid)
+	if err != nil {
+		return parties, err
+	}
+
 	var results *sql.Rows
 	if publicOnly {
 		results, err = db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p LEFT JOIN playergamedata pm ON pm.partyId = p.id WHERE p.game = ? AND (p.public = 1 OR pm.uuid = ?)", config.gameName, playerUuid)
@@ -114,17 +119,18 @@ func readAllPartyData(publicOnly bool, playerUuid string) (parties []*Party, err
 		if err != nil {
 			return parties, err
 		}
-		parties = append(parties, party)
-	}
 
-	partyMembersByParty, err := readAllPartyMemberDataByParty(publicOnly, playerUuid)
-	if err != nil {
-		return parties, err
-	}
+		hasOnlineMember := false
 
-	for _, party := range parties {
 		for _, partyMember := range partyMembersByParty[party.Id] {
 			party.Members = append(party.Members, *partyMember)
+			if partyMember.Online {
+				hasOnlineMember = true
+			}
+		}
+
+		if hasOnlineMember {
+			parties = append(parties, party)
 		}
 	}
 
@@ -146,6 +152,8 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 	}
 
 	defer results.Close()
+
+	var offlinePartyMembersByParty map[int][]*PartyMember
 
 	for results.Next() {
 		var partyId int
@@ -169,8 +177,16 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 				partyMember.SpriteIndex = client.spriteIndex
 			}
 			partyMember.Online = true
+			partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
+		} else {
+			offlinePartyMembersByParty[partyId] = append(offlinePartyMembersByParty[partyId], partyMember)
 		}
-		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
+	}
+
+	for partyId, offlinePartyMembers := range offlinePartyMembersByParty {
+		for _, partyMember := range offlinePartyMembers {
+			partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
+		}
 	}
 
 	return partyMembersByParty, nil
