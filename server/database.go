@@ -156,10 +156,18 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 		}
 
 		if client, ok := allClients[partyMember.Uuid]; ok {
-			partyMember.Name = client.name
-			partyMember.SystemName = client.systemName
-			partyMember.SpriteName = client.spriteName
-			partyMember.SpriteIndex = client.spriteIndex
+			if client.name != "" {
+				partyMember.Name = client.name
+			}
+			if client.systemName != "" {
+				partyMember.SystemName = client.systemName
+			}
+			if client.spriteName != "" {
+				partyMember.SpriteName = client.spriteName
+			}
+			if client.spriteIndex > -1 {
+				partyMember.SpriteIndex = client.spriteIndex
+			}
 			partyMember.Online = true
 		}
 		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
@@ -203,10 +211,18 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			return partyMembers, err
 		}
 		if client, ok := allClients[partyMember.Uuid]; ok {
-			partyMember.Name = client.name
-			partyMember.SystemName = client.systemName
-			partyMember.SpriteName = client.spriteName
-			partyMember.SpriteIndex = client.spriteIndex
+			if client.name != "" {
+				partyMember.Name = client.name
+			}
+			if client.systemName != "" {
+				partyMember.SystemName = client.systemName
+			}
+			if client.spriteName != "" {
+				partyMember.SpriteName = client.spriteName
+			}
+			if client.spriteIndex > -1 {
+				partyMember.SpriteIndex = client.spriteIndex
+			}
 			partyMember.MapId = client.mapId
 			partyMember.PrevMapId = client.prevMapId
 			partyMember.PrevLocations = client.prevLocations
@@ -300,9 +316,30 @@ func readPartyOwnerUuid(partyId int) (ownerUuid string, err error) {
 }
 
 func assumeNextPartyOwner(partyId int) error {
-	_, err := db.Exec("UPDATE partydata p SET p.owner = (SELECT pm.uuid FROM partymemberdata pm WHERE pm.partyId = p.id ORDER BY pm.id LIMIT 1) WHERE p.id = ?", partyId)
+	partyMemberUuids, err := readPartyMemberUuids(partyId)
 	if err != nil {
 		return err
+	}
+
+	var nextOnlinePlayerUuid string
+
+	for _, uuid := range partyMemberUuids {
+		if _, ok := allClients[uuid]; ok {
+			nextOnlinePlayerUuid = uuid
+			break
+		}
+	}
+
+	if nextOnlinePlayerUuid != "" {
+		_, err := db.Exec("UPDATE partydata SET owner = ? WHERE id = ?", nextOnlinePlayerUuid, partyId)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err := db.Exec("UPDATE partydata p SET p.owner = (SELECT pm.uuid FROM partymemberdata pm WHERE pm.partyId = p.id ORDER BY pm.id LIMIT 1) WHERE p.id = ?", partyId)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
