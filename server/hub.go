@@ -329,7 +329,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if len(msgFields) != 2 {
 			return false, err
 		}
-		if !isValidSystemName(msgFields[1]) {
+		if !isValidSystemName(msgFields[1], false) {
 			return false, err
 		}
 		sender.systemName = msgFields[1]

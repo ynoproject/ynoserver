@@ -169,8 +169,9 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "name not specified")
 			return
 		}
-		if len(nameParam) > 255 {
+		if len(nameParam[0]) > 255 {
 			handleError(w, r, "name too long")
+			return
 		}
 		var public bool
 		publicParam, ok := r.URL.Query()["public"]
@@ -181,6 +182,10 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		if !public {
 			passParam, ok := r.URL.Query()["pass"]
 			if ok && len(passParam) >= 1 {
+				if len(passParam[0]) > 255 {
+					handleError(w, r, "pass too long")
+					return
+				}
 				pass = passParam[0]
 			}
 		}
@@ -189,8 +194,9 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "theme not specified")
 			return
 		}
-		if !isValidSystemName(themeParam[0]) {
+		if !isValidSystemName(themeParam[0], true) {
 			handleError(w, r, "invalid system name for theme")
+			return
 		}
 		if create {
 			partyId, err = createPartyData(nameParam[0], public, pass, themeParam[0], "", uuid)
@@ -219,11 +225,13 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		partyId, err := strconv.Atoi(partyIdParam[0])
 		if err != nil {
 			handleError(w, r, "invalid partyId value")
+			return
 		}
 		if rank == 0 {
 			public, err := readPartyPublic(partyId)
 			if err != nil {
 				handleInternalError(w, r, err)
+				return
 			}
 			if !public {
 				passParam, ok := r.URL.Query()["pass"]

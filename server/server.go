@@ -139,8 +139,14 @@ func isValidSpriteName(name string) bool {
 	return false
 }
 
-func isValidSystemName(name string) bool {
+func isValidSystemName(name string, ignoreSingleQuotes bool) bool {
+	if ignoreSingleQuotes {
+		name = strings.ReplaceAll(name, "'", "")
+	}
 	for _, otherName := range config.systemNames {
+		if ignoreSingleQuotes {
+			otherName = strings.ReplaceAll(otherName, "'", "")
+		}
 		if strings.EqualFold(otherName, name) {
 			return true
 		}
