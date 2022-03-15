@@ -142,9 +142,9 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 
 	var results *sql.Rows
 	if publicOnly {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?) ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pm.id", config.gameName, playerUuid)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?) ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName, playerUuid)
 	} else {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName,	pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pm.id", config.gameName)
+		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName,	pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
 	}
 
 	if err != nil {
@@ -211,8 +211,28 @@ func readPartyData(partyId int, playerUuid string) (party Party, err error) { //
 	return party, nil
 }
 
+func readPartyPublic(partyId int) (public bool, err error) { //called by api only
+	results := db.QueryRow("SELECT public FROM partydata WHERE id = ?", partyId)
+	err = results.Scan(&public)
+	if err != nil {
+		return public, err
+	}
+
+	return public, nil
+}
+
+func readPartyPass(partyId int) (pass string, err error) { //called by api only
+	results := db.QueryRow("SELECT pass FROM partydata WHERE id = ?", partyId)
+	err = results.Scan(&pass)
+	if err != nil {
+		return pass, err
+	}
+
+	return pass, nil
+}
+
 func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pm.id", partyId, config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}
@@ -253,8 +273,8 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 	return partyMembers, nil
 }
 
-func createPartyData(name string, public bool, theme string, description string, playerUuid string) (partyId int, err error) {
-	res, err := db.Exec("INSERT INTO partydata (game, owner, name, public, theme, description) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, playerUuid, name, public, theme, description)
+func createPartyData(name string, public bool, pass string, theme string, description string, playerUuid string) (partyId int, err error) {
+	res, err := db.Exec("INSERT INTO partydata (game, owner, name, public, pass, theme, description) VALUES (?, ?, ?, ?, ?, ?, ?)", config.gameName, playerUuid, name, public, pass, theme, description)
 	if err != nil {
 		return 0, err
 	}
@@ -271,8 +291,8 @@ func createPartyData(name string, public bool, theme string, description string,
 	return partyId, nil
 }
 
-func updatePartyData(partyId int, name string, public bool, theme string, description string, playerUuid string) (err error) {
-	_, err = db.Exec("UPDATE partydata SET game = ?, owner = ?, name = ?, public = ?, theme = ?, description = ? WHERE id = ?", config.gameName, playerUuid, name, public, theme, description, partyId)
+func updatePartyData(partyId int, name string, public bool, pass string, theme string, description string, playerUuid string) (err error) {
+	_, err = db.Exec("UPDATE partydata SET game = ?, owner = ?, name = ?, public = ?, pass = ?, theme = ?, description = ? WHERE id = ?", config.gameName, playerUuid, name, public, pass, theme, description, partyId)
 	if err != nil {
 		return err
 	}
@@ -299,7 +319,7 @@ func clearPlayerParty(playerUuid string) error {
 }
 
 func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
-	results, err := db.Query("SELECT uuid FROM partymemberdata WHERE partyId = ? ORDER BY id", partyId)
+	results, err := db.Query("SELECT pm.uuid FROM partymemberdata pm JOIN playerdata pd ON pd.uuid = pm.uuid WHERE pm.partyId = ? ORDER BY pd.rank DESC, pm.id", partyId)
 	if err != nil {
 		return partyMemberUuids, err
 	}
@@ -361,7 +381,7 @@ func assumeNextPartyOwner(partyId int) error {
 			return err
 		}
 	} else {
-		_, err := db.Exec("UPDATE partydata p SET p.owner = (SELECT pm.uuid FROM partymemberdata pm WHERE pm.partyId = p.id ORDER BY pm.id LIMIT 1) WHERE p.id = ?", partyId)
+		_, err := db.Exec("UPDATE partydata p SET p.owner = (SELECT pm.uuid FROM partymemberdata pm JOIN playerdata pd ON pd.uuid = pm.uuid WHERE pm.partyId = p.id ORDER BY pd.rank DESC, pm.id LIMIT 1) WHERE p.id = ?", partyId)
 		if err != nil {
 			return err
 		}

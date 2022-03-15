@@ -173,6 +173,13 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		if ok && len(publicParam) >= 1 {
 			public = true
 		}
+		var pass string
+		if !public {
+			passParam, ok := r.URL.Query()["pass"]
+			if ok && len(passParam) >= 1 {
+				pass = passParam[0]
+			}
+		}
 		themeParam, ok := r.URL.Query()["theme"]
 		if !ok || len(themeParam) < 1 {
 			handleError(w, r, "theme not specified")
@@ -182,9 +189,9 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid system name for theme")
 		}
 		if create {
-			partyId, err = createPartyData(nameParam[0], public, themeParam[0], "", uuid)
+			partyId, err = createPartyData(nameParam[0], public, pass, themeParam[0], "", uuid)
 		} else {
-			err = updatePartyData(partyId, nameParam[0], public, themeParam[0], "", uuid)
+			err = updatePartyData(partyId, nameParam[0], public, pass, themeParam[0], "", uuid)
 		}
 		if err != nil {
 			handleInternalError(w, r, err)
@@ -209,13 +216,53 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			handleError(w, r, "invalid partyId value")
 		}
+		if rank == 0 {
+			public, err := readPartyPublic(partyId)
+			if err != nil {
+				handleInternalError(w, r, err)
+			}
+			if !public {
+				passParam, ok := r.URL.Query()["pass"]
+				if !ok || len(passParam) < 1 {
+					handleError(w, r, "pass not specified")
+					return
+				}
+				partyPass, err := readPartyPass(partyId)
+				if err != nil {
+					handleInternalError(w, r, err)
+				}
+				if partyPass != "" && passParam[0] != partyPass {
+					w.WriteHeader(http.StatusUnauthorized)
+					w.Write([]byte("401 - Unauthorized"))
+					return
+				}
+			}
+		}
+		playerPartyId, err := readPlayerPartyId(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		if playerPartyId > 0 {
+			handleError(w, r, "player already in a party")
+			return
+		}
 		err = writePlayerParty(partyId, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 	case "leave":
-		err := handlePartyMemberLeave(uuid)
+		partyId, err := readPlayerPartyId(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		if partyId == 0 {
+			handleError(w, r, "player not in a party")
+			return
+		}
+		err = handlePartyMemberLeave(partyId, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -244,12 +291,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func handlePartyMemberLeave(playerUuid string) error {
-	partyId, err := readPlayerPartyId(playerUuid)
-	if err != nil {
-		return err
-	}
-
+func handlePartyMemberLeave(partyId int, playerUuid string) error {
 	ownerUuid, err := readPartyOwnerUuid(partyId)
 	if err != nil {
 		return err
