@@ -10,6 +10,7 @@ type Party struct {
 	Id          int           `json:"id"`
 	Name        string        `json:"name"`
 	Public      bool          `json:"public"`
+	Pass        string        `json:"pass"`
 	SystemName  string        `json:"systemName"`
 	Description string        `json:"description"`
 	OwnerUuid   string        `json:"ownerUuid"`
@@ -123,6 +124,9 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
+		}
+		if uuid != partyData.OwnerUuid {
+			partyData.Pass = ""
 		}
 		partyDataJson, err := json.Marshal(partyData)
 		if err != nil {

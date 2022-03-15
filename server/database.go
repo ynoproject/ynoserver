@@ -193,8 +193,8 @@ func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMem
 }
 
 func readPartyData(partyId int, playerUuid string) (party Party, err error) { //called by api only
-	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p JOIN partymemberdata pm ON pm.partyId = p.id JOIN playergamedata pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
-	err = results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
+	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM partydata p JOIN partymemberdata pm ON pm.partyId = p.id JOIN playergamedata pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
+	err = results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
 	if err != nil {
 		return party, err
 	}
