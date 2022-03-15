@@ -366,7 +366,7 @@ func assumeNextPartyOwner(partyId int) error {
 	}
 
 	if nextOnlinePlayerUuid != "" {
-		_, err := db.Exec("UPDATE partydata SET owner = ? WHERE id = ?", nextOnlinePlayerUuid, partyId)
+		err = setPartyOwner(partyId, nextOnlinePlayerUuid)
 		if err != nil {
 			return err
 		}
@@ -375,6 +375,15 @@ func assumeNextPartyOwner(partyId int) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func setPartyOwner(partyId int, playerUuid string) error {
+	_, err := db.Exec("UPDATE partydata SET owner = ? WHERE id = ?", playerUuid, partyId)
+	if err != nil {
+		return err
 	}
 
 	return nil

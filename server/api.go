@@ -279,6 +279,59 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+	case "kick":
+		fallthrough
+	case "transfer":
+		kick := commandParam[0] == "kick"
+		partyId, err := readPlayerPartyId(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		if partyId == 0 {
+			handleError(w, r, "player not in a party")
+			return
+		}
+		ownerUuid, err := readPartyOwnerUuid(partyId)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		if ownerUuid != uuid {
+			if kick {
+				handleError(w, r, "attempted party kick non-owner")
+			} else {
+				handleError(w, r, "attempted owner transfer from non-owner")
+			}
+			return
+		}
+		playerParam, ok := r.URL.Query()["player"]
+		if !ok || len(playerParam) < 1 {
+			handleError(w, r, "player not specified")
+			return
+		}
+		playerUuid := playerParam[0]
+		playerPartyId, err := readPlayerPartyId(playerUuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		if playerPartyId != partyId {
+			if kick {
+				handleError(w, r, "specified player to kick not in same party")
+			} else {
+				handleError(w, r, "specified player to transfer owner not in same party")
+			}
+			return
+		}
+		if kick {
+			err = clearPlayerParty(playerUuid)
+		} else {
+			err = setPartyOwner(partyId, playerUuid)
+		}
+		if err != nil {
+			handleInternalError(w, r, nil)
+		}
 	case "disband":
 		partyId, err := readPlayerPartyId(uuid)
 		if err != nil {
