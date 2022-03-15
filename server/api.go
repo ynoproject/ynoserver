@@ -173,7 +173,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		if create {
 			partyId, err = createPartyData(nameParam[0], public, themeParam[0], "", uuid)
 		} else {
-			err = updatePartyData(nameParam[0], public, themeParam[0], "", uuid)
+			err = updatePartyData(partyId, nameParam[0], public, themeParam[0], "", uuid)
 		}
 		if err != nil {
 			handleInternalError(w, r, err)
