@@ -272,7 +272,7 @@ func createPartyData(name string, public bool, theme string, description string,
 }
 
 func updatePartyData(name string, public bool, theme string, description string, playerUuid string) (err error) {
-	_, err = db.Exec("UPDATE partydata SET game = ?, owner = ?, name = ?, public = ?, theme = ?, description = ?)", config.gameName, playerUuid, name, public, theme, description)
+	_, err = db.Exec("UPDATE partydata SET game = ?, owner = ?, name = ?, public = ?, theme = ?, description = ?", config.gameName, playerUuid, name, public, theme, description)
 	if err != nil {
 		return err
 	}
