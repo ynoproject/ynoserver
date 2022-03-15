@@ -271,6 +271,15 @@ func createPartyData(name string, public bool, theme string, description string,
 	return partyId, nil
 }
 
+func updatePartyData(name string, public bool, theme string, description string, playerUuid string) (err error) {
+	_, err = db.Exec("UPDATE partydata SET game = ?, owner = ?, name = ?, public = ?, theme = ?, description = ?)", config.gameName, playerUuid, name, public, theme, description)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func writePlayerParty(partyId int, playerUuid string) error {
 	_, err := db.Exec("INSERT INTO partymemberdata (partyId, uuid) VALUES (?, ?)", partyId, playerUuid)
 	if err != nil {

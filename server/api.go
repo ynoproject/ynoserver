@@ -132,13 +132,21 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(partyDataJson))
 		return
 	case "create":
+		fallthrough
+	case "update":
 		partyId, err := readPlayerPartyId(uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		if partyId > 0 {
-			handleError(w, r, "player already in a party")
+		create := commandParam[0] == "create"
+		if create {
+			if partyId > 0 {
+				handleError(w, r, "player already in a party")
+				return
+			}
+		} else if partyId == 0 {
+			handleError(w, r, "player not in a party")
 			return
 		}
 		nameParam, ok := r.URL.Query()["name"]
@@ -162,18 +170,24 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		if !isValidSystemName(themeParam[0]) {
 			handleError(w, r, "invalid system name for theme")
 		}
-		partyId, err = createPartyData(nameParam[0], public, themeParam[0], "", uuid)
+		if create {
+			partyId, err = createPartyData(nameParam[0], public, themeParam[0], "", uuid)
+		} else {
+			err = updatePartyData(nameParam[0], public, themeParam[0], "", uuid)
+		}
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		err = writePlayerParty(partyId, uuid)
-		if err != nil {
-			handleInternalError(w, r, err)
+		if create {
+			err = writePlayerParty(partyId, uuid)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			w.Write([]byte(strconv.Itoa(partyId)))
 			return
 		}
-		w.Write([]byte(strconv.Itoa(partyId)))
-		return
 	case "join":
 		partyIdParam, ok := r.URL.Query()["partyId"]
 		if !ok || len(partyIdParam) < 1 {
