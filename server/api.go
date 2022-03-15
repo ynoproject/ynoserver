@@ -145,9 +145,20 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 				handleError(w, r, "player already in a party")
 				return
 			}
-		} else if partyId == 0 {
-			handleError(w, r, "player not in a party")
-			return
+		} else {
+			if partyId == 0 {
+				handleError(w, r, "player not in a party")
+				return
+			}
+			ownerUuid, err := readPartyOwnerUuid(partyId)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			if ownerUuid != uuid {
+				handleError(w, r, "attempted party update from non-owner")
+				return
+			}
 		}
 		nameParam, ok := r.URL.Query()["name"]
 		if !ok || len(nameParam) < 1 {
@@ -209,6 +220,22 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+	case "disband":
+		partyId, err := readPlayerPartyId(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		ownerUuid, err := readPartyOwnerUuid(partyId)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		if ownerUuid != uuid {
+			handleError(w, r, "attempted party disband from non-owner")
+			return
+		}
+		err = deletePartyAndMembers(partyId)
 	default:
 		handleError(w, r, "unknown command")
 		return

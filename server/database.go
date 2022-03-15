@@ -378,7 +378,7 @@ func checkDeleteOrphanedParty(partyId int) (deleted bool, err error) {
 	}
 
 	if partyMemberCount == 0 {
-		_, err := db.Exec("DELETE FROM partydata WHERE id = ? AND p.game = ?", partyId, config.gameName)
+		_, err := db.Exec("DELETE FROM partydata WHERE id = ?", partyId)
 		if err != nil {
 			return true, err
 		}
@@ -386,4 +386,18 @@ func checkDeleteOrphanedParty(partyId int) (deleted bool, err error) {
 	}
 
 	return false, nil
+}
+
+func deletePartyAndMembers(partyId int) (err error) {
+	_, err = db.Exec("DELETE FROM partymemberdata WHERE partyId = ?", partyId)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("DELETE FROM partydata WHERE id = ?", partyId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
