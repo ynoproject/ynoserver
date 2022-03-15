@@ -94,18 +94,13 @@ func readPlayerPartyId(uuid string) (partyId int, err error) {
 	return partyId, nil
 }
 
-func readAllPartyData(publicOnly bool, playerUuid string) (parties []*Party, err error) { //called by api only
-	partyMembersByParty, err := readAllPartyMemberDataByParty(publicOnly, playerUuid)
+func readAllPartyData(playerUuid string) (parties []*Party, err error) { //called by api only
+	partyMembersByParty, err := readAllPartyMemberDataByParty(playerUuid)
 	if err != nil {
 		return parties, err
 	}
 
-	var results *sql.Rows
-	if publicOnly {
-		results, err = db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p LEFT JOIN playergamedata pm ON pm.partyId = p.id WHERE p.game = ? AND (p.public = 1 OR pm.uuid = ?)", config.gameName, playerUuid)
-	} else {
-		results, err = db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p WHERE p.game = ?", config.gameName)
-	}
+	results, err := db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p WHERE p.game = ?", config.gameName)
 
 	if err != nil {
 		return parties, err
@@ -137,15 +132,10 @@ func readAllPartyData(publicOnly bool, playerUuid string) (parties []*Party, err
 	return parties, nil
 }
 
-func readAllPartyMemberDataByParty(publicOnly bool, playerUuid string) (partyMembersByParty map[int][]*PartyMember, err error) {
+func readAllPartyMemberDataByParty(playerUuid string) (partyMembersByParty map[int][]*PartyMember, err error) {
 	partyMembersByParty = make(map[int][]*PartyMember)
 
-	var results *sql.Rows
-	if publicOnly {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pgd.game = ? AND p.public = 1 OR EXISTS (SELECT * FROM playergamedata pm2 WHERE pm2.partyId = p.id AND pm2.uuid = ?) ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName, playerUuid)
-	} else {
-		results, err = db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName,	pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
-	}
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, pgd.name, pd.rank, pgd.systemName, pgd.spriteName,	pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
 
 	if err != nil {
 		return partyMembersByParty, err
