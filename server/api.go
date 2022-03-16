@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -122,6 +123,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		}
 		partyData, err := readPartyData(partyId, uuid)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("401 - Unauthorized"))
+				return
+			}
 			handleInternalError(w, r, err)
 			return
 		}
