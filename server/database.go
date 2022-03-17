@@ -201,6 +201,16 @@ func readPartyData(partyId int, playerUuid string) (party Party, err error) { //
 	return party, nil
 }
 
+func readPartyDescription(partyId int) (description string, err error) { //called by api only
+	results := db.QueryRow("SELECT description FROM partydata WHERE id = ?", partyId)
+	err = results.Scan(&description)
+	if err != nil {
+		return description, err
+	}
+
+	return description, nil
+}
+
 func readPartyPublic(partyId int) (public bool, err error) { //called by api only
 	results := db.QueryRow("SELECT public FROM partydata WHERE id = ?", partyId)
 	err = results.Scan(&public)

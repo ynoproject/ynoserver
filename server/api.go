@@ -141,6 +141,24 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write([]byte(partyDataJson))
 		return
+	case "description":
+		partyIdParam, ok := r.URL.Query()["partyId"]
+		if !ok || len(partyIdParam) < 1 {
+			handleError(w, r, "partyId not specified")
+			return
+		}
+		partyId, err := strconv.Atoi(partyIdParam[0])
+		if err != nil {
+			handleError(w, r, "invalid partyId value")
+			return
+		}
+		description, err := readPartyDescription(partyId)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(description))
+		return
 	case "create":
 		fallthrough
 	case "update":
@@ -179,6 +197,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "name too long")
 			return
 		}
+		description := ""
+		descriptionParam, ok := r.URL.Query()["description"]
+		if ok && len(descriptionParam) >= 1 {
+			description = descriptionParam[0]
+		}
 		var public bool
 		publicParam, ok := r.URL.Query()["public"]
 		if ok && len(publicParam) >= 1 {
@@ -205,9 +228,9 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if create {
-			partyId, err = createPartyData(nameParam[0], public, pass, themeParam[0], "", uuid)
+			partyId, err = createPartyData(nameParam[0], public, pass, themeParam[0], description, uuid)
 		} else {
-			err = updatePartyData(partyId, nameParam[0], public, pass, themeParam[0], "", uuid)
+			err = updatePartyData(partyId, nameParam[0], public, pass, themeParam[0], description, uuid)
 		}
 		if err != nil {
 			handleInternalError(w, r, err)
