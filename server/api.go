@@ -36,6 +36,9 @@ func StartApi() {
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/ploc", handlePloc)
 
+	http.HandleFunc("/api/register", handleRegister)
+	http.HandleFunc("/api/login", handleLogin)
+
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(strconv.Itoa(len(allClients))))
 	})

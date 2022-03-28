@@ -575,6 +575,20 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		sender.name = msgFields[1]
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
 		terminate = true
+	case "login": // login command, broadcasts u (update)
+		if len(msgFields) != 2 || len (msgFields[1] != 32 || !isOkString(msgFields[1])) {
+			return true, err
+		}
+
+		name, uuid := getInfoFromSession(msgFields[1])
+		if name == nil || uuid == nil {
+			return true, err
+		}
+
+		sender.name, sender.uuid = name, uuid
+
+		h.broadcast([]byte("u" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + strconv.Itoa(sender.uuid) + paramDelimStr + sender.name))
+		terminate = true
 	default:
 		return false, err
 	}
