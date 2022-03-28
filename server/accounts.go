@@ -23,8 +23,10 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	uuid := randstr.String(16) //make new uuid for this account
+
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
-	db.handle.Exec("INSERT INTO accounts (user, password) VALUES (?, ?)", user[0], hashedPassword)
+	db.handle.Exec("INSERT INTO accounts (uuid, user, password) VALUES (?, ?, ?)", uuid, user[0], hashedPassword)
 
 	w.Write([]byte("ok"))
 }
@@ -51,8 +53,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(sessionId))
 }
 
-func getInfoFromSession(sessionId string) (username string, uuid string) {
-	db.handle.QueryRow("SELECT username, uuid FROM accounts WHERE session = ?", sessionId).Scan(&username, &uuid)
+func getInfoFromSession(sessionId string) (uuid string, username string, rank int) {
+	db.handle.QueryRow("SELECT uuid, username, rank FROM accounts WHERE session = ?", sessionId).Scan(&uuid, &username, &rank)
 
-	return username, uuid
+	return uuid, username, rank
 }

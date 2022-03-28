@@ -580,14 +580,14 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			return true, err
 		}
 
-		name, uuid := getInfoFromSession(msgFields[1])
-		if name == nil || uuid == nil {
+		uuid, name, rank := getInfoFromSession(msgFields[1])
+		if uuid == nil || name == nil || rank == nil {
 			return true, err
 		}
 
-		sender.name, sender.uuid = name, uuid
+		sender.uuid, sender.name, sender.rank = uuid, name, rank
 
-		h.broadcast([]byte("u" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + strconv.Itoa(sender.uuid) + paramDelimStr + sender.name))
+		h.broadcast([]byte("u" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + strconv.Itoa(sender.rank)))
 		terminate = true
 	default:
 		return false, err
