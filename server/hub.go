@@ -569,7 +569,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		terminate = true
 	case "name": // nick set
-		if sender.name != "" || len(msgFields) != 2 || !isOkName(msgFields[1]) || len(msgFields[1]) > 12 {
+		if sender.name != "" || len(msgFields) != 2 || !isOkString(msgFields[1]) || len(msgFields[1]) > 12 {
 			return true, err
 		}
 		sender.name = msgFields[1]
