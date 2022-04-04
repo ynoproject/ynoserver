@@ -576,12 +576,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
 		terminate = true
 	case "login": // login command, broadcasts u (update)
-		if len(msgFields) != 2 || len (msgFields[1] != 32 || !isOkString(msgFields[1])) {
+		if len(msgFields) != 2 || len(msgFields[1]) != 32 || !isOkString(msgFields[1]) {
 			return true, err
 		}
 
 		uuid, name, rank := getInfoFromSession(msgFields[1])
-		if uuid == nil || name == nil || rank == nil {
+		if uuid == "" || name == "" || rank == 0 {
 			return true, err
 		}
 
