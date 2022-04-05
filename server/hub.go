@@ -157,10 +157,7 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	ip := r.Header.Get("x-forwarded-for")
-	if ip == "" {
-		ip = r.RemoteAddr
-	}
+	ip := getIp(r)
 	hub.connect <- &ConnInfo{Connect: conn, Ip: ip}
 }
 

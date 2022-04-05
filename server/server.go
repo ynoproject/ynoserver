@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -206,4 +207,13 @@ func globalBroadcast(inpData []byte) {
 
 func directSend(client *Client, inpData []byte) {
 	client.send <- inpData
+}
+
+func getIp(r *http.Request) string { //this breaks if you're using a revproxy that isn't on 127.0.0.1
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	if ip == "127.0.0.1" && r.Header.Get("x-forwarded-for") != "" {
+		ip = r.Header.Get("x-forwarded-for")
+	}
+
+	return ip
 }

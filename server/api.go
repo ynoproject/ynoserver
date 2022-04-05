@@ -45,7 +45,7 @@ func StartApi() {
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	uuid, rank, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
+	uuid, rank, _ := readPlayerData(getIp(r))
 	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
@@ -78,7 +78,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	ip := r.Header.Get("x-forwarded-for")
+	ip := getIp(r)
 	uuid, rank, banned := readPlayerData(ip)
 
 	if banned {
@@ -414,7 +414,7 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 }
 
 func handlePloc(w http.ResponseWriter, r *http.Request) {
-	uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
+	uuid, _, _ := readPlayerData(getIp(r))
 
 	prevMapIdParam, ok := r.URL.Query()["prevMapId"]
 	if !ok || len(prevMapIdParam) < 1 {
@@ -449,13 +449,13 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {
-	writeErrLog(r.Header.Get("x-forwarded-for"), r.URL.Path, payload)
+	writeErrLog(getIp(r), r.URL.Path, payload)
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte(payload))
 }
 
 func handleInternalError(w http.ResponseWriter, r *http.Request, err error) {
-	writeErrLog(r.Header.Get("x-forwarded-for"), r.URL.Path, err.Error())
+	writeErrLog(getIp(r), r.URL.Path, err.Error())
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("400 - Bad Request"))
 }
