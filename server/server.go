@@ -27,7 +27,7 @@ var (
 			return true
 		},
 	}
-	isOkString      = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
+	isOkString    = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
 	paramDelimStr = "\uffff"
 	msgDelimStr   = "\ufffe"
 
