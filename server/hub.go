@@ -91,6 +91,7 @@ func (h *Hub) Run() {
 				ip:          conn.Ip,
 				send:        make(chan []byte, 256),
 				id:          id,
+				account:     isLoggedIn,
 				uuid:        uuid,
 				rank:        rank,
 				name:        name,

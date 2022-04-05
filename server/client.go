@@ -71,6 +71,8 @@ type Client struct {
 
 	id int
 
+	account bool
+
 	uuid string
 	rank int
 
