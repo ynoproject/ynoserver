@@ -78,8 +78,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	ip := getIp(r)
-	uuid, rank, banned := readPlayerData(ip)
+	uuid, rank, banned := readPlayerData(getIp(r))
 
 	if banned {
 		handleError(w, r, "player is banned")

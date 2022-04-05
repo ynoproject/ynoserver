@@ -157,8 +157,7 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	ip := getIp(r)
-	hub.connect <- &ConnInfo{Connect: conn, Ip: ip}
+	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r)}
 }
 
 func (h *Hub) broadcast(data []byte) {
