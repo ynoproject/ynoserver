@@ -40,10 +40,26 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			uuid, rank, banned := readPlayerData(conn.Ip)
-			if banned {
-				writeErrLog(conn.Ip, h.roomName, "player is banned")
-				continue
+			var uuid string
+			var name string
+			var rank int
+
+			var isLoggedIn bool
+			var isBanned bool
+
+			if conn.Token != "" {
+				uuid, name, rank = readPlayerDataFromToken(conn.Token)
+				if uuid != "" { //if we got a uuid back then we're logged in
+					isLoggedIn = true
+				}
+			}
+
+			if !isLoggedIn {
+				uuid, rank, isBanned = readPlayerData(conn.Ip)
+				if isBanned {
+					writeErrLog(conn.Ip, h.roomName, "player is banned")
+					continue
+				}
 			}
 
 			id := -1
@@ -77,6 +93,7 @@ func (h *Hub) Run() {
 				id:          id,
 				uuid:        uuid,
 				rank:        rank,
+				name:        name,
 				spriteIndex: -1,
 				pictures:    make(map[int]*Picture),
 				mapId:       "0000",
@@ -157,7 +174,8 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r)}
+
+	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: r.Header.Get("token")}
 }
 
 func (h *Hub) broadcast(data []byte) {
@@ -570,20 +588,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		sender.name = msgFields[1]
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
-		terminate = true
-	case "login": // login command, broadcasts u (update)
-		if len(msgFields) != 2 || len(msgFields[1]) != 32 || !isOkString(msgFields[1]) {
-			return true, err
-		}
-
-		uuid, name, rank := getInfoFromSession(msgFields[1])
-		if uuid == "" || name == "" || rank == 0 {
-			return true, err
-		}
-
-		sender.uuid, sender.name, sender.rank = uuid, name, rank
-
-		h.broadcast([]byte("u" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + strconv.Itoa(sender.rank)))
 		terminate = true
 	default:
 		return false, err

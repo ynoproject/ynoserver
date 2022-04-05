@@ -53,8 +53,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(sessionId))
 }
 
-func getInfoFromSession(sessionId string) (uuid string, username string, rank int) {
-	db.QueryRow("SELECT uuid, username, rank FROM accounts WHERE session = ?", sessionId).Scan(&uuid, &username, &rank)
+func readPlayerDataFromToken(token string) (uuid string, username string, rank int) {
+	db.QueryRow("SELECT uuid, username, rank FROM accounts WHERE token = ?", token).Scan(&uuid, &username, &rank)
 
 	return uuid, username, rank
 }
