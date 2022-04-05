@@ -48,7 +48,7 @@ func (h *Hub) Run() {
 			var isBanned bool
 
 			if conn.Token != "" {
-				uuid, name, rank = readPlayerDataFromToken(conn.Token)
+				uuid, name, rank, isBanned = readPlayerDataFromToken(conn.Token)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					isLoggedIn = true
 				}
