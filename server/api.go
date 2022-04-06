@@ -39,6 +39,10 @@ func StartApi() {
 	http.HandleFunc("/api/register", handleRegister)
 	http.HandleFunc("/api/login", handleLogin)
 
+	http.HandleFunc("/api/uuid", func(w http.ResponseWriter, r *http.Request) {
+		uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
+		w.Write([]byte(uuid))
+	})
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(strconv.Itoa(len(allClients))))
 	})
