@@ -96,6 +96,7 @@ func (h *Hub) Run() {
 				uuid:        uuid,
 				rank:        rank,
 				spriteIndex: -1,
+				tone:        []int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
 				mapId:       "0000",
 				key:         key}
@@ -125,6 +126,9 @@ func (h *Hub) Run() {
 				}
 				if other_client.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
 					client.send <- []byte("spr" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.spriteName + paramDelimStr + strconv.Itoa(other_client.spriteIndex))
+				}
+				if other_client.tone[0] != 128 || other_client.tone[1] != 128 || other_client.tone[2] != 128 || other_client.tone[3] != 128 {
+					client.send <- []byte("t" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.tone[0]) + paramDelimStr + strconv.Itoa(other_client.tone[1]) + paramDelimStr + strconv.Itoa(other_client.tone[2]) + paramDelimStr + strconv.Itoa(other_client.tone[3]))
 				}
 				if other_client.systemName != "" {
 					client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.systemName)
@@ -340,6 +344,56 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		sender.spriteName = msgFields[1]
 		sender.spriteIndex = index
 		h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2]))
+	case "fl": //player flash
+		if len(msgFields) != 6 {
+			return false, err
+		}
+		red, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil || red < 0 || red > 255 {
+			return false, err
+		}
+		green, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil || green < 0 || green > 255 {
+			return false, err
+		}
+		blue, errconv := strconv.Atoi(msgFields[3])
+		if errconv != nil || blue < 0 || blue > 255 {
+			return false, err
+		}
+		power, errconv := strconv.Atoi(msgFields[4])
+		if errconv != nil || power < 0 {
+			return false, err
+		}
+		frames, errconv := strconv.Atoi(msgFields[5])
+		if errconv != nil || frames < 0 {
+			return false, err
+		}
+		h.broadcast([]byte("fl" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4] + paramDelimStr + msgFields[5]))
+	case "t": //change my tone
+		if len(msgFields) != 5 {
+			return false, err
+		}
+		red, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil || red < 0 || red > 255 {
+			return false, err
+		}
+		green, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil || green < 0 || green > 255 {
+			return false, err
+		}
+		blue, errconv := strconv.Atoi(msgFields[3])
+		if errconv != nil || blue < 0 || blue > 255 {
+			return false, err
+		}
+		gray, errconv := strconv.Atoi(msgFields[4])
+		if errconv != nil || red < 0 || gray > 255 {
+			return false, err
+		}
+		sender.tone[0] = red
+		sender.tone[1] = green
+		sender.tone[2] = blue
+		sender.tone[3] = gray
+		h.broadcast([]byte("t" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4]))
 	case "sys": //change my system graphic
 		if len(msgFields) != 2 {
 			return false, err

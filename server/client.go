@@ -72,9 +72,9 @@ type Client struct {
 	id int
 
 	account bool
-	name string
-	uuid string
-	rank int
+	name    string
+	uuid    string
+	rank    int
 
 	x, y   int
 	facing int
@@ -82,6 +82,8 @@ type Client struct {
 
 	spriteName  string
 	spriteIndex int
+
+	tone []int
 
 	pictures map[int]*Picture
 
