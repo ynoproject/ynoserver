@@ -79,6 +79,17 @@ func updatePlayerData(client *Client) error {
 	return nil
 }
 
+func readPlayerInfo(ip string) (uuid string, name string, rank int) {
+	results := db.QueryRow("SELECT uuid, name, rank FROM playerdata WHERE ip = ?", ip)
+	err := results.Scan(&uuid, &name, &rank)
+
+	if err != nil {
+		return "", "", 0
+	}
+
+	return uuid, name, rank
+}
+
 func readPlayerPartyId(uuid string) (partyId int, err error) {
 	results := db.QueryRow("SELECT pm.partyId FROM partymemberdata pm JOIN partydata p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", uuid, config.gameName)
 	err = results.Scan(&partyId)

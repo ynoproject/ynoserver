@@ -7,6 +7,12 @@ import (
 	"strconv"
 )
 
+type PlayerInfo struct {
+	Uuid string `json:"uuid"`
+	Name string `json:"name"`
+	Rank int    `json:"rank"`
+}
+
 type Party struct {
 	Id          int           `json:"id"`
 	Name        string        `json:"name"`
@@ -39,9 +45,19 @@ func StartApi() {
 	http.HandleFunc("/api/register", handleRegister)
 	http.HandleFunc("/api/login", handleLogin)
 
-	http.HandleFunc("/api/uuid", func(w http.ResponseWriter, r *http.Request) {
-		uuid, _, _ := readPlayerData(r.Header.Get("x-forwarded-for"))
-		w.Write([]byte(uuid))
+	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
+		uuid, name, rank := readPlayerInfo(r.Header.Get("x-forwarded-for"))
+		playerInfo := &PlayerInfo{
+			Uuid: uuid,
+			Name: name,
+			Rank: rank,
+		}
+		playerInfoJson, err := json.Marshal(playerInfo)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(playerInfoJson))
 	})
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(strconv.Itoa(len(allClients))))
