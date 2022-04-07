@@ -80,7 +80,7 @@ func updatePlayerData(client *Client) error {
 }
 
 func readPlayerInfo(ip string) (uuid string, name string, rank int) {
-	results := db.QueryRow("SELECT uuid, name, rank FROM playerdata WHERE ip = ?", ip)
+	results := db.QueryRow("SELECT pd.uuid, pgd.name, pd.rank FROM playerdata pd JOIN playergamedata pgd ON pgd.uuid = pd.uuid WHERE pd.ip = ? AND pgd.game = ?", ip, config.gameName)
 	err := results.Scan(&uuid, &name, &rank)
 
 	if err != nil {
