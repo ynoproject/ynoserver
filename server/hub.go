@@ -96,6 +96,7 @@ func (h *Hub) Run() {
 				uuid:        uuid,
 				rank:        rank,
 				spriteIndex: -1,
+				flash:       []int{0, 0, 0, 0, 0},
 				tone:        []int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
 				mapId:       "0000",
@@ -126,6 +127,9 @@ func (h *Hub) Run() {
 				}
 				if other_client.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
 					client.send <- []byte("spr" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.spriteName + paramDelimStr + strconv.Itoa(other_client.spriteIndex))
+				}
+				if other_client.repeatingFlash {
+					client.send <- []byte("rfl" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.flash[0]) + paramDelimStr + strconv.Itoa(other_client.flash[1]) + paramDelimStr + strconv.Itoa(other_client.flash[2]) + paramDelimStr + strconv.Itoa(other_client.flash[3]) + paramDelimStr + strconv.Itoa(other_client.flash[4]))
 				}
 				if other_client.tone[0] != 128 || other_client.tone[1] != 128 || other_client.tone[2] != 128 || other_client.tone[3] != 128 {
 					client.send <- []byte("t" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + strconv.Itoa(other_client.tone[0]) + paramDelimStr + strconv.Itoa(other_client.tone[1]) + paramDelimStr + strconv.Itoa(other_client.tone[2]) + paramDelimStr + strconv.Itoa(other_client.tone[3]))
@@ -370,8 +374,20 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if errconv != nil || frames < 0 {
 			return false, err
 		}
+		if msgFields[0] == "rfl" {
+			sender.flash[0] = red
+			sender.flash[1] = green
+			sender.flash[2] = blue
+			sender.flash[3] = power
+			sender.flash[4] = frames
+			sender.repeatingFlash = true
+		}
 		h.broadcast([]byte(msgFields[0] + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4] + paramDelimStr + msgFields[5]))
 	case "rrfl": //remove repeating player flash
+		sender.repeatingFlash = false
+		for i := 0; i < 5; i++ {
+			sender.flash[i] = 0
+		}
 		h.broadcast([]byte("rrfl" + paramDelimStr + strconv.Itoa(sender.id)))
 	case "t": //change my tone
 		if len(msgFields) != 5 {

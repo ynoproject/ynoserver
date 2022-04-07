@@ -83,6 +83,9 @@ type Client struct {
 	spriteName  string
 	spriteIndex int
 
+	flash          []int
+	repeatingFlash bool
+
 	tone []int
 
 	pictures map[int]*Picture
