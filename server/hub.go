@@ -345,6 +345,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		sender.spriteIndex = index
 		h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2]))
 	case "fl": //player flash
+		fallthrough
+	case "rfl": //repeating player flash
 		if len(msgFields) != 6 {
 			return false, err
 		}
@@ -368,7 +370,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if errconv != nil || frames < 0 {
 			return false, err
 		}
-		h.broadcast([]byte("fl" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4] + paramDelimStr + msgFields[5]))
+		h.broadcast([]byte(msgFields[0] + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4] + paramDelimStr + msgFields[5]))
+	case "rrfl": //remove repeating player flash
+		h.broadcast([]byte("rrfl" + paramDelimStr + strconv.Itoa(sender.id)))
 	case "t": //change my tone
 		if len(msgFields) != 5 {
 			return false, err
