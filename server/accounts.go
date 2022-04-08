@@ -23,7 +23,16 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid, _, _ := readPlayerData(getIp(r)) //bind this account to existing uuid or make new one
+	ip := getIp(r)
+
+	var uuid string
+	db.QueryRow("SELECT uuid FROM playerdata WHERE ip = ?", ip).Scan(&uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
+
+	if uuid != "" {
+		db.Exec("UPDATE playerdata SET ip = NULL WHERE ip = ?", ip)
+	} else {
+		uuid, _, _ = readPlayerData(ip)
+	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
 	db.Exec("INSERT INTO accountdata (uuid, user, pass) VALUES (?, ?, ?)", uuid, user[0], hashedPassword)
