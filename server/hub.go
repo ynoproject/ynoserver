@@ -185,7 +185,12 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Session: r.URL.Query()["session"][0]}
+	var session string
+	if r.URL.Query()["session"][0] != "" {
+		session = r.URL.Query()["session"][0]
+	}
+
+	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Session: session}
 }
 
 func (h *Hub) broadcast(data []byte) {
