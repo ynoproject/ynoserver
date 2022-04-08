@@ -41,7 +41,7 @@ var (
 type ConnInfo struct {
 	Connect *websocket.Conn
 	Ip      string
-	Token   string
+	Session string
 }
 
 func writeLog(ip string, roomName string, payload string, errorcode int) {

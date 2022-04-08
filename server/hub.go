@@ -44,11 +44,11 @@ func (h *Hub) Run() {
 			var name string
 			var rank int
 
-			var isLoggedIn bool
 			var isBanned bool
+			var isLoggedIn bool
 
-			if conn.Token != "" {
-				uuid, name, rank, isBanned = readPlayerDataFromToken(conn.Token)
+			if conn.Session != "" {
+				uuid, name, rank, isBanned = readPlayerDataFromSession(conn.Session)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					isLoggedIn = true
 				}
@@ -56,10 +56,11 @@ func (h *Hub) Run() {
 
 			if !isLoggedIn {
 				uuid, rank, isBanned = readPlayerData(conn.Ip)
-				if isBanned {
-					writeErrLog(conn.Ip, h.roomName, "player is banned")
-					continue
-				}
+			}
+
+			if isBanned {
+				writeErrLog(conn.Ip, h.roomName, "player is banned")
+				continue
 			}
 
 			id := -1
@@ -184,7 +185,7 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: r.Header.Get("token")}
+	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Session: r.URL.Query()["session"][0]}
 }
 
 func (h *Hub) broadcast(data []byte) {
