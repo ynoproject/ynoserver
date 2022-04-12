@@ -158,6 +158,11 @@ func (h *Hub) Run() {
 			//tell everyone that a new client has connected
 			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank))) //user %id% has connected message
 
+			//send account-specific data like username
+			if isLoggedIn {
+				h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + name)) //send name of client with account
+			}
+		
 			writeLog(conn.Ip, h.roomName, "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
