@@ -51,7 +51,7 @@ func StartApi() {
 		var name string
 		var rank int
 		if session == "" {
-			uuid, name, rank = readPlayerInfo(r.Header.Get("x-forwarded-for"))
+			uuid, name, rank = readPlayerInfo(getIp(r))
 		} else {
 			uuid, name, rank = readPlayerInfoFromSession(session)
 		}
