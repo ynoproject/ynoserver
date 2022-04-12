@@ -207,9 +207,7 @@ func readAllPartyMemberDataByParty(playerUuid string) (partyMembersByParty map[i
 	}
 
 	for partyId, offlinePartyMembers := range offlinePartyMembersByParty {
-		for _, partyMember := range offlinePartyMembers {
-			partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
-		}
+		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], offlinePartyMembers...)
 	}
 
 	return partyMembersByParty, nil
