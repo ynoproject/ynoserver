@@ -56,7 +56,7 @@ func StartApi() {
 		} else {
 			uuid, name, rank = readPlayerInfoFromSession(session)
 		}
-		playerInfo := &PlayerInfo{
+		playerInfo := PlayerInfo{
 			Uuid: uuid,
 			Name: name,
 			Rank: rank,
