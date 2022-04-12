@@ -35,7 +35,7 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 }
 
 func readPlayerDataFromSession(session string) (uuid string, name string, rank int, banned bool) {
-	result := db.QueryRow("SELECT ad.uuid, ad.user, pd.rank, pd.banned FROM accountData ad JOIN playerdata pd ON pd.uuid = ad.uuid WHERE ad.session = ?", session)
+	result := db.QueryRow("SELECT ad.uuid, ad.user, pd.rank, pd.banned FROM accountdata ad JOIN playerdata pd ON pd.uuid = ad.uuid WHERE ad.session = ?", session)
 	err := result.Scan(&uuid, &name, &rank, &banned)
 
 	if err != nil {
