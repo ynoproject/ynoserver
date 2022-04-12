@@ -162,7 +162,7 @@ func (h *Hub) Run() {
 			if isLoggedIn {
 				h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + name)) //send name of client with account
 			}
-		
+
 			writeLog(conn.Ip, h.roomName, "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {

@@ -1,15 +1,16 @@
 package main
 
 import (
-	"net/http"
-	"log"
-	"ynoserver/server"
-	"strconv"
-	"io/ioutil"
-	"flag"
 	"encoding/json"
-	"gopkg.in/natefinch/lumberjack.v2"
+	"flag"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"strconv"
 	"strings"
+	"ynoserver/server"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func writeLog(ip string, payload string, errorcode int) {
@@ -67,19 +68,19 @@ func main() {
 			systemNames = append(systemNames, k)
 		}
 	}
-	
+
 	//list of invalid sound names
 	var ignoredSoundNames []string
 	if config.BadSounds != "" {
 		ignoredSoundNames = strings.Split(config.BadSounds, ",")
 	}
-	
+
 	//list of valid picture names
 	var pictureNames []string
 	if config.PictureNames != "" {
 		pictureNames = strings.Split(config.PictureNames, ",")
 	}
-	
+
 	// list of valid picture prefixes
 	var picturePrefixes []string
 	if config.PicturePrefixes != "" {
@@ -89,7 +90,7 @@ func main() {
 	var roomNames []string
 	badRooms := strings.Split(config.BadRooms, ",")
 
-	for i:=0; i < config.NumRooms; i++ {
+	for i := 0; i < config.NumRooms; i++ {
 		if !contains(badRooms, i) {
 			roomNames = append(roomNames, strconv.Itoa(i))
 		}
@@ -107,5 +108,5 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime)
 
 	server.StartApi()
-	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":" + strconv.Itoa(config.Port), nil), 500)
+	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":"+strconv.Itoa(config.Port), nil), 500)
 }

@@ -1,8 +1,9 @@
 package server
 
 import (
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -16,15 +17,15 @@ type ServerConfig struct {
 	PictureNames    string `yaml:"picture_names"`
 	PicturePrefixes string `yaml:"picture_prefixes"`
 	GameName        string `yaml:"game_name"`
-	SignKey		 	string `yaml:"sign_key"`
-	IPHubKey		string `yaml:"iphub_key"`
-	Database		struct {
-		User		string `yaml:"user"`
-		Pass		string `yaml:"pass"`
-		Host		string `yaml:"host"`
-		Name		string `yaml:"name"`
+	SignKey         string `yaml:"sign_key"`
+	IPHubKey        string `yaml:"iphub_key"`
+	Database        struct {
+		User string `yaml:"user"`
+		Pass string `yaml:"pass"`
+		Host string `yaml:"host"`
+		Name string `yaml:"name"`
 	} `yaml:"database"`
-	Logging         struct {
+	Logging struct {
 		File       string `yaml:"file"`
 		MaxSize    int    `yaml:"max_size"`
 		MaxBackups int    `yaml:"max_backups"`
@@ -75,16 +76,16 @@ func ParseConfig(file string) ServerConfig {
 }
 
 type Config struct {
-	spriteNames []string
-	systemNames []string
-	soundNames []string
+	spriteNames       []string
+	systemNames       []string
+	soundNames        []string
 	ignoredSoundNames []string
-	pictureNames []string
-	picturePrefixes []string
+	pictureNames      []string
+	picturePrefixes   []string
 
 	gameName string
 
-	signKey string
+	signKey  string
 	ipHubKey string
 
 	dbUser string
@@ -95,15 +96,15 @@ type Config struct {
 
 func SetConfig(spriteNames []string, systemNames []string, soundNames []string, ignoredSoundNames []string, pictureNames []string, picturePrefixes []string, gameName string, signKey string, ipHubKey string, dbUser string, dbPass string, dbHost string, dbName string) {
 	config = Config{
-		spriteNames: spriteNames,
-		systemNames: systemNames,
-		soundNames: soundNames,
+		spriteNames:       spriteNames,
+		systemNames:       systemNames,
+		soundNames:        soundNames,
 		ignoredSoundNames: ignoredSoundNames,
-		pictureNames: pictureNames,
-		picturePrefixes: picturePrefixes,
-		gameName: gameName,
+		pictureNames:      pictureNames,
+		picturePrefixes:   picturePrefixes,
+		gameName:          gameName,
 
-		signKey: signKey,
+		signKey:  signKey,
 		ipHubKey: ipHubKey,
 
 		dbUser: dbUser,
