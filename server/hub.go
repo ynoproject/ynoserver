@@ -72,7 +72,7 @@ func (h *Hub) Run() {
 			}
 
 			ip_limit := 3
-			same_ip := 0
+			var same_ip int
 			for other_client := range h.clients {
 				if other_client.ip == conn.Ip {
 					same_ip++
@@ -139,11 +139,11 @@ func (h *Hub) Run() {
 					client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(other_client.id) + paramDelimStr + other_client.systemName)
 				}
 				for picId, pic := range other_client.pictures {
-					useTransparentColorBin := 0
+					var useTransparentColorBin int
 					if pic.useTransparentColor {
 						useTransparentColorBin = 1
 					}
-					fixedToMapBin := 0
+					var fixedToMapBin int
 					if pic.fixedToMap {
 						fixedToMapBin = 1
 					}
@@ -295,7 +295,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		return false, err
 	}
 
-	terminate := false
+	var terminate bool
 
 	switch msgFields[0] {
 	case "m": //"i moved to x y"
@@ -640,7 +640,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 
 			mapId := "0000"
 			prevMapId := "0000"
-			prevLocations := ""
+			var prevLocations string
 
 			if enableLocBin == 1 {
 				mapId = sender.mapId

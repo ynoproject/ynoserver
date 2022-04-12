@@ -148,7 +148,7 @@ func readAllPartyData(playerUuid string) (parties []*Party, err error) { //calle
 			return parties, err
 		}
 
-		hasOnlineMember := false
+		var hasOnlineMember bool
 
 		for _, partyMember := range partyMembersByParty[party.Id] {
 			party.Members = append(party.Members, *partyMember)

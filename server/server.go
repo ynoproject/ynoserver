@@ -81,7 +81,7 @@ type IpHubResponse struct {
 }
 
 func isVpn(ip string) (bool, error) {
-	apiKey := ""
+	var apiKey string
 
 	if apiKey == "" {
 		return false, nil //VPN checking is not available
