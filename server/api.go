@@ -46,10 +46,11 @@ func StartApi() {
 	http.HandleFunc("/api/login", handleLogin)
 
 	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
-		session := r.Header.Get("X-Session")
 		var uuid string
 		var name string
 		var rank int
+
+		session := r.Header.Get("X-Session")
 		if session == "" {
 			uuid, name, rank = readPlayerInfo(getIp(r))
 		} else {
@@ -73,9 +74,10 @@ func StartApi() {
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	session := r.Header.Get("X-Session")
 	var uuid string
 	var rank int
+
+	session := r.Header.Get("X-Session")
 	if session == "" {
 		uuid, rank, _ = readPlayerData(getIp(r))
 	} else {
@@ -113,10 +115,11 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	session := r.Header.Get("X-Session")
 	var uuid string
 	var rank int
 	var banned bool
+
+	session := r.Header.Get("X-Session")
 	if session == "" {
 		uuid, rank, banned = readPlayerData(getIp(r))
 	} else {
@@ -460,8 +463,9 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 }
 
 func handlePloc(w http.ResponseWriter, r *http.Request) {
-	session := r.Header.Get("X-Session")
 	var uuid string
+
+	session := r.Header.Get("X-Session")
 	if session == "" {
 		uuid, _, _ = readPlayerData(getIp(r))
 	} else {
