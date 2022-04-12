@@ -186,7 +186,7 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var playerSession string
-	session, ok := r.URL.Query()["session"]
+	session, ok := r.URL.Query()["token"]
 	if ok && len(session[0]) == 16 {
 		playerSession = session[0]
 	}
