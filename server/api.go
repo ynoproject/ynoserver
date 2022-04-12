@@ -245,7 +245,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "name too long")
 			return
 		}
-		description := ""
+		var description string
 		descriptionParam, ok := r.URL.Query()["description"]
 		if ok && len(descriptionParam) >= 1 {
 			description = descriptionParam[0]
