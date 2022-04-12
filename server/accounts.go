@@ -10,7 +10,7 @@ import (
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	//GET params user, password
 	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
-	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 {
+	if len(user) < 1 || !isOkString(user[0]) || len(user[0]) > 12 || len(password) < 1 {
 		handleError(w, r, "bad response")
 		return
 	}
