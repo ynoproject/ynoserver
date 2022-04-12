@@ -71,8 +71,8 @@ func (h *Hub) Run() {
 				}
 			}
 
-			ip_limit := 3
 			var same_ip int
+			ip_limit := 3
 			for other_client := range h.clients {
 				if other_client.ip == conn.Ip {
 					same_ip++
