@@ -94,7 +94,8 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if commandParam[0] == "ban" {
+	switch commandParam[0] {
+	case "ban":
 		playerParam, ok := r.URL.Query()["player"]
 		if !ok || len(playerParam) < 1 {
 			handleError(w, r, "player not specified")
@@ -106,7 +107,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-	} else {
+	default:
 		handleError(w, r, "unknown command")
 		return
 	}
