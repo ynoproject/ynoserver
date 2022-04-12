@@ -46,7 +46,15 @@ func StartApi() {
 	http.HandleFunc("/api/login", handleLogin)
 
 	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
-		uuid, name, rank := readPlayerInfo(r.Header.Get("x-forwarded-for"))
+		sessionParam, ok := r.URL.Query()["session"]
+		var uuid string
+		var name string
+		var rank int
+		if !ok || len(sessionParam) < 1 {
+			uuid, name, rank = readPlayerInfo(r.Header.Get("x-forwarded-for"))
+		} else {
+			uuid, name, rank = readPlayerInfoFromSession(sessionParam[0])
+		}
 		playerInfo := &PlayerInfo{
 			Uuid: uuid,
 			Name: name,

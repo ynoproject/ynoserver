@@ -34,6 +34,17 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 	return uuid, rank, banned
 }
 
+func readPlayerDataFromSession(session string) (uuid string, name string, rank int, banned bool) {
+	result := db.QueryRow("SELECT ad.uuid, ad.name, pd.rank, pd.banned FROM accountData ad JOIN playerdata pd ON pd.uuid = ad.uuid WHERE ad.session = ?", session)
+	err := result.Scan(&uuid, &name, &rank, &banned)
+
+	if err != nil {
+		return "", "", 0, false
+	}
+
+	return uuid, name, rank, banned
+}
+
 func readPlayerRank(uuid string) (rank int) {
 	results := db.QueryRow("SELECT rank FROM playerdata WHERE uuid = ?", uuid)
 	err := results.Scan(&rank)
@@ -81,6 +92,17 @@ func updatePlayerData(client *Client) error {
 
 func readPlayerInfo(ip string) (uuid string, name string, rank int) {
 	results := db.QueryRow("SELECT pd.uuid, pgd.name, pd.rank FROM playerdata pd JOIN playergamedata pgd ON pgd.uuid = pd.uuid WHERE pd.ip = ? AND pgd.game = ?", ip, config.gameName)
+	err := results.Scan(&uuid, &name, &rank)
+
+	if err != nil {
+		return "", "", 0
+	}
+
+	return uuid, name, rank
+}
+
+func readPlayerInfoFromSession(session string) (uuid string, name string, rank int) {
+	results := db.QueryRow("SELECT ad.uuid, ad.name, pd.rank FROM accountdata ad JOIN playerdata pd ON pd.uuid = ad.uuid JOIN playergamedata pgd ON pgd.uuid = pd.uuid WHERE pd.ip = ? AND pgd.game = ?", ip, config.gameName)
 	err := results.Scan(&uuid, &name, &rank)
 
 	if err != nil {

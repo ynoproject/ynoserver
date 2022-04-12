@@ -61,9 +61,3 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte(sessionId))
 }
-
-func readPlayerDataFromSession(session string) (uuid string, name string, rank int, banned bool) {
-	db.QueryRow("SELECT accountdata.uuid, accountdata.name, playerdata.rank, playerdata.banned WHERE accountdata.uuid = ? AND playerdata.uuid = ?", session).Scan(&uuid, &name, &rank, &banned)
-
-	return uuid, name, rank, banned
-}
