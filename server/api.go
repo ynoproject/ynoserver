@@ -422,6 +422,10 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		err = deletePartyAndMembers(partyId)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 	default:
 		handleError(w, r, "unknown command")
 		return
