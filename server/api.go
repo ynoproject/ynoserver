@@ -46,14 +46,14 @@ func StartApi() {
 	http.HandleFunc("/api/login", handleLogin)
 
 	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
-		sessionParam, ok := r.URL.Query()["session"]
+		session := r.Header.Get("x-session")
 		var uuid string
 		var name string
 		var rank int
-		if !ok || len(sessionParam) < 1 {
+		if session == "" {
 			uuid, name, rank = readPlayerInfo(r.Header.Get("x-forwarded-for"))
 		} else {
-			uuid, name, rank = readPlayerInfoFromSession(sessionParam[0])
+			uuid, name, rank = readPlayerInfoFromSession(session)
 		}
 		playerInfo := &PlayerInfo{
 			Uuid: uuid,
@@ -73,7 +73,14 @@ func StartApi() {
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	uuid, rank, _ := readPlayerData(getIp(r))
+	session := r.Header.Get("x-session")
+	var uuid string
+	var rank int
+	if session == "" {
+		uuid, rank, _ = readPlayerData(getIp(r))
+	} else {
+		uuid, _, rank, _ = readPlayerDataFromSession(session)
+	}
 	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
@@ -106,7 +113,15 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	uuid, rank, banned := readPlayerData(getIp(r))
+	session := r.Header.Get("x-session")
+	var uuid string
+	var rank int
+	var banned bool
+	if session == "" {
+		uuid, rank, banned = readPlayerData(getIp(r))
+	} else {
+		uuid, _, rank, banned = readPlayerDataFromSession(session)
+	}
 
 	if banned {
 		handleError(w, r, "player is banned")
@@ -441,7 +456,13 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 }
 
 func handlePloc(w http.ResponseWriter, r *http.Request) {
-	uuid, _, _ := readPlayerData(getIp(r))
+	session := r.Header.Get("x-session")
+	var uuid string
+	if session == "" {
+		uuid, _, _ = readPlayerData(getIp(r))
+	} else {
+		uuid, _, _, _ = readPlayerDataFromSession(session)
+	}
 
 	prevMapIdParam, ok := r.URL.Query()["prevMapId"]
 	if !ok || len(prevMapIdParam) < 1 {
