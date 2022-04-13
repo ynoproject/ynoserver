@@ -28,6 +28,7 @@ type PartyMember struct {
 	Uuid          string `json:"uuid"`
 	Name          string `json:"name"`
 	Rank          int    `json:"rank"`
+	Account       bool   `json:"account"`
 	SystemName    string `json:"systemName"`
 	SpriteName    string `json:"spriteName"`
 	SpriteIndex   int    `json:"spriteIndex"`
