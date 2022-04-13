@@ -3,8 +3,10 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type PlayerInfo struct {
@@ -38,9 +40,16 @@ type PartyMember struct {
 	Online        bool   `json:"online"`
 }
 
+type SaveSlot struct {
+	SlotId    int       `json:"slotId"`
+	Timestamp time.Time `json:"timestamp"`
+	Data      string    `json:"string"`
+}
+
 func StartApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
+	http.HandleFunc("/api/saveSync", handleSaveSync)
 	http.HandleFunc("/api/ploc", handlePloc)
 
 	http.HandleFunc("/api/register", handleRegister)
@@ -130,6 +139,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 
 	if banned {
 		handleError(w, r, "player is banned")
+		return
 	}
 
 	commandParam, ok := r.URL.Query()["command"]
@@ -287,7 +297,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if create {
-			err = writePlayerParty(partyId, uuid)
+			err = createPlayerParty(partyId, uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -338,7 +348,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "player already in a party")
 			return
 		}
-		err = writePlayerParty(partyId, uuid)
+		err = createPlayerParty(partyId, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -462,6 +472,105 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 	}
 
 	return nil
+}
+
+func handleSaveSync(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+	var banned bool
+
+	session := r.Header.Get("X-Session")
+	if session == "" {
+		handleError(w, r, "session token not specified")
+		return
+	} else {
+		uuid, _, _, banned = readPlayerDataFromSession(session)
+	}
+
+	if banned {
+		handleError(w, r, "player is banned")
+		return
+	}
+
+	commandParam, ok := r.URL.Query()["command"]
+	if !ok || len(commandParam) < 1 {
+		handleError(w, r, "command not specified")
+		return
+	}
+
+	switch commandParam[0] {
+	case "slots":
+		saveSlotsData, err := readSaveSlotsData(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		saveSlotsDataJson, err := json.Marshal(saveSlotsData)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(saveSlotsDataJson))
+		return
+	case "get":
+		slotIdParam, ok := r.URL.Query()["slotId"]
+		if !ok || len(slotIdParam) < 1 {
+			handleError(w, r, "slotId not specified")
+			return
+		}
+		slotId, err := strconv.Atoi(slotIdParam[0])
+		if err != nil {
+			handleError(w, r, "invalid slotId value")
+			return
+		}
+		slotData, err := readSaveSlotData(uuid, slotId)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		slotDataJson, err := json.Marshal(slotData)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(slotDataJson))
+	case "push":
+		slotIdParam, ok := r.URL.Query()["slotId"]
+		if !ok || len(slotIdParam) < 1 {
+			handleError(w, r, "slotId not specified")
+			return
+		}
+		slotId, err := strconv.Atoi(slotIdParam[0])
+		if err != nil {
+			handleError(w, r, "invalid slotId value")
+			return
+		}
+		timestampParam, ok := r.URL.Query()["timestamp"]
+		if !ok || len(timestampParam) < 1 {
+			handleError(w, r, "timestamp not specified")
+			return
+		}
+		timestamp, err := time.Parse(time.RFC3339, timestampParam[0])
+		if err != nil {
+			handleError(w, r, "invalid timestamp value")
+		}
+		data, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+		if err != nil {
+			handleError(w, r, "invalid data")
+			return
+		}
+		err = createGameSaveSlotData(uuid, slotId, timestamp, string(data))
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		return
+	default:
+		handleError(w, r, "unknown command")
+		return
+	}
+
+	w.Write([]byte("ok"))
 }
 
 func handlePloc(w http.ResponseWriter, r *http.Request) {

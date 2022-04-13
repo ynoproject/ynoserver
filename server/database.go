@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/thanhpk/randstr"
@@ -335,7 +336,7 @@ func updatePartyData(partyId int, name string, public bool, pass string, theme s
 	return nil
 }
 
-func writePlayerParty(partyId int, playerUuid string) error {
+func createPlayerParty(partyId int, playerUuid string) error {
 	_, err := db.Exec("INSERT INTO partymemberdata (partyId, uuid) VALUES (?, ?)", partyId, playerUuid)
 	if err != nil {
 		return err
@@ -459,6 +460,53 @@ func deletePartyAndMembers(partyId int) (err error) {
 	}
 
 	_, err = db.Exec("DELETE FROM partydata WHERE id = ?", partyId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readSaveSlotsData(playerUuid string) (saveSlots []*SaveSlot, err error) { //called by api only
+	results, err := db.Query("SELECT gss.slotId, gss.timestamp FROM gamesaveslot WHERE gss.uuid = ? AND gss.game = ?", playerUuid, config.gameName)
+
+	if err != nil {
+		return saveSlots, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		saveSlot := &SaveSlot{}
+		err := results.Scan(&saveSlot.SlotId, &saveSlot.Timestamp)
+		if err != nil {
+			return saveSlots, err
+		}
+
+		saveSlots = append(saveSlots, saveSlot)
+	}
+
+	return saveSlots, nil
+}
+
+func readSaveSlotData(playerUuid string, slotId int) (saveSlot *SaveSlot, err error) { //called by api only
+	result := db.QueryRow("SELECT gss.timestamp, gss.data FROM gamesaveslot WHERE gss.uuid = ? AND gss.game = ? AND gss.slotId = ?", playerUuid, config.gameName, slotId)
+
+	if err != nil {
+		return saveSlot, err
+	}
+
+	saveSlot = &SaveSlot{SlotId: slotId}
+	err = result.Scan(&saveSlot.Timestamp, &saveSlot.Data)
+	if err != nil {
+		return saveSlot, err
+	}
+
+	return saveSlot, nil
+}
+
+func createGameSaveSlotData(playerUuid string, slotId int, timestamp time.Time, data string) (err error) { //called by api only
+	_, err = db.Exec("INSERT INTO gamesaveslot (uuid, slotId, game, timestamp, data) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, slotId, timestamp, data, timestamp, data)
 	if err != nil {
 		return err
 	}
