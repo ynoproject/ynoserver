@@ -468,7 +468,7 @@ func deletePartyAndMembers(partyId int) (err error) {
 }
 
 func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) { //called by api only
-	result := db.QueryRow("SELECT gss.timestamp FROM gamesavedata WHERE gss.uuid = ? AND gss.game = ?", playerUuid, config.gameName)
+	result := db.QueryRow("SELECT timestamp FROM gamesavedata WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 
 	if err != nil {
 		return timestamp, err
@@ -483,7 +483,7 @@ func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) {
 }
 
 func readSaveData(playerUuid string) (saveData *SaveData, err error) { //called by api only
-	result := db.QueryRow("SELECT gss.timestamp, gss.data FROM gamesavedata WHERE gss.uuid = ? AND gss.game = ?", playerUuid, config.gameName)
+	result := db.QueryRow("SELECT timestamp, data FROM gamesavedata WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 
 	if err != nil {
 		return saveData, err
