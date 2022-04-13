@@ -525,6 +525,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(saveDataJson))
+		return
 	case "push":
 		timestampParam, ok := r.URL.Query()["timestamp"]
 		if !ok || len(timestampParam) < 1 {
