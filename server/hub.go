@@ -116,7 +116,12 @@ func (h *Hub) Run() {
 				client.mapId = fmt.Sprintf("%04d", mapIdInt)
 			}
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank)) //"your id is %id%" message
+			isLoggedInBin := 0
+			if isLoggedIn {
+				isLoggedInBin = 1
+			}
+
+			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin)) //"your id is %id%" message
 			//send the new client info about the game state
 			for otherClient := range h.clients {
 				accountBin := 0
@@ -158,11 +163,6 @@ func (h *Hub) Run() {
 			h.id[id] = true
 			h.clients[client] = true
 			allClients[uuid] = client
-
-			isLoggedInBin := 0
-			if isLoggedIn {
-				isLoggedInBin = 1
-			}
 
 			//tell everyone that a new client has connected
 			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin))) //user %id% has connected message
