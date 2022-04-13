@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/thanhpk/randstr"
