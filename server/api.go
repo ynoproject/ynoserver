@@ -500,6 +500,10 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	case "timestamp":
 		timestamp, err := readSaveDataTimestamp(uuid)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				w.Write([]byte(""))
+				return
+			}
 			handleInternalError(w, r, err)
 			return
 		}
@@ -508,6 +512,10 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	case "get":
 		saveData, err := readSaveData(uuid)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				w.Write([]byte("{}"))
+				return
+			}
 			handleInternalError(w, r, err)
 			return
 		}
