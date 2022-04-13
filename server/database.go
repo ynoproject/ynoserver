@@ -482,20 +482,17 @@ func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) {
 	return timestamp, nil
 }
 
-func readSaveData(playerUuid string) (saveData *SaveData, err error) { //called by api only
-	result := db.QueryRow("SELECT timestamp, data FROM gamesavedata WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
+func readSaveData(playerUuid string) (saveData string, err error) { //called by api only
+	result := db.QueryRow("SELECT data FROM gamesavedata WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 
 	if err != nil {
 		return saveData, err
 	}
 
-	var timestamp time.Time
-	saveData = &SaveData{}
-	err = result.Scan(&timestamp, &saveData.Data)
+	err = result.Scan(&saveData)
 	if err != nil {
 		return saveData, err
 	}
-	saveData.Timestamp = timestamp.Format(time.RFC3339)
 
 	return saveData, nil
 }

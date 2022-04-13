@@ -40,11 +40,6 @@ type PartyMember struct {
 	Online        bool   `json:"online"`
 }
 
-type SaveData struct {
-	Timestamp string `json:"timestamp"`
-	Data      string `json:"string"`
-}
-
 func StartApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
@@ -519,12 +514,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		saveDataJson, err := json.Marshal(saveData)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write([]byte(saveDataJson))
+		w.Write([]byte(saveData))
 		return
 	case "push":
 		timestampParam, ok := r.URL.Query()["timestamp"]
