@@ -10,7 +10,7 @@ import (
 )
 
 func getDatabaseHandle() *sql.DB {
-	db, err := sql.Open("mysql", config.dbUser+":"+config.dbPass+"@tcp("+config.dbHost+")/"+config.dbName)
+	db, err := sql.Open("mysql", config.dbUser+":"+config.dbPass+"@tcp("+config.dbHost+")/"+config.dbName+"?parseTime=true")
 	if err != nil {
 		return nil
 	}
