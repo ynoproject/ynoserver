@@ -552,6 +552,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		timestamp, err := time.Parse(time.RFC3339, timestampParam[0])
 		if err != nil {
 			handleError(w, r, "invalid timestamp value")
+			return
 		}
 		data, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()

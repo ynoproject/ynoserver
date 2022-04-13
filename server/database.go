@@ -506,7 +506,7 @@ func readSaveSlotData(playerUuid string, slotId int) (saveSlot *SaveSlot, err er
 }
 
 func createGameSaveSlotData(playerUuid string, slotId int, timestamp time.Time, data string) (err error) { //called by api only
-	_, err = db.Exec("INSERT INTO gamesaveslot (uuid, slotId, game, timestamp, data) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, slotId, timestamp, data, timestamp, data)
+	_, err = db.Exec("INSERT INTO gamesaveslot (uuid, game, slotId, timestamp, data) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, slotId, timestamp, data, timestamp, data)
 	if err != nil {
 		return err
 	}
