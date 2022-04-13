@@ -467,46 +467,41 @@ func deletePartyAndMembers(partyId int) (err error) {
 	return nil
 }
 
-func readSaveSlotsData(playerUuid string) (saveSlots []*SaveSlot, err error) { //called by api only
-	results, err := db.Query("SELECT gss.slotId, gss.timestamp FROM gamesaveslot WHERE gss.uuid = ? AND gss.game = ?", playerUuid, config.gameName)
+func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) { //called by api only
+	result := db.QueryRow("SELECT gss.timestamp FROM gamesavedata WHERE gss.uuid = ? AND gss.game = ?", playerUuid, config.gameName)
 
 	if err != nil {
-		return saveSlots, err
+		return timestamp, err
 	}
 
-	defer results.Close()
-
-	for results.Next() {
-		saveSlot := &SaveSlot{}
-		err := results.Scan(&saveSlot.SlotId, &saveSlot.Timestamp)
-		if err != nil {
-			return saveSlots, err
-		}
-
-		saveSlots = append(saveSlots, saveSlot)
+	err = result.Scan(&timestamp)
+	if err != nil {
+		return timestamp, err
 	}
 
-	return saveSlots, nil
+	return timestamp, nil
 }
 
-func readSaveSlotData(playerUuid string, slotId int) (saveSlot *SaveSlot, err error) { //called by api only
-	result := db.QueryRow("SELECT gss.timestamp, gss.data FROM gamesaveslot WHERE gss.uuid = ? AND gss.game = ? AND gss.slotId = ?", playerUuid, config.gameName, slotId)
+func readSaveData(playerUuid string) (saveData *SaveData, err error) { //called by api only
+	result := db.QueryRow("SELECT gss.timestamp, gss.data FROM gamesavedata WHERE gss.uuid = ? AND gss.game = ?", playerUuid, config.gameName)
 
 	if err != nil {
-		return saveSlot, err
+		return saveData, err
 	}
 
-	saveSlot = &SaveSlot{SlotId: slotId}
-	err = result.Scan(&saveSlot.Timestamp, &saveSlot.Data)
+	var timestamp time.Time
+	saveData = &SaveData{}
+	err = result.Scan(&timestamp, &saveData.Data)
 	if err != nil {
-		return saveSlot, err
+		return saveData, err
 	}
+	saveData.Timestamp = timestamp.Format(time.RFC3339)
 
-	return saveSlot, nil
+	return saveData, nil
 }
 
-func createGameSaveSlotData(playerUuid string, slotId int, timestamp time.Time, data string) (err error) { //called by api only
-	_, err = db.Exec("INSERT INTO gamesaveslot (uuid, game, slotId, timestamp, data) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, slotId, timestamp, data, timestamp, data)
+func createGameSaveData(playerUuid string, timestamp time.Time, data string) (err error) { //called by api only
+	_, err = db.Exec("INSERT INTO gamesavedata (uuid, game, timestamp, data) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, timestamp, data, timestamp, data)
 	if err != nil {
 		return err
 	}

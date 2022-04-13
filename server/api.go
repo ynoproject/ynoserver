@@ -40,10 +40,9 @@ type PartyMember struct {
 	Online        bool   `json:"online"`
 }
 
-type SaveSlot struct {
-	SlotId    int       `json:"slotId"`
-	Timestamp time.Time `json:"timestamp"`
-	Data      string    `json:"string"`
+type SaveData struct {
+	Timestamp string `json:"timestamp"`
+	Data      string `json:"string"`
 }
 
 func StartApi() {
@@ -498,52 +497,27 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch commandParam[0] {
-	case "slots":
-		saveSlotsData, err := readSaveSlotsData(uuid)
+	case "timestamp":
+		timestamp, err := readSaveDataTimestamp(uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		saveSlotsDataJson, err := json.Marshal(saveSlotsData)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write([]byte(saveSlotsDataJson))
+		w.Write([]byte(timestamp.Format(time.RFC3339)))
 		return
 	case "get":
-		slotIdParam, ok := r.URL.Query()["slotId"]
-		if !ok || len(slotIdParam) < 1 {
-			handleError(w, r, "slotId not specified")
-			return
-		}
-		slotId, err := strconv.Atoi(slotIdParam[0])
-		if err != nil {
-			handleError(w, r, "invalid slotId value")
-			return
-		}
-		slotData, err := readSaveSlotData(uuid, slotId)
+		saveData, err := readSaveData(uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		slotDataJson, err := json.Marshal(slotData)
+		saveDataJson, err := json.Marshal(saveData)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(slotDataJson))
+		w.Write([]byte(saveDataJson))
 	case "push":
-		slotIdParam, ok := r.URL.Query()["slotId"]
-		if !ok || len(slotIdParam) < 1 {
-			handleError(w, r, "slotId not specified")
-			return
-		}
-		slotId, err := strconv.Atoi(slotIdParam[0])
-		if err != nil {
-			handleError(w, r, "invalid slotId value")
-			return
-		}
 		timestampParam, ok := r.URL.Query()["timestamp"]
 		if !ok || len(timestampParam) < 1 {
 			handleError(w, r, "timestamp not specified")
@@ -560,7 +534,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid data")
 			return
 		}
-		err = createGameSaveSlotData(uuid, slotId, timestamp, string(data))
+		err = createGameSaveData(uuid, timestamp, string(data))
 		if err != nil {
 			handleInternalError(w, r, err)
 			return

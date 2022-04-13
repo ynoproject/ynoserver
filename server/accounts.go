@@ -37,7 +37,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
-	db.Exec("INSERT INTO accountdata (ip, timestampRegistered, uuid, user, pass) VALUES (?, ?, ?, ?, ?)", ip, strconv.Itoa(time.Now().Unix()), uuid, user[0], hashedPassword)
+	db.Exec("INSERT INTO accountdata (ip, timestampRegistered, uuid, user, pass) VALUES (?, ?, ?, ?, ?)", ip, time.Now(), uuid, user[0], hashedPassword)
 
 	w.Write([]byte("ok"))
 }
