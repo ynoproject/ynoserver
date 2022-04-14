@@ -505,3 +505,38 @@ func createGameSaveData(playerUuid string, timestamp time.Time, data string) (er
 
 	return nil
 }
+
+func readCurrentEventPeriodId() (periodId int, err error) {
+	result := db.QueryRow("SELECT id FROM eventperioddata WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() <= endDate", config.gameName)
+	err = result.Scan(&periodId)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	return periodId, nil
+}
+
+func writeEventData(periodId int, eventType int, data string) (err error) {
+	var days int
+	offsetDays := 0
+	if eventType == 0 {
+		days = 1
+	} else if eventType == 1 {
+		days = 7
+	} else {
+		days = 2
+	}
+
+	days -= offsetDays
+
+	_, err = db.Exec("INSERT INTO eventdata (periodId, type, startDate, endDate, data) VALUES (?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, days, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

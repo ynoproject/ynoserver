@@ -108,5 +108,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime)
 
 	server.StartApi()
+	server.StartEvents()
+
 	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":"+strconv.Itoa(config.Port), nil), 500)
 }
