@@ -523,17 +523,24 @@ func readCurrentEventPeriodId() (periodId int, err error) {
 func writeEventData(periodId int, eventType int, data string) (err error) {
 	var days int
 	offsetDays := 0
+	weekday := time.Now().UTC().Weekday()
 	if eventType == 0 {
 		days = 1
 	} else if eventType == 1 {
 		days = 7
+		offsetDays = int(weekday)
 	} else {
-		days = 2
+		if weekday == time.Friday || weekday == time.Saturday {
+			days = 2
+			offsetDays = int(weekday) - int(time.Friday)
+		} else {
+			return nil
+		}
 	}
 
 	days -= offsetDays
 
-	_, err = db.Exec("INSERT INTO eventdata (periodId, type, startDate, endDate, data) VALUES (?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, days, data)
+	_, err = db.Exec("INSERT INTO eventdata (periodId, type, startDate, endDate, data) VALUES (?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, offsetDays, days, data)
 	if err != nil {
 		return err
 	}

@@ -35,20 +35,20 @@ func StartEvents() {
 
 			weekday := time.Now().UTC().Weekday()
 
-			if weekday == time.Friday || weekday == time.Saturday {
-				result = db.QueryRow("SELECT COUNT(ed.id) FROM eventdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 2 AND epd.id = ? AND ed.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday))
-				result.Scan(&count)
-
-				if count < 1 {
-					add2kkiEventLocations(1, 1)
-				}
-			}
-
 			result = db.QueryRow("SELECT COUNT(ed.id) FROM eventdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 2 AND epd.id = ? AND ed.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday))
 			result.Scan(&count)
 
 			if count < 1 {
-				add2kkiEventLocations(2, 1)
+				add2kkiEventLocations(1, 1)
+			}
+
+			if weekday == time.Friday || weekday == time.Saturday {
+				result = db.QueryRow("SELECT COUNT(ed.id) FROM eventdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 1 AND epd.id = ? AND ed.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday))
+				result.Scan(&count)
+
+				if count < 1 {
+					add2kkiEventLocations(2, 1)
+				}
 			}
 		}
 
@@ -68,7 +68,6 @@ func StartEvents() {
 
 func add2kkiEventLocations(eventType int, count int) {
 	periodId, err := readCurrentEventPeriodId()
-
 	if err != nil {
 		handleEventError(eventType, err)
 	}
@@ -88,8 +87,15 @@ func add2kkiEventLocations(eventType int, count int) {
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		handleEventError(eventType, err)
+		return
+	}
 
 	err = writeEventData(periodId, eventType, string(body))
+	if err != nil {
+		handleEventError(eventType, err)
+	}
 }
 
 func handleEventError(eventType int, err error) {

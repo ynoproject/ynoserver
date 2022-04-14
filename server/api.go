@@ -543,8 +543,6 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "unknown command")
 		return
 	}
-
-	w.Write([]byte("ok"))
 }
 
 func handlePloc(w http.ResponseWriter, r *http.Request) {
