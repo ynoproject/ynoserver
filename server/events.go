@@ -72,7 +72,7 @@ func add2kkiEventLocations(eventType int, count int) {
 		handleEventError(eventType, err)
 	}
 
-	url := "https://2kki.app?count=" + strconv.Itoa(count) + "&ignoreSecret=1"
+	url := "https://2kki.app/getRandomLocations?count=" + strconv.Itoa(count) + "&ignoreSecret=1"
 	if eventType == 0 {
 		url += "&minDepth=3&maxDepth=9"
 	} else if eventType == 1 {
@@ -81,7 +81,7 @@ func add2kkiEventLocations(eventType int, count int) {
 		url += "&minDepth=9&maxDepth=14"
 	}
 
-	resp, err := http.Get("https://2kki.app?count=2&minDepth=3&maxDepth=9&ignoreSecret=1")
+	resp, err := http.Get("https://2kki.app/getRandomLocations?count=2&minDepth=3&maxDepth=9&ignoreSecret=1")
 	if err != nil {
 		handleEventError(eventType, err)
 	}
