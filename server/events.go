@@ -96,15 +96,7 @@ func add2kkiEventLocations(eventType int, count int) {
 	}
 
 	for _, eventLocation := range eventLocations {
-		dataBytes, err := json.Marshal(eventLocation)
-		if err != nil {
-			handleInternalEventError(eventType, err)
-			continue
-		}
-
-		data := string(dataBytes)
-
-		err = writeEventLocationData(periodId, eventType, data)
+		err = writeEventLocationData(periodId, eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MapIds)
 		if err != nil {
 			handleInternalEventError(eventType, err)
 		}
