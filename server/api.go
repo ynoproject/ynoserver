@@ -100,7 +100,7 @@ func StartApi() {
 		}
 		w.Write([]byte(playerInfoJson))
 	})
-	http.HandleFunc("/api/players", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte(strconv.Itoa(len(allClients))))
 	})
 }
@@ -180,7 +180,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(strconv.Itoa(partyId)))
 		return
 	case "list":
-		partyListData, err := readAllPartyData(uuid)
+		partyListData, err := readAllPartyData()
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -203,7 +203,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid partyId value")
 			return
 		}
-		partyData, err := readPartyData(partyId, uuid)
+		partyData, err := readPartyData(uuid)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				w.WriteHeader(http.StatusUnauthorized)
@@ -211,6 +211,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			handleInternalError(w, r, err)
+			return
+		}
+		if partyData.Id != partyId {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("401 - Unauthorized"))
 			return
 		}
 		if uuid != partyData.OwnerUuid {

@@ -129,8 +129,8 @@ func readPlayerPartyId(uuid string) (partyId int, err error) {
 	return partyId, nil
 }
 
-func readAllPartyData(playerUuid string) (parties []*Party, err error) { //called by api only
-	partyMembersByParty, err := readAllPartyMemberDataByParty(playerUuid)
+func readAllPartyData() (parties []*Party, err error) { //called by api only
+	partyMembersByParty, err := readAllPartyMemberDataByParty()
 	if err != nil {
 		return parties, err
 	}
@@ -167,7 +167,7 @@ func readAllPartyData(playerUuid string) (parties []*Party, err error) { //calle
 	return parties, nil
 }
 
-func readAllPartyMemberDataByParty(playerUuid string) (partyMembersByParty map[int][]*PartyMember, err error) {
+func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember, err error) {
 	partyMembersByParty = make(map[int][]*PartyMember)
 
 	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(ad.user, pgd.name), pd.rank, CASE WHEN ad.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId LEFT JOIN accountdata ad ON ad.uuid = pd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
@@ -217,7 +217,7 @@ func readAllPartyMemberDataByParty(playerUuid string) (partyMembersByParty map[i
 	return partyMembersByParty, nil
 }
 
-func readPartyData(partyId int, playerUuid string) (party Party, err error) { //called by api only
+func readPartyData(playerUuid string) (party Party, err error) { //called by api only
 	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM partydata p JOIN partymemberdata pm ON pm.partyId = p.id JOIN playergamedata pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
 	err = results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
 	if err != nil {
@@ -521,25 +521,23 @@ func readCurrentEventPeriodId() (periodId int, err error) {
 	return periodId, nil
 }
 
-func readCurrentEventPeriodData() (periodId int, err error) {
+func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 	result := db.QueryRow("SELECT periodOrdinal, endDate FROM eventperioddata WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
-
-	eventPeriod := &EventPeriod{}
 
 	err = result.Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return 0, nil
+			return eventPeriod, nil
 		}
-		return 0, err
+		return eventPeriod, err
 	}
 
-	return periodId, nil
+	return eventPeriod, nil
 }
 
 func readEventPointsData(periodId int, playerUuid string) (eventPoints *EventPoints, err error) {
-	result := db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.id = ?", periodId)
+	result := db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ?", periodId, playerUuid)
 	err = result.Scan(&eventPoints.PeriodPoints)
 
 	if err != nil {
@@ -548,7 +546,7 @@ func readEventPointsData(periodId int, playerUuid string) (eventPoints *EventPoi
 
 	weekdayIndex := int(time.Now().UTC().Weekday())
 
-	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.id = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) >= ed.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) <= ed.endDate", periodId, weekdayIndex, 6-weekdayIndex)
+	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) >= ed.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) <= ed.endDate", periodId, playerUuid, weekdayIndex, 6-weekdayIndex)
 	err = result.Scan(&eventPoints.WeekPoints)
 
 	if err != nil {
