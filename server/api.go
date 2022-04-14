@@ -48,6 +48,7 @@ type EventPeriod struct {
 type EventPoints struct {
 	WeekPoints   int `json:"weekPoints"`
 	PeriodPoints int `json:"periodPoints"`
+	TotalPoints  int `json:"totalPoints"`
 }
 
 type EventLocation struct {
@@ -631,7 +632,6 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(eventPointsDataJson))
-		return
 	case "list":
 		periodId, err := readCurrentEventPeriodId()
 		if err != nil {
@@ -649,7 +649,6 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(currentEventLocationsDataJson))
-		return
 	case "claim":
 		locationParam, ok := r.URL.Query()["location"]
 		if !ok || len(locationParam) < 1 {
@@ -671,10 +670,8 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(strconv.Itoa(ep)))
-		return
 	default:
 		handleError(w, r, "unknown command")
-		return
 	}
 }
 
