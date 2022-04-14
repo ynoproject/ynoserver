@@ -521,23 +521,23 @@ func readCurrentEventPeriodId() (periodId int, err error) {
 	return periodId, nil
 }
 
-func readCurrentEventPeriodData() (eventPeriod *EventPeriod, err error) {
+func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 	result := db.QueryRow("SELECT periodOrdinal, endDate FROM eventperioddata WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
 
 	err = result.Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate)
 
 	if err != nil {
+		eventPeriod.PeriodOrdinal = -1
 		if err == sql.ErrNoRows {
-			eventPeriod.PeriodOrdinal = -1
 			return eventPeriod, nil
 		}
-		return nil, err
+		return eventPeriod, err
 	}
 
 	return eventPeriod, nil
 }
 
-func readEventPointsData(periodId int, playerUuid string) (eventPoints *EventPoints, err error) {
+func readEventPointsData(periodId int, playerUuid string) (eventPoints EventPoints, err error) {
 	result := db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.game = ? AND ecd.uuid = ?", config.gameName, playerUuid)
 	err = result.Scan(&eventPoints.TotalPoints)
 
