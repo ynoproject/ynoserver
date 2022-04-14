@@ -90,7 +90,7 @@ func add2kkiEventLocations(eventType int, count int) {
 		url += "&minDepth=9&maxDepth=14"
 	}
 
-	resp, err := http.Get("https://2kki.app/getRandomLocations?count=2&minDepth=3&maxDepth=9&ignoreSecret=1")
+	resp, err := http.Get(url)
 	if err != nil {
 		handleInternalEventError(eventType, err)
 	}
