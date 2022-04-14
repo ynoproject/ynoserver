@@ -554,7 +554,7 @@ func readEventPointsData(periodId int, playerUuid string) (eventPoints EventPoin
 
 	weekdayIndex := int(time.Now().UTC().Weekday())
 
-	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) >= ed.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) <= ed.endDate", periodId, playerUuid, weekdayIndex, 6-weekdayIndex)
+	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= ed.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= ed.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
 	err = result.Scan(&eventPoints.WeekPoints)
 
 	if err != nil {
