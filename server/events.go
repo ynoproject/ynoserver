@@ -1,9 +1,11 @@
 package server
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -16,6 +18,13 @@ type EventLocation struct {
 	StartDate time.Time `json:"startDate"`
 	EndDate   time.Time `json:"endDate"`
 	Data      string    `json:"data"`
+}
+
+type EventLocationResponse struct {
+	Title   string   `json:"title"`
+	TitleJP string   `json:"titleJP"`
+	Depth   int      `json:"depth"`
+	MapIds  []string `json:"mapIds"`
 }
 
 func StartEvents() {
@@ -69,7 +78,7 @@ func StartEvents() {
 func add2kkiEventLocations(eventType int, count int) {
 	periodId, err := readCurrentEventPeriodId()
 	if err != nil {
-		handleEventError(eventType, err)
+		handleInternalEventError(eventType, err)
 	}
 
 	url := "https://2kki.app/getRandomLocations?count=" + strconv.Itoa(count) + "&ignoreSecret=1"
@@ -83,21 +92,45 @@ func add2kkiEventLocations(eventType int, count int) {
 
 	resp, err := http.Get("https://2kki.app/getRandomLocations?count=2&minDepth=3&maxDepth=9&ignoreSecret=1")
 	if err != nil {
-		handleEventError(eventType, err)
+		handleInternalEventError(eventType, err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		handleEventError(eventType, err)
+		handleInternalEventError(eventType, err)
 		return
 	}
 
-	err = writeEventData(periodId, eventType, string(body))
+	if strings.HasPrefix(string(body), "{\"error\"") {
+		handleEventError(eventType, "Invalid event location data: "+string(body))
+	}
+
+	var eventLocations []EventLocationResponse
+	err = json.Unmarshal(body, &eventLocations)
 	if err != nil {
-		handleEventError(eventType, err)
+		handleInternalEventError(eventType, err)
+	}
+
+	for _, eventLocation := range eventLocations {
+		dataBytes, err := json.Marshal(eventLocation)
+		if err != nil {
+			handleInternalEventError(eventType, err)
+			continue
+		}
+
+		data := string(dataBytes)
+
+		err = writeEventData(periodId, eventType, data)
+		if err != nil {
+			handleInternalEventError(eventType, err)
+		}
 	}
 }
 
-func handleEventError(eventType int, err error) {
-	writeErrLog("SERVER", strconv.Itoa(eventType), err.Error())
+func handleInternalEventError(eventType int, err error) {
+	handleEventError(eventType, err.Error())
+}
+
+func handleEventError(eventType int, payload string) {
+	writeErrLog("SERVER", strconv.Itoa(eventType), payload)
 }
