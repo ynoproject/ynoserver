@@ -40,10 +40,38 @@ type PartyMember struct {
 	Online        bool   `json:"online"`
 }
 
+type EventPeriod struct {
+	PeriodOrdinal int       `json:"periodOrdinal"`
+	EndDate       time.Time `json:"endDate"`
+}
+
+type EventPoints struct {
+	WeekPoints   int `json:"weekPoints"`
+	PeriodPoints int `json:"periodPoints"`
+}
+
+type EventLocation struct {
+	Id       int       `json:"id"`
+	Type     int       `json:"type"`
+	Title    string    `json:"title"`
+	TitleJP  string    `json:"titleJP"`
+	Depth    int       `json:"depth"`
+	EndDate  time.Time `json:"endDate"`
+	Complete bool      `json:"complete"`
+}
+
+type EventLocationData struct {
+	Title   string   `json:"title"`
+	TitleJP string   `json:"titleJP"`
+	Depth   int      `json:"depth"`
+	MapIds  []string `json:"mapIds"`
+}
+
 func StartApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/saveSync", handleSaveSync)
+	http.HandleFunc("/api/eventLocations", handleEventLocations)
 	http.HandleFunc("/api/ploc", handlePloc)
 
 	http.HandleFunc("/api/register", handleRegister)
@@ -538,6 +566,106 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+		return
+	default:
+		handleError(w, r, "unknown command")
+		return
+	}
+}
+
+func handleEventLocations(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+	var banned bool
+
+	session := r.Header.Get("X-Session")
+	if session == "" {
+		handleError(w, r, "session token not specified")
+		return
+	} else {
+		uuid, _, _, banned = readPlayerDataFromSession(session)
+	}
+
+	if banned {
+		handleError(w, r, "player is banned")
+		return
+	}
+
+	commandParam, ok := r.URL.Query()["command"]
+	if !ok || len(commandParam) < 1 {
+		handleError(w, r, "command not specified")
+		return
+	}
+
+	switch commandParam[0] {
+	case "period":
+		period, err := readCurrentEventPeriodData()
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		periodJson, err := json.Marshal(period)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(periodJson))
+	case "ep":
+		periodId, err := readCurrentEventPeriodId()
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		eventPointsData, err := readEventPointsData(periodId, uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		eventPointsDataJson, err := json.Marshal(eventPointsData)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(eventPointsDataJson))
+		return
+	case "list":
+		periodId, err := readCurrentEventPeriodId()
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		currentEventLocationsData, err := readCurrentPlayerEventLocationsData(periodId, uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		currentEventLocationsDataJson, err := json.Marshal(currentEventLocationsData)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(currentEventLocationsDataJson))
+		return
+	case "claim":
+		locationParam, ok := r.URL.Query()["location"]
+		if !ok || len(locationParam) < 1 {
+			handleError(w, r, "location not specified")
+			return
+		}
+		periodId, err := readCurrentEventPeriodId()
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		ep, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		if ep == 0 {
+			handleError(w, r, "unexpected state")
+			return
+		}
+		w.Write([]byte(strconv.Itoa(ep)))
 		return
 	default:
 		handleError(w, r, "unknown command")

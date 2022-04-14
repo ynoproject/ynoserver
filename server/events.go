@@ -11,22 +11,6 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
-type EventLocation struct {
-	Id        int       `json:"id"`
-	PeriodId  int       `json:"periodId"`
-	Type      int       `json:"type"`
-	StartDate time.Time `json:"startDate"`
-	EndDate   time.Time `json:"endDate"`
-	Data      string    `json:"data"`
-}
-
-type EventLocationResponse struct {
-	Title   string   `json:"title"`
-	TitleJP string   `json:"titleJP"`
-	Depth   int      `json:"depth"`
-	MapIds  []string `json:"mapIds"`
-}
-
 func StartEvents() {
 	if config.gameName == "2kki" {
 		s := gocron.NewScheduler(time.UTC)
@@ -105,7 +89,7 @@ func add2kkiEventLocations(eventType int, count int) {
 		handleEventError(eventType, "Invalid event location data: "+string(body))
 	}
 
-	var eventLocations []EventLocationResponse
+	var eventLocations []EventLocationData
 	err = json.Unmarshal(body, &eventLocations)
 	if err != nil {
 		handleInternalEventError(eventType, err)
@@ -120,7 +104,7 @@ func add2kkiEventLocations(eventType int, count int) {
 
 		data := string(dataBytes)
 
-		err = writeEventData(periodId, eventType, data)
+		err = writeEventLocationData(periodId, eventType, data)
 		if err != nil {
 			handleInternalEventError(eventType, err)
 		}
