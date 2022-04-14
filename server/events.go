@@ -19,7 +19,7 @@ func StartEvents() {
 		if err == nil {
 			var count int
 
-			result := db.QueryRow("SELECT COUNT(ed.id) FROM eventdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 0 AND epd.id = ? AND ed.startDate = UTC_DATE()", periodId)
+			result := db.QueryRow("SELECT COUNT(ed.id) FROM eventlocationdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 0 AND epd.id = ? AND ed.startDate = UTC_DATE()", periodId)
 			result.Scan(&count)
 
 			if count < 2 {
@@ -28,7 +28,7 @@ func StartEvents() {
 
 			weekday := time.Now().UTC().Weekday()
 
-			result = db.QueryRow("SELECT COUNT(ed.id) FROM eventdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 2 AND epd.id = ? AND ed.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday))
+			result = db.QueryRow("SELECT COUNT(ed.id) FROM eventlocationdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 2 AND epd.id = ? AND ed.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday))
 			result.Scan(&count)
 
 			if count < 1 {
@@ -36,7 +36,7 @@ func StartEvents() {
 			}
 
 			if weekday == time.Friday || weekday == time.Saturday {
-				result = db.QueryRow("SELECT COUNT(ed.id) FROM eventdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 1 AND epd.id = ? AND ed.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday))
+				result = db.QueryRow("SELECT COUNT(ed.id) FROM eventlocationdata ed JOIN eventperioddata epd ON epd.id = ed.periodId WHERE ed.type = 1 AND epd.id = ? AND ed.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday))
 				result.Scan(&count)
 
 				if count < 1 {
@@ -63,6 +63,7 @@ func add2kkiEventLocations(eventType int, count int) {
 	periodId, err := readCurrentEventPeriodId()
 	if err != nil {
 		handleInternalEventError(eventType, err)
+		return
 	}
 
 	url := "https://2kki.app/getRandomLocations?count=" + strconv.Itoa(count) + "&ignoreSecret=1"
@@ -77,6 +78,7 @@ func add2kkiEventLocations(eventType int, count int) {
 	resp, err := http.Get(url)
 	if err != nil {
 		handleInternalEventError(eventType, err)
+		return
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -87,12 +89,14 @@ func add2kkiEventLocations(eventType int, count int) {
 
 	if strings.HasPrefix(string(body), "{\"error\"") {
 		handleEventError(eventType, "Invalid event location data: "+string(body))
+		return
 	}
 
 	var eventLocations []EventLocationData
 	err = json.Unmarshal(body, &eventLocations)
 	if err != nil {
 		handleInternalEventError(eventType, err)
+		return
 	}
 
 	for _, eventLocation := range eventLocations {
