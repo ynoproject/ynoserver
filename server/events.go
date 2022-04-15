@@ -56,6 +56,8 @@ func StartEvents() {
 		s.Every(1).Friday().At("00:00").Do(func() {
 			add2kkiEventLocations(2, 1)
 		})
+
+		s.StartAsync()
 	}
 }
 
