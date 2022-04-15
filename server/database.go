@@ -37,7 +37,7 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 }
 
 func readPlayerDataFromSession(session string) (uuid string, name string, rank int, banned bool) {
-	result := db.QueryRow("SELECT ad.uuid, ad.user, pd.rank, pd.banned FROM accounts ad JOIN players pd ON pd.uuid = ad.uuid WHERE ad.session = ?", session)
+	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, pd.banned FROM accounts a JOIN players pd ON pd.uuid = a.uuid WHERE a.session = ?", session)
 	err := result.Scan(&uuid, &name, &rank, &banned)
 
 	if err != nil {
@@ -104,7 +104,7 @@ func readPlayerInfo(ip string) (uuid string, name string, rank int) {
 }
 
 func readPlayerInfoFromSession(session string) (uuid string, name string, rank int) {
-	results := db.QueryRow("SELECT ad.uuid, ad.user, pd.rank FROM accounts ad JOIN players pd ON pd.uuid = ad.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE ad.session = ? AND pgd.game = ?", session, config.gameName)
+	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank FROM accounts a JOIN players pd ON pd.uuid = a.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE a.session = ? AND pgd.game = ?", session, config.gameName)
 	err := results.Scan(&uuid, &name, &rank)
 
 	if err != nil {
@@ -170,7 +170,7 @@ func readAllPartyData() (parties []*Party, err error) { //called by api only
 func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember, err error) {
 	partyMembersByParty = make(map[int][]*PartyMember)
 
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(ad.user, pgd.name), pd.rank, CASE WHEN ad.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts ad ON ad.uuid = pd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
 
 	if err != nil {
 		return partyMembersByParty, err
@@ -267,7 +267,7 @@ func readPartyPass(partyId int) (pass string, err error) { //called by api only
 }
 
 func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(ad.user, pgd.name), pd.rank, CASE WHEN ad.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts ad ON ad.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}

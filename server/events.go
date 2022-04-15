@@ -19,16 +19,16 @@ func StartEvents() {
 		if err == nil {
 			var count int
 
-			result := db.QueryRow("SELECT COUNT(ed.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE()", periodId)
+			result := db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE()", periodId)
 			result.Scan(&count)
 
 			if count < 2 {
-				add2kkiEventLocations(0, 2)
+				add2kkiEventLocations(0, 2-count)
 			}
 
 			weekday := time.Now().UTC().Weekday()
 
-			result = db.QueryRow("SELECT COUNT(ed.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday))
+			result = db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday))
 			result.Scan(&count)
 
 			if count < 1 {
@@ -36,7 +36,7 @@ func StartEvents() {
 			}
 
 			if weekday == time.Friday || weekday == time.Saturday {
-				result = db.QueryRow("SELECT COUNT(ed.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday))
+				result = db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday))
 				result.Scan(&count)
 
 				if count < 1 {
