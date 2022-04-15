@@ -598,7 +598,7 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 }
 
 func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventLocations []*EventLocation, err error) {
-	results, err := db.Query("SELECT ed.id, ed.type, ed.title, ed.titleJP, ed.depth, ed.endDate, CASE WHEN ecd.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventlocationdata ed LEFT JOIN eventcompletiondata ecd ON ecd.eventId = ed.id AND ecd.uuid = ? WHERE ed.periodId = ? AND UTC_DATE() >= ed.startDate AND UTC_DATE() < ed.endDate ORDER BY 2", playerUuid, periodId)
+	results, err := db.Query("SELECT ed.id, ed.type, ed.title, ed.titleJP, ed.depth, ed.endDate, CASE WHEN ecd.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventlocationdata ed LEFT JOIN eventcompletiondata ecd ON ecd.eventId = ed.id AND ecd.uuid = ? WHERE ed.periodId = ? AND UTC_DATE() >= ed.startDate AND UTC_DATE() < ed.endDate ORDER BY 2, 1", playerUuid, periodId)
 
 	if err != nil {
 		return eventLocations, err
