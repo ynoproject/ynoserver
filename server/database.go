@@ -654,7 +654,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			for _, mapId := range mapIds {
 				if clientMapId == mapId {
 
-					_, err = db.Exec("INSERT INTO eventcompletiondata (eventId, uuid) VALUES (?, ?)", eventId, playerUuid)
+					_, err = db.Exec("INSERT INTO eventcompletiondata (eventId, uuid, timestampCompleted) VALUES (?, ?, ?)", eventId, playerUuid, time.Now())
 					if err != nil {
 						break
 					}
