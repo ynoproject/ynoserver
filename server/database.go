@@ -537,34 +537,45 @@ func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 	return eventPeriod, nil
 }
 
-func readEventPointsData(periodId int, playerUuid string) (eventPoints EventPoints, err error) {
-	result := db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventCompletions ecd JOIN eventLocations ed ON ed.id = ecd.eventId JOIN eventPeriods epd ON epd.id = ed.periodId WHERE epd.game = ? AND ecd.uuid = ?", config.gameName, playerUuid)
-	err = result.Scan(&eventPoints.TotalPoints)
+func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp, err error) {
+	result := db.QueryRow("SELECT COUNT(ec.eventId) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid)
+	err = result.Scan(&eventExp.TotalExp)
 
 	if err != nil {
-		return eventPoints, err
+		return eventExp, err
 	}
 
-	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventCompletions ecd JOIN eventLocations ed ON ed.id = ecd.eventId JOIN eventPeriods epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ?", periodId, playerUuid)
-	err = result.Scan(&eventPoints.PeriodPoints)
+	result = db.QueryRow("SELECT COUNT(ec.eventId) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid)
+	err = result.Scan(&eventExp.PeriodExp)
 
 	if err != nil {
-		return eventPoints, err
+		return eventExp, err
 	}
 
-	weekdayIndex := int(time.Now().UTC().Weekday())
-
-	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventCompletions ecd JOIN eventLocations ed ON ed.id = ecd.eventId JOIN eventPeriods epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= ed.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= ed.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
-	err = result.Scan(&eventPoints.WeekPoints)
-
+	weekEventExp, err := readWeekEventExp(periodId, playerUuid)
 	if err != nil {
-		return eventPoints, err
+		return eventExp, err
 	}
 
-	return eventPoints, nil
+	eventExp.WeekExp = weekEventExp
+
+	return eventExp, nil
 }
 
-func writeEventLocationData(periodId int, eventType int, title string, titleJP string, depth int, mapIds []string) (err error) {
+func readWeekEventExp(periodId int, playerUuid string) (weekEventExp int, err error) {
+	weekdayIndex := int(time.Now().UTC().Weekday())
+
+	result := db.QueryRow("SELECT COUNT(ec.eventId) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
+	err = result.Scan(&weekEventExp)
+
+	if err != nil {
+		return weekEventExp, err
+	}
+
+	return weekEventExp, nil
+}
+
+func writeEventLocationData(periodId int, eventType int, title string, titleJP string, depth int, exp int, mapIds []string) (err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
 		return err
@@ -589,7 +600,7 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 
 	days -= offsetDays
 
-	_, err = db.Exec("INSERT INTO eventLocations (periodId, type, title, titleJP, depth, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, title, titleJP, depth, offsetDays, days, mapIdsJson)
+	_, err = db.Exec("INSERT INTO eventLocations (periodId, type, title, titleJP, depth, exp, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, title, titleJP, depth, exp, offsetDays, days, mapIdsJson)
 	if err != nil {
 		return err
 	}
@@ -598,7 +609,7 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 }
 
 func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventLocations []*EventLocation, err error) {
-	results, err := db.Query("SELECT ed.id, ed.type, ed.title, ed.titleJP, ed.depth, ed.endDate, CASE WHEN ecd.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations ed LEFT JOIN eventCompletions ecd ON ecd.eventId = ed.id AND ecd.uuid = ? WHERE ed.periodId = ? AND UTC_DATE() >= ed.startDate AND UTC_DATE() < ed.endDate ORDER BY 2, 1", playerUuid, periodId)
+	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.uuid = ? WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, periodId)
 
 	if err != nil {
 		return eventLocations, err
@@ -611,7 +622,7 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 
 		var completeBin int
 
-		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.EndDate, &completeBin)
+		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.Exp, &eventLocation.EndDate, &completeBin)
 		if err != nil {
 			return eventLocations, err
 		}
@@ -626,14 +637,19 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 	return eventLocations, nil
 }
 
-func tryCompleteEventLocation(periodId int, playerUuid string, location string) (ep int, err error) {
+func tryCompleteEventLocation(periodId int, playerUuid string, location string) (exp int, err error) {
 	if client, ok := allClients[playerUuid]; ok {
 		clientMapId := client.mapId
 
-		results, err := db.Query("SELECT ed.id, ed.type, ed.mapIds FROM eventLocations ed WHERE ed.periodId = ? AND ed.title = ? AND UTC_DATE() >= ed.startDate AND UTC_DATE() < ed.endDate ORDER BY 2", periodId, location)
+		results, err := db.Query("SELECT el.id, el.type, el.exp, el.mapIds FROM eventLocations el WHERE el.periodId = ? AND el.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", periodId, location)
 
 		if err != nil {
-			return 0, err
+			return -1, err
+		}
+
+		weekEventExp, err := readWeekEventExp(periodId, playerUuid)
+		if err != nil {
+			return -1, err
 		}
 
 		defer results.Close()
@@ -641,11 +657,12 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 		for results.Next() {
 			var eventId string
 			var eventType int
+			var eventExp int
 			var mapIdsJson string
 
-			err := results.Scan(&eventId, &eventType, &mapIdsJson)
+			err := results.Scan(&eventId, &eventType, &eventExp, &mapIdsJson)
 			if err != nil {
-				return ep, err
+				return exp, err
 			}
 
 			var mapIds []string
@@ -653,26 +670,25 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 
 			for _, mapId := range mapIds {
 				if clientMapId == mapId {
+					if weekEventExp >= 20 {
+						eventExp = 0
+					} else if weekEventExp+eventExp > 20 {
+						eventExp = 20 - weekEventExp
+					}
 
-					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, timestampCompleted) VALUES (?, ?, ?)", eventId, playerUuid, time.Now())
+					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, timestampCompleted, exp) VALUES (?, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
 					if err != nil {
 						break
 					}
 
-					if eventType == 1 {
-						ep += 5
-					} else if eventType == 2 {
-						ep += 3
-					} else {
-						ep++
-					}
+					exp += eventExp
 					break
 				}
 			}
 		}
 
-		return ep, nil
+		return exp, nil
 	}
 
-	return 0, err
+	return -1, err
 }

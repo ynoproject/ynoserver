@@ -45,10 +45,10 @@ type EventPeriod struct {
 	EndDate       time.Time `json:"endDate"`
 }
 
-type EventPoints struct {
-	WeekPoints   int `json:"weekPoints"`
-	PeriodPoints int `json:"periodPoints"`
-	TotalPoints  int `json:"totalPoints"`
+type EventExp struct {
+	WeekExp   int `json:"weekExp"`
+	PeriodExp int `json:"periodExp"`
+	TotalExp  int `json:"totalExp"`
 }
 
 type EventLocation struct {
@@ -57,6 +57,7 @@ type EventLocation struct {
 	Title    string    `json:"title"`
 	TitleJP  string    `json:"titleJP"`
 	Depth    int       `json:"depth"`
+	Exp      int       `json:"exp"`
 	EndDate  time.Time `json:"endDate"`
 	Complete bool      `json:"complete"`
 }
@@ -615,23 +616,23 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(periodJson))
-	case "ep":
+	case "exp":
 		periodId, err := readCurrentEventPeriodId()
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		eventPointsData, err := readEventPointsData(periodId, uuid)
+		playerEventExpData, err := readPlayerEventExpData(periodId, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		eventPointsDataJson, err := json.Marshal(eventPointsData)
+		playerEventExpDataJson, err := json.Marshal(playerEventExpData)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(eventPointsDataJson))
+		w.Write([]byte(playerEventExpDataJson))
 	case "list":
 		periodId, err := readCurrentEventPeriodId()
 		if err != nil {
@@ -660,16 +661,16 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		ep, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
+		exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		if ep == 0 {
+		if exp < 0 {
 			handleError(w, r, "unexpected state")
 			return
 		}
-		w.Write([]byte(strconv.Itoa(ep)))
+		w.Write([]byte(strconv.Itoa(exp)))
 	default:
 		handleError(w, r, "unknown command")
 	}
