@@ -20,7 +20,7 @@ func getDatabaseHandle() *sql.DB {
 }
 
 func readPlayerData(ip string) (uuid string, rank int, banned bool) {
-	results := db.QueryRow("SELECT uuid, rank, banned FROM playerdata WHERE ip = ?", ip)
+	results := db.QueryRow("SELECT uuid, rank, banned FROM players WHERE ip = ?", ip)
 	err := results.Scan(&uuid, &rank, &banned)
 
 	if err != nil {
@@ -37,7 +37,7 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 }
 
 func readPlayerDataFromSession(session string) (uuid string, name string, rank int, banned bool) {
-	result := db.QueryRow("SELECT ad.uuid, ad.user, pd.rank, pd.banned FROM accountdata ad JOIN playerdata pd ON pd.uuid = ad.uuid WHERE ad.session = ?", session)
+	result := db.QueryRow("SELECT ad.uuid, ad.user, pd.rank, pd.banned FROM accounts ad JOIN players pd ON pd.uuid = ad.uuid WHERE ad.session = ?", session)
 	err := result.Scan(&uuid, &name, &rank, &banned)
 
 	if err != nil {
@@ -48,7 +48,7 @@ func readPlayerDataFromSession(session string) (uuid string, name string, rank i
 }
 
 func readPlayerRank(uuid string) (rank int) {
-	results := db.QueryRow("SELECT rank FROM playerdata WHERE uuid = ?", uuid)
+	results := db.QueryRow("SELECT rank FROM players WHERE uuid = ?", uuid)
 	err := results.Scan(&rank)
 	if err != nil {
 		return 0
@@ -66,7 +66,7 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		return errors.New("attempted self-ban")
 	}
 
-	_, err := db.Exec("UPDATE playerdata SET banned = true WHERE uuid = ?", recipientUUID)
+	_, err := db.Exec("UPDATE players SET banned = true WHERE uuid = ?", recipientUUID)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 }
 
 func createPlayerData(ip string, uuid string, rank int, banned bool) error {
-	_, err := db.Exec("INSERT INTO playerdata (ip, uuid, rank, banned) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE uuid = ?, rank = ?, banned = ?", ip, uuid, rank, banned, uuid, rank, banned)
+	_, err := db.Exec("INSERT INTO players (ip, uuid, rank, banned) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE uuid = ?, rank = ?, banned = ?", ip, uuid, rank, banned, uuid, rank, banned)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func createPlayerData(ip string, uuid string, rank int, banned bool) error {
 }
 
 func updatePlayerData(client *Client) error {
-	_, err := db.Exec("INSERT INTO playergamedata (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", client.uuid, config.gameName, client.name, client.systemName, client.spriteName, client.spriteIndex, client.name, client.systemName, client.spriteName, client.spriteIndex)
+	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", client.uuid, config.gameName, client.name, client.systemName, client.spriteName, client.spriteIndex, client.name, client.systemName, client.spriteName, client.spriteIndex)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func updatePlayerData(client *Client) error {
 }
 
 func readPlayerInfo(ip string) (uuid string, name string, rank int) {
-	results := db.QueryRow("SELECT pd.uuid, pgd.name, pd.rank FROM playerdata pd JOIN playergamedata pgd ON pgd.uuid = pd.uuid WHERE pd.ip = ? AND pgd.game = ?", ip, config.gameName)
+	results := db.QueryRow("SELECT pd.uuid, pgd.name, pd.rank FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.ip = ? AND pgd.game = ?", ip, config.gameName)
 	err := results.Scan(&uuid, &name, &rank)
 
 	if err != nil {
@@ -104,7 +104,7 @@ func readPlayerInfo(ip string) (uuid string, name string, rank int) {
 }
 
 func readPlayerInfoFromSession(session string) (uuid string, name string, rank int) {
-	results := db.QueryRow("SELECT ad.uuid, ad.user, pd.rank FROM accountdata ad JOIN playerdata pd ON pd.uuid = ad.uuid JOIN playergamedata pgd ON pgd.uuid = pd.uuid WHERE ad.session = ? AND pgd.game = ?", session, config.gameName)
+	results := db.QueryRow("SELECT ad.uuid, ad.user, pd.rank FROM accounts ad JOIN players pd ON pd.uuid = ad.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE ad.session = ? AND pgd.game = ?", session, config.gameName)
 	err := results.Scan(&uuid, &name, &rank)
 
 	if err != nil {
@@ -115,7 +115,7 @@ func readPlayerInfoFromSession(session string) (uuid string, name string, rank i
 }
 
 func readPlayerPartyId(uuid string) (partyId int, err error) {
-	results := db.QueryRow("SELECT pm.partyId FROM partymemberdata pm JOIN partydata p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", uuid, config.gameName)
+	results := db.QueryRow("SELECT pm.partyId FROM partyMembers pm JOIN parties p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", uuid, config.gameName)
 	err = results.Scan(&partyId)
 
 	if err != nil {
@@ -135,7 +135,7 @@ func readAllPartyData() (parties []*Party, err error) { //called by api only
 		return parties, err
 	}
 
-	results, err := db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM partydata p WHERE p.game = ?", config.gameName)
+	results, err := db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM parties p WHERE p.game = ?", config.gameName)
 
 	if err != nil {
 		return parties, err
@@ -170,7 +170,7 @@ func readAllPartyData() (parties []*Party, err error) { //called by api only
 func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember, err error) {
 	partyMembersByParty = make(map[int][]*PartyMember)
 
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(ad.user, pgd.name), pd.rank, CASE WHEN ad.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId LEFT JOIN accountdata ad ON ad.uuid = pd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(ad.user, pgd.name), pd.rank, CASE WHEN ad.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts ad ON ad.uuid = pd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
 
 	if err != nil {
 		return partyMembersByParty, err
@@ -218,7 +218,7 @@ func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember
 }
 
 func readPartyData(playerUuid string) (party Party, err error) { //called by api only
-	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM partydata p JOIN partymemberdata pm ON pm.partyId = p.id JOIN playergamedata pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
+	results := db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM parties p JOIN partyMembers pm ON pm.partyId = p.id JOIN playerGameData pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid)
 	err = results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
 	if err != nil {
 		return party, err
@@ -237,7 +237,7 @@ func readPartyData(playerUuid string) (party Party, err error) { //called by api
 }
 
 func readPartyDescription(partyId int) (description string, err error) { //called by api only
-	results := db.QueryRow("SELECT description FROM partydata WHERE id = ?", partyId)
+	results := db.QueryRow("SELECT description FROM parties WHERE id = ?", partyId)
 	err = results.Scan(&description)
 	if err != nil {
 		return description, err
@@ -247,7 +247,7 @@ func readPartyDescription(partyId int) (description string, err error) { //calle
 }
 
 func readPartyPublic(partyId int) (public bool, err error) { //called by api only
-	results := db.QueryRow("SELECT public FROM partydata WHERE id = ?", partyId)
+	results := db.QueryRow("SELECT public FROM parties WHERE id = ?", partyId)
 	err = results.Scan(&public)
 	if err != nil {
 		return public, err
@@ -257,7 +257,7 @@ func readPartyPublic(partyId int) (public bool, err error) { //called by api onl
 }
 
 func readPartyPass(partyId int) (pass string, err error) { //called by api only
-	results := db.QueryRow("SELECT pass FROM partydata WHERE id = ?", partyId)
+	results := db.QueryRow("SELECT pass FROM parties WHERE id = ?", partyId)
 	err = results.Scan(&pass)
 	if err != nil {
 		return pass, err
@@ -267,7 +267,7 @@ func readPartyPass(partyId int) (pass string, err error) { //called by api only
 }
 
 func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(ad.user, pgd.name), pd.rank, CASE WHEN ad.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partymemberdata pm JOIN playergamedata pgd ON pgd.uuid = pm.uuid JOIN playerdata pd ON pd.uuid = pgd.uuid JOIN partydata p ON p.id = pm.partyId LEFT JOIN accountdata ad ON ad.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(ad.user, pgd.name), pd.rank, CASE WHEN ad.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts ad ON ad.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}
@@ -311,7 +311,7 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 }
 
 func createPartyData(name string, public bool, pass string, theme string, description string, playerUuid string) (partyId int, err error) {
-	res, err := db.Exec("INSERT INTO partydata (game, owner, name, public, pass, theme, description) VALUES (?, ?, ?, ?, ?, ?, ?)", config.gameName, playerUuid, name, public, pass, theme, description)
+	res, err := db.Exec("INSERT INTO parties (game, owner, name, public, pass, theme, description) VALUES (?, ?, ?, ?, ?, ?, ?)", config.gameName, playerUuid, name, public, pass, theme, description)
 	if err != nil {
 		return 0, err
 	}
@@ -329,7 +329,7 @@ func createPartyData(name string, public bool, pass string, theme string, descri
 }
 
 func updatePartyData(partyId int, name string, public bool, pass string, theme string, description string, playerUuid string) (err error) {
-	_, err = db.Exec("UPDATE partydata SET game = ?, owner = ?, name = ?, public = ?, pass = ?, theme = ?, description = ? WHERE id = ?", config.gameName, playerUuid, name, public, pass, theme, description, partyId)
+	_, err = db.Exec("UPDATE parties SET game = ?, owner = ?, name = ?, public = ?, pass = ?, theme = ?, description = ? WHERE id = ?", config.gameName, playerUuid, name, public, pass, theme, description, partyId)
 	if err != nil {
 		return err
 	}
@@ -338,7 +338,7 @@ func updatePartyData(partyId int, name string, public bool, pass string, theme s
 }
 
 func createPlayerParty(partyId int, playerUuid string) error {
-	_, err := db.Exec("INSERT INTO partymemberdata (partyId, uuid) VALUES (?, ?)", partyId, playerUuid)
+	_, err := db.Exec("INSERT INTO partyMembers (partyId, uuid) VALUES (?, ?)", partyId, playerUuid)
 	if err != nil {
 		return err
 	}
@@ -347,7 +347,7 @@ func createPlayerParty(partyId int, playerUuid string) error {
 }
 
 func clearPlayerParty(playerUuid string) error {
-	_, err := db.Exec("DELETE pm FROM partymemberdata pm JOIN partydata p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", playerUuid, config.gameName)
+	_, err := db.Exec("DELETE pm FROM partyMembers pm JOIN parties p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", playerUuid, config.gameName)
 	if err != nil {
 		return err
 	}
@@ -356,7 +356,7 @@ func clearPlayerParty(playerUuid string) error {
 }
 
 func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
-	results, err := db.Query("SELECT pm.uuid FROM partymemberdata pm JOIN playerdata pd ON pd.uuid = pm.uuid WHERE pm.partyId = ? ORDER BY pd.rank DESC, pm.id", partyId)
+	results, err := db.Query("SELECT pm.uuid FROM partyMembers pm JOIN players pd ON pd.uuid = pm.uuid WHERE pm.partyId = ? ORDER BY pd.rank DESC, pm.id", partyId)
 	if err != nil {
 		return partyMemberUuids, err
 	}
@@ -376,7 +376,7 @@ func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
 }
 
 func readPartyMemberCount(partyId int) (count int, err error) {
-	results := db.QueryRow("SELECT COUNT(*) FROM partymemberdata WHERE partyId = ?", partyId)
+	results := db.QueryRow("SELECT COUNT(*) FROM partyMembers WHERE partyId = ?", partyId)
 	err = results.Scan(&count)
 
 	if err != nil {
@@ -387,7 +387,7 @@ func readPartyMemberCount(partyId int) (count int, err error) {
 }
 
 func readPartyOwnerUuid(partyId int) (ownerUuid string, err error) {
-	results := db.QueryRow("SELECT owner FROM partydata WHERE id = ?", partyId)
+	results := db.QueryRow("SELECT owner FROM parties WHERE id = ?", partyId)
 	err = results.Scan(&ownerUuid)
 
 	if err != nil {
@@ -418,7 +418,7 @@ func assumeNextPartyOwner(partyId int) error {
 			return err
 		}
 	} else {
-		_, err := db.Exec("UPDATE partydata p SET p.owner = (SELECT pm.uuid FROM partymemberdata pm JOIN playerdata pd ON pd.uuid = pm.uuid WHERE pm.partyId = p.id ORDER BY pd.rank DESC, pm.id LIMIT 1) WHERE p.id = ?", partyId)
+		_, err := db.Exec("UPDATE parties p SET p.owner = (SELECT pm.uuid FROM partyMembers pm JOIN players pd ON pd.uuid = pm.uuid WHERE pm.partyId = p.id ORDER BY pd.rank DESC, pm.id LIMIT 1) WHERE p.id = ?", partyId)
 		if err != nil {
 			return err
 		}
@@ -428,7 +428,7 @@ func assumeNextPartyOwner(partyId int) error {
 }
 
 func setPartyOwner(partyId int, playerUuid string) error {
-	_, err := db.Exec("UPDATE partydata SET owner = ? WHERE id = ?", playerUuid, partyId)
+	_, err := db.Exec("UPDATE parties SET owner = ? WHERE id = ?", playerUuid, partyId)
 	if err != nil {
 		return err
 	}
@@ -444,7 +444,7 @@ func checkDeleteOrphanedParty(partyId int) (deleted bool, err error) {
 	}
 
 	if partyMemberCount == 0 {
-		_, err := db.Exec("DELETE FROM partydata WHERE id = ?", partyId)
+		_, err := db.Exec("DELETE FROM parties WHERE id = ?", partyId)
 		if err != nil {
 			return true, err
 		}
@@ -455,12 +455,12 @@ func checkDeleteOrphanedParty(partyId int) (deleted bool, err error) {
 }
 
 func deletePartyAndMembers(partyId int) (err error) {
-	_, err = db.Exec("DELETE FROM partymemberdata WHERE partyId = ?", partyId)
+	_, err = db.Exec("DELETE FROM partyMembers WHERE partyId = ?", partyId)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("DELETE FROM partydata WHERE id = ?", partyId)
+	_, err = db.Exec("DELETE FROM parties WHERE id = ?", partyId)
 	if err != nil {
 		return err
 	}
@@ -469,7 +469,7 @@ func deletePartyAndMembers(partyId int) (err error) {
 }
 
 func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) { //called by api only
-	result := db.QueryRow("SELECT timestamp FROM gamesavedata WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
+	result := db.QueryRow("SELECT timestamp FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 
 	if err != nil {
 		return timestamp, err
@@ -484,7 +484,7 @@ func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) {
 }
 
 func readSaveData(playerUuid string) (saveData string, err error) { //called by api only
-	result := db.QueryRow("SELECT data FROM gamesavedata WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
+	result := db.QueryRow("SELECT data FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 
 	if err != nil {
 		return saveData, err
@@ -499,7 +499,7 @@ func readSaveData(playerUuid string) (saveData string, err error) { //called by 
 }
 
 func createGameSaveData(playerUuid string, timestamp time.Time, data string) (err error) { //called by api only
-	_, err = db.Exec("INSERT INTO gamesavedata (uuid, game, timestamp, data) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, timestamp, data, timestamp, data)
+	_, err = db.Exec("INSERT INTO gameSaves (uuid, game, timestamp, data) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, timestamp, data, timestamp, data)
 	if err != nil {
 		return err
 	}
@@ -508,7 +508,7 @@ func createGameSaveData(playerUuid string, timestamp time.Time, data string) (er
 }
 
 func readCurrentEventPeriodId() (periodId int, err error) {
-	result := db.QueryRow("SELECT id FROM eventperioddata WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
+	result := db.QueryRow("SELECT id FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
 	err = result.Scan(&periodId)
 
 	if err != nil {
@@ -522,7 +522,7 @@ func readCurrentEventPeriodId() (periodId int, err error) {
 }
 
 func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
-	result := db.QueryRow("SELECT periodOrdinal, endDate FROM eventperioddata WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
+	result := db.QueryRow("SELECT periodOrdinal, endDate FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
 
 	err = result.Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate)
 
@@ -538,14 +538,14 @@ func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 }
 
 func readEventPointsData(periodId int, playerUuid string) (eventPoints EventPoints, err error) {
-	result := db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.game = ? AND ecd.uuid = ?", config.gameName, playerUuid)
+	result := db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventCompletions ecd JOIN eventLocations ed ON ed.id = ecd.eventId JOIN eventPeriods epd ON epd.id = ed.periodId WHERE epd.game = ? AND ecd.uuid = ?", config.gameName, playerUuid)
 	err = result.Scan(&eventPoints.TotalPoints)
 
 	if err != nil {
 		return eventPoints, err
 	}
 
-	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ?", periodId, playerUuid)
+	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventCompletions ecd JOIN eventLocations ed ON ed.id = ecd.eventId JOIN eventPeriods epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ?", periodId, playerUuid)
 	err = result.Scan(&eventPoints.PeriodPoints)
 
 	if err != nil {
@@ -554,7 +554,7 @@ func readEventPointsData(periodId int, playerUuid string) (eventPoints EventPoin
 
 	weekdayIndex := int(time.Now().UTC().Weekday())
 
-	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventcompletiondata ecd JOIN eventlocationdata ed ON ed.id = ecd.eventId JOIN eventperioddata epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= ed.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= ed.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
+	result = db.QueryRow("SELECT COUNT(ecd.eventId) FROM eventCompletions ecd JOIN eventLocations ed ON ed.id = ecd.eventId JOIN eventPeriods epd ON epd.id = ed.periodId WHERE epd.id = ? AND ecd.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= ed.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= ed.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
 	err = result.Scan(&eventPoints.WeekPoints)
 
 	if err != nil {
@@ -589,7 +589,7 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 
 	days -= offsetDays
 
-	_, err = db.Exec("INSERT INTO eventlocationdata (periodId, type, title, titleJP, depth, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, title, titleJP, depth, offsetDays, days, mapIdsJson)
+	_, err = db.Exec("INSERT INTO eventLocations (periodId, type, title, titleJP, depth, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, title, titleJP, depth, offsetDays, days, mapIdsJson)
 	if err != nil {
 		return err
 	}
@@ -598,7 +598,7 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 }
 
 func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventLocations []*EventLocation, err error) {
-	results, err := db.Query("SELECT ed.id, ed.type, ed.title, ed.titleJP, ed.depth, ed.endDate, CASE WHEN ecd.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventlocationdata ed LEFT JOIN eventcompletiondata ecd ON ecd.eventId = ed.id AND ecd.uuid = ? WHERE ed.periodId = ? AND UTC_DATE() >= ed.startDate AND UTC_DATE() < ed.endDate ORDER BY 2, 1", playerUuid, periodId)
+	results, err := db.Query("SELECT ed.id, ed.type, ed.title, ed.titleJP, ed.depth, ed.endDate, CASE WHEN ecd.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations ed LEFT JOIN eventCompletions ecd ON ecd.eventId = ed.id AND ecd.uuid = ? WHERE ed.periodId = ? AND UTC_DATE() >= ed.startDate AND UTC_DATE() < ed.endDate ORDER BY 2, 1", playerUuid, periodId)
 
 	if err != nil {
 		return eventLocations, err
@@ -630,7 +630,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 	if client, ok := allClients[playerUuid]; ok {
 		clientMapId := client.mapId
 
-		results, err := db.Query("SELECT ed.id, ed.type, ed.mapIds FROM eventlocationdata ed WHERE ed.periodId = ? AND ed.title = ? AND UTC_DATE() >= ed.startDate AND UTC_DATE() < ed.endDate ORDER BY 2", periodId, location)
+		results, err := db.Query("SELECT ed.id, ed.type, ed.mapIds FROM eventLocations ed WHERE ed.periodId = ? AND ed.title = ? AND UTC_DATE() >= ed.startDate AND UTC_DATE() < ed.endDate ORDER BY 2", periodId, location)
 
 		if err != nil {
 			return 0, err
@@ -654,7 +654,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			for _, mapId := range mapIds {
 				if clientMapId == mapId {
 
-					_, err = db.Exec("INSERT INTO eventcompletiondata (eventId, uuid, timestampCompleted) VALUES (?, ?, ?)", eventId, playerUuid, time.Now())
+					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, timestampCompleted) VALUES (?, ?, ?)", eventId, playerUuid, time.Now())
 					if err != nil {
 						break
 					}

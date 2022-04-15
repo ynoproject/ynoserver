@@ -17,7 +17,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userExists int
-	db.QueryRow("SELECT COUNT(*) FROM accountdata WHERE user = ?", user[0]).Scan(&userExists)
+	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user[0]).Scan(&userExists)
 
 	if userExists == 1 {
 		handleError(w, r, "user exists")
@@ -27,16 +27,16 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	ip := getIp(r)
 
 	var uuid string
-	db.QueryRow("SELECT uuid FROM playerdata WHERE ip = ?", ip).Scan(&uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
+	db.QueryRow("SELECT uuid FROM players WHERE ip = ?", ip).Scan(&uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
 
 	if uuid != "" {
-		db.Exec("UPDATE playerdata SET ip = NULL WHERE ip = ?", ip)
+		db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip)
 	} else {
 		uuid, _, _ = readPlayerData(ip)
 	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
-	db.Exec("INSERT INTO accountdata (ip, timestampRegistered, uuid, user, pass) VALUES (?, ?, ?, ?, ?)", ip, time.Now(), uuid, user[0], hashedPassword)
+	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, ?, ?, ?, ?)", ip, time.Now(), uuid, user[0], hashedPassword)
 
 	w.Write([]byte("ok"))
 }
@@ -50,7 +50,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userPassHash string
-	db.QueryRow("SELECT pass FROM accountdata WHERE user = ?", user[0]).Scan(&userPassHash)
+	db.QueryRow("SELECT pass FROM accounts WHERE user = ?", user[0]).Scan(&userPassHash)
 
 	if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password[0])) != nil {
 		handleError(w, r, "bad login")
@@ -58,7 +58,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionId := randstr.String(32)
-	db.Exec("UPDATE accountdata SET session = ? WHERE user = ?", sessionId, user[0])
+	db.Exec("UPDATE accounts SET session = ? WHERE user = ?", sessionId, user[0])
 
 	w.Write([]byte(sessionId))
 }
