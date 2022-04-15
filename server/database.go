@@ -538,14 +538,14 @@ func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 }
 
 func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp, err error) {
-	result := db.QueryRow("SELECT COUNT(ec.eventId) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid)
+	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid)
 	err = result.Scan(&eventExp.TotalExp)
 
 	if err != nil {
 		return eventExp, err
 	}
 
-	result = db.QueryRow("SELECT COUNT(ec.eventId) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid)
+	result = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid)
 	err = result.Scan(&eventExp.PeriodExp)
 
 	if err != nil {
@@ -565,7 +565,7 @@ func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp,
 func readWeekEventExp(periodId int, playerUuid string) (weekEventExp int, err error) {
 	weekdayIndex := int(time.Now().UTC().Weekday())
 
-	result := db.QueryRow("SELECT COUNT(ec.eventId) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
+	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
 	err = result.Scan(&weekEventExp)
 
 	if err != nil {
@@ -676,12 +676,13 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 						eventExp = 20 - weekEventExp
 					}
 
-					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, timestampCompleted, exp) VALUES (?, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
+					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, timestampCompleted, exp) VALUES (?, ?, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
 					if err != nil {
 						break
 					}
 
 					exp += eventExp
+					weekEventExp += eventExp
 					break
 				}
 			}
