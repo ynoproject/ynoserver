@@ -35,7 +35,12 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		uuid, _, _ = readPlayerData(ip)
 	}
 
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
+	if err != nil {
+		handleError(w, r, "bcrypt error")
+		return
+	}
+
 	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, ?, ?, ?, ?)", ip, time.Now(), uuid, user[0], hashedPassword)
 
 	w.Write([]byte("ok"))
