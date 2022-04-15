@@ -102,9 +102,12 @@ func add2kkiEventLocations(eventType int, count int) {
 	}
 
 	for _, eventLocation := range eventLocations {
-		adjustedDepth := eventLocation.Depth / 3
-		if adjustedDepth > 5 {
-			adjustedDepth = 5
+		adjustedDepth := (eventLocation.Depth / 3) * 2
+		if eventLocation.Depth%3 == 2 {
+			adjustedDepth += 1
+		}
+		if adjustedDepth > 10 {
+			adjustedDepth = 10
 		}
 		err = writeEventLocationData(periodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, eventLocation.MapIds)
 		if err != nil {
