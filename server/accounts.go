@@ -26,6 +26,11 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	ip := getIp(r)
 
+	ipIsVpn, _ := isVpn(ip)
+	if ipIsVpn {
+		handleError(w, r, "bad response")
+	}
+
 	var uuid string
 	db.QueryRow("SELECT uuid FROM players WHERE ip = ?", ip).Scan(&uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
 
