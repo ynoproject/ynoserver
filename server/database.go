@@ -648,7 +648,7 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 		eventLocations = append(eventLocations, eventLocation)
 	}
 
-	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.endDate, 0 FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.uuid = ? WHERE pel.periodId = ? AND pel.uuid = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId, playerUuid)
+	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.endDate FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.uuid = ? WHERE pel.periodId = ? AND pel.uuid = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId, playerUuid)
 
 	for results.Next() {
 		eventLocation := &EventLocation{}
