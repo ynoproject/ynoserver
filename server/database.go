@@ -727,7 +727,7 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 	if client, ok := allClients[playerUuid]; ok {
 		clientMapId := client.mapId
 
-		results, err := db.Query("SELECT pel.id, pel.mapIds FROM playerEventLocations el WHERE pel.periodId = ? AND pel.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", periodId, location)
+		results, err := db.Query("SELECT pel.id, pel.mapIds FROM playerEventLocations pel WHERE pel.periodId = ? AND pel.title = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", periodId, location)
 
 		if err != nil {
 			return false, err
