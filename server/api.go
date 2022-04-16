@@ -644,6 +644,21 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+		hasIncompleteEvent := false
+		for _, currentEventLocation := range currentEventLocationsData {
+			if !currentEventLocation.Complete {
+				hasIncompleteEvent = true
+				break
+			}
+		}
+		if !hasIncompleteEvent && config.gameName == "2kki" {
+			add2kkiEventLocationsWithExp(-1, 1, 0, uuid)
+			currentEventLocationsData, err = readCurrentPlayerEventLocationsData(periodId, uuid)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+		}
 		currentEventLocationsDataJson, err := json.Marshal(currentEventLocationsData)
 		if err != nil {
 			handleInternalError(w, r, err)
@@ -700,7 +715,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-		if !hasIncompleteEvent {
+		if !hasIncompleteEvent && config.gameName == "2kki" {
 			add2kkiEventLocationsWithExp(-1, 1, 0, uuid)
 		}
 		w.Write([]byte(strconv.Itoa(ret)))
