@@ -538,14 +538,14 @@ func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 }
 
 func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp, err error) {
-	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid)
+	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ? AND ec.playerEvent = 0", config.gameName, playerUuid)
 	err = result.Scan(&eventExp.TotalExp)
 
 	if err != nil {
 		return eventExp, err
 	}
 
-	result = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid)
+	result = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND ec.playerEvent = 0", periodId, playerUuid)
 	err = result.Scan(&eventExp.PeriodExp)
 
 	if err != nil {
@@ -565,7 +565,7 @@ func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp,
 func readWeekEventExp(periodId int, playerUuid string) (weekEventExp int, err error) {
 	weekdayIndex := int(time.Now().UTC().Weekday())
 
-	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
+	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND ec.playerEvent = 0 AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
 	err = result.Scan(&weekEventExp)
 
 	if err != nil {
@@ -608,6 +608,20 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 	return nil
 }
 
+func writePlayerEventLocationData(periodId int, playerUuid string, title string, titleJP string, depth int, mapIds []string) (err error) {
+	mapIdsJson, err := json.Marshal(mapIds)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("INSERT INTO playerEventLocations (periodId, uuid, title, titleJP, depth, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL 1 DAY), ?)", periodId, playerUuid, title, titleJP, depth, mapIdsJson)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventLocations []*EventLocation, err error) {
 	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.uuid = ? WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, periodId)
 
@@ -630,6 +644,21 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 		if completeBin == 1 {
 			eventLocation.Complete = true
 		}
+
+		eventLocations = append(eventLocations, eventLocation)
+	}
+
+	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.endDate, 0 FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.uuid = ? WHERE pel.periodId = ? AND pel.uuid = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId, playerUuid)
+
+	for results.Next() {
+		eventLocation := &EventLocation{}
+
+		err := results.Scan(&eventLocation.Id, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.EndDate)
+		if err != nil {
+			return eventLocations, err
+		}
+
+		eventLocation.Type = -1
 
 		eventLocations = append(eventLocations, eventLocation)
 	}
@@ -676,7 +705,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 						eventExp = 20 - weekEventExp
 					}
 
-					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, timestampCompleted, exp) VALUES (?, ?, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
+					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, playerEvent, timestampCompleted, exp) VALUES (?, ?, 0, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
 					if err != nil {
 						break
 					}
@@ -692,4 +721,49 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 	}
 
 	return -1, err
+}
+
+func tryCompletePlayerEventLocation(periodId int, playerUuid string, location string) (complete bool, err error) {
+	if client, ok := allClients[playerUuid]; ok {
+		clientMapId := client.mapId
+
+		results, err := db.Query("SELECT pel.id, pel.mapIds FROM playerEventLocations el WHERE pel.periodId = ? AND pel.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", periodId, location)
+
+		if err != nil {
+			return false, err
+		}
+
+		success := false
+
+		defer results.Close()
+
+		for results.Next() {
+			var eventId string
+			var mapIdsJson string
+
+			err := results.Scan(&eventId, &mapIdsJson)
+			if err != nil {
+				return false, err
+			}
+
+			var mapIds []string
+			err = json.Unmarshal([]byte(mapIdsJson), &mapIds)
+
+			for _, mapId := range mapIds {
+				if clientMapId == mapId {
+					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, playerEvent, timestampCompleted, exp) VALUES (?, ?, 1, ?, 0)", eventId, playerUuid, time.Now())
+					if err != nil {
+						break
+					}
+
+					success = true
+					break
+				}
+			}
+		}
+
+		return success, nil
+	}
+
+	return false, err
 }

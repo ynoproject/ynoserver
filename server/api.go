@@ -656,21 +656,54 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "location not specified")
 			return
 		}
+		free := false
+		freeParam, ok := r.URL.Query()["free"]
+		if ok && len(freeParam) >= 1 && freeParam[0] != "0" {
+			free = true
+		}
 		periodId, err := readCurrentEventPeriodId()
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
+		ret := -1
+		if !free {
+			exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			if exp < 0 {
+				handleError(w, r, "unexpected state")
+				return
+			}
+			ret = exp
+		} else {
+			complete, err := tryCompletePlayerEventLocation(periodId, uuid, locationParam[0])
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			if complete {
+				ret = 0
+			}
+		}
+		currentEventLocationsData, err := readCurrentPlayerEventLocationsData(periodId, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		if exp < 0 {
-			handleError(w, r, "unexpected state")
-			return
+		hasIncompleteEvent := false
+		for _, currentEventLocation := range currentEventLocationsData {
+			if !currentEventLocation.Complete {
+				hasIncompleteEvent = true
+				break
+			}
 		}
-		w.Write([]byte(strconv.Itoa(exp)))
+		if !hasIncompleteEvent {
+			add2kkiEventLocationsWithExp(-1, 1, 0, uuid)
+		}
+		w.Write([]byte(strconv.Itoa(ret)))
 	default:
 		handleError(w, r, "unknown command")
 	}

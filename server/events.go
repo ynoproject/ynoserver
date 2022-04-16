@@ -69,10 +69,10 @@ func add2kkiEventLocations(eventType int, count int) {
 		exp = 3
 	}
 
-	add2kkiEventLocationsWithExp(eventType, count, exp)
+	add2kkiEventLocationsWithExp(eventType, count, exp, "")
 }
 
-func add2kkiEventLocationsWithExp(eventType int, count int, exp int) {
+func add2kkiEventLocationsWithExp(eventType int, count int, exp int, playerUuid string) {
 	periodId, err := readCurrentEventPeriodId()
 	if err != nil {
 		handleInternalEventError(eventType, err)
@@ -84,8 +84,10 @@ func add2kkiEventLocationsWithExp(eventType int, count int, exp int) {
 		url += "&minDepth=3&maxDepth=9"
 	} else if eventType == 1 {
 		url += "&minDepth=11"
-	} else {
+	} else if eventType == 2 {
 		url += "&minDepth=9&maxDepth=14"
+	} else {
+		url += "&minDepth=2"
 	}
 
 	resp, err := http.Get(url)
@@ -120,7 +122,11 @@ func add2kkiEventLocationsWithExp(eventType int, count int, exp int) {
 		if adjustedDepth > 10 {
 			adjustedDepth = 10
 		}
-		err = writeEventLocationData(periodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, exp, eventLocation.MapIds)
+		if playerUuid == "" {
+			err = writeEventLocationData(periodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, exp, eventLocation.MapIds)
+		} else {
+			err = writePlayerEventLocationData(periodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, eventLocation.MapIds)
+		}
 		if err != nil {
 			handleInternalEventError(eventType, err)
 		}
