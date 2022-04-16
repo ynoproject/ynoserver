@@ -83,7 +83,7 @@ func createPlayerData(ip string, uuid string, rank int, banned bool) error {
 	return nil
 }
 
-func updatePlayerData(client *Client) error {
+func updatePlayerGameData(client *Client) error {
 	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", client.uuid, config.gameName, client.name, client.systemName, client.spriteName, client.spriteIndex, client.name, client.systemName, client.spriteName, client.spriteIndex)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func readPlayerInfo(ip string) (uuid string, name string, rank int) {
 }
 
 func readPlayerInfoFromSession(session string) (uuid string, name string, rank int) {
-	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank FROM accounts a JOIN players pd ON pd.uuid = a.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE a.session = ? AND pgd.game = ?", session, config.gameName)
+	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank FROM accounts a JOIN players pd ON pd.uuid = a.uuid WHERE a.session = ?", session)
 	err := results.Scan(&uuid, &name, &rank)
 
 	if err != nil {
