@@ -62,11 +62,11 @@ func StartEvents() {
 }
 
 func add2kkiEventLocations(eventType int, count int) {
-	exp := 1
+	exp := 2
 	if eventType == 1 {
-		exp = 5
+		exp = 10
 	} else if eventType == 2 {
-		exp = 3
+		exp = 5
 	}
 
 	add2kkiEventLocationsWithExp(eventType, count, exp, "")

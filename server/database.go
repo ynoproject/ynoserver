@@ -699,10 +699,10 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 
 			for _, mapId := range mapIds {
 				if clientMapId == mapId {
-					if weekEventExp >= 20 {
+					if weekEventExp >= 40 {
 						eventExp = 0
-					} else if weekEventExp+eventExp > 20 {
-						eventExp = 20 - weekEventExp
+					} else if weekEventExp+eventExp > 40 {
+						eventExp = 40 - weekEventExp
 					}
 
 					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, playerEvent, timestampCompleted, exp) VALUES (?, ?, 0, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
