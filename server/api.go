@@ -10,9 +10,10 @@ import (
 )
 
 type PlayerInfo struct {
-	Uuid string `json:"uuid"`
-	Name string `json:"name"`
-	Rank int    `json:"rank"`
+	Uuid  string `json:"uuid"`
+	Name  string `json:"name"`
+	Rank  int    `json:"rank"`
+	Badge string `json:"badge"`
 }
 
 type Party struct {
@@ -31,6 +32,7 @@ type PartyMember struct {
 	Name          string `json:"name"`
 	Rank          int    `json:"rank"`
 	Account       bool   `json:"account"`
+	Badge         string `json:"badge"`
 	SystemName    string `json:"systemName"`
 	SpriteName    string `json:"spriteName"`
 	SpriteIndex   int    `json:"spriteIndex"`
@@ -83,17 +85,19 @@ func StartApi() {
 		var uuid string
 		var name string
 		var rank int
+		var badge string
 
 		session := r.Header.Get("X-Session")
 		if session == "" {
 			uuid, name, rank = readPlayerInfo(getIp(r))
 		} else {
-			uuid, name, rank = readPlayerInfoFromSession(session)
+			uuid, name, rank, badge = readPlayerInfoFromSession(session)
 		}
 		playerInfo := PlayerInfo{
-			Uuid: uuid,
-			Name: name,
-			Rank: rank,
+			Uuid:  uuid,
+			Name:  name,
+			Rank:  rank,
+			Badge: badge,
 		}
 		playerInfoJson, err := json.Marshal(playerInfo)
 		if err != nil {
@@ -115,7 +119,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	if session == "" {
 		uuid, rank, _ = readPlayerData(getIp(r))
 	} else {
-		uuid, _, rank, _ = readPlayerDataFromSession(session)
+		uuid, _, rank, _, _ = readPlayerDataFromSession(session)
 	}
 	if rank == 0 {
 		handleError(w, r, "access denied")
@@ -158,7 +162,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 	if session == "" {
 		uuid, rank, banned = readPlayerData(getIp(r))
 	} else {
-		uuid, _, rank, banned = readPlayerDataFromSession(session)
+		uuid, _, rank, _, banned = readPlayerDataFromSession(session)
 	}
 
 	if banned {
@@ -512,7 +516,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "session token not specified")
 		return
 	} else {
-		uuid, _, _, banned = readPlayerDataFromSession(session)
+		uuid, _, _, _, banned = readPlayerDataFromSession(session)
 	}
 
 	if banned {
@@ -589,7 +593,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "session token not specified")
 		return
 	} else {
-		uuid, _, _, banned = readPlayerDataFromSession(session)
+		uuid, _, _, _, banned = readPlayerDataFromSession(session)
 	}
 
 	if banned {
@@ -731,7 +735,7 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 	if session == "" {
 		uuid, _, _ = readPlayerData(getIp(r))
 	} else {
-		uuid, _, _, _ = readPlayerDataFromSession(session)
+		uuid, _, _, _, _ = readPlayerDataFromSession(session)
 	}
 
 	prevMapIdParam, ok := r.URL.Query()["prevMapId"]

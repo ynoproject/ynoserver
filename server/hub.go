@@ -43,12 +43,13 @@ func (h *Hub) Run() {
 			var uuid string
 			var name string
 			var rank int
+			var badge string
 
 			var isBanned bool
 			var isLoggedIn bool
 
 			if conn.Session != "" {
-				uuid, name, rank, isBanned = readPlayerDataFromSession(conn.Session)
+				uuid, name, rank, badge, isBanned = readPlayerDataFromSession(conn.Session)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					isLoggedIn = true
 				}
@@ -96,6 +97,7 @@ func (h *Hub) Run() {
 				name:        name,
 				uuid:        uuid,
 				rank:        rank,
+				badge:       badge,
 				spriteIndex: -1,
 				flash:       []int{0, 0, 0, 0, 0},
 				tone:        []int{128, 128, 128, 128},
@@ -121,14 +123,14 @@ func (h *Hub) Run() {
 				isLoggedInBin = 1
 			}
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin)) //"your id is %id%" message
+			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge) //"your id is %id%" message
 			//send the new client info about the game state
 			for otherClient := range h.clients {
 				accountBin := 0
 				if otherClient.account {
 					accountBin = 1
 				}
-				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.uuid + paramDelimStr + strconv.Itoa(otherClient.rank) + paramDelimStr + strconv.Itoa(accountBin))
+				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.uuid + paramDelimStr + strconv.Itoa(otherClient.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + otherClient.badge)
 				client.send <- []byte("m" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.x) + paramDelimStr + strconv.Itoa(otherClient.y))
 				client.send <- []byte("f" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.facing))
 				client.send <- []byte("spd" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.spd))
@@ -165,7 +167,7 @@ func (h *Hub) Run() {
 			allClients[uuid] = client
 
 			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin))) //user %id% has connected message
+			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge)) //user %id% has connected message
 
 			//send account-specific data like username
 			if isLoggedIn {
@@ -662,7 +664,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				accountBin = 1
 			}
 
-			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + msgContents))
+			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + msgContents))
 		case "psay":
 			partyId, err := readPlayerPartyId(sender.uuid)
 			if err != nil {

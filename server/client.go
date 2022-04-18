@@ -75,6 +75,7 @@ type Client struct {
 	name    string
 	uuid    string
 	rank    int
+	badge   string
 
 	x, y   int
 	facing int

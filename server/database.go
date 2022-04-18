@@ -36,15 +36,15 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 	return uuid, rank, banned
 }
 
-func readPlayerDataFromSession(session string) (uuid string, name string, rank int, banned bool) {
-	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, pd.banned FROM accounts a JOIN players pd ON pd.uuid = a.uuid WHERE a.session = ?", session)
-	err := result.Scan(&uuid, &name, &rank, &banned)
+func readPlayerDataFromSession(session string) (uuid string, name string, rank int, badge string, banned bool) {
+	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned FROM accounts a JOIN players pd ON pd.uuid = a.uuid WHERE a.session = ?", session)
+	err := result.Scan(&uuid, &name, &rank, &badge, &banned)
 
 	if err != nil {
-		return "", "", 0, false
+		return "", "", 0, "", false
 	}
 
-	return uuid, name, rank, banned
+	return uuid, name, rank, badge, banned
 }
 
 func readPlayerRank(uuid string) (rank int) {
@@ -103,15 +103,15 @@ func readPlayerInfo(ip string) (uuid string, name string, rank int) {
 	return uuid, name, rank
 }
 
-func readPlayerInfoFromSession(session string) (uuid string, name string, rank int) {
-	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank FROM accounts a JOIN players pd ON pd.uuid = a.uuid WHERE a.session = ?", session)
-	err := results.Scan(&uuid, &name, &rank)
+func readPlayerInfoFromSession(session string) (uuid string, name string, rank int, badge string) {
+	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge FROM accounts a JOIN players pd ON pd.uuid = a.uuid WHERE a.session = ?", session)
+	err := results.Scan(&uuid, &name, &rank, &badge)
 
 	if err != nil {
-		return "", "", 0
+		return "", "", 0, ""
 	}
 
-	return uuid, name, rank
+	return uuid, name, rank, badge
 }
 
 func readPlayerPartyId(uuid string) (partyId int, err error) {
@@ -170,7 +170,7 @@ func readAllPartyData() (parties []*Party, err error) { //called by api only
 func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember, err error) {
 	partyMembersByParty = make(map[int][]*PartyMember)
 
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
 
 	if err != nil {
 		return partyMembersByParty, err
@@ -184,7 +184,7 @@ func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember
 		var partyId int
 		var accountBin int
 		partyMember := &PartyMember{}
-		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
+		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.Badge, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
 		if err != nil {
 			return partyMembersByParty, err
 		}
@@ -267,7 +267,7 @@ func readPartyPass(partyId int) (pass string, err error) { //called by api only
 }
 
 func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}
@@ -278,7 +278,7 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 		var partyId int
 		var accountBin int
 		partyMember := &PartyMember{}
-		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
+		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.Badge, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex)
 		if err != nil {
 			return partyMembers, err
 		}
@@ -538,21 +538,21 @@ func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 }
 
 func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp, err error) {
-	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid)
-	err = result.Scan(&eventExp.TotalExp)
-
+	totalEventExp, err := readPlayerTotalEventExp(playerUuid)
 	if err != nil {
 		return eventExp, err
 	}
 
-	result = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid)
-	err = result.Scan(&eventExp.PeriodExp)
+	eventExp.TotalExp = totalEventExp
 
+	periodEventExp, err := readPlayerPeriodEventExp(periodId, playerUuid)
 	if err != nil {
 		return eventExp, err
 	}
 
-	weekEventExp, err := readWeekEventExp(periodId, playerUuid)
+	eventExp.PeriodExp = periodEventExp
+
+	weekEventExp, err := readPlayerWeekEventExp(periodId, playerUuid)
 	if err != nil {
 		return eventExp, err
 	}
@@ -562,7 +562,29 @@ func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp,
 	return eventExp, nil
 }
 
-func readWeekEventExp(periodId int, playerUuid string) (weekEventExp int, err error) {
+func readPlayerTotalEventExp(playerUuid string) (totalEventExp int, err error) {
+	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid)
+	err = result.Scan(&totalEventExp)
+
+	if err != nil {
+		return totalEventExp, err
+	}
+
+	return totalEventExp, nil
+}
+
+func readPlayerPeriodEventExp(periodId int, playerUuid string) (periodEventExp int, err error) {
+	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid)
+	err = result.Scan(&periodEventExp)
+
+	if err != nil {
+		return periodEventExp, err
+	}
+
+	return periodEventExp, nil
+}
+
+func readPlayerWeekEventExp(periodId int, playerUuid string) (weekEventExp int, err error) {
 	weekdayIndex := int(time.Now().UTC().Weekday())
 
 	result := db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex)
@@ -676,7 +698,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			return -1, err
 		}
 
-		weekEventExp, err := readWeekEventExp(periodId, playerUuid)
+		weekEventExp, err := readPlayerWeekEventExp(periodId, playerUuid)
 		if err != nil {
 			return -1, err
 		}
