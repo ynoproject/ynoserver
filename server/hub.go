@@ -43,7 +43,7 @@ func (h *Hub) Run() {
 			var uuid string
 			var name string
 			var rank int
-			var badge string
+			badge := "null"
 
 			var isBanned bool
 			var isLoggedIn bool
@@ -52,6 +52,9 @@ func (h *Hub) Run() {
 				uuid, name, rank, badge, isBanned = readPlayerDataFromSession(conn.Session)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					isLoggedIn = true
+				}
+				if badge == "" {
+					badge = "null"
 				}
 			}
 
