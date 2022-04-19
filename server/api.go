@@ -74,6 +74,7 @@ type EventLocationData struct {
 func StartApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
+	http.HandleFunc("/api/badge", handleBadge)
 	http.HandleFunc("/api/saveSync", handleSaveSync)
 	http.HandleFunc("/api/eventLocations", handleEventLocations)
 	http.HandleFunc("/api/ploc", handlePloc)
@@ -505,6 +506,87 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 	}
 
 	return nil
+}
+
+func handleBadge(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+	var rank int
+	var badge string
+	var banned bool
+
+	session := r.Header.Get("X-Session")
+	if session == "" {
+		handleError(w, r, "session token not specified")
+		return
+	} else {
+		uuid, _, rank, badge, banned = readPlayerDataFromSession(session)
+	}
+
+	if banned {
+		handleError(w, r, "player is banned")
+		return
+	}
+
+	idParam, ok := r.URL.Query()["id"]
+	if !ok || len(idParam) < 1 {
+		handleError(w, r, "id not specified")
+		return
+	}
+
+	badgeId := idParam[0]
+
+	if badgeId != badge {
+		unlocked := false
+
+		switch badgeId {
+		case "null":
+			unlocked = true
+		case "mono":
+			fallthrough
+		case "bronze":
+			fallthrough
+		case "silver":
+			fallthrough
+		case "gold":
+			fallthrough
+		case "platinum":
+			fallthrough
+		case "diamond":
+			var expReq int
+			switch badgeId {
+			case "mono":
+				expReq = 40
+			case "bronze":
+				expReq = 100
+			case "silver":
+				expReq = 250
+			case "gold":
+				expReq = 500
+			case "platinum":
+				expReq = 1000
+			case "diamond":
+				expReq = 2000
+			}
+			playerExp, err := readPlayerTotalEventExp(uuid)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			unlocked = playerExp >= expReq
+		default:
+			handleError(w, r, "unknown badge")
+			return
+		}
+
+		if rank < 2 && !unlocked {
+			handleError(w, r, "specified badge is locked")
+			return
+		}
+	}
+
+	setPlayerBadge(uuid, badgeId)
+
+	w.Write([]byte("ok"))
 }
 
 func handleSaveSync(w http.ResponseWriter, r *http.Request) {

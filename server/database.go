@@ -114,6 +114,15 @@ func readPlayerInfoFromSession(session string) (uuid string, name string, rank i
 	return uuid, name, rank, badge
 }
 
+func setPlayerBadge(uuid string, badge string) (err error) {
+	_, err = db.Exec("UPDATE accounts SET badge = ? WHERE uuid = ?", badge, uuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func readPlayerPartyId(uuid string) (partyId int, err error) {
 	results := db.QueryRow("SELECT pm.partyId FROM partyMembers pm JOIN parties p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", uuid, config.gameName)
 	err = results.Scan(&partyId)
