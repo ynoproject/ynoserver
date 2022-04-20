@@ -137,7 +137,7 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 				if err != nil {
 					return badges, err
 				}
-				badge.NewUnlock = unlocked
+				badge.NewUnlock = true
 			}
 		}
 	}
