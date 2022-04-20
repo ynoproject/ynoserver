@@ -126,10 +126,17 @@ func (h *Hub) Run() {
 				isLoggedInBin = 1
 			}
 
-			if config.gameName == "2kki" && isLoggedIn && h.roomName == "718" {
-				err := writePlayerTag(uuid, "blue_orb_world")
-				if err != nil {
-					writeErrLog(conn.Ip, h.roomName, err.Error())
+			if config.gameName == "2kki" && isLoggedIn {
+				if h.roomName == "718" {
+					err := writePlayerTag(uuid, "blue_orb_world")
+					if err != nil {
+						writeErrLog(conn.Ip, h.roomName, err.Error())
+					}
+				} else if h.roomName == "1500" {
+					err := writePlayerTag(uuid, "unknown_childs_room")
+					if err != nil {
+						writeErrLog(conn.Ip, h.roomName, err.Error())
+					}
 				}
 			}
 
