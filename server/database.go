@@ -606,6 +606,17 @@ func readPlayerWeekEventExp(periodId int, playerUuid string) (weekEventExp int, 
 	return weekEventExp, nil
 }
 
+func readPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletion int, err error) {
+	result := db.QueryRow("SELECT ROUND((COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count) * 100) FROM eventCompletions ec LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.playerEvent = 1 JOIN (SELECT COUNT(DISTINCT COALESCE(ael.title, apel.title)) count FROM eventCompletions aec LEFT JOIN eventLocations ael ON ael.id = aec.eventId AND aec.playerEvent = 0 LEFT JOIN playerEventLocations	apel ON apel.id = aec.eventId AND aec.playerEvent = 1 WHERE (ael.title IS NOT NULL OR apel.title IS NOT NULL)) aec WHERE ec.uuid = ? AND (el.title IS NOT NULL OR pel.title IS NOT NULL)", playerUuid)
+	err = result.Scan(&eventLocationCompletion)
+
+	if err != nil {
+		return eventLocationCompletion, err
+	}
+
+	return eventLocationCompletion, nil
+}
+
 func writeEventLocationData(periodId int, eventType int, title string, titleJP string, depth int, exp int, mapIds []string) (err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
@@ -797,4 +808,33 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 	}
 
 	return false, err
+}
+
+func readPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, err error) {
+	results, err := db.Query("SELECT badgeId FROM playerBadges WHERE uuid = ?", playerUuid)
+	if err != nil {
+		return unlockedBadgeIds, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var badgeId string
+		err := results.Scan(&badgeId)
+		if err != nil {
+			return unlockedBadgeIds, err
+		}
+		unlockedBadgeIds = append(unlockedBadgeIds, badgeId)
+	}
+
+	return unlockedBadgeIds, nil
+}
+
+func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
+	_, err = db.Exec("INSERT INTO playerBadges (uuid, badgeId, timestampUnlocked) VALUES (?, ?, ?)", playerUuid, badgeId, time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

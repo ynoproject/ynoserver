@@ -72,3 +72,50 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte(sessionId))
 }
+
+func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
+	playerExp, err := readPlayerTotalEventExp(playerUuid)
+	if err != nil {
+		return badges, err
+	}
+	playerEventLocationCompletion, err := readPlayerEventLocationCompletion(playerUuid)
+	if err != nil {
+		return badges, err
+	}
+
+	badges = append(badges, &Badge{BadgeId: "mono", Unlocked: playerExp >= 40, Overlay: true})
+	badges = append(badges, &Badge{BadgeId: "bronze", Unlocked: playerExp >= 100})
+	badges = append(badges, &Badge{BadgeId: "silver", Unlocked: playerExp >= 250})
+	badges = append(badges, &Badge{BadgeId: "gold", Unlocked: playerExp >= 500})
+	badges = append(badges, &Badge{BadgeId: "platinum", Unlocked: playerExp >= 1000})
+	badges = append(badges, &Badge{BadgeId: "diamond", Unlocked: playerExp >= 2000})
+	badges = append(badges, &Badge{BadgeId: "compass", Unlocked: playerEventLocationCompletion >= 30})
+	badges = append(badges, &Badge{BadgeId: "compass_bronze", Unlocked: playerEventLocationCompletion >= 50})
+	badges = append(badges, &Badge{BadgeId: "compass_silver", Unlocked: playerEventLocationCompletion >= 70})
+	badges = append(badges, &Badge{BadgeId: "compass_gold", Unlocked: playerEventLocationCompletion >= 80})
+	badges = append(badges, &Badge{BadgeId: "compass_platinum", Unlocked: playerEventLocationCompletion >= 90})
+	badges = append(badges, &Badge{BadgeId: "compass_diamond", Unlocked: playerEventLocationCompletion >= 100})
+
+	playerUnlockedBadgeIds, err := readPlayerUnlockedBadgeIds(playerUuid)
+	if err != nil {
+		return badges, err
+	}
+
+	for _, badge := range badges {
+		if badge.Unlocked {
+			unlocked := false
+			for _, unlockedBadgeId := range playerUnlockedBadgeIds {
+				if badge.BadgeId == unlockedBadgeId {
+					unlocked = true
+					break
+				}
+			}
+			if !unlocked {
+				unlockPlayerBadge(playerUuid, badge.BadgeId)
+				badge.NewUnlock = true
+			}
+		}
+	}
+
+	return badges, nil
+}
