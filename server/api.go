@@ -39,6 +39,8 @@ type PartyMember struct {
 	MapId         string `json:"mapId"`
 	PrevMapId     string `json:"prevMapId"`
 	PrevLocations string `json:"prevLocations"`
+	X             int    `json:"x"`
+	Y             int    `json:"y"`
 	Online        bool   `json:"online"`
 }
 

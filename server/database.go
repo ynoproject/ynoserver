@@ -308,6 +308,8 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			partyMember.MapId = client.mapId
 			partyMember.PrevMapId = client.prevMapId
 			partyMember.PrevLocations = client.prevLocations
+			partyMember.X = client.x
+			partyMember.Y = client.y
 			partyMember.Online = true
 		} else {
 			partyMember.MapId = "0000"

@@ -655,11 +655,15 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			mapId := "0000"
 			prevMapId := "0000"
 			var prevLocations string
+			x := -1
+			y := -1
 
 			if enableLocBin == 1 {
 				mapId = sender.mapId
 				prevMapId = sender.prevMapId
 				prevLocations = sender.prevLocations
+				x = sender.x
+				y = sender.y
 			}
 
 			accountBin := 0
@@ -667,7 +671,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				accountBin = 1
 			}
 
-			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + msgContents))
+			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + strconv.Itoa(x) + paramDelimStr + strconv.Itoa(y) + paramDelimStr + msgContents))
 		case "psay":
 			partyId, err := readPlayerPartyId(sender.uuid)
 			if err != nil {
