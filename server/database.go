@@ -840,3 +840,32 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 
 	return nil
 }
+
+func readPlayerTags(playerUuid string) (tags []string, err error) {
+	results, err := db.Query("SELECT name FROM playerTags WHERE uuid = ?", playerUuid)
+	if err != nil {
+		return tags, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var tagName string
+		err := results.Scan(&tagName)
+		if err != nil {
+			return tags, err
+		}
+		tags = append(tags, tagName)
+	}
+
+	return tags, nil
+}
+
+func writePlayerTag(playerUuid string, name string) (err error) {
+	_, err = db.Exec("INSERT INTO playerTags (uuid, name, timestampUnlocked) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = name", playerUuid, name, time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

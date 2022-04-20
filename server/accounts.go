@@ -82,6 +82,10 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	if err != nil {
 		return badges, err
 	}
+	playerTags, err := readPlayerTags(playerUuid)
+	if err != nil {
+		return badges, err
+	}
 
 	badges = append(badges, &Badge{BadgeId: "mono", Unlocked: playerExp >= 40, Overlay: true})
 	badges = append(badges, &Badge{BadgeId: "bronze", Unlocked: playerExp >= 100})
@@ -94,7 +98,16 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	badges = append(badges, &Badge{BadgeId: "compass_silver", Unlocked: playerEventLocationCompletion >= 70})
 	badges = append(badges, &Badge{BadgeId: "compass_gold", Unlocked: playerEventLocationCompletion >= 80})
 	badges = append(badges, &Badge{BadgeId: "compass_platinum", Unlocked: playerEventLocationCompletion >= 90})
-	badges = append(badges, &Badge{BadgeId: "compass_diamond", Unlocked: playerEventLocationCompletion >= 100})
+	badges = append(badges, &Badge{BadgeId: "compass_diamond", Unlocked: playerEventLocationCompletion >= 95})
+
+	blueOrbBadge := &Badge{BadgeId: "blue_orb"}
+	badges = append(badges, blueOrbBadge)
+
+	for _, tag := range playerTags {
+		if tag == "blue_orb_world" {
+			blueOrbBadge.Unlocked = true
+		}
+	}
 
 	playerUnlockedBadgeIds, err := readPlayerUnlockedBadgeIds(playerUuid)
 	if err != nil {
@@ -111,8 +124,11 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 				}
 			}
 			if !unlocked {
-				unlockPlayerBadge(playerUuid, badge.BadgeId)
-				badge.NewUnlock = true
+				err := unlockPlayerBadge(playerUuid, badge.BadgeId)
+				if err != nil {
+					return badges, err
+				}
+				badge.NewUnlock = unlocked
 			}
 		}
 	}

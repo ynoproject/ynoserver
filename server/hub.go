@@ -126,7 +126,15 @@ func (h *Hub) Run() {
 				isLoggedInBin = 1
 			}
 
+			if config.gameName == "2kki" && isLoggedIn && h.roomName == "718" {
+				err := writePlayerTag(uuid, "blue_orb_world")
+				if err != nil {
+					writeErrLog(conn.Ip, h.roomName, err.Error())
+				}
+			}
+
 			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge) //"your id is %id%" message
+
 			//send the new client info about the game state
 			for otherClient := range h.clients {
 				accountBin := 0
