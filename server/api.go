@@ -91,6 +91,66 @@ func StartApi() {
 	http.HandleFunc("/api/register", handleRegister)
 	http.HandleFunc("/api/login", handleLogin)
 
+	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
+		if config.gameName != "2kki" {
+			handleError(w, r, "endpoint not supported")
+			return
+		}
+
+		actionParam, ok := r.URL.Query()["action"]
+		if !ok || len(actionParam) < 1 {
+			handleError(w, r, "action not specified")
+			return
+		}
+
+		query := r.URL.Query()
+		query.Del("action")
+
+		queryString := query.Encode()
+
+		var response string
+
+		result := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ?", actionParam[0], queryString)
+		err := result.Scan(&response)
+
+		if err != nil {
+			if err == sql.ErrNoRows {
+
+				url := "https://2kki.app/" + actionParam[0]
+				if len(queryString) > 0 {
+					url += "?" + queryString
+				}
+
+				resp, err := http.Get(url)
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
+
+				defer resp.Body.Close()
+
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
+
+				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response) VALUES (?, ?, ?)", actionParam[0], queryString, string(body))
+				if err != nil {
+					writeErrLog(getIp(r), r.URL.Path, err.Error())
+				}
+
+				w.Write(body)
+				return
+			} else {
+				handleInternalError(w, r, err)
+				return
+			}
+		}
+
+		w.Write([]byte(response))
+	})
+
 	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
 		var uuid string
 		var name string
