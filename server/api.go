@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -135,9 +136,13 @@ func StartApi() {
 					return
 				}
 
-				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response) VALUES (?, ?, ?)", actionParam[0], queryString, string(body))
-				if err != nil {
-					writeErrLog(getIp(r), r.URL.Path, err.Error())
+				if strings.HasPrefix(string(body), "{\"error\"") {
+					writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
+				} else {
+					_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response) VALUES (?, ?, ?)", actionParam[0], queryString, string(body))
+					if err != nil {
+						writeErrLog(getIp(r), r.URL.Path, err.Error())
+					}
 				}
 
 				w.Write(body)
