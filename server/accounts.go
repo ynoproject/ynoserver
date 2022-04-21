@@ -87,30 +87,30 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 		return badges, err
 	}
 
-	badges = append(badges, &Badge{BadgeId: "mono", Unlocked: playerExp >= 40, Overlay: true})
-	badges = append(badges, &Badge{BadgeId: "bronze", Unlocked: playerExp >= 100})
-	badges = append(badges, &Badge{BadgeId: "silver", Unlocked: playerExp >= 250})
-	badges = append(badges, &Badge{BadgeId: "gold", Unlocked: playerExp >= 500})
-	badges = append(badges, &Badge{BadgeId: "platinum", Unlocked: playerExp >= 1000})
-	badges = append(badges, &Badge{BadgeId: "diamond", Unlocked: playerExp >= 2000})
-	badges = append(badges, &Badge{BadgeId: "compass", Unlocked: playerEventLocationCompletion >= 30})
-	badges = append(badges, &Badge{BadgeId: "compass_bronze", Unlocked: playerEventLocationCompletion >= 50})
-	badges = append(badges, &Badge{BadgeId: "compass_silver", Unlocked: playerEventLocationCompletion >= 70})
-	badges = append(badges, &Badge{BadgeId: "compass_gold", Unlocked: playerEventLocationCompletion >= 80})
-	badges = append(badges, &Badge{BadgeId: "compass_platinum", Unlocked: playerEventLocationCompletion >= 90})
-	badges = append(badges, &Badge{BadgeId: "compass_diamond", Unlocked: playerEventLocationCompletion >= 95})
+	uboaBadge := &Badge{BadgeId: "uboa", Game: "yume"}
+	badges = append(badges, uboaBadge)
 
-	crushedBadge := &Badge{BadgeId: "crushed"}
+	badges = append(badges, &Badge{BadgeId: "mono", Game: "2kki", Unlocked: playerExp >= 40, Overlay: true})
+	badges = append(badges, &Badge{BadgeId: "bronze", Game: "2kki", Unlocked: playerExp >= 100})
+	badges = append(badges, &Badge{BadgeId: "silver", Game: "2kki", Unlocked: playerExp >= 250})
+	badges = append(badges, &Badge{BadgeId: "gold", Game: "2kki", Unlocked: playerExp >= 500})
+	badges = append(badges, &Badge{BadgeId: "platinum", Game: "2kki", Unlocked: playerExp >= 1000})
+	badges = append(badges, &Badge{BadgeId: "diamond", Game: "2kki", Unlocked: playerExp >= 2000})
+	badges = append(badges, &Badge{BadgeId: "compass", Game: "2kki", Unlocked: playerEventLocationCompletion >= 30})
+	badges = append(badges, &Badge{BadgeId: "compass_bronze", Game: "2kki", Unlocked: playerEventLocationCompletion >= 50})
+	badges = append(badges, &Badge{BadgeId: "compass_silver", Game: "2kki", Unlocked: playerEventLocationCompletion >= 70})
+	badges = append(badges, &Badge{BadgeId: "compass_gold", Game: "2kki", Unlocked: playerEventLocationCompletion >= 80})
+	badges = append(badges, &Badge{BadgeId: "compass_platinum", Game: "2kki", Unlocked: playerEventLocationCompletion >= 90})
+	badges = append(badges, &Badge{BadgeId: "compass_diamond", Game: "2kki", Unlocked: playerEventLocationCompletion >= 95})
+
+	crushedBadge := &Badge{BadgeId: "crushed", Game: "2kki"}
 	badges = append(badges, crushedBadge)
 
-	compass28Badge := &Badge{BadgeId: "compass_28"}
+	compass28Badge := &Badge{BadgeId: "compass_28", Game: "2kki"}
 	badges = append(badges, compass28Badge)
 
-	blueOrbBadge := &Badge{BadgeId: "blue_orb"}
+	blueOrbBadge := &Badge{BadgeId: "blue_orb", Game: "2kki"}
 	badges = append(badges, blueOrbBadge)
-
-	uboaBadge := &Badge{BadgeId: "uboa"}
-	badges = append(badges, uboaBadge)
 
 	for _, tag := range playerTags {
 		if tag == "amusement_park_hell" {
