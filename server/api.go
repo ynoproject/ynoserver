@@ -764,41 +764,46 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		ret := -1
-		if !free {
-			exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
+		if client, found := allClients[uuid]; found && (client.x > 0 || client.y > 0) {
+			if !free {
+				exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
+				if exp < 0 {
+					handleError(w, r, "unexpected state")
+					return
+				}
+				ret = exp
+			} else {
+				complete, err := tryCompletePlayerEventLocation(periodId, uuid, locationParam[0])
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
+				if complete {
+					ret = 0
+				}
+			}
+			currentEventLocationsData, err := readCurrentPlayerEventLocationsData(periodId, uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
 			}
-			if exp < 0 {
-				handleError(w, r, "unexpected state")
-				return
+			hasIncompleteEvent := false
+			for _, currentEventLocation := range currentEventLocationsData {
+				if !currentEventLocation.Complete {
+					hasIncompleteEvent = true
+					break
+				}
 			}
-			ret = exp
+			if !hasIncompleteEvent && config.gameName == "2kki" {
+				add2kkiEventLocationsWithExp(-1, 1, 0, uuid)
+			}
 		} else {
-			complete, err := tryCompletePlayerEventLocation(periodId, uuid, locationParam[0])
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-			if complete {
-				ret = 0
-			}
-		}
-		currentEventLocationsData, err := readCurrentPlayerEventLocationsData(periodId, uuid)
-		if err != nil {
-			handleInternalError(w, r, err)
+			handleError(w, r, "unexpected state")
 			return
-		}
-		hasIncompleteEvent := false
-		for _, currentEventLocation := range currentEventLocationsData {
-			if !currentEventLocation.Complete {
-				hasIncompleteEvent = true
-				break
-			}
-		}
-		if !hasIncompleteEvent && config.gameName == "2kki" {
-			add2kkiEventLocationsWithExp(-1, 1, 0, uuid)
 		}
 		w.Write([]byte(strconv.Itoa(ret)))
 	default:
