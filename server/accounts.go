@@ -87,29 +87,29 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 		return badges, err
 	}
 
-	uboaBadge := &Badge{BadgeId: "uboa", Game: "yume"}
+	uboaBadge := &Badge{BadgeId: "uboa", Game: "yume", MapId: 101}
 	badges = append(badges, uboaBadge)
 
-	badges = append(badges, &Badge{BadgeId: "mono", Game: "2kki", Unlocked: playerExp >= 40, Secret: true, Overlay: true})
+	badges = append(badges, &Badge{BadgeId: "mono", Game: "2kki", Unlocked: playerExp >= 40, Overlay: true})
 	badges = append(badges, &Badge{BadgeId: "bronze", Game: "2kki", Unlocked: playerExp >= 100, Secret: true})
 	badges = append(badges, &Badge{BadgeId: "silver", Game: "2kki", Unlocked: playerExp >= 250, Secret: true})
 	badges = append(badges, &Badge{BadgeId: "gold", Game: "2kki", Unlocked: playerExp >= 500, Secret: true})
 	badges = append(badges, &Badge{BadgeId: "platinum", Game: "2kki", Unlocked: playerExp >= 1000, Secret: true})
 	badges = append(badges, &Badge{BadgeId: "diamond", Game: "2kki", Unlocked: playerExp >= 2000, Secret: true})
-	badges = append(badges, &Badge{BadgeId: "compass", Game: "2kki", Unlocked: playerEventLocationCompletion >= 30, Secret: true})
+	badges = append(badges, &Badge{BadgeId: "compass", Game: "2kki", Unlocked: playerEventLocationCompletion >= 30})
 	badges = append(badges, &Badge{BadgeId: "compass_bronze", Game: "2kki", Unlocked: playerEventLocationCompletion >= 50, Secret: true})
 	badges = append(badges, &Badge{BadgeId: "compass_silver", Game: "2kki", Unlocked: playerEventLocationCompletion >= 70, Secret: true})
 	badges = append(badges, &Badge{BadgeId: "compass_gold", Game: "2kki", Unlocked: playerEventLocationCompletion >= 80, Secret: true})
 	badges = append(badges, &Badge{BadgeId: "compass_platinum", Game: "2kki", Unlocked: playerEventLocationCompletion >= 90, Secret: true})
 	badges = append(badges, &Badge{BadgeId: "compass_diamond", Game: "2kki", Unlocked: playerEventLocationCompletion >= 95, Secret: true})
 
-	crushedBadge := &Badge{BadgeId: "crushed", Game: "2kki"}
+	crushedBadge := &Badge{BadgeId: "crushed", Game: "2kki", MapId: 274}
 	badges = append(badges, crushedBadge)
 
-	compass28Badge := &Badge{BadgeId: "compass_28", Game: "2kki"}
+	compass28Badge := &Badge{BadgeId: "compass_28", Game: "2kki", MapId: 1500}
 	badges = append(badges, compass28Badge)
 
-	blueOrbBadge := &Badge{BadgeId: "blue_orb", Game: "2kki"}
+	blueOrbBadge := &Badge{BadgeId: "blue_orb", Game: "2kki", MapId: 718}
 	badges = append(badges, blueOrbBadge)
 
 	for _, tag := range playerTags {

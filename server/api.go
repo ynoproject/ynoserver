@@ -77,6 +77,7 @@ type EventLocationData struct {
 type Badge struct {
 	BadgeId   string `json:"badgeId"`
 	Game      string `json:"game"`
+	MapId     int    `json:"mapId"`
 	Secret    bool   `json:"secret"`
 	Overlay   bool   `json:"overlay"`
 	Unlocked  bool   `json:"unlocked"`
