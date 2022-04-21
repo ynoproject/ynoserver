@@ -100,21 +100,27 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	badges = append(badges, &Badge{BadgeId: "compass_platinum", Unlocked: playerEventLocationCompletion >= 90})
 	badges = append(badges, &Badge{BadgeId: "compass_diamond", Unlocked: playerEventLocationCompletion >= 95})
 
+	crushedBadge := &Badge{BadgeId: "crushed"}
+	badges = append(badges, crushedBadge)
+
 	compass28Badge := &Badge{BadgeId: "compass_28"}
 	badges = append(badges, compass28Badge)
-
-	for _, tag := range playerTags {
-		if tag == "unknown_childs_room" {
-			compass28Badge.Unlocked = true
-		}
-	}
 
 	blueOrbBadge := &Badge{BadgeId: "blue_orb"}
 	badges = append(badges, blueOrbBadge)
 
+	uboaBadge := &Badge{BadgeId: "uboa"}
+	badges = append(badges, uboaBadge)
+
 	for _, tag := range playerTags {
-		if tag == "blue_orb_world" {
+		if tag == "amusement_park_hell" {
+			crushedBadge.Unlocked = true
+		} else if tag == "unknown_childs_room" {
+			compass28Badge.Unlocked = true
+		} else if tag == "blue_orb_world" {
 			blueOrbBadge.Unlocked = true
+		} else if tag == "uboa" {
+			uboaBadge.Unlocked = true
 		}
 	}
 
