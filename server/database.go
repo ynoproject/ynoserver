@@ -838,6 +838,10 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 		return err
 	}
 
+	if client, ok := allClients[playerUuid]; ok {
+		client.badge = badgeId
+	}
+
 	return nil
 }
 
