@@ -749,6 +749,9 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 
 			var mapIds []string
 			err = json.Unmarshal([]byte(mapIdsJson), &mapIds)
+			if err != nil {
+				return exp, err
+			}
 
 			for _, mapId := range mapIds {
 				if clientMapId == mapId {
@@ -801,6 +804,9 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 
 			var mapIds []string
 			err = json.Unmarshal([]byte(mapIdsJson), &mapIds)
+			if err != nil {
+				return false, err
+			}
 
 			for _, mapId := range mapIds {
 				if clientMapId == mapId {
