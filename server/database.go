@@ -518,6 +518,15 @@ func createGameSaveData(playerUuid string, timestamp time.Time, data string) (er
 	return nil
 }
 
+func clearGameSaveData(playerUuid string) (err error) { //called by api only
+	_, err = db.Exec("DELETE FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func readCurrentEventPeriodId() (periodId int, err error) {
 	result := db.QueryRow("SELECT id FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
 	err = result.Scan(&periodId)

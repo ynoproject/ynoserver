@@ -667,10 +667,18 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		return
+	case "clear":
+		err := clearGameSaveData(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 	default:
 		handleError(w, r, "unknown command")
 		return
 	}
+
+	w.Write([]byte("ok"))
 }
 
 func handleEventLocations(w http.ResponseWriter, r *http.Request) {

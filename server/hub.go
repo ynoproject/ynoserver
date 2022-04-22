@@ -744,7 +744,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			if h.roomName == "1148" {
 				validTimeTrial = value <= 1500
 			} else if h.roomName == "1205" {
-				validTimeTrial = value <= 3360
+				validTimeTrial = value <= 3480
 			}
 			if validTimeTrial {
 				mapId, _ := strconv.Atoi(h.roomName)
