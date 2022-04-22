@@ -136,9 +136,9 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 
 	for _, record := range timeTrialRecords {
 		if record.MapId == butterflyBadge.MapId {
-			butterflyBadge.Unlocked = true
+			butterflyBadge.Unlocked = record.Seconds <= 1680
 		} else if record.MapId == lavenderBadge.MapId {
-			lavenderBadge.Unlocked = true
+			lavenderBadge.Unlocked = record.Seconds <= 720
 		}
 	}
 

@@ -742,9 +742,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		case 88:
 			validTimeTrial := false
 			if h.roomName == "1148" {
-				validTimeTrial = value <= 720
+				validTimeTrial = value <= 1440
 			} else if h.roomName == "1205" {
-				validTimeTrial = value <= 1680
+				validTimeTrial = value <= 3360
 			}
 			if validTimeTrial {
 				mapId, _ := strconv.Atoi(h.roomName)
