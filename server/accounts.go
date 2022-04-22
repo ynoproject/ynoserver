@@ -109,7 +109,7 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	compass28Badge := &Badge{BadgeId: "compass_28", Game: "2kki", MapId: 1500}
 	badges = append(badges, compass28Badge)
 
-	blueOrbBadge := &Badge{BadgeId: "blue_orb", Game: "2kki", MapId: 718}
+	blueOrbBadge := &Badge{BadgeId: "blue_orb", Game: "2kki", MapId: 729}
 	badges = append(badges, blueOrbBadge)
 
 	for _, tag := range playerTags {
@@ -117,7 +117,7 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 			crushedBadge.Unlocked = true
 		} else if tag == "unknown_childs_room" {
 			compass28Badge.Unlocked = true
-		} else if tag == "blue_orb_world" {
+		} else if tag == "scrambled_egg_zone" {
 			blueOrbBadge.Unlocked = true
 		} else if tag == "uboa" {
 			uboaBadge.Unlocked = true

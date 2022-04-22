@@ -138,8 +138,8 @@ func (h *Hub) Run() {
 						if err != nil {
 							writeErrLog(conn.Ip, h.roomName, err.Error())
 						}
-					} else if h.roomName == "718" {
-						err := writePlayerTag(uuid, "blue_orb_world")
+					} else if h.roomName == "729" {
+						err := writePlayerTag(uuid, "scrambled_egg_zone")
 						if err != nil {
 							writeErrLog(conn.Ip, h.roomName, err.Error())
 						}
