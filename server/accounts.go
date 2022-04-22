@@ -128,17 +128,17 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 		}
 	}
 
-	butterflyBadge := &Badge{BadgeId: "butterfly", Game: "2kki", MapId: 1205, Secret: true}
+	butterflyBadge := &Badge{BadgeId: "butterfly", Game: "2kki", MapId: 1205}
 	badges = append(badges, butterflyBadge)
 
-	lavenderBadge := &Badge{BadgeId: "lavender", Game: "2kki", MapId: 1148, Secret: true}
+	lavenderBadge := &Badge{BadgeId: "lavender", Game: "2kki", MapId: 1148}
 	badges = append(badges, lavenderBadge)
 
 	for _, record := range timeTrialRecords {
 		if record.MapId == butterflyBadge.MapId {
 			butterflyBadge.Unlocked = record.Seconds <= 1680
 		} else if record.MapId == lavenderBadge.MapId {
-			lavenderBadge.Unlocked = record.Seconds <= 720
+			lavenderBadge.Unlocked = record.Seconds <= 750
 		}
 	}
 
