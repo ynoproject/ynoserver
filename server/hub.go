@@ -121,35 +121,38 @@ func (h *Hub) Run() {
 				client.mapId = fmt.Sprintf("%04d", mapIdInt)
 			}
 
-			isLoggedInBin := 0
+			var isLoggedInBin int
 			if isLoggedIn {
 				isLoggedInBin = 1
 
-				tagName := ""
-				timeTrial := false
+				var tagName string
+				var timeTrial bool
 
-				if config.gameName == "yume" {
-					if h.roomName == "55" {
+				switch config.gameName{
+				case "yume":
+					switch h.roomName {
+					case "55":
 						tagName = "toriningen_party"
-					} else if h.roomName == "101" {
+					case "101":
 						tagName = "uboa"
-					} else if h.roomName == "179" {
+					case "179":
 						tagName = "witch_flight"
 					}
-				} else if config.gameName == "2kki" {
-					if h.roomName == "274" {
+				case "2kki":
+					switch h.roomName {
+					case "274":
 						tagName = "amusement_park_hell"
-					} else if h.roomName == "458" {
+					case "458":
 						tagName = "gallery_of_me"
-					} else if h.roomName == "729" {
+					case "729":
 						tagName = "scrambled_egg_zone"
-					} else if h.roomName == "1148" {
+					case "1148":
 						tagName = "lavender_waters"
 						timeTrial = true
-					} else if h.roomName == "1205" {
+					case "1205":
 						tagName = "tomb_of_velleities"
 						timeTrial = true
-					} else if h.roomName == "1500" {
+					case "1500":
 						tagName = "unknown_childs_room"
 					}
 				}
@@ -169,7 +172,7 @@ func (h *Hub) Run() {
 
 			//send the new client info about the game state
 			for otherClient := range h.clients {
-				accountBin := 0
+				var accountBin int
 				if otherClient.account {
 					accountBin = 1
 				}
@@ -193,11 +196,11 @@ func (h *Hub) Run() {
 					client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.systemName)
 				}
 				for picId, pic := range otherClient.pictures {
-					useTransparentColorBin := 0
+					var useTransparentColorBin int
 					if pic.useTransparentColor {
 						useTransparentColorBin = 1
 					}
-					fixedToMapBin := 0
+					var fixedToMapBin int
 					if pic.fixedToMap {
 						fixedToMapBin = 1
 					}
@@ -706,7 +709,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				y = sender.y
 			}
 
-			accountBin := 0
+			var accountBin int
 			if sender.account {
 				accountBin = 1
 			}
@@ -751,10 +754,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		switch varId {
 		case 88:
-			validTimeTrial := false
-			if h.roomName == "1148" {
+			var validTimeTrial bool
+			switch h.roomName {
+			case "1148": 
 				validTimeTrial = value <= 1500
-			} else if h.roomName == "1205" {
+			case "1205": 
 				validTimeTrial = value <= 3480
 			}
 			if validTimeTrial {
