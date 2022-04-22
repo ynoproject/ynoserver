@@ -84,7 +84,7 @@ type Client struct {
 	spriteName  string
 	spriteIndex int
 
-	flash          []int
+	flash          [5]int
 	repeatingFlash bool
 
 	tone []int
