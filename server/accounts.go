@@ -86,6 +86,10 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	if err != nil {
 		return badges, err
 	}
+	timeTrialRecords, err := readPlayerTimeTrialRecords(playerUuid)
+	if err != nil {
+		return badges, err
+	}
 
 	uboaBadge := &Badge{BadgeId: "uboa", Game: "yume", MapId: 101}
 	badges = append(badges, uboaBadge)
@@ -121,6 +125,20 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 			blueOrbBadge.Unlocked = true
 		} else if tag == "uboa" {
 			uboaBadge.Unlocked = true
+		}
+	}
+
+	butterflyBadge := &Badge{BadgeId: "butterfly", Game: "2kki", MapId: 1205, Secret: true}
+	badges = append(badges, butterflyBadge)
+
+	lavenderBadge := &Badge{BadgeId: "lavender", Game: "2kki", MapId: 1148, Secret: true}
+	badges = append(badges, lavenderBadge)
+
+	for _, record := range timeTrialRecords {
+		if record.MapId == butterflyBadge.MapId {
+			butterflyBadge.Unlocked = true
+		} else if record.MapId == lavenderBadge.MapId {
+			lavenderBadge.Unlocked = true
 		}
 	}
 

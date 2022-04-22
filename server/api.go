@@ -84,6 +84,11 @@ type Badge struct {
 	NewUnlock bool   `json:"newUnlock"`
 }
 
+type TimeTrialRecord struct {
+	MapId   int `json:"mapId"`
+	Seconds int `json:"seconds"`
+}
+
 func StartApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)

@@ -148,6 +148,8 @@ func (h *Hub) Run() {
 						if err != nil {
 							writeErrLog(conn.Ip, h.roomName, err.Error())
 						}
+					} else if h.roomName == "1148" || h.roomName == "1205" {
+						client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + "88")
 					}
 				}
 			}
@@ -727,6 +729,31 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		sender.name = msgFields[1]
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
 		terminate = true
+	case "sv": // sync variable
+		varId, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return false, err
+		}
+		value, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil {
+			return false, err
+		}
+		switch varId {
+		case 88:
+			validTimeTrial := false
+			if h.roomName == "1148" {
+				validTimeTrial = value <= 720
+			} else if h.roomName == "1205" {
+				validTimeTrial = value <= 1680
+			}
+			if validTimeTrial {
+				mapId, _ := strconv.Atoi(h.roomName)
+				err = writePlayerTimeTrial(sender.uuid, mapId, value)
+				if err != nil {
+					return false, err
+				}
+			}
+		}
 	default:
 		return false, err
 	}

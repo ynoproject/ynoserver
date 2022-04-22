@@ -873,3 +873,35 @@ func writePlayerTag(playerUuid string, name string) (err error) {
 
 	return nil
 }
+
+func readPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTrialRecord, err error) {
+	results, err := db.Query("SELECT mapId, MIN(seconds) FROM playerTimeTrials WHERE uuid = ? GROUP BY mapId", playerUuid)
+
+	if err != nil {
+		return timeTrialRecords, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		timeTrialRecord := &TimeTrialRecord{}
+
+		err := results.Scan(&timeTrialRecord.MapId, &timeTrialRecord.Seconds)
+		if err != nil {
+			return timeTrialRecords, err
+		}
+
+		timeTrialRecords = append(timeTrialRecords, timeTrialRecord)
+	}
+
+	return timeTrialRecords, nil
+}
+
+func writePlayerTimeTrial(playerUuid string, mapId int, seconds int) (err error) {
+	_, err = db.Exec("INSERT INTO playerTimeTrials (uuid, mapId, seconds, timestampCompleted) VALUES (?, ?, ?, ?)", playerUuid, mapId, seconds, time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
