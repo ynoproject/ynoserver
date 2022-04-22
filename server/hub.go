@@ -314,15 +314,14 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	//counter validation
 	playerMsgIndex, errconv := strconv.Atoi(string(msg.data[8:14]))
 	if errconv != nil {
-		//errs = append(errs, errors.New("counter not numerical"))
-		errs = append(errs, errors.New("COUNTER FAIL: "+string(msg.data[8:14])+" compared to "+strconv.Itoa(msg.sender.counter)+" CONTENTS: "+string(msg.data[14:])))
+		errs = append(errs, errors.New("counter not numerical"))
 		return errs
 	}
 
 	if msg.sender.counter < playerMsgIndex { //counter in messages should be higher than what we have stored
 		msg.sender.counter = playerMsgIndex
 	} else {
-		errs = append(errs, errors.New("counter too low"))
+		errs = append(errs, errors.New("COUNTER FAIL: "+string(msg.data[8:14])+" compared to "+strconv.Itoa(msg.sender.counter)+" CONTENTS: "+string(msg.data[14:])))
 		return errs
 	}
 
