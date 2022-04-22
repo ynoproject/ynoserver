@@ -125,32 +125,43 @@ func (h *Hub) Run() {
 			if isLoggedIn {
 				isLoggedInBin = 1
 
+				tagName := ""
+				timeTrial := false
+
 				if config.gameName == "yume" {
-					if h.roomName == "101" {
-						err := writePlayerTag(uuid, "uboa")
-						if err != nil {
-							writeErrLog(conn.Ip, h.roomName, err.Error())
-						}
+					if h.roomName == "55" {
+						tagName = "toriningen_party"
+					} else if h.roomName == "101" {
+						tagName = "uboa"
+					} else if h.roomName == "179" {
+						tagName = "witch_flight"
 					}
 				} else if config.gameName == "2kki" {
 					if h.roomName == "274" {
-						err := writePlayerTag(uuid, "amusement_park_hell")
-						if err != nil {
-							writeErrLog(conn.Ip, h.roomName, err.Error())
-						}
+						tagName = "amusement_park_hell"
+					} else if h.roomName == "458" {
+						tagName = "gallery_of_me"
 					} else if h.roomName == "729" {
-						err := writePlayerTag(uuid, "scrambled_egg_zone")
-						if err != nil {
-							writeErrLog(conn.Ip, h.roomName, err.Error())
-						}
+						tagName = "scrambled_egg_zone"
+					} else if h.roomName == "1148" {
+						tagName = "lavender_waters"
+						timeTrial = true
+					} else if h.roomName == "1205" {
+						tagName = "tomb_of_velleities"
+						timeTrial = true
 					} else if h.roomName == "1500" {
-						err := writePlayerTag(uuid, "unknown_childs_room")
-						if err != nil {
-							writeErrLog(conn.Ip, h.roomName, err.Error())
-						}
-					} else if h.roomName == "1148" || h.roomName == "1205" {
-						client.send <- []byte("sv" + paramDelimStr + "88")
+						tagName = "unknown_childs_room"
 					}
+				}
+
+				if tagName != "" {
+					err := writePlayerTag(uuid, tagName)
+					if err != nil {
+						writeErrLog(conn.Ip, h.roomName, err.Error())
+					}
+				}
+				if timeTrial { // 2kki only
+					client.send <- []byte("sv" + paramDelimStr + "88")
 				}
 			}
 

@@ -91,8 +91,14 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 		return badges, err
 	}
 
+	boomboxBadge := &Badge{BadgeId: "boombox", Game: "yume", MapId: 55}
+	badges = append(badges, boomboxBadge)
+
 	uboaBadge := &Badge{BadgeId: "uboa", Game: "yume", MapId: 101}
 	badges = append(badges, uboaBadge)
+
+	blackCatBadge := &Badge{BadgeId: "blackcat", Game: "yume", MapId: 179}
+	badges = append(badges, blackCatBadge)
 
 	badges = append(badges, &Badge{BadgeId: "mono", Game: "2kki", Unlocked: playerExp >= 40, Overlay: true})
 	badges = append(badges, &Badge{BadgeId: "bronze", Game: "2kki", Unlocked: playerExp >= 100, Secret: true})
@@ -116,23 +122,42 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	blueOrbBadge := &Badge{BadgeId: "blue_orb", Game: "2kki", MapId: 729}
 	badges = append(badges, blueOrbBadge)
 
+	lesserLavenderBadge := &Badge{BadgeId: "lavender_lesser", Game: "2kki", MapId: 1148}
+	badges = append(badges, lesserLavenderBadge)
+
+	lavenderBadge := &Badge{BadgeId: "lavender", Game: "2kki", MapId: 1148}
+	badges = append(badges, lavenderBadge)
+
+	lesserButterflyBadge := &Badge{BadgeId: "butterfly_lesser", Game: "2kki", MapId: 1205}
+	badges = append(badges, lesserButterflyBadge)
+
+	butterflyBadge := &Badge{BadgeId: "butterfly", Game: "2kki", MapId: 1205}
+	badges = append(badges, butterflyBadge)
+
+	cloverBadge := &Badge{BadgeId: "clover", Game: "2kki", MapId: 458}
+	badges = append(badges, cloverBadge)
+
 	for _, tag := range playerTags {
-		if tag == "amusement_park_hell" {
+		if tag == "toriningen_party" {
+			boomboxBadge.Unlocked = true
+		} else if tag == "uboa" {
+			uboaBadge.Unlocked = true
+		} else if tag == "witch_flight" {
+			blackCatBadge.Unlocked = true
+		} else if tag == "amusement_park_hell" {
 			crushedBadge.Unlocked = true
 		} else if tag == "unknown_childs_room" {
 			compass28Badge.Unlocked = true
 		} else if tag == "scrambled_egg_zone" {
 			blueOrbBadge.Unlocked = true
-		} else if tag == "uboa" {
-			uboaBadge.Unlocked = true
+		} else if tag == "lavender_waters" {
+			lesserLavenderBadge.Unlocked = true
+		} else if tag == "tomb_of_velleities" {
+			lesserButterflyBadge.Unlocked = true
+		} else if tag == "gallery_of_me" {
+			cloverBadge.Unlocked = true
 		}
 	}
-
-	butterflyBadge := &Badge{BadgeId: "butterfly", Game: "2kki", MapId: 1205}
-	badges = append(badges, butterflyBadge)
-
-	lavenderBadge := &Badge{BadgeId: "lavender", Game: "2kki", MapId: 1148}
-	badges = append(badges, lavenderBadge)
 
 	for _, record := range timeTrialRecords {
 		if record.MapId == butterflyBadge.MapId {
