@@ -149,7 +149,7 @@ func (h *Hub) Run() {
 							writeErrLog(conn.Ip, h.roomName, err.Error())
 						}
 					} else if h.roomName == "1148" || h.roomName == "1205" {
-						client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + "88")
+						client.send <- []byte("sv" + paramDelimStr + "88")
 					}
 				}
 			}
