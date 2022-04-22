@@ -845,6 +845,28 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 	return nil
 }
 
+func readBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, err error) {
+	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE aa.session IS NOT NULL) aa WHERE a.session IS NOT NULL GROUP BY b.badgeId")
+	if err != nil {
+		return unlockPercentages, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		percentUnlocked := &BadgePercentUnlocked{}
+
+		err := results.Scan(&percentUnlocked.BadgeId, &percentUnlocked.Percent)
+		if err != nil {
+			return unlockPercentages, err
+		}
+
+		unlockPercentages = append(unlockPercentages, percentUnlocked)
+	}
+
+	return unlockPercentages, nil
+}
+
 func readPlayerTags(playerUuid string) (tags []string, err error) {
 	results, err := db.Query("SELECT name FROM playerTags WHERE uuid = ?", playerUuid)
 	if err != nil {

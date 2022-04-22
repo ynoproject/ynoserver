@@ -147,7 +147,19 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 		return badges, err
 	}
 
+	unlockPercentages, err := readBadgeUnlockPercentages()
+	if err != nil {
+		return badges, err
+	}
+
 	for _, badge := range badges {
+		for _, badgePercentUnlocked := range unlockPercentages {
+			if badge.BadgeId == badgePercentUnlocked.BadgeId {
+				badge.Percent = badgePercentUnlocked.Percent
+				break
+			}
+		}
+
 		if badge.Unlocked {
 			unlocked := false
 			for _, unlockedBadgeId := range playerUnlockedBadgeIds {

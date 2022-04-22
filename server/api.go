@@ -75,13 +75,19 @@ type EventLocationData struct {
 }
 
 type Badge struct {
-	BadgeId   string `json:"badgeId"`
-	Game      string `json:"game"`
-	MapId     int    `json:"mapId"`
-	Secret    bool   `json:"secret"`
-	Overlay   bool   `json:"overlay"`
-	Unlocked  bool   `json:"unlocked"`
-	NewUnlock bool   `json:"newUnlock"`
+	BadgeId   string  `json:"badgeId"`
+	Game      string  `json:"game"`
+	MapId     int     `json:"mapId"`
+	Secret    bool    `json:"secret"`
+	Overlay   bool    `json:"overlay"`
+	Percent   float64 `json:"percent"`
+	Unlocked  bool    `json:"unlocked"`
+	NewUnlock bool    `json:"newUnlock"`
+}
+
+type BadgePercentUnlocked struct {
+	BadgeId string  `json:"badgeId"`
+	Percent float64 `json:"percent"`
 }
 
 type TimeTrialRecord struct {
