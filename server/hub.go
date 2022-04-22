@@ -102,7 +102,6 @@ func (h *Hub) Run() {
 				rank:        rank,
 				badge:       badge,
 				spriteIndex: -1,
-				flash:       []int{0, 0, 0, 0, 0},
 				tone:        []int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
 				mapId:       "0000",
@@ -614,12 +613,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				return false, err
 			}
 
-			var newPic Picture
-
-			newPic.name = picName
-			newPic.useTransparentColor = useTransparentColorBin == 1
-			newPic.fixedToMap = fixedToMapBin == 1
-			pic = &newPic
+			pic = &Picture{
+				name: picName,
+				useTransparentColor: useTransparentColorBin == 1,
+				fixedToMap: fixedToMapBin == 1,
+			}
 
 			if _, found := sender.pictures[picId]; found {
 				rpTerminate, rpErr := h.processMsg("rp"+paramDelimStr+msgFields[1], sender)
