@@ -201,13 +201,9 @@ func addHub(roomName string) {
 }
 
 func globalBroadcast(inpData []byte) {
-	for _, hub := range hubs {
-		hub.broadcast(inpData)
+	for _, client := range allClients {
+		client.send <- inpData
 	}
-}
-
-func directSend(client *Client, inpData []byte) {
-	client.send <- inpData
 }
 
 func getIp(r *http.Request) string { //this breaks if you're using a revproxy that isn't on 127.0.0.1

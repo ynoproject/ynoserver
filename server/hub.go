@@ -727,7 +727,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 			for _, uuid := range partyMemberUuids {
 				if _, ok := allClients[uuid]; ok {
-					directSend(allClients[uuid], []byte("psay"+paramDelimStr+sender.uuid+paramDelimStr+msgContents))
+					allClients[uuid].send <- []byte("psay"+paramDelimStr+sender.uuid+paramDelimStr+msgContents)
 				}
 			}
 		default:
