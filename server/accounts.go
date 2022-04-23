@@ -138,6 +138,9 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	// Temporarily disabled due to abuse
 	//badges = append(badges, cloverBadge)
 
+	koraiynBadge := &Badge{BadgeId: "koraiyn", Game: "prayers", MapId: 37}
+	badges = append(badges, koraiynBadge)
+
 	for _, tag := range playerTags {
 		if tag == "toriningen_party" {
 			boomboxBadge.Unlocked = true
@@ -157,14 +160,16 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 			lesserButterflyBadge.Unlocked = true
 		} else if tag == "gallery_of_me" {
 			cloverBadge.Unlocked = true
+		} else if tag == "koraiyn" {
+			koraiynBadge.Unlocked = true
 		}
 	}
 
 	for _, record := range timeTrialRecords {
 		if record.MapId == butterflyBadge.MapId {
-			butterflyBadge.Unlocked = record.Seconds <= 1740
+			butterflyBadge.Unlocked = record.Seconds <= 1680
 		} else if record.MapId == lavenderBadge.MapId {
-			lavenderBadge.Unlocked = record.Seconds <= 750
+			lavenderBadge.Unlocked = record.Seconds <= 720
 		}
 	}
 
