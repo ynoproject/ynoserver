@@ -326,8 +326,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	}
 
 	//message processing
-	msgsStr := string(msg.data[14:])
-	msgs := strings.Split(msgsStr, msgDelimStr)
+	msgs := strings.Split(string(msg.data[14:]), msgDelimStr)
 
 	for _, msgStr := range msgs {
 		terminate, err := h.processMsg(msgStr, msg.sender)
