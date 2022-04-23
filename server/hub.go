@@ -67,14 +67,6 @@ func (h *Hub) Run() {
 				continue
 			}
 
-			id := -1
-			for i := 0; i <= maxID; i++ {
-				if !h.id[i] {
-					id = i
-					break
-				}
-			}
-
 			var same_ip int
 			ip_limit := 3
 			for otherClient := range h.clients {
@@ -87,6 +79,13 @@ func (h *Hub) Run() {
 				continue //don't bother with handling their connection
 			}
 
+			id := -1
+			for i := 0; i <= maxID; i++ {
+				if !h.id[i] {
+					id = i
+					break
+				}
+			}
 			if id == -1 {
 				writeErrLog(conn.Ip, h.roomName, "room is full")
 				continue
