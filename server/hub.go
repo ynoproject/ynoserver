@@ -87,6 +87,11 @@ func (h *Hub) Run() {
 				continue //don't bother with handling their connection
 			}
 
+			if id == -1 {
+				writeErrLog(conn.Ip, h.roomName, "room is full")
+				continue
+			}
+
 			key := randstr.String(8)
 
 			//sprite index < 0 means none
@@ -108,12 +113,6 @@ func (h *Hub) Run() {
 				key:         key}
 			go client.writePump()
 			go client.readPump()
-
-			if id == -1 {
-				writeErrLog(conn.Ip, h.roomName, "room is full")
-				close(client.send)
-				continue
-			}
 
 			mapIdInt, errconv := strconv.Atoi(h.roomName)
 			if errconv == nil {
