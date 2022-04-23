@@ -206,6 +206,13 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 				}
 				badge.NewUnlock = true
 			}
+		} else {
+			for _, unlockedBadgeId := range playerUnlockedBadgeIds {
+				if badge.BadgeId == unlockedBadgeId {
+					badge.Unlocked = true
+					break
+				}
+			}
 		}
 	}
 
