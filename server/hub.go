@@ -149,6 +149,8 @@ func (h *Hub) Run() {
 					case "1205":
 						tagName = "tomb_of_velleities"
 						timeTrial = true
+					case "1422":
+						tagName = "obentou_world"
 					case "1500":
 						tagName = "unknown_childs_room"
 					}
@@ -758,7 +760,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			case "1148":
 				validTimeTrial = value <= 1440
 			case "1205":
-				validTimeTrial = value <= 3360
+				validTimeTrial = value <= 3480
 			}
 			if validTimeTrial {
 				mapId, _ := strconv.Atoi(h.roomName)

@@ -116,6 +116,9 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	crushedBadge := &Badge{BadgeId: "crushed", Game: "2kki", MapId: 274}
 	badges = append(badges, crushedBadge)
 
+	obentouBadge := &Badge{BadgeId: "obentou", Game: "2kki", MapId: 1422}
+	badges = append(badges, obentouBadge)
+
 	compass28Badge := &Badge{BadgeId: "compass_28", Game: "2kki", MapId: 1500}
 	badges = append(badges, compass28Badge)
 
@@ -141,6 +144,10 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	koraiynBadge := &Badge{BadgeId: "koraiyn", Game: "prayers", MapId: 37}
 	badges = append(badges, koraiynBadge)
 
+	missingnoBadge := &Badge{BadgeId: "missingno", Game: "prayers", MapId: 57}
+	// Not yet implemented
+	//badges = append(badges, missingnoBadge)
+
 	for _, tag := range playerTags {
 		if tag == "toriningen_party" {
 			boomboxBadge.Unlocked = true
@@ -150,6 +157,8 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 			blackCatBadge.Unlocked = true
 		} else if tag == "amusement_park_hell" {
 			crushedBadge.Unlocked = true
+		} else if tag == "obentou_world" {
+			obentouBadge.Unlocked = true
 		} else if tag == "unknown_childs_room" {
 			compass28Badge.Unlocked = true
 		} else if tag == "scrambled_egg_zone" {
@@ -162,12 +171,14 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 			cloverBadge.Unlocked = true
 		} else if tag == "koraiyn" {
 			koraiynBadge.Unlocked = true
+		} else if tag == "missingno" {
+			missingnoBadge.Unlocked = true
 		}
 	}
 
 	for _, record := range timeTrialRecords {
 		if record.MapId == butterflyBadge.MapId {
-			butterflyBadge.Unlocked = record.Seconds <= 1680
+			butterflyBadge.Unlocked = record.Seconds <= 1740
 		} else if record.MapId == lavenderBadge.MapId {
 			lavenderBadge.Unlocked = record.Seconds <= 720
 		}
