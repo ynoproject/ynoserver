@@ -135,7 +135,8 @@ func readPlayerBadgeData(playerUuid string) (badges []*Badge, err error) {
 	badges = append(badges, butterflyBadge)
 
 	cloverBadge := &Badge{BadgeId: "clover", Game: "2kki", MapId: 458}
-	badges = append(badges, cloverBadge)
+	// Temporarily disabled due to abuse
+	//badges = append(badges, cloverBadge)
 
 	for _, tag := range playerTags {
 		if tag == "toriningen_party" {
