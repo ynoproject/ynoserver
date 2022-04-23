@@ -358,11 +358,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		//check if the coordinates are valid
 		x, errconv := strconv.Atoi(msgFields[1])
-		if errconv != nil {
+		if errconv != nil || x < 0 {
 			return false, err
 		}
 		y, errconv := strconv.Atoi(msgFields[2])
-		if errconv != nil {
+		if errconv != nil || y < 0 {
 			return false, err
 		}
 		sender.x = x
