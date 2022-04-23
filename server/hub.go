@@ -127,7 +127,7 @@ func (h *Hub) Run() {
 				var tagName string
 				var timeTrial bool
 
-				switch config.gameName{
+				switch config.gameName {
 				case "yume":
 					switch h.roomName {
 					case "55":
@@ -613,9 +613,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 
 			pic = &Picture{
-				name: picName,
+				name:                picName,
 				useTransparentColor: useTransparentColorBin == 1,
-				fixedToMap: fixedToMapBin == 1,
+				fixedToMap:          fixedToMapBin == 1,
 			}
 
 			if _, found := sender.pictures[picId]; found {
@@ -726,7 +726,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 			for _, uuid := range partyMemberUuids {
 				if _, ok := allClients[uuid]; ok {
-					allClients[uuid].send <- []byte("psay"+paramDelimStr+sender.uuid+paramDelimStr+msgContents)
+					allClients[uuid].send <- []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents)
 				}
 			}
 		default:
@@ -753,9 +753,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		case 88:
 			var validTimeTrial bool
 			switch h.roomName {
-			case "1148": 
+			case "1148":
 				validTimeTrial = value <= 1500
-			case "1205": 
+			case "1205":
 				validTimeTrial = value <= 3480
 			}
 			if validTimeTrial {
