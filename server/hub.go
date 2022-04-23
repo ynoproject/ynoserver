@@ -269,7 +269,7 @@ func (h *Hub) deleteClient(client *Client) {
 	close(client.send)
 	delete(h.clients, client)
 	delete(allClients, client.uuid)
-	h.broadcast([]byte("d" + paramDelimStr + strconv.Itoa(client.id))) //user %id% has disconnected (and new player count) message
+	h.broadcast([]byte("d" + paramDelimStr + strconv.Itoa(client.id))) //user %id% has disconnected message
 }
 
 func (h *Hub) processMsgs(msg *Message) []error {
