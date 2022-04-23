@@ -152,6 +152,11 @@ func (h *Hub) Run() {
 					case "1500":
 						tagName = "unknown_childs_room"
 					}
+				case "prayers":
+					switch h.roomName {
+					case "37":
+						tagName = "koraiyn"
+					}
 				}
 
 				if tagName != "" {
@@ -751,9 +756,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			var validTimeTrial bool
 			switch h.roomName {
 			case "1148":
-				validTimeTrial = value <= 1500
+				validTimeTrial = value <= 1440
 			case "1205":
-				validTimeTrial = value <= 3480
+				validTimeTrial = value <= 3360
 			}
 			if validTimeTrial {
 				mapId, _ := strconv.Atoi(h.roomName)
