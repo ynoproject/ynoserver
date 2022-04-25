@@ -6,14 +6,16 @@ type ConfiguredBadge struct {
 }
 
 type Condition struct {
-	Tag        string `json:"tag"`
-	SwitchId   int    `json:"switchId"`
-	SwitchVal  bool   `json:"switchVal"`
-	VarId      int    `json:"varId"`
-	VarValue   int    `json:"varVal"`
-	Command    string `json:"command"`
-	CommandVal string `json:"commandVal"`
-	Seconds    int    `json:"seconds"`
+	Tag         string `json:"tag"`
+	SwitchId    int    `json:"switchId"`
+	SwitchVal   bool   `json:"switchVal"`
+	SwitchDelay bool   `json:"switchDelay"`
+	VarId       int    `json:"varId"`
+	VarVal      int    `json:"varVal"`
+	VarDelay    bool   `json:"varDelay"`
+	Command     string `json:"command"`
+	CommandVal  string `json:"commandVal"`
+	Seconds     int    `json:"seconds"`
 }
 
 func getHubConditions(roomName string) (conditions []*Condition) {
@@ -34,8 +36,8 @@ func getHubConditions(roomName string) (conditions []*Condition) {
 	case "2kki":
 		switch roomName {
 		case "243":
-			conditions = append(conditions, &Condition{Tag: "hakoko", VarId: 2303, VarValue: 1})
-			conditions = append(conditions, &Condition{Seconds: 100, VarId: 2303, VarValue: 1})
+			conditions = append(conditions, &Condition{Tag: "hakoko", SwitchId: 3111, SwitchVal: true, VarDelay: true})
+			conditions = append(conditions, &Condition{Seconds: 100, SwitchId: 3111, SwitchVal: true, VarDelay: true})
 		case "274":
 			conditions = append(conditions, &Condition{Tag: "amusement_park_hell"})
 		case "458":
@@ -65,7 +67,7 @@ func getHubConditions(roomName string) (conditions []*Condition) {
 	case "flow":
 		switch roomName {
 		case "154":
-			conditions = append(conditions, &Condition{Tag: "cake", VarId: 135, VarValue: 20})
+			conditions = append(conditions, &Condition{Tag: "cake", VarId: 135, VarVal: 20})
 		}
 	case "prayers":
 		switch roomName {
@@ -86,9 +88,17 @@ func checkHubConditions(h *Hub, client *Client, command string, commandVal strin
 		if c.Seconds == 0 {
 			if c.Command == command && (command == "" || commandVal == c.CommandVal) {
 				if c.SwitchId > 0 {
-					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + "1")
+					switchSyncType := 2
+					if c.SwitchDelay {
+						switchSyncType = 1
+					}
+					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + strconv.Itoa(switchSyncType))
 				} else if c.VarId > 0 {
-					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + "1")
+					varSyncType := 2
+					if c.VarDelay {
+						varSyncType = 1
+					}
+					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + strconv.Itoa(varSyncType))
 				} else {
 					_, err := tryWritePlayerTag(client.uuid, c.Tag)
 					if err != nil {
@@ -98,9 +108,17 @@ func checkHubConditions(h *Hub, client *Client, command string, commandVal strin
 			}
 		} else if config.gameName == "2kki" {
 			if c.SwitchId > 0 {
-				client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + "1")
+				switchSyncType := 2
+				if c.SwitchDelay {
+					switchSyncType = 1
+				}
+				client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + strconv.Itoa(switchSyncType))
 			} else if c.VarId > 0 {
-				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + "1")
+				varSyncType := 2
+				if c.VarDelay {
+					varSyncType = 1
+				}
+				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + strconv.Itoa(varSyncType))
 			} else {
 				client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 			}

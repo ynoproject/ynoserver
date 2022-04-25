@@ -758,7 +758,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		} else {
 			for _, c := range h.conditions {
-				if varId == c.VarId && value == c.VarValue {
+				if varId == c.VarId && value == c.VarVal {
 					if c.Seconds == 0 {
 						_, err := tryWritePlayerTag(sender.uuid, c.Tag)
 						if err != nil {
