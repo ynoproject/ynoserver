@@ -129,8 +129,6 @@ func (h *Hub) Run() {
 				client.tags = tags
 			}
 
-			checkHubConditions(h, client, "", "")
-
 			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge) //"your id is %id%" message
 
 			//send the new client info about the game state
@@ -177,6 +175,8 @@ func (h *Hub) Run() {
 
 			//tell everyone that a new client has connected
 			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge)) //user %id% has connected message
+
+			checkHubConditions(h, client, "", "")
 
 			//send account-specific data like username
 			if isLoggedIn {
