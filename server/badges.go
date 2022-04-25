@@ -60,10 +60,12 @@ func getHubConditions(roomName string) (conditions []*Condition) {
 			conditions = append(conditions, &Condition{Name: "voxel_island", Command: "ploc", CommandVal: "1697"})
 		}
 	case "prayers":
-	case "37":
-		conditions = append(conditions, &Condition{Name: "koraiyn"})
-	case "57":
-		conditions = append(conditions, &Condition{Name: "missingno", Command: "ap", CommandVal: "BSOD1"})
+		switch roomName {
+		case "37":
+			conditions = append(conditions, &Condition{Name: "koraiyn"})
+		case "57":
+			conditions = append(conditions, &Condition{Name: "missingno", Command: "ap", CommandVal: "BSOD1"})
+		}
 	}
 	return conditions
 }
