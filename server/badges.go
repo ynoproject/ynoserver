@@ -19,6 +19,8 @@ func getHubConditions(roomName string) (conditions []*Condition) {
 		switch roomName {
 		case "6":
 			conditions = append(conditions, &Condition{Name: "kalimba", Command: "ap", CommandVal: "00000065"})
+		case "54":
+			conditions = append(conditions, &Condition{Name: "a_r_m", Command: "ap", CommandVal: "01"})
 		case "55":
 			conditions = append(conditions, &Condition{Name: "toriningen_party"})
 		case "101":
@@ -112,6 +114,12 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 		return badges, err
 	}
 
+	kalimbaBadge := &Badge{BadgeId: "kalimba", Game: "yume", MapId: 6}
+	badges = append(badges, kalimbaBadge)
+
+	armBadge := &Badge{BadgeId: "a_r_m", Game: "yume", MapId: 54}
+	badges = append(badges, armBadge)
+
 	boomboxBadge := &Badge{BadgeId: "boombox", Game: "yume", MapId: 55}
 	badges = append(badges, boomboxBadge)
 
@@ -191,7 +199,11 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	badges = append(badges, missingnoBadge)
 
 	for _, tag := range playerTags {
-		if tag == "toriningen_party" {
+		if tag == "kalimba" {
+			kalimbaBadge.Unlocked = true
+		} else if tag == "a_r_m" {
+			armBadge.Unlocked = true
+		} else if tag == "toriningen_party" {
 			boomboxBadge.Unlocked = true
 		} else if tag == "uboa" {
 			uboaBadge.Unlocked = true
