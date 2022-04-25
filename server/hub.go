@@ -121,6 +121,9 @@ func (h *Hub) Run() {
 			}
 
 			var isLoggedInBin int
+			if isLoggedIn {
+				isLoggedInBin = 1
+			}
 
 			tags, err := readPlayerTags(uuid)
 			if err != nil {
