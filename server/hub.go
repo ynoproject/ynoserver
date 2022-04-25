@@ -724,9 +724,13 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		for _, c := range h.conditions {
 			if switchId == c.SwitchId && value == c.SwitchVal {
-				_, err := tryWritePlayerTag(sender.uuid, c.Name)
-				if err != nil {
-					return false, err
+				if c.Seconds == 0 {
+					_, err := tryWritePlayerTag(sender.uuid, c.Tag)
+					if err != nil {
+						return false, err
+					}
+				} else if config.gameName == "2kki" {
+					sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 				}
 			}
 		}
@@ -754,10 +758,14 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		} else {
 			for _, c := range h.conditions {
-				if value == c.VarValue {
-					_, err := tryWritePlayerTag(sender.uuid, c.Name)
-					if err != nil {
-						return false, err
+				if varId == c.VarId && value == c.VarValue {
+					if c.Seconds == 0 {
+						_, err := tryWritePlayerTag(sender.uuid, c.Tag)
+						if err != nil {
+							return false, err
+						}
+					} else if config.gameName == "2kki" {
+						sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 					}
 				}
 			}

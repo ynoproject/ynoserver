@@ -80,6 +80,7 @@ type Badge struct {
 	MapId     int     `json:"mapId"`
 	MapX      int     `json:"mapX"`
 	MapY      int     `json:"mapY"`
+	Seconds   int     `json:"seconds"`
 	Secret    bool    `json:"secret"`
 	Overlay   bool    `json:"overlay"`
 	Percent   float64 `json:"percent"`

@@ -2,8 +2,11 @@ package server
 
 import "strconv"
 
+type ConfiguredBadge struct {
+}
+
 type Condition struct {
-	Name       string `json:"name"`
+	Tag        string `json:"tag"`
 	SwitchId   int    `json:"switchId"`
 	SwitchVal  bool   `json:"switchVal"`
 	VarId      int    `json:"varId"`
@@ -18,53 +21,58 @@ func getHubConditions(roomName string) (conditions []*Condition) {
 	case "yume":
 		switch roomName {
 		case "6":
-			conditions = append(conditions, &Condition{Name: "kalimba", Command: "ap", CommandVal: "00000065"})
+			conditions = append(conditions, &Condition{Tag: "kalimba", Command: "ap", CommandVal: "00000065"})
 		case "54":
-			conditions = append(conditions, &Condition{Name: "a_r_m", Command: "ap", CommandVal: "01"})
+			conditions = append(conditions, &Condition{Tag: "a_r_m", Command: "ap", CommandVal: "01"})
 		case "55":
-			conditions = append(conditions, &Condition{Name: "toriningen_party"})
+			conditions = append(conditions, &Condition{Tag: "toriningen_party"})
 		case "101":
-			conditions = append(conditions, &Condition{Name: "uboa"})
+			conditions = append(conditions, &Condition{Tag: "uboa"})
 		case "179":
-			conditions = append(conditions, &Condition{Name: "witch_flight"})
+			conditions = append(conditions, &Condition{Tag: "witch_flight"})
 		}
 	case "2kki":
 		switch roomName {
 		case "243":
-			conditions = append(conditions, &Condition{Name: "hakoko"})
-			conditions = append(conditions, &Condition{Seconds: 100})
+			conditions = append(conditions, &Condition{Tag: "hakoko", VarId: 2303, VarValue: 1})
+			conditions = append(conditions, &Condition{Seconds: 100, VarId: 2303, VarValue: 1})
 		case "274":
-			conditions = append(conditions, &Condition{Name: "amusement_park_hell"})
+			conditions = append(conditions, &Condition{Tag: "amusement_park_hell"})
 		case "458":
-			conditions = append(conditions, &Condition{Name: "gallery_of_me"})
+			conditions = append(conditions, &Condition{Tag: "gallery_of_me"})
 		case "729":
-			conditions = append(conditions, &Condition{Name: "scrambled_egg_zone"})
+			conditions = append(conditions, &Condition{Tag: "scrambled_egg_zone"})
 		case "860":
-			conditions = append(conditions, &Condition{Name: "aooh", SwitchId: 2, SwitchVal: true})
+			conditions = append(conditions, &Condition{Tag: "aooh", SwitchId: 2, SwitchVal: true})
 		case "1073":
-			conditions = append(conditions, &Condition{Name: "vending_machine", SwitchId: 2, SwitchVal: true})
+			conditions = append(conditions, &Condition{Tag: "vending_machine", SwitchId: 2, SwitchVal: true})
 		case "1148":
-			conditions = append(conditions, &Condition{Name: "lavender_waters"})
+			conditions = append(conditions, &Condition{Tag: "lavender_waters"})
 			conditions = append(conditions, &Condition{Seconds: 720})
 		case "1205":
-			conditions = append(conditions, &Condition{Name: "tomb_of_velleities"})
+			conditions = append(conditions, &Condition{Tag: "tomb_of_velleities"})
 			conditions = append(conditions, &Condition{Seconds: 1740})
 		case "1422":
-			conditions = append(conditions, &Condition{Name: "obentou_world"})
+			conditions = append(conditions, &Condition{Tag: "obentou_world"})
 		case "1500":
-			conditions = append(conditions, &Condition{Name: "unknown_childs_room"})
+			conditions = append(conditions, &Condition{Tag: "unknown_childs_room"})
 		case "1673":
-			conditions = append(conditions, &Condition{Name: "magical_passage"})
+			conditions = append(conditions, &Condition{Tag: "magical_passage"})
 			conditions = append(conditions, &Condition{Seconds: 510})
 		case "1698":
-			conditions = append(conditions, &Condition{Name: "voxel_island", Command: "ploc", CommandVal: "1697"})
+			conditions = append(conditions, &Condition{Tag: "voxel_island", Command: "ploc", CommandVal: "1697"})
+		}
+	case "flow":
+		switch roomName {
+		case "154":
+			conditions = append(conditions, &Condition{Tag: "cake", VarId: 135, VarValue: 20})
 		}
 	case "prayers":
 		switch roomName {
 		case "37":
-			conditions = append(conditions, &Condition{Name: "koraiyn"})
+			conditions = append(conditions, &Condition{Tag: "koraiyn"})
 		case "57":
-			conditions = append(conditions, &Condition{Name: "missingno", Command: "ap", CommandVal: "BSOD1"})
+			conditions = append(conditions, &Condition{Tag: "missingno", Command: "ap", CommandVal: "BSOD1"})
 		}
 	}
 	return conditions
@@ -82,21 +90,19 @@ func checkHubConditions(h *Hub, client *Client, command string, commandVal strin
 				} else if c.VarId > 0 {
 					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + "1")
 				} else {
-					_, err := tryWritePlayerTag(client.uuid, c.Name)
+					_, err := tryWritePlayerTag(client.uuid, c.Tag)
 					if err != nil {
 						writeErrLog(client.ip, h.roomName, err.Error())
 					}
 				}
 			}
-		} else {
-			if config.gameName == "2kki" {
-				if c.SwitchId > 0 {
-					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + "1")
-				} else if c.VarId > 0 {
-					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + "1")
-				} else {
-					client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
-				}
+		} else if config.gameName == "2kki" {
+			if c.SwitchId > 0 {
+				client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + "1")
+			} else if c.VarId > 0 {
+				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + "1")
+			} else {
+				client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 			}
 		}
 	}
@@ -162,25 +168,25 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	hakokoBadge := &Badge{BadgeId: "hakoko", Game: "2kki", MapId: 243}
 	badges = append(badges, hakokoBadge)
 
-	hakokoPrimeBadge := &Badge{BadgeId: "hakoko_prime", Game: "2kki", MapId: 243}
+	hakokoPrimeBadge := &Badge{BadgeId: "hakoko_prime", Game: "2kki", MapId: 243, Seconds: 100}
 	badges = append(badges, hakokoPrimeBadge)
 
 	lesserLavenderBadge := &Badge{BadgeId: "lavender_lesser", Game: "2kki", MapId: 1148}
 	badges = append(badges, lesserLavenderBadge)
 
-	lavenderBadge := &Badge{BadgeId: "lavender", Game: "2kki", MapId: 1148}
+	lavenderBadge := &Badge{BadgeId: "lavender", Game: "2kki", MapId: 1148, Seconds: 720}
 	badges = append(badges, lavenderBadge)
 
 	lesserButterflyBadge := &Badge{BadgeId: "butterfly_lesser", Game: "2kki", MapId: 1205}
 	badges = append(badges, lesserButterflyBadge)
 
-	butterflyBadge := &Badge{BadgeId: "butterfly", Game: "2kki", MapId: 1205}
+	butterflyBadge := &Badge{BadgeId: "butterfly", Game: "2kki", MapId: 1205, Seconds: 1740}
 	badges = append(badges, butterflyBadge)
 
 	lesserMagicalBadge := &Badge{BadgeId: "magical_lesser", Game: "2kki", MapId: 1673}
 	badges = append(badges, lesserMagicalBadge)
 
-	magicalBadge := &Badge{BadgeId: "magical", Game: "2kki", MapId: 1673}
+	magicalBadge := &Badge{BadgeId: "magical", Game: "2kki", MapId: 1673, Seconds: 510}
 	badges = append(badges, magicalBadge)
 
 	voxelsBadge := &Badge{BadgeId: "voxels", Game: "2kki", MapId: 1698}
@@ -194,6 +200,9 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 		badges = append(badges, cloverBadge)
 	}
 
+	cakeBadge := &Badge{BadgeId: "cake", Game: "flow", MapId: 154}
+	badges = append(badges, cakeBadge)
+
 	koraiynBadge := &Badge{BadgeId: "koraiyn", Game: "prayers", MapId: 37}
 	badges = append(badges, koraiynBadge)
 
@@ -201,56 +210,59 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	badges = append(badges, missingnoBadge)
 
 	for _, tag := range playerTags {
-		if tag == "kalimba" {
+		switch tag {
+		case "kalimba":
 			kalimbaBadge.Unlocked = true
-		} else if tag == "a_r_m" {
+		case "a_r_m":
 			armBadge.Unlocked = true
-		} else if tag == "toriningen_party" {
+		case "toriningen_party":
 			boomboxBadge.Unlocked = true
-		} else if tag == "uboa" {
+		case "uboa":
 			uboaBadge.Unlocked = true
-		} else if tag == "witch_flight" {
+		case "witch_flight":
 			blackCatBadge.Unlocked = true
-		} else if tag == "amusement_park_hell" {
+		case "amusement_park_hell":
 			crushedBadge.Unlocked = true
-		} else if tag == "obentou_world" {
+		case "obentou_world":
 			obentouBadge.Unlocked = true
-		} else if tag == "unknown_childs_room" {
+		case "unknown_childs_room":
 			compass28Badge.Unlocked = true
-		} else if tag == "scrambled_egg_zone" {
+		case "scrambled_egg_zone":
 			blueOrbBadge.Unlocked = true
-		} else if tag == "aooh" {
+		case "aooh":
 			aoohBadge.Unlocked = true
-		} else if tag == "hakoko" {
+		case "hakoko":
 			hakokoBadge.Unlocked = true
-		} else if tag == "lavender_waters" {
+		case "lavender_waters":
 			lesserLavenderBadge.Unlocked = true
-		} else if tag == "tomb_of_velleities" {
+		case "tomb_of_velleities":
 			lesserButterflyBadge.Unlocked = true
-		} else if tag == "magical_passage" {
+		case "magical_passage":
 			lesserMagicalBadge.Unlocked = true
-		} else if tag == "voxel_island" {
+		case "voxel_island":
 			voxelsBadge.Unlocked = true
-		} else if tag == "vending_machine" {
+		case "vending_machine":
 			vendingMachineBadge.Unlocked = true
-		} else if tag == "gallery_of_me" {
+		case "gallery_of_me":
 			cloverBadge.Unlocked = true
-		} else if tag == "koraiyn" {
+		case "cake":
+			cakeBadge.Unlocked = true
+		case "koraiyn":
 			koraiynBadge.Unlocked = true
-		} else if tag == "missingno" {
+		case "missingno":
 			missingnoBadge.Unlocked = true
 		}
 	}
 
 	for _, record := range timeTrialRecords {
-		if record.MapId == hakokoPrimeBadge.MapId && record.Seconds <= 100 {
-			hakokoPrimeBadge.Unlocked = true
+		if record.MapId == hakokoPrimeBadge.MapId {
+			hakokoPrimeBadge.Unlocked = record.Seconds < hakokoPrimeBadge.Seconds
 		} else if record.MapId == butterflyBadge.MapId {
-			butterflyBadge.Unlocked = record.Seconds <= 1740
+			butterflyBadge.Unlocked = record.Seconds <= butterflyBadge.Seconds
 		} else if record.MapId == lavenderBadge.MapId {
-			lavenderBadge.Unlocked = record.Seconds <= 720
+			lavenderBadge.Unlocked = record.Seconds <= lavenderBadge.Seconds
 		} else if record.MapId == magicalBadge.MapId {
-			magicalBadge.Unlocked = record.Seconds <= 510
+			magicalBadge.Unlocked = record.Seconds <= magicalBadge.Seconds
 		}
 	}
 
