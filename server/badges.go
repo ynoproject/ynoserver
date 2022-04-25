@@ -36,8 +36,8 @@ func getHubConditions(roomName string) (conditions []*Condition) {
 	case "2kki":
 		switch roomName {
 		case "243":
-			conditions = append(conditions, &Condition{Tag: "hakoko", SwitchId: 3111, SwitchVal: true, VarDelay: true})
-			conditions = append(conditions, &Condition{Seconds: 100, SwitchId: 3111, SwitchVal: true, VarDelay: true})
+			conditions = append(conditions, &Condition{Tag: "hakoko", SwitchId: 3111, SwitchVal: true, SwitchDelay: true})
+			conditions = append(conditions, &Condition{Seconds: 100, SwitchId: 3111, SwitchVal: true, SwitchDelay: true})
 		case "274":
 			conditions = append(conditions, &Condition{Tag: "amusement_park_hell"})
 		case "458":
