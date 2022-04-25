@@ -159,13 +159,19 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	badges = append(badges, blueOrbBadge)
 
 	aoohBadge := &Badge{BadgeId: "aooh", Game: "2kki"}
-	badges = append(badges, aoohBadge)
+	if playerRank == 2 {
+		badges = append(badges, aoohBadge)
+	}
 
 	hakokoBadge := &Badge{BadgeId: "hakoko", Game: "2kki", MapId: 243}
-	badges = append(badges, hakokoBadge)
+	if playerRank == 2 {
+		badges = append(badges, hakokoBadge)
+	}
 
 	hakokoPrimeBadge := &Badge{BadgeId: "hakoko_prime", Game: "2kki", MapId: 243}
-	badges = append(badges, hakokoPrimeBadge)
+	if playerRank == 2 {
+		badges = append(badges, hakokoPrimeBadge)
+	}
 
 	lesserLavenderBadge := &Badge{BadgeId: "lavender_lesser", Game: "2kki", MapId: 1148}
 	badges = append(badges, lesserLavenderBadge)
@@ -189,7 +195,9 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	badges = append(badges, voxelsBadge)
 
 	vendingMachineBadge := &Badge{BadgeId: "vending_machine", Game: "2kki", MapId: 1073}
-	badges = append(badges, vendingMachineBadge)
+	if playerRank == 2 {
+		badges = append(badges, vendingMachineBadge)
+	}
 
 	cloverBadge := &Badge{BadgeId: "clover", Game: "2kki", MapId: 458}
 	if playerRank == 2 {
@@ -200,7 +208,9 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	badges = append(badges, koraiynBadge)
 
 	missingnoBadge := &Badge{BadgeId: "missingno", Game: "prayers", MapId: 57}
-	badges = append(badges, missingnoBadge)
+	if playerRank == 2 {
+		badges = append(badges, missingnoBadge)
+	}
 
 	for _, tag := range playerTags {
 		if tag == "toriningen_party" {
