@@ -97,6 +97,9 @@ func main() {
 	}
 
 	server.SetConfig(spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName, config.SignKey, config.IPHubKey, config.Database.User, config.Database.Pass, config.Database.Host, config.Database.Name)
+	server.SetConditions()
+	server.SetBadges()
+
 	server.CreateAllHubs(roomNames)
 
 	log.SetOutput(&lumberjack.Logger{

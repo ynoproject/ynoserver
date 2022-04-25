@@ -489,7 +489,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 
 		if isShow {
-			checkHubConditions(h, sender, "ap", msgFields[17])
+			checkHubConditions(h, sender, "picture", msgFields[17])
 			if !isValidPicName(msgFields[17]) {
 				return false, err
 			}
@@ -723,7 +723,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			value = true
 		}
 		for _, c := range h.conditions {
-			if switchId == c.SwitchId && value == c.SwitchVal {
+			if switchId == c.SwitchId && value == c.SwitchValue {
 				if c.Seconds == 0 {
 					_, err := tryWritePlayerTag(sender.uuid, c.Tag)
 					if err != nil {
@@ -758,7 +758,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		} else {
 			for _, c := range h.conditions {
-				if varId == c.VarId && value == c.VarVal {
+				if varId == c.VarId && value == c.VarValue {
 					if c.Seconds == 0 {
 						_, err := tryWritePlayerTag(sender.uuid, c.Tag)
 						if err != nil {

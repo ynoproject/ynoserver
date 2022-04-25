@@ -74,20 +74,6 @@ type EventLocationData struct {
 	MapIds  []string `json:"mapIds"`
 }
 
-type Badge struct {
-	BadgeId   string  `json:"badgeId"`
-	Game      string  `json:"game"`
-	MapId     int     `json:"mapId"`
-	MapX      int     `json:"mapX"`
-	MapY      int     `json:"mapY"`
-	Seconds   int     `json:"seconds"`
-	Secret    bool    `json:"secret"`
-	Overlay   bool    `json:"overlay"`
-	Percent   float64 `json:"percent"`
-	Unlocked  bool    `json:"unlocked"`
-	NewUnlock bool    `json:"newUnlock"`
-}
-
 type BadgePercentUnlocked struct {
 	BadgeId string  `json:"badgeId"`
 	Percent float64 `json:"percent"`
@@ -966,7 +952,7 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 		} else {
 			client.prevLocations = ""
 		}
-		checkHubConditions(client.hub, client, "ploc", client.prevMapId)
+		checkHubConditions(client.hub, client, "prevMap", client.prevMapId)
 	} else {
 		handleError(w, r, "client not found")
 		return
