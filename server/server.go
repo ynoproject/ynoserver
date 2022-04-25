@@ -34,10 +34,8 @@ var (
 
 	hubs []*Hub
 
-	config     Config
-	conditions map[string]map[string]*Condition
-	badges     map[string]map[string]*Badge
-	db         *sql.DB
+	config Config
+	db     *sql.DB
 )
 
 type ConnInfo struct {
