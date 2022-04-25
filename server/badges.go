@@ -150,14 +150,10 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	badges = append(badges, aoohBadge)
 
 	hakokoBadge := &Badge{BadgeId: "hakoko", Game: "2kki", MapId: 243}
-	if playerRank == 2 {
-		badges = append(badges, hakokoBadge)
-	}
+	badges = append(badges, hakokoBadge)
 
 	hakokoPrimeBadge := &Badge{BadgeId: "hakoko_prime", Game: "2kki", MapId: 243}
-	if playerRank == 2 {
-		badges = append(badges, hakokoPrimeBadge)
-	}
+	badges = append(badges, hakokoPrimeBadge)
 
 	lesserLavenderBadge := &Badge{BadgeId: "lavender_lesser", Game: "2kki", MapId: 1148}
 	badges = append(badges, lesserLavenderBadge)
