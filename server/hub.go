@@ -34,7 +34,7 @@ type Hub struct {
 
 	roomName string
 
-	conditions []Condition
+	conditions []*Condition
 }
 
 func (h *Hub) Run() {
@@ -719,14 +719,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if valueBin == 1 {
 			value = true
 		}
-		for _, condition := range h.conditions {
-			switch c := condition.(type) {
-			case TagCondition:
-				if switchId == c.Condition.SwitchId && value == c.Condition.SwitchVal {
-					_, err := tryWritePlayerTag(sender.uuid, c.Name)
-					if err != nil {
-						return false, err
-					}
+		for _, c := range h.conditions {
+			if switchId == c.SwitchId && value == c.SwitchVal {
+				_, err := tryWritePlayerTag(sender.uuid, c.Name)
+				if err != nil {
+					return false, err
 				}
 			}
 		}
@@ -742,28 +739,22 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if varId == 88 && config.gameName == "2kki" {
 			switch varId {
 			case 88:
-				for _, condition := range h.conditions {
-					switch c := condition.(type) {
-					case TimeTrialCondition:
-						if c.Seconds < 3600 {
-							mapId, _ := strconv.Atoi(h.roomName)
-							err = writePlayerTimeTrial(sender.uuid, mapId, value)
-							if err != nil {
-								return false, err
-							}
+				for _, c := range h.conditions {
+					if c.Seconds > 0 && c.Seconds < 3600 {
+						mapId, _ := strconv.Atoi(h.roomName)
+						err = writePlayerTimeTrial(sender.uuid, mapId, value)
+						if err != nil {
+							return false, err
 						}
 					}
 				}
 			}
 		} else {
-			for _, condition := range h.conditions {
-				switch c := condition.(type) {
-				case TagCondition:
-					if value == c.Condition.VarValue {
-						_, err := tryWritePlayerTag(sender.uuid, c.Name)
-						if err != nil {
-							return false, err
-						}
+			for _, c := range h.conditions {
+				if value == c.VarValue {
+					_, err := tryWritePlayerTag(sender.uuid, c.Name)
+					if err != nil {
+						return false, err
 					}
 				}
 			}

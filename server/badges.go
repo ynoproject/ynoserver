@@ -2,77 +2,66 @@ package server
 
 import "strconv"
 
-type Condition interface {
-}
-
-type ConditionImpl struct {
+type Condition struct {
+	Name       string `json:"name"`
 	SwitchId   int    `json:"switchId"`
 	SwitchVal  bool   `json:"switchVal"`
 	VarId      int    `json:"varId"`
 	VarValue   int    `json:"varVal"`
 	Command    string `json:"command"`
 	CommandVal string `json:"commandVal"`
+	Seconds    int    `json:"seconds"`
 }
 
-type TagCondition struct {
-	Name      string `json:"name"`
-	Condition *ConditionImpl
-}
-
-type TimeTrialCondition struct {
-	Seconds   int `json:"seconds"`
-	Condition *ConditionImpl
-}
-
-func getHubConditions(roomName string) (conditions []Condition) {
+func getHubConditions(roomName string) (conditions []*Condition) {
 	switch config.gameName {
 	case "yume":
 		switch roomName {
 		case "6":
-			conditions = append(conditions, &TagCondition{Name: "kalimba", Condition: &ConditionImpl{Command: "ap", CommandVal: "00000065"}})
+			conditions = append(conditions, &Condition{Name: "kalimba", Command: "ap", CommandVal: "00000065"})
 		case "55":
-			conditions = append(conditions, &TagCondition{Name: "toriningen_party"})
+			conditions = append(conditions, &Condition{Name: "toriningen_party"})
 		case "101":
-			conditions = append(conditions, &TagCondition{Name: "uboa"})
+			conditions = append(conditions, &Condition{Name: "uboa"})
 		case "179":
-			conditions = append(conditions, &TagCondition{Name: "witch_flight"})
+			conditions = append(conditions, &Condition{Name: "witch_flight"})
 		}
 	case "2kki":
 		switch roomName {
 		case "243":
-			conditions = append(conditions, &TagCondition{Name: "hakoko"})
-			conditions = append(conditions, &TimeTrialCondition{Seconds: 100})
+			conditions = append(conditions, &Condition{Name: "hakoko"})
+			conditions = append(conditions, &Condition{Seconds: 100})
 		case "274":
-			conditions = append(conditions, &TagCondition{Name: "amusement_park_hell"})
+			conditions = append(conditions, &Condition{Name: "amusement_park_hell"})
 		case "458":
-			conditions = append(conditions, &TagCondition{Name: "gallery_of_me"})
+			conditions = append(conditions, &Condition{Name: "gallery_of_me"})
 		case "729":
-			conditions = append(conditions, &TagCondition{Name: "scrambled_egg_zone"})
+			conditions = append(conditions, &Condition{Name: "scrambled_egg_zone"})
 		case "860":
-			conditions = append(conditions, &TagCondition{Name: "aooh", Condition: &ConditionImpl{SwitchId: 2, SwitchVal: true}})
+			conditions = append(conditions, &Condition{Name: "aooh", SwitchId: 2, SwitchVal: true})
 		case "1073":
-			conditions = append(conditions, &TagCondition{Name: "vending_machine", Condition: &ConditionImpl{SwitchId: 2, SwitchVal: true}})
+			conditions = append(conditions, &Condition{Name: "vending_machine", SwitchId: 2, SwitchVal: true})
 		case "1148":
-			conditions = append(conditions, &TagCondition{Name: "lavender_waters"})
-			conditions = append(conditions, &TimeTrialCondition{Seconds: 720})
+			conditions = append(conditions, &Condition{Name: "lavender_waters"})
+			conditions = append(conditions, &Condition{Seconds: 720})
 		case "1205":
-			conditions = append(conditions, &TagCondition{Name: "tomb_of_velleities"})
-			conditions = append(conditions, &TimeTrialCondition{Seconds: 1740})
+			conditions = append(conditions, &Condition{Name: "tomb_of_velleities"})
+			conditions = append(conditions, &Condition{Seconds: 1740})
 		case "1422":
-			conditions = append(conditions, &TagCondition{Name: "obentou_world"})
+			conditions = append(conditions, &Condition{Name: "obentou_world"})
 		case "1500":
-			conditions = append(conditions, &TagCondition{Name: "unknown_childs_room"})
+			conditions = append(conditions, &Condition{Name: "unknown_childs_room"})
 		case "1673":
-			conditions = append(conditions, &TagCondition{Name: "magical_passage"})
-			conditions = append(conditions, &TimeTrialCondition{Seconds: 510})
+			conditions = append(conditions, &Condition{Name: "magical_passage"})
+			conditions = append(conditions, &Condition{Seconds: 510})
 		case "1698":
-			conditions = append(conditions, &TagCondition{Name: "voxel_island", Condition: &ConditionImpl{Command: "ploc", CommandVal: "1697"}})
+			conditions = append(conditions, &Condition{Name: "voxel_island", Command: "ploc", CommandVal: "1697"})
 		}
 	case "prayers":
 	case "37":
-		conditions = append(conditions, &TagCondition{Name: "koraiyn"})
+		conditions = append(conditions, &Condition{Name: "koraiyn"})
 	case "57":
-		conditions = append(conditions, &TagCondition{Name: "missingno", Condition: &ConditionImpl{Command: "ap", CommandVal: "BSOD1"}})
+		conditions = append(conditions, &Condition{Name: "missingno", Command: "ap", CommandVal: "BSOD1"})
 	}
 	return conditions
 }
@@ -81,14 +70,13 @@ func checkHubConditions(h *Hub, client *Client, command string, commandVal strin
 	if !client.account {
 		return
 	}
-	for _, condition := range h.conditions {
-		switch c := condition.(type) {
-		case TagCondition:
-			if c.Condition.Command == command && (command == "" || commandVal == c.Condition.CommandVal) {
-				if c.Condition.SwitchId > 0 {
-					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.Condition.SwitchId) + paramDelimStr + "1")
-				} else if c.Condition.VarId > 0 {
-					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.Condition.VarId) + paramDelimStr + "1")
+	for _, c := range h.conditions {
+		if c.Seconds == 0 {
+			if c.Command == command && (command == "" || commandVal == c.CommandVal) {
+				if c.SwitchId > 0 {
+					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + "1")
+				} else if c.VarId > 0 {
+					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + "1")
 				} else {
 					_, err := tryWritePlayerTag(client.uuid, c.Name)
 					if err != nil {
@@ -96,12 +84,12 @@ func checkHubConditions(h *Hub, client *Client, command string, commandVal strin
 					}
 				}
 			}
-		case TimeTrialCondition:
+		} else {
 			if config.gameName == "2kki" {
-				if c.Condition.SwitchId > 0 {
-					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.Condition.SwitchId) + paramDelimStr + "1")
-				} else if c.Condition.VarId > 0 {
-					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.Condition.VarId) + paramDelimStr + "1")
+				if c.SwitchId > 0 {
+					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + "1")
+				} else if c.VarId > 0 {
+					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + "1")
 				} else {
 					client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 				}
