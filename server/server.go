@@ -68,6 +68,7 @@ func NewHub(roomName string) *Hub {
 		clients:      make(map[*Client]bool),
 		id:           make(map[int]bool),
 		roomName:     roomName,
+		conditions:   getHubConditions(roomName),
 	}
 }
 

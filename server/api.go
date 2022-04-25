@@ -78,6 +78,8 @@ type Badge struct {
 	BadgeId   string  `json:"badgeId"`
 	Game      string  `json:"game"`
 	MapId     int     `json:"mapId"`
+	MapX      int     `json:"mapX"`
+	MapY      int     `json:"mapY"`
 	Secret    bool    `json:"secret"`
 	Overlay   bool    `json:"overlay"`
 	Percent   float64 `json:"percent"`
@@ -872,7 +874,12 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			case "null":
 				unlocked = true
 			default:
-				badgeData, err := readPlayerBadgeData(uuid)
+				tags, err := readPlayerTags(uuid)
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
+				badgeData, err := readPlayerBadgeData(uuid, rank, tags)
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
@@ -899,7 +906,12 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 
 		setPlayerBadge(uuid, badgeId)
 	case "list":
-		badgeData, err := readPlayerBadgeData(uuid)
+		tags, err := readPlayerTags(uuid)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		badgeData, err := readPlayerBadgeData(uuid, rank, tags)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -953,6 +965,7 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 		} else {
 			client.prevLocations = ""
 		}
+		checkHubConditions(client.hub, client, "ploc", client.prevMapId)
 	} else {
 		handleError(w, r, "client not found")
 		return

@@ -33,6 +33,8 @@ type Hub struct {
 	unregister chan *Client
 
 	roomName string
+
+	conditions []Condition
 }
 
 func (h *Hub) Run() {
@@ -119,58 +121,15 @@ func (h *Hub) Run() {
 			}
 
 			var isLoggedInBin int
-			if isLoggedIn {
-				isLoggedInBin = 1
 
-				var tagName string
-				var timeTrial bool
-
-				switch config.gameName {
-				case "yume":
-					switch h.roomName {
-					case "55":
-						tagName = "toriningen_party"
-					case "101":
-						tagName = "uboa"
-					case "179":
-						tagName = "witch_flight"
-					}
-				case "2kki":
-					switch h.roomName {
-					case "274":
-						tagName = "amusement_park_hell"
-					case "458":
-						tagName = "gallery_of_me"
-					case "729":
-						tagName = "scrambled_egg_zone"
-					case "1148":
-						tagName = "lavender_waters"
-						timeTrial = true
-					case "1205":
-						tagName = "tomb_of_velleities"
-						timeTrial = true
-					case "1422":
-						tagName = "obentou_world"
-					case "1500":
-						tagName = "unknown_childs_room"
-					}
-				case "prayers":
-					switch h.roomName {
-					case "37":
-						tagName = "koraiyn"
-					}
-				}
-
-				if tagName != "" {
-					err := writePlayerTag(uuid, tagName)
-					if err != nil {
-						writeErrLog(conn.Ip, h.roomName, err.Error())
-					}
-				}
-				if timeTrial { // 2kki only
-					client.send <- []byte("sv" + paramDelimStr + "88")
-				}
+			tags, err := readPlayerTags(uuid)
+			if err != nil {
+				writeErrLog(conn.Ip, h.roomName, "failed to read player tags")
+			} else {
+				client.tags = tags
 			}
+
+			checkHubConditions(h, client, "", "")
 
 			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge) //"your id is %id%" message
 
@@ -526,8 +485,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			return false, err
 		}
 
-		if isShow && !isValidPicName(msgFields[17]) {
-			return false, err
+		if isShow {
+			checkHubConditions(h, sender, "ap", msgFields[17])
+			if !isValidPicName(msgFields[17]) {
+				return false, err
+			}
 		}
 
 		picId, errconv := strconv.Atoi(msgFields[1])
@@ -744,6 +706,30 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		sender.name = msgFields[1]
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
 		terminate = true
+	case "ss": // sync switch
+		switchId, errconv := strconv.Atoi(msgFields[1])
+		if errconv != nil {
+			return false, err
+		}
+		valueBin, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil || valueBin < 0 || valueBin > 1 {
+			return false, err
+		}
+		value := false
+		if valueBin == 1 {
+			value = true
+		}
+		for _, condition := range h.conditions {
+			switch c := condition.(type) {
+			case TagCondition:
+				if switchId == c.Condition.SwitchId && value == c.Condition.SwitchVal {
+					_, err := tryWritePlayerTag(sender.uuid, c.Name)
+					if err != nil {
+						return false, err
+					}
+				}
+			}
+		}
 	case "sv": // sync variable
 		varId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil {
@@ -753,20 +739,32 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if errconv != nil {
 			return false, err
 		}
-		switch varId {
-		case 88:
-			var validTimeTrial bool
-			switch h.roomName {
-			case "1148":
-				validTimeTrial = value <= 1440
-			case "1205":
-				validTimeTrial = value <= 3480
+		if varId == 88 && config.gameName == "2kki" {
+			switch varId {
+			case 88:
+				for _, condition := range h.conditions {
+					switch c := condition.(type) {
+					case TimeTrialCondition:
+						if c.Seconds < 3600 {
+							mapId, _ := strconv.Atoi(h.roomName)
+							err = writePlayerTimeTrial(sender.uuid, mapId, value)
+							if err != nil {
+								return false, err
+							}
+						}
+					}
+				}
 			}
-			if validTimeTrial {
-				mapId, _ := strconv.Atoi(h.roomName)
-				err = writePlayerTimeTrial(sender.uuid, mapId, value)
-				if err != nil {
-					return false, err
+		} else {
+			for _, condition := range h.conditions {
+				switch c := condition.(type) {
+				case TagCondition:
+					if value == c.Condition.VarValue {
+						_, err := tryWritePlayerTag(sender.uuid, c.Name)
+						if err != nil {
+							return false, err
+						}
+					}
 				}
 			}
 		}

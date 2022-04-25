@@ -97,6 +97,8 @@ type Client struct {
 	prevMapId     string
 	prevLocations string
 
+	tags []string
+
 	key     string
 	counter int
 }

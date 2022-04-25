@@ -902,13 +902,27 @@ func readPlayerTags(playerUuid string) (tags []string, err error) {
 	return tags, nil
 }
 
-func writePlayerTag(playerUuid string, name string) (err error) {
-	_, err = db.Exec("INSERT INTO playerTags (uuid, name, timestampUnlocked) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = name", playerUuid, name, time.Now())
-	if err != nil {
-		return err
+func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
+	if _, ok := allClients[playerUuid]; ok { // Player must be online to add a tag
+		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
+		tags := allClients[playerUuid].tags
+		tagExists := false
+		for _, tag := range tags {
+			if tag == name {
+				tagExists = true
+				break
+			}
+		}
+		if !tagExists {
+			_, err = db.Exec("INSERT INTO playerTags (uuid, name, timestampUnlocked) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = name", playerUuid, name, time.Now())
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		}
 	}
 
-	return nil
+	return false, nil
 }
 
 func readPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTrialRecord, err error) {
