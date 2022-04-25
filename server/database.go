@@ -948,11 +948,29 @@ func readPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTria
 	return timeTrialRecords, nil
 }
 
-func writePlayerTimeTrial(playerUuid string, mapId int, seconds int) (err error) {
-	_, err = db.Exec("INSERT INTO playerTimeTrials (uuid, mapId, seconds, timestampCompleted) VALUES (?, ?, ?, ?)", playerUuid, mapId, seconds, time.Now())
+func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success bool, err error) {
+	var prevSeconds int
+	results := db.QueryRow("SELECT seconds FROM playerTimeTrials WHERE uuid = ? AND mapId = ?", playerUuid, mapId)
+	err = results.Scan(&prevSeconds)
+
 	if err != nil {
-		return err
+		if err != sql.ErrNoRows {
+			return false, err
+		}
+	} else if seconds >= prevSeconds {
+		return false, nil
+	} else {
+		_, err = db.Exec("UPDATE playerTimeTrials SET seconds = ?, timestampCompleted = ? WHERE uuid = ? AND mapId = ?", seconds, time.Now(), playerUuid, mapId)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
 	}
 
-	return nil
+	_, err = db.Exec("INSERT INTO playerTimeTrials (uuid, mapId, seconds, timestampCompleted) VALUES (?, ?, ?, ?)", playerUuid, mapId, seconds, time.Now())
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

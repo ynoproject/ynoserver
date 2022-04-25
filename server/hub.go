@@ -749,7 +749,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				for _, c := range h.conditions {
 					if c.Seconds > 0 && c.Seconds < 3600 {
 						mapId, _ := strconv.Atoi(h.roomName)
-						err = writePlayerTimeTrial(sender.uuid, mapId, value)
+						_, err = tryWritePlayerTimeTrial(sender.uuid, mapId, value)
 						if err != nil {
 							return false, err
 						}
