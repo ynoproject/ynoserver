@@ -48,7 +48,7 @@ type Condition struct {
 	VarDelay    bool   `json:"varDelay"`
 	Trigger     string `json:"trigger"`
 	Value       string `json:"value"`
-	Seconds     int    `json:"seconds"`
+	TimeTrial   bool   `json:"timeTrial"`
 }
 
 func getHubConditions(roomName string) (hubConditions []*Condition) {
@@ -67,7 +67,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 		return
 	}
 	for _, c := range h.conditions {
-		if c.Seconds == 0 {
+		if !c.TimeTrial {
 			if c.Trigger == trigger && (trigger == "" || value == c.Value) {
 				if c.SwitchId > 0 {
 					switchSyncType := 2

@@ -724,7 +724,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		for _, c := range h.conditions {
 			if switchId == c.SwitchId && value == c.SwitchValue {
-				if c.Seconds == 0 {
+				if !c.TimeTrial {
 					_, err := tryWritePlayerTag(sender.uuid, c.Tag)
 					if err != nil {
 						return false, err
@@ -747,7 +747,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			switch varId {
 			case 88:
 				for _, c := range h.conditions {
-					if c.Seconds > 0 && c.Seconds < 3600 {
+					if c.TimeTrial && value < 3600 {
 						mapId, _ := strconv.Atoi(h.roomName)
 						_, err = tryWritePlayerTimeTrial(sender.uuid, mapId, value)
 						if err != nil {
@@ -759,7 +759,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		} else {
 			for _, c := range h.conditions {
 				if varId == c.VarId && value == c.VarValue {
-					if c.Seconds == 0 {
+					if !c.TimeTrial {
 						_, err := tryWritePlayerTag(sender.uuid, c.Tag)
 						if err != nil {
 							return false, err
