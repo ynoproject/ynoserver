@@ -144,10 +144,10 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 			case "expCompletion":
 				playerBadge.Unlocked = playerEventLocationCompletion >= gameBadge.ReqInt
 			case "timeTrial":
+				playerBadge.Seconds = gameBadge.ReqInt
 				for _, record := range timeTrialRecords {
 					if record.MapId == gameBadge.Map {
 						playerBadge.Unlocked = record.Seconds < gameBadge.ReqInt
-						playerBadge.Seconds = gameBadge.ReqInt
 					}
 				}
 			}
