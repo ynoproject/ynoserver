@@ -122,7 +122,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 		return playerBadges, err
 	}
 
-	var playerBadgesMap map[string]*PlayerBadge
+	playerBadgesMap := make(map[string]*PlayerBadge)
 
 	for game, gameBadges := range badges {
 		for badgeId, gameBadge := range gameBadges {
@@ -224,7 +224,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 }
 
 func SetConditions() {
-	var conditionConfig map[string]map[string]*Condition
+	conditionConfig := make(map[string]map[string]*Condition)
 
 	gameConditionDirs, err := ioutil.ReadDir("badges/conditions/")
 	if err != nil {
@@ -234,6 +234,7 @@ func SetConditions() {
 	for _, gameConditionsDir := range gameConditionDirs {
 		if gameConditionsDir.IsDir() {
 			gameId := gameConditionsDir.Name()
+			conditionConfig[gameId] = make(map[string]*Condition)
 			configPath := "badges/conditions/" + gameId + "/"
 			conditionConfigs, err := ioutil.ReadDir(configPath)
 			if err != nil {
@@ -260,7 +261,7 @@ func SetConditions() {
 }
 
 func SetBadges() {
-	var badgeConfig map[string]map[string]*Badge
+	badgeConfig := make(map[string]map[string]*Badge)
 
 	gameBadgeDirs, err := ioutil.ReadDir("badges/data/")
 	if err != nil {
@@ -270,7 +271,8 @@ func SetBadges() {
 	for _, gameBadgesDir := range gameBadgeDirs {
 		if gameBadgesDir.IsDir() {
 			gameId := gameBadgesDir.Name()
-			configPath := "badges/" + gameId + "/"
+			badgeConfig[gameId] = make(map[string]*Badge)
+			configPath := "badges/data/" + gameId + "/"
 			badgeConfigs, err := ioutil.ReadDir(configPath)
 			if err != nil {
 				continue
