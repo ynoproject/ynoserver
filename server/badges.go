@@ -38,8 +38,8 @@ type PlayerBadge struct {
 }
 
 type Condition struct {
-	Map         string `json:"map"`
-	Tag         string `json:"tag"`
+	ConditionId string `json:"conditionId"`
+	Map         int    `json:"map"`
 	SwitchId    int    `json:"switchId"`
 	SwitchValue bool   `json:"switchValue"`
 	SwitchDelay bool   `json:"switchDelay"`
@@ -53,8 +53,9 @@ type Condition struct {
 
 func getHubConditions(roomName string) (hubConditions []*Condition) {
 	if _, ok := conditions[config.gameName]; ok {
+		mapId, _ := strconv.Atoi(roomName)
 		for _, condition := range conditions[config.gameName] {
-			if condition.Map == roomName {
+			if condition.Map == mapId {
 				hubConditions = append(hubConditions, condition)
 			}
 		}
@@ -82,7 +83,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 					}
 					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + strconv.Itoa(varSyncType))
 				} else {
-					_, err := tryWritePlayerTag(client.uuid, c.Tag)
+					_, err := tryWritePlayerTag(client.uuid, c.ConditionId)
 					if err != nil {
 						writeErrLog(client.ip, h.roomName, err.Error())
 					}
@@ -251,8 +252,9 @@ func SetConditions() {
 
 				err = json.Unmarshal(data, &condition)
 				if err == nil {
-					conditionName := conditionConfigFile.Name()[:len(conditionConfigFile.Name())-5]
-					conditionConfig[gameId][conditionName] = condition
+					conditionId := conditionConfigFile.Name()[:len(conditionConfigFile.Name())-5]
+					condition.ConditionId = conditionId
+					conditionConfig[gameId][conditionId] = condition
 				}
 			}
 		}
@@ -289,8 +291,8 @@ func SetBadges() {
 
 				err = json.Unmarshal(data, &badge)
 				if err == nil {
-					badgeName := badgeConfigFile.Name()[:len(badgeConfigFile.Name())-5]
-					badgeConfig[gameId][badgeName] = badge
+					badgeId := badgeConfigFile.Name()[:len(badgeConfigFile.Name())-5]
+					badgeConfig[gameId][badgeId] = badge
 				}
 			}
 		}

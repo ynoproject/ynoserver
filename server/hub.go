@@ -725,7 +725,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		for _, c := range h.conditions {
 			if switchId == c.SwitchId && value == c.SwitchValue {
 				if !c.TimeTrial {
-					_, err := tryWritePlayerTag(sender.uuid, c.Tag)
+					_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 					if err != nil {
 						return false, err
 					}
@@ -760,7 +760,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			for _, c := range h.conditions {
 				if varId == c.VarId && value == c.VarValue {
 					if !c.TimeTrial {
-						_, err := tryWritePlayerTag(sender.uuid, c.Tag)
+						_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 						if err != nil {
 							return false, err
 						}
