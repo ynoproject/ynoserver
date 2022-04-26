@@ -251,7 +251,8 @@ func SetConditions() {
 
 				err = json.Unmarshal(data, &condition)
 				if err == nil {
-					conditionConfig[gameId][conditionConfigFile.Name()] = condition
+					conditionName := conditionConfigFile.Name()[:len(conditionConfigFile.Name())-5]
+					conditionConfig[gameId][conditionName] = condition
 				}
 			}
 		}
@@ -288,7 +289,8 @@ func SetBadges() {
 
 				err = json.Unmarshal(data, &badge)
 				if err == nil {
-					badgeConfig[gameId][badgeConfigFile.Name()] = badge
+					badgeName := badgeConfigFile.Name()[:len(badgeConfigFile.Name())-5]
+					badgeConfig[gameId][badgeName] = badge
 				}
 			}
 		}
