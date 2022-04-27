@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -51,6 +52,51 @@ func StartRankings() {
 			// Badge records needed for determining badge game
 			writeGameBadges()
 			badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
+		}
+	}
+
+	eventPeriods, err := readEventPeriodData()
+	if err != nil {
+		writeErrLog("SERVER", "exp", err.Error())
+	} else if len(eventPeriods) > 0 {
+		expCategory := &RankingCategory{CategoryId: "exp"}
+		rankingCategories = append(rankingCategories, expCategory)
+
+		if len(eventPeriods) > 1 {
+			expCategory.SubCategories = append(expCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
+		}
+		for _, eventPeriod := range eventPeriods {
+			expCategory.SubCategories = append(expCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal)})
+		}
+
+		eventLocationCountCategory := &RankingCategory{CategoryId: "eventLocationCount"}
+		rankingCategories = append(rankingCategories, eventLocationCountCategory)
+
+		if len(eventPeriods) > 1 {
+			eventLocationCountCategory.SubCategories = append(eventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
+		}
+		for _, eventPeriod := range eventPeriods {
+			eventLocationCountCategory.SubCategories = append(eventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal)})
+		}
+
+		freeEventLocationCountCategory := &RankingCategory{CategoryId: "freeEventLocationCount"}
+		rankingCategories = append(rankingCategories, freeEventLocationCountCategory)
+
+		if len(eventPeriods) > 1 {
+			freeEventLocationCountCategory.SubCategories = append(freeEventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
+		}
+		for _, eventPeriod := range eventPeriods {
+			freeEventLocationCountCategory.SubCategories = append(freeEventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal)})
+		}
+
+		eventLocationCompletionCategory := &RankingCategory{CategoryId: "eventLocationCompletion"}
+		rankingCategories = append(rankingCategories, eventLocationCompletionCategory)
+
+		if len(eventPeriods) > 1 {
+			eventLocationCompletionCategory.SubCategories = append(eventLocationCompletionCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
+		}
+		for _, eventPeriod := range eventPeriods {
+			eventLocationCompletionCategory.SubCategories = append(eventLocationCompletionCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal)})
 		}
 	}
 

@@ -542,6 +542,28 @@ func readCurrentEventPeriodId() (periodId int, err error) {
 	return periodId, nil
 }
 
+func readEventPeriodData() (eventPeriods []*EventPeriod, err error) {
+	results, err := db.Query("SELECT periodOrdinal, endDate FROM eventPeriods WHERE game = ? AND periodOrdinal > 0", config.gameName)
+	if err != nil {
+		return eventPeriods, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		eventPeriod := &EventPeriod{}
+
+		err := results.Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate)
+		if err != nil {
+			return eventPeriods, err
+		}
+
+		eventPeriods = append(eventPeriods, eventPeriod)
+	}
+
+	return eventPeriods, nil
+}
+
 func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 	result := db.QueryRow("SELECT periodOrdinal, endDate FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
 
@@ -1086,7 +1108,7 @@ func readRankingEntryPage(playerUuid string, categoryId string, subCategoryId st
 func readRankingsPaged(categoryId string, subCategoryId string, page int) (rankings []*Ranking, err error) {
 	var valueType string
 	switch categoryId {
-	case "expCompletion":
+	case "eventLocationCompletion":
 		valueType = "Float"
 	default:
 		valueType = "Int"
@@ -1121,7 +1143,7 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 	var valueType string
 	switch categoryId {
-	case "expCompletion":
+	case "eventLocationCompletion":
 		valueType = "Float"
 	default:
 		valueType = "Int"
@@ -1132,24 +1154,50 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		return err
 	}
 
-	filterGame := subCategoryId != "all"
+	isFiltered := subCategoryId != "all"
 
 	query := "INSERT INTO rankingEntries (categoryId, subCategoryId, position, uuid, value" + valueType + ", timestamp) "
 
 	switch categoryId {
 	case "badgeCount":
 		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), a.uuid, COUNT(pb.uuid), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid"
-		if filterGame {
+		if isFiltered {
 			query += " AND apb.badgeId = b.badgeId"
 		}
 		query += ") FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid"
-		if filterGame {
+		if isFiltered {
 			query += " JOIN badges b ON b.badgeId = pb.badgeId AND b.game = ?"
 		}
 		query += " GROUP BY a.uuid ORDER BY 5 DESC, 6"
+	case "exp":
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(ec.exp) DESC), ec.uuid, SUM(ec.exp), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec WHERE ec.playerEvent = 0"
+		if isFiltered {
+			query += " AND ec.periodId = ?"
+		}
+		query += " GROUP BY ec.uuid ORDER BY 5 DESC, 6"
+	case "eventLocationCount":
+		fallthrough
+	case "freeEventLocationCount":
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec WHERE"
+		if isFiltered {
+			query += "ec.periodId = ? AND"
+		}
+		query += " playerEvent = "
+		if categoryId == "eventLocationCount" {
+			query += "0"
+		} else {
+			query += "1"
+		}
+		query += " GROUP BY ec.uuid ORDER BY 5 DESC, 6"
+	case "eventLocationCompletion":
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count DESC), a.uuid, COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count, (SELECT MAX(aect.timestampCompleted) FROM eventCompletions aect WHERE aect.uuid = ec.uuid) FROM eventCompletions ec JOIN accounts a ON a.uuid = ec.uuid LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.playerEvent = 1 JOIN (SELECT COUNT(DISTINCT COALESCE(ael.title, apel.title)) count FROM eventCompletions aec LEFT JOIN eventLocations ael ON ael.id = aec.eventId AND aec.playerEvent = 0 LEFT JOIN playerEventLocations apel ON apel.id = aec.eventId AND aec.playerEvent = 1 WHERE (ael.title IS NOT NULL OR apel.title IS NOT NULL)) aec"
+		if isFiltered {
+			query += " WHERE COALESCE(el.periodId, pel.periodId) = ?"
+		}
+		query += " GROUP BY a.user ORDER BY 5 DESC, 6"
 	}
 
-	if filterGame {
+	if isFiltered {
 		_, err = db.Exec(query, categoryId, subCategoryId, subCategoryId)
 	} else {
 		_, err = db.Exec(query, categoryId, subCategoryId)
