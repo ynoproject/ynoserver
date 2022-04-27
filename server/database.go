@@ -995,7 +995,7 @@ func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success
 }
 
 func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
-	results, err := db.Query("SELECT categoryId, game FROM rankingCategories WHERE game IN ('', ?)", config.gameName)
+	results, err := db.Query("SELECT categoryId, game FROM rankingCategories WHERE game IN ('', ?) ORDER BY order", config.gameName)
 	if err != nil {
 		return rankingCategories, err
 	}
@@ -1014,7 +1014,7 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		rankingCategories = append(rankingCategories, rankingCategory)
 	}
 
-	results, err = db.Query("SELECT sc.categoryId, sc.subCategoryId, sc.game, CEILING(COUNT(r.uuid) / 25) FROM rankingSubCategories sc JOIN rankingEntries r ON r.categoryId = sc.categoryId AND r.subCategoryId = sc.subCategoryId WHERE sc.game IN ('', ?) GROUP BY sc.categoryId, sc.subCategoryId, sc.game ORDER BY 1", config.gameName)
+	results, err = db.Query("SELECT sc.categoryId, sc.subCategoryId, sc.game, CEILING(COUNT(r.uuid) / 25) FROM rankingSubCategories sc JOIN rankingEntries r ON r.categoryId = sc.categoryId AND r.subCategoryId = sc.subCategoryId WHERE sc.game IN ('', ?) GROUP BY sc.categoryId, sc.subCategoryId, sc.game ORDER BY 1, sc.order", config.gameName)
 	if err != nil {
 		return rankingCategories, err
 	}
@@ -1082,7 +1082,7 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 		valueType = "Int"
 	}
 
-	results, err := db.Query("SELECT r.position, a.user, pd.rank, a.badge, pgd.systemName, r.value"+valueType+" FROM rankingEntries r JOIN accounts a ON a.uuid = r.uuid JOIN players pd ON pd.uuid = a.uuid LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = ? WHERE r.categoryId = ? AND r.subCategoryId = ? ORDER BY 1, COALESCE(r.timestamp, a.timestampRegistered) DESC LIMIT "+strconv.Itoa((page-1)*25)+", 25", config.gameName, categoryId, subCategoryId)
+	results, err := db.Query("SELECT r.position, a.user, pd.rank, a.badge, COALESCE(pgd.systemName, ''), r.value"+valueType+" FROM rankingEntries r JOIN accounts a ON a.uuid = r.uuid JOIN players pd ON pd.uuid = a.uuid LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = ? WHERE r.categoryId = ? AND r.subCategoryId = ? ORDER BY 1, COALESCE(r.timestamp, a.timestampRegistered) DESC LIMIT "+strconv.Itoa((page-1)*25)+", 25", config.gameName, categoryId, subCategoryId)
 	if err != nil {
 		return rankings, err
 	}
