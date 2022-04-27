@@ -112,6 +112,7 @@ func main() {
 
 	server.StartApi()
 	server.StartEvents()
+	server.StartRankings()
 
 	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":"+strconv.Itoa(config.Port), nil), 500)
 }

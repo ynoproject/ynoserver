@@ -45,51 +45,13 @@ type PartyMember struct {
 	Online        bool   `json:"online"`
 }
 
-type EventPeriod struct {
-	PeriodOrdinal int       `json:"periodOrdinal"`
-	EndDate       time.Time `json:"endDate"`
-}
-
-type EventExp struct {
-	WeekExp   int `json:"weekExp"`
-	PeriodExp int `json:"periodExp"`
-	TotalExp  int `json:"totalExp"`
-}
-
-type EventLocation struct {
-	Id       int       `json:"id"`
-	Type     int       `json:"type"`
-	Title    string    `json:"title"`
-	TitleJP  string    `json:"titleJP"`
-	Depth    int       `json:"depth"`
-	Exp      int       `json:"exp"`
-	EndDate  time.Time `json:"endDate"`
-	Complete bool      `json:"complete"`
-}
-
-type EventLocationData struct {
-	Title   string   `json:"title"`
-	TitleJP string   `json:"titleJP"`
-	Depth   int      `json:"depth"`
-	MapIds  []string `json:"mapIds"`
-}
-
-type BadgePercentUnlocked struct {
-	BadgeId string  `json:"badgeId"`
-	Percent float64 `json:"percent"`
-}
-
-type TimeTrialRecord struct {
-	MapId   int `json:"mapId"`
-	Seconds int `json:"seconds"`
-}
-
 func StartApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/saveSync", handleSaveSync)
 	http.HandleFunc("/api/eventLocations", handleEventLocations)
 	http.HandleFunc("/api/badge", handleBadge)
+	http.HandleFunc("/api/ranking", handleRanking)
 	http.HandleFunc("/api/ploc", handlePloc)
 
 	http.HandleFunc("/api/register", handleRegister)
@@ -916,6 +878,91 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("ok"))
+}
+
+func handleRanking(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+	var banned bool
+
+	session := r.Header.Get("X-Session")
+	if session == "" {
+		handleError(w, r, "session token not specified")
+		return
+	} else {
+		uuid, _, _, _, banned = readPlayerDataFromSession(session)
+	}
+
+	if banned {
+		handleError(w, r, "player is banned")
+		return
+	}
+
+	commandParam, ok := r.URL.Query()["command"]
+	if !ok || len(commandParam) < 1 {
+		handleError(w, r, "command not specified")
+		return
+	}
+
+	switch commandParam[0] {
+	case "categories":
+		rankingCategories, err := readRankingCategories()
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		rankingCategoriesJson, err := json.Marshal(rankingCategories)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(rankingCategoriesJson))
+		return
+	case "list":
+		categoryParam, ok := r.URL.Query()["category"]
+		if !ok || len(categoryParam) < 1 {
+			handleError(w, r, "category not specified")
+			return
+		}
+
+		subCategoryParam, ok := r.URL.Query()["subCategory"]
+		if !ok || len(subCategoryParam) < 1 {
+			handleError(w, r, "subCategory not specified")
+			return
+		}
+
+		var page int
+		pageParam, ok := r.URL.Query()["page"]
+		if !ok || len(pageParam) < 1 {
+			playerPage, err := readRankingEntryPage(uuid, categoryParam[0], subCategoryParam[0])
+			if err != nil {
+				page = 1
+			} else {
+				page = playerPage
+			}
+		} else {
+			pageInt, err := strconv.Atoi(pageParam[0])
+			if err != nil {
+				page = 1
+			} else {
+				page = pageInt
+			}
+		}
+		rankings, err := readRankingsPaged(categoryParam[0], subCategoryParam[0], page)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		rankingsJson, err := json.Marshal(rankings)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(rankingsJson))
+		return
+	default:
+		handleError(w, r, "unknown command")
+		return
+	}
 }
 
 func handlePloc(w http.ResponseWriter, r *http.Request) {

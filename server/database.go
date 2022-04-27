@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -973,4 +974,147 @@ func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success
 	}
 
 	return true, nil
+}
+
+func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
+	results, err := db.Query("SELECT categoryId, game FROM rankingCategories WHERE game IN ('', ?)", config.gameName)
+	if err != nil {
+		return rankingCategories, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		rankingCategory := &RankingCategory{}
+
+		results.Scan(&rankingCategory.CategoryId, &rankingCategory.Game)
+
+		if err != nil {
+			return rankingCategories, err
+		}
+
+		rankingCategories = append(rankingCategories, rankingCategory)
+	}
+
+	results, err = db.Query("SELECT categoryId, subCategoryId, game FROM rankingSubCategories WHERE game IN ('', ?) ORDER BY categoryId", config.gameName)
+	if err != nil {
+		return rankingCategories, err
+	}
+
+	defer results.Close()
+
+	var lastCategoryId string
+	var lastCategory *RankingCategory
+
+	for results.Next() {
+		rankingSubCategory := &RankingSubCategory{}
+
+		var categoryId string
+		results.Scan(&categoryId, &rankingSubCategory.SubCategoryId, &rankingSubCategory.Game)
+
+		if err != nil {
+			return rankingCategories, err
+		}
+
+		if lastCategoryId != categoryId {
+			lastCategoryId = categoryId
+			for _, rankingCategory := range rankingCategories {
+				if rankingCategory.CategoryId == lastCategoryId {
+					lastCategory = rankingCategory
+				}
+			}
+		}
+
+		lastCategory.SubCategories = append(lastCategory.SubCategories, *rankingSubCategory)
+	}
+
+	return rankingCategories, nil
+}
+
+func writeRankingCategory(categoryId string, game string, order int) (err error) {
+	_, err = db.Exec("INSERT INTO rankingCategories (categoryId, game, order) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE order = ?", categoryId, game, order, order)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readRankingEntryPage(playerUuid string, categoryId string, subCategoryId string) (page int, err error) {
+	results := db.QueryRow("SELECT FLOOR(r.rowNum / 50) + 1 FROM (SELECT r.uuid, ROW_NUMBER() OVER (ORDER BY r.position) rowNum FROM rankingEntries r WHERE r.categoryId = ? AND r.subCategoryId = ?) r WHERE r.uuid = ?", categoryId, subCategoryId, playerUuid)
+	err = results.Scan(&page)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 1, nil
+		}
+		return 1, err
+	}
+
+	return page, nil
+}
+
+func readRankingsPaged(categoryId string, subCategoryId string, page int) (rankings []*Ranking, err error) {
+	var valueType string
+	switch categoryId {
+	case "expCompletion":
+		valueType = "Float"
+	default:
+		valueType = "Int"
+	}
+
+	results, err := db.Query("SELECT r.position, a.user, pd.rank, a.badge, r.value"+valueType+" FROM rankingEntries r JOIN accounts a ON a.uuid = r.uuid JOIN players pd ON pd.uuid = a.uuid WHERE r.categoryId = ? AND r.subCategoryId = ? ORDER BY 1, a.timestampRegistered DESC LIMIT "+strconv.Itoa((page-1)*50)+", 50", categoryId, subCategoryId)
+	if err != nil {
+		return rankings, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		ranking := &Ranking{}
+
+		if valueType == "Int" {
+			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.ValueInt)
+		} else {
+			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.ValueFloat)
+		}
+		if err != nil {
+			return rankings, err
+		}
+
+		rankings = append(rankings, ranking)
+	}
+
+	return rankings, nil
+}
+
+func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
+	var valueType string
+	switch categoryId {
+	case "expCompletion":
+		valueType = "Float"
+	default:
+		valueType = "Int"
+	}
+
+	var args []interface{}
+
+	query := "INSERT INTO rankingEntries (categoryId, subCategoryId, position, uuid, value" + valueType + ") "
+
+	switch categoryId {
+	case "badgeCount":
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(b.uuid) DESC), a.uuid, COUNT(b.uuid) FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid"
+		args = append(args, categoryId)
+		args = append(args, subCategoryId)
+		if subCategoryId != "" {
+			query += " AND b.game = ?"
+			args = append(args, subCategoryId)
+		}
+		query += " GROUP BY a.uuid ORDER BY 5 DESC"
+	}
+
+	_, err = db.Exec(query, args)
+
+	return nil
 }

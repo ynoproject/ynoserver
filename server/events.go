@@ -11,6 +11,35 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
+type EventPeriod struct {
+	PeriodOrdinal int       `json:"periodOrdinal"`
+	EndDate       time.Time `json:"endDate"`
+}
+
+type EventExp struct {
+	WeekExp   int `json:"weekExp"`
+	PeriodExp int `json:"periodExp"`
+	TotalExp  int `json:"totalExp"`
+}
+
+type EventLocation struct {
+	Id       int       `json:"id"`
+	Type     int       `json:"type"`
+	Title    string    `json:"title"`
+	TitleJP  string    `json:"titleJP"`
+	Depth    int       `json:"depth"`
+	Exp      int       `json:"exp"`
+	EndDate  time.Time `json:"endDate"`
+	Complete bool      `json:"complete"`
+}
+
+type EventLocationData struct {
+	Title   string   `json:"title"`
+	TitleJP string   `json:"titleJP"`
+	Depth   int      `json:"depth"`
+	MapIds  []string `json:"mapIds"`
+}
+
 func StartEvents() {
 	if config.gameName == "2kki" {
 		s := gocron.NewScheduler(time.UTC)

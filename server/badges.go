@@ -8,6 +8,20 @@ import (
 	"strings"
 )
 
+type Condition struct {
+	ConditionId string `json:"conditionId"`
+	Map         int    `json:"map"`
+	SwitchId    int    `json:"switchId"`
+	SwitchValue bool   `json:"switchValue"`
+	SwitchDelay bool   `json:"switchDelay"`
+	VarId       int    `json:"varId"`
+	VarValue    int    `json:"varValue"`
+	VarDelay    bool   `json:"varDelay"`
+	Trigger     string `json:"trigger"`
+	Value       string `json:"value"`
+	TimeTrial   bool   `json:"timeTrial"`
+}
+
 type Badge struct {
 	BadgeId   string `json:"badgeId"`
 	Order     int    `json:"order"`
@@ -32,29 +46,25 @@ type PlayerBadge struct {
 	Seconds   int     `json:"seconds"`
 	Secret    bool    `json:"secret"`
 	Overlay   bool    `json:"overlay"`
-	Percent   float64 `json:"percent"`
+	Percent   float32 `json:"percent"`
 	Unlocked  bool    `json:"unlocked"`
 	NewUnlock bool    `json:"newUnlock"`
 }
 
-type Condition struct {
-	ConditionId string `json:"conditionId"`
-	Map         int    `json:"map"`
-	SwitchId    int    `json:"switchId"`
-	SwitchValue bool   `json:"switchValue"`
-	SwitchDelay bool   `json:"switchDelay"`
-	VarId       int    `json:"varId"`
-	VarValue    int    `json:"varValue"`
-	VarDelay    bool   `json:"varDelay"`
-	Trigger     string `json:"trigger"`
-	Value       string `json:"value"`
-	TimeTrial   bool   `json:"timeTrial"`
+type BadgePercentUnlocked struct {
+	BadgeId string  `json:"badgeId"`
+	Percent float32 `json:"percent"`
+}
+
+type TimeTrialRecord struct {
+	MapId   int `json:"mapId"`
+	Seconds int `json:"seconds"`
 }
 
 func getHubConditions(roomName string) (hubConditions []*Condition) {
-	if _, ok := conditions[config.gameName]; ok {
+	if gameConditions, ok := conditions[config.gameName]; ok {
 		mapId, _ := strconv.Atoi(roomName)
-		for _, condition := range conditions[config.gameName] {
+		for _, condition := range gameConditions {
 			if condition.Map == mapId {
 				hubConditions = append(hubConditions, condition)
 			}
@@ -158,8 +168,8 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 
 	for badgeId, playerBadge := range playerBadgesMap {
 		if playerBadge.Secret {
-			if _, ok := badges[playerBadge.Game][badgeId]; ok {
-				parentBadgeId := badges[playerBadge.Game][badgeId].Parent
+			if badge, ok := badges[playerBadge.Game][badgeId]; ok {
+				parentBadgeId := badge.Parent
 				if parentBadgeId != "" {
 					playerBadge.Secret = !playerBadgesMap[parentBadgeId].Unlocked
 				}
