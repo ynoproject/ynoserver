@@ -309,6 +309,4 @@ func SetBadges() {
 	}
 
 	badges = badgeConfig
-
-	writeGameBadges()
 }
