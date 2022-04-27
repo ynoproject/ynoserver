@@ -1105,23 +1105,22 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		return err
 	}
 
-	var args []interface{}
-
 	query := "INSERT INTO rankingEntries (categoryId, subCategoryId, position, uuid, value" + valueType + ") "
 
 	switch categoryId {
 	case "badgeCount":
 		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(b.uuid) DESC), a.uuid, COUNT(b.uuid) FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid"
-		args = append(args, categoryId)
-		args = append(args, subCategoryId)
 		if subCategoryId != "" {
 			query += " AND b.game = ?"
-			args = append(args, subCategoryId)
 		}
 		query += " GROUP BY a.uuid ORDER BY 5 DESC"
 	}
 
-	_, err = db.Exec(query, args)
+	if subCategoryId == "" {
+		_, err = db.Exec(query, categoryId, subCategoryId)
+	} else {
+		_, err = db.Exec(query, categoryId, subCategoryId, subCategoryId)
+	}
 	if err != nil {
 		return err
 	}
