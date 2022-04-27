@@ -67,7 +67,7 @@ func StartRankings() {
 				}
 				err := updateRankingEntries(category.CategoryId, subCategory.SubCategoryId)
 				if err != nil {
-					writeErrLog("SERVER", category.CategoryId+"/"+subCategory.SubCategoryId, "failed to update rankings")
+					writeErrLog("SERVER", category.CategoryId+"/"+subCategory.SubCategoryId, err.Error())
 				}
 			}
 		}
