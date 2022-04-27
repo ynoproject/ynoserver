@@ -23,7 +23,6 @@ type Condition struct {
 }
 
 type Badge struct {
-	BadgeId   string `json:"badgeId"`
 	Order     int    `json:"order"`
 	ReqType   string `json:"reqType"`
 	ReqString string `json:"reqString"`

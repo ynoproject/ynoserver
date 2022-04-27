@@ -835,8 +835,8 @@ func writeGameBadges() (err error) {
 	}
 
 	if gameBadges, ok := badges[config.gameName]; ok {
-		for _, badge := range gameBadges {
-			_, err = db.Exec("INSERT INTO badges (badgeId, game) VALUES (?, ?)", badge.BadgeId, config.gameName)
+		for badgeId := range gameBadges {
+			_, err = db.Exec("INSERT INTO badges (badgeId, game) VALUES (?, ?)", badgeId, config.gameName)
 			if err != nil {
 				return err
 			}
