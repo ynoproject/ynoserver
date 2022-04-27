@@ -910,12 +910,35 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+
 		rankingCategoriesJson, err := json.Marshal(rankingCategories)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
+
 		w.Write([]byte(rankingCategoriesJson))
+		return
+	case "page":
+		categoryParam, ok := r.URL.Query()["category"]
+		if !ok || len(categoryParam) < 1 {
+			handleError(w, r, "category not specified")
+			return
+		}
+
+		subCategoryParam, ok := r.URL.Query()["subCategory"]
+		if !ok || len(subCategoryParam) < 1 {
+			handleError(w, r, "subCategory not specified")
+			return
+		}
+
+		playerPage, err := readRankingEntryPage(uuid, categoryParam[0], subCategoryParam[0])
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		w.Write([]byte(strconv.Itoa(playerPage)))
 		return
 	case "list":
 		categoryParam, ok := r.URL.Query()["category"]
@@ -933,12 +956,7 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 		var page int
 		pageParam, ok := r.URL.Query()["page"]
 		if !ok || len(pageParam) < 1 {
-			playerPage, err := readRankingEntryPage(uuid, categoryParam[0], subCategoryParam[0])
-			if err != nil {
-				page = 1
-			} else {
-				page = playerPage
-			}
+			page = 1
 		} else {
 			pageInt, err := strconv.Atoi(pageParam[0])
 			if err != nil {
@@ -947,16 +965,19 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 				page = pageInt
 			}
 		}
+
 		rankings, err := readRankingsPaged(categoryParam[0], subCategoryParam[0], page)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
+
 		rankingsJson, err := json.Marshal(rankings)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
+
 		w.Write([]byte(rankingsJson))
 		return
 	default:
