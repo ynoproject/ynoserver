@@ -1178,15 +1178,20 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 	case "eventLocationCount":
 		fallthrough
 	case "freeEventLocationCount":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec WHERE"
+		isFree := categoryId == "freeEventLocationCount"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec "
 		if isFiltered {
-			query += "ec.periodId = ? AND"
+			if isFree {
+				query += "JOIN playerEventLocations pel ON pel.eventId = ec.eventId AND pel.periodId = ? "
+			} else {
+				query += "JOIN eventLocations el ON el.eventId = ec.eventId AND el.periodId = ? "
+			}
 		}
-		query += " playerEvent = "
-		if categoryId == "eventLocationCount" {
-			query += "0"
-		} else {
+		query += "WHERE ec.playerEvent = "
+		if isFree {
 			query += "1"
+		} else {
+			query += "0"
 		}
 		query += " GROUP BY ec.uuid ORDER BY 5 DESC, 6"
 	case "eventLocationCompletion":
