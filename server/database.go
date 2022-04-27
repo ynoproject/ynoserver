@@ -995,7 +995,7 @@ func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success
 }
 
 func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
-	results, err := db.Query("SELECT categoryId, game FROM rankingCategories WHERE game IN ('', ?) ORDER BY order", config.gameName)
+	results, err := db.Query("SELECT categoryId, game FROM rankingCategories WHERE game IN ('', ?) ORDER BY ordinal", config.gameName)
 	if err != nil {
 		return rankingCategories, err
 	}
@@ -1014,7 +1014,7 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		rankingCategories = append(rankingCategories, rankingCategory)
 	}
 
-	results, err = db.Query("SELECT sc.categoryId, sc.subCategoryId, sc.game, CEILING(COUNT(r.uuid) / 25) FROM rankingSubCategories sc JOIN rankingEntries r ON r.categoryId = sc.categoryId AND r.subCategoryId = sc.subCategoryId WHERE sc.game IN ('', ?) GROUP BY sc.categoryId, sc.subCategoryId, sc.game ORDER BY 1, sc.order", config.gameName)
+	results, err = db.Query("SELECT sc.categoryId, sc.subCategoryId, sc.game, CEILING(COUNT(r.uuid) / 25) FROM rankingSubCategories sc JOIN rankingEntries r ON r.categoryId = sc.categoryId AND r.subCategoryId = sc.subCategoryId WHERE sc.game IN ('', ?) GROUP BY sc.categoryId, sc.subCategoryId, sc.game ORDER BY 1, sc.ordinal", config.gameName)
 	if err != nil {
 		return rankingCategories, err
 	}
@@ -1050,7 +1050,7 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 }
 
 func writeRankingCategory(categoryId string, game string, order int) (err error) {
-	_, err = db.Exec("INSERT INTO rankingCategories (categoryId, game, order) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE order = ?", categoryId, game, order, order)
+	_, err = db.Exec("INSERT INTO rankingCategories (categoryId, game, ordinal) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE ordinal = ?", categoryId, game, order, order)
 
 	if err != nil {
 		return err
