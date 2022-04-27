@@ -1090,15 +1090,14 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 	defer results.Close()
 
 	for results.Next() {
-		var ranking *Ranking
+		ranking := &Ranking{}
 
 		if valueType == "Int" {
-			ranking := &RankingInt{}
-			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.SystemName, &ranking.Value)
+			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.SystemName, &ranking.ValueInt)
 		} else {
-			ranking := &RankingFloat{}
-			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.SystemName, &ranking.Value)
+			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.SystemName, &ranking.ValueFloat)
 		}
+
 		if err != nil {
 			return rankings, err
 		}
