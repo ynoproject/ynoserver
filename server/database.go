@@ -1082,7 +1082,7 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 		valueType = "Int"
 	}
 
-	results, err := db.Query("SELECT r.position, a.user, pd.rank, a.badge, pgd.systemName, r.value"+valueType+" FROM rankingEntries r JOIN accounts a ON a.uuid = r.uuid JOIN players pd ON pd.uuid = a.uuid LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = ? WHERE r.categoryId = ? AND r.subCategoryId = ? ORDER BY 1, a.timestampRegistered DESC LIMIT "+strconv.Itoa((page-1)*25)+", 25", config.gameName, categoryId, subCategoryId)
+	results, err := db.Query("SELECT r.position, a.user, pd.rank, a.badge, pgd.systemName, r.value"+valueType+" FROM rankingEntries r JOIN accounts a ON a.uuid = r.uuid JOIN players pd ON pd.uuid = a.uuid LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = ? WHERE r.categoryId = ? AND r.subCategoryId = ? ORDER BY 1, COALESCE(r.timestamp, a.timestampRegistered) DESC LIMIT "+strconv.Itoa((page-1)*25)+", 25", config.gameName, categoryId, subCategoryId)
 	if err != nil {
 		return rankings, err
 	}
@@ -1122,21 +1122,27 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		return err
 	}
 
-	query := "INSERT INTO rankingEntries (categoryId, subCategoryId, position, uuid, value" + valueType + ") "
+	filterGame := subCategoryId != "all"
+
+	query := "INSERT INTO rankingEntries (categoryId, subCategoryId, position, uuid, value" + valueType + ", timestamp) "
 
 	switch categoryId {
 	case "badgeCount":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), a.uuid, COUNT(pb.uuid) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid"
-		if subCategoryId != "" {
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), a.uuid, COUNT(pb.uuid), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid"
+		if filterGame {
+			query += " AND apb.badgeId = b.badgeId"
+		}
+		query += ") FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid"
+		if filterGame {
 			query += " JOIN badges b ON b.badgeId = pb.badgeId AND b.game = ?"
 		}
-		query += " GROUP BY a.uuid ORDER BY 5 DESC"
+		query += " GROUP BY a.uuid ORDER BY 5 DESC, 6"
 	}
 
-	if subCategoryId == "" {
-		_, err = db.Exec(query, categoryId, subCategoryId)
-	} else {
+	if filterGame {
 		_, err = db.Exec(query, categoryId, subCategoryId, subCategoryId)
+	} else {
+		_, err = db.Exec(query, categoryId, subCategoryId)
 	}
 	if err != nil {
 		return err
