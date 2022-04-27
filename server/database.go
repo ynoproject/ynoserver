@@ -1059,6 +1059,16 @@ func writeRankingCategory(categoryId string, game string, order int) (err error)
 	return nil
 }
 
+func writeRankingSubCategory(categoryId string, subCategoryId string, game string, order int) (err error) {
+	_, err = db.Exec("INSERT INTO rankingSubCategories (categoryId, subCategoryId, game, ordinal) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE ordinal = ?", categoryId, subCategoryId, game, order, order)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func readRankingEntryPage(playerUuid string, categoryId string, subCategoryId string) (page int, err error) {
 	results := db.QueryRow("SELECT FLOOR(r.rowNum / 25) + 1 FROM (SELECT r.uuid, ROW_NUMBER() OVER (ORDER BY r.position) rowNum FROM rankingEntries r WHERE r.categoryId = ? AND r.subCategoryId = ?) r WHERE r.uuid = ?", categoryId, subCategoryId, playerUuid)
 	err = results.Scan(&page)

@@ -54,6 +54,20 @@ func StartRankings() {
 		}
 	}
 
+	for c, category := range rankingCategories {
+		err := writeRankingCategory(category.CategoryId, category.Game, c)
+		if err != nil {
+			writeErrLog("SERVER", category.CategoryId, err.Error())
+			continue
+		}
+		for sc, subCategory := range category.SubCategories {
+			err = writeRankingSubCategory(category.CategoryId, subCategory.SubCategoryId, subCategory.Game, sc)
+			if err != nil {
+				writeErrLog("SERVER", category.CategoryId+"/"+subCategory.SubCategoryId, err.Error())
+			}
+		}
+	}
+
 	s.Every(1).Hour().Do(func() {
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
