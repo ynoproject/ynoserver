@@ -725,9 +725,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		for _, c := range h.conditions {
 			if switchId == c.SwitchId && value == c.SwitchValue {
 				if !c.TimeTrial {
-					_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-					if err != nil {
-						return false, err
+					if checkConditionCoords(c, sender) {
+						_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+						if err != nil {
+							return false, err
+						}
 					}
 				} else if config.gameName == "2kki" {
 					sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
@@ -748,10 +750,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			case 88:
 				for _, c := range h.conditions {
 					if c.TimeTrial && value < 3600 {
-						mapId, _ := strconv.Atoi(h.roomName)
-						_, err = tryWritePlayerTimeTrial(sender.uuid, mapId, value)
-						if err != nil {
-							return false, err
+						if checkConditionCoords(c, sender) {
+							mapId, _ := strconv.Atoi(h.roomName)
+							_, err = tryWritePlayerTimeTrial(sender.uuid, mapId, value)
+							if err != nil {
+								return false, err
+							}
 						}
 					}
 				}
@@ -760,9 +764,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			for _, c := range h.conditions {
 				if varId == c.VarId && value == c.VarValue {
 					if !c.TimeTrial {
-						_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-						if err != nil {
-							return false, err
+						if checkConditionCoords(c, sender) {
+							_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+							if err != nil {
+								return false, err
+							}
 						}
 					} else if config.gameName == "2kki" {
 						sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")

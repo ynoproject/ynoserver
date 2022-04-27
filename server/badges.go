@@ -11,6 +11,10 @@ import (
 type Condition struct {
 	ConditionId string `json:"conditionId"`
 	Map         int    `json:"map"`
+	MapX1       int    `json:"mapX1"`
+	MapY1       int    `json:"mapY1"`
+	MapX2       int    `json:"mapX2"`
+	MapY2       int    `json:"mapY2"`
 	SwitchId    int    `json:"switchId"`
 	SwitchValue bool   `json:"switchValue"`
 	SwitchDelay bool   `json:"switchDelay"`
@@ -91,7 +95,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 						varSyncType = 1
 					}
 					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + strconv.Itoa(varSyncType))
-				} else {
+				} else if checkConditionCoords(c, client) {
 					_, err := tryWritePlayerTag(client.uuid, c.ConditionId)
 					if err != nil {
 						writeErrLog(client.ip, h.roomName, err.Error())
@@ -116,6 +120,10 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 			}
 		}
 	}
+}
+
+func checkConditionCoords(condition *Condition, client *Client) bool {
+	return ((condition.MapX1 == 0 && condition.MapX2 == 0) || (condition.MapX1 <= client.x && condition.MapX2 >= client.x)) && ((condition.MapY1 == 0 && condition.MapY2 == 0) || (condition.MapY1 <= client.y && condition.MapY2 >= client.y))
 }
 
 func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string) (playerBadges []*PlayerBadge, err error) {
