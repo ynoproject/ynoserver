@@ -996,7 +996,7 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		rankingCategories = append(rankingCategories, rankingCategory)
 	}
 
-	results, err = db.Query("SELECT categoryId, subCategoryId, game FROM rankingSubCategories WHERE game IN ('', ?) ORDER BY categoryId", config.gameName)
+	results, err = db.Query("SELECT sc.categoryId, sc.subCategoryId, sc.game, CEILING(COUNT(r.uuid) / 25) FROM rankingSubCategories sc JOIN rankingEntries r ON r.categoryId = sc.categoryId AND r.subCategoryId = sc.subCategoryId WHERE sc.game IN ('', ?) GROUP BY sc.categoryId, sc.subCategoryId, sc.game ORDER BY 1", config.gameName)
 	if err != nil {
 		return rankingCategories, err
 	}
@@ -1010,7 +1010,7 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		rankingSubCategory := &RankingSubCategory{}
 
 		var categoryId string
-		results.Scan(&categoryId, &rankingSubCategory.SubCategoryId, &rankingSubCategory.Game)
+		results.Scan(&categoryId, &rankingSubCategory.SubCategoryId, &rankingSubCategory.Game, &rankingSubCategory.PageCount)
 
 		if err != nil {
 			return rankingCategories, err
@@ -1042,7 +1042,7 @@ func writeRankingCategory(categoryId string, game string, order int) (err error)
 }
 
 func readRankingEntryPage(playerUuid string, categoryId string, subCategoryId string) (page int, err error) {
-	results := db.QueryRow("SELECT FLOOR(r.rowNum / 50) + 1 FROM (SELECT r.uuid, ROW_NUMBER() OVER (ORDER BY r.position) rowNum FROM rankingEntries r WHERE r.categoryId = ? AND r.subCategoryId = ?) r WHERE r.uuid = ?", categoryId, subCategoryId, playerUuid)
+	results := db.QueryRow("SELECT FLOOR(r.rowNum / 25) + 1 FROM (SELECT r.uuid, ROW_NUMBER() OVER (ORDER BY r.position) rowNum FROM rankingEntries r WHERE r.categoryId = ? AND r.subCategoryId = ?) r WHERE r.uuid = ?", categoryId, subCategoryId, playerUuid)
 	err = results.Scan(&page)
 
 	if err != nil {
@@ -1064,7 +1064,7 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 		valueType = "Int"
 	}
 
-	results, err := db.Query("SELECT r.position, a.user, pd.rank, a.badge, r.value"+valueType+" FROM rankingEntries r JOIN accounts a ON a.uuid = r.uuid JOIN players pd ON pd.uuid = a.uuid WHERE r.categoryId = ? AND r.subCategoryId = ? ORDER BY 1, a.timestampRegistered DESC LIMIT "+strconv.Itoa((page-1)*50)+", 50", categoryId, subCategoryId)
+	results, err := db.Query("SELECT r.position, a.user, pd.rank, a.badge, pgd.systemName, r.value"+valueType+" FROM rankingEntries r JOIN accounts a ON a.uuid = r.uuid JOIN players pd ON pd.uuid = a.uuid LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = ? WHERE r.categoryId = ? AND r.subCategoryId = ? ORDER BY 1, a.timestampRegistered DESC LIMIT "+strconv.Itoa((page-1)*25)+", 25", config.gameName, categoryId, subCategoryId)
 	if err != nil {
 		return rankings, err
 	}
@@ -1072,12 +1072,14 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 	defer results.Close()
 
 	for results.Next() {
-		ranking := &Ranking{}
+		var ranking *Ranking
 
 		if valueType == "Int" {
-			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.ValueInt)
+			ranking := &RankingInt{}
+			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.SystemName, &ranking.Value)
 		} else {
-			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.ValueFloat)
+			ranking := &RankingFloat{}
+			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.SystemName, &ranking.Value)
 		}
 		if err != nil {
 			return rankings, err
@@ -1098,6 +1100,11 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		valueType = "Int"
 	}
 
+	_, err = db.Exec("DELETE FROM rankingEntries WHERE categoryId = ? AND subCategoryId = ?", categoryId, subCategoryId)
+	if err != nil {
+		return err
+	}
+
 	var args []interface{}
 
 	query := "INSERT INTO rankingEntries (categoryId, subCategoryId, position, uuid, value" + valueType + ") "
@@ -1115,6 +1122,9 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 	}
 
 	_, err = db.Exec(query, args)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
