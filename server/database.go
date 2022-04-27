@@ -1170,9 +1170,9 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		}
 		query += " GROUP BY a.uuid ORDER BY 5 DESC, 6"
 	case "exp":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(ec.exp) DESC), ec.uuid, SUM(ec.exp), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec WHERE ec.playerEvent = 0"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(ec.exp) DESC), ec.uuid, SUM(ec.exp), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0"
 		if isFiltered {
-			query += " AND ec.periodId = ?"
+			query += " AND el.periodId = ?"
 		}
 		query += " GROUP BY ec.uuid ORDER BY 5 DESC, 6"
 	case "eventLocationCount":
@@ -1182,9 +1182,9 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec "
 		if isFiltered {
 			if isFree {
-				query += "JOIN playerEventLocations pel ON pel.eventId = ec.eventId AND pel.periodId = ? "
+				query += "JOIN playerEventLocations pel ON pel.id = ec.eventId AND pel.periodId = ? "
 			} else {
-				query += "JOIN eventLocations el ON el.eventId = ec.eventId AND el.periodId = ? "
+				query += "JOIN eventLocations el ON el.id = ec.eventId AND el.periodId = ? "
 			}
 		}
 		query += "WHERE ec.playerEvent = "
