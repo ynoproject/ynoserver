@@ -828,6 +828,24 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 	return false, err
 }
 
+func writeGameBadges() (err error) {
+	_, err = db.Exec("DELETE FROM badges WHERE game = ?", config.gameName)
+	if err != nil {
+		return err
+	}
+
+	if gameBadges, ok := badges[config.gameName]; ok {
+		for _, badge := range gameBadges {
+			_, err = db.Exec("INSERT INTO badges (badgeId, game) VALUES (?, ?)", badge.BadgeId, config.gameName)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func readPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, err error) {
 	results, err := db.Query("SELECT badgeId FROM playerBadges WHERE uuid = ?", playerUuid)
 	if err != nil {
@@ -1109,9 +1127,9 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 
 	switch categoryId {
 	case "badgeCount":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(b.uuid) DESC), a.uuid, COUNT(b.uuid) FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), a.uuid, COUNT(pb.uuid) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid"
 		if subCategoryId != "" {
-			query += " AND b.game = ?"
+			query += " JOIN badges b ON b.badgeId = pb.badgeId AND b.game = ?"
 		}
 		query += " GROUP BY a.uuid ORDER BY 5 DESC"
 	}
