@@ -56,6 +56,7 @@ func StartApi() {
 
 	http.HandleFunc("/api/register", handleRegister)
 	http.HandleFunc("/api/login", handleLogin)
+	http.HandleFunc("/api/logout", handleLogout)
 
 	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
 		if config.gameName != "2kki" {

@@ -68,7 +68,28 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionId := randstr.String(32)
-	db.Exec("UPDATE accounts SET session = ? WHERE user = ?", sessionId, user[0])
+	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", sessionId, user[0])
+	db.Exec("UPDATE accounts SET timestampLoggedIn = CURRENT_TIMESTAMP() WHERE user = ?", sessionId, user[0])
 
 	w.Write([]byte(sessionId))
+}
+
+func handleLogout(w http.ResponseWriter, r *http.Request) {
+	session := r.Header.Get("X-Session")
+
+	if session == "" {
+		handleError(w, r, "session token not specified")
+		return
+	}
+
+	uuid, _, _, _, _ := readPlayerDataFromSession(session)
+
+	if uuid == "" {
+		handleError(w, r, "invalid session token")
+		return
+	}
+
+	db.Exec("DELETE FROM playerSessions WHERE sessionId = ? AND uuid = ?", session, uuid)
+
+	w.Write([]byte("ok"))
 }

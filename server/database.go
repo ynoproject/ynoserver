@@ -38,7 +38,7 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 }
 
 func readPlayerDataFromSession(session string) (uuid string, name string, rank int, badge string, banned bool) {
-	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned FROM accounts a JOIN players pd ON pd.uuid = a.uuid WHERE a.session = ?", session)
+	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", session)
 	err := result.Scan(&uuid, &name, &rank, &badge, &banned)
 
 	if err != nil {
@@ -105,7 +105,7 @@ func readPlayerInfo(ip string) (uuid string, name string, rank int) {
 }
 
 func readPlayerInfoFromSession(session string) (uuid string, name string, rank int, badge string) {
-	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge FROM accounts a JOIN players pd ON pd.uuid = a.uuid WHERE a.session = ?", session)
+	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", session)
 	err := results.Scan(&uuid, &name, &rank, &badge)
 
 	if err != nil {
@@ -902,7 +902,7 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 }
 
 func readBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, err error) {
-	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE aa.session IS NOT NULL) aa WHERE a.session IS NOT NULL GROUP BY b.badgeId")
+	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE aa.timestampLoggedIn IS NOT NULL) aa WHERE a.timestampLoggedIn IS NOT NULL GROUP BY b.badgeId")
 	if err != nil {
 		return unlockPercentages, err
 	}
