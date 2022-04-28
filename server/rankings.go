@@ -128,7 +128,7 @@ func StartRankings() {
 		}
 	}
 
-	s.Every(1).Hour().Do(func() {
+	s.Every(5).Minute().Do(func() {
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
 				// Use 2kki server to update 'all' rankings
