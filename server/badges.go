@@ -27,31 +27,34 @@ type Condition struct {
 }
 
 type Badge struct {
-	Order     int    `json:"order"`
-	ReqType   string `json:"reqType"`
-	ReqString string `json:"reqString"`
-	ReqInt    int    `json:"reqInt"`
-	Map       int    `json:"map"`
-	MapX      int    `json:"mapX"`
-	MapY      int    `json:"mapY"`
-	Secret    bool   `json:"secret"`
-	Parent    string `json:"parent"`
-	Overlay   bool   `json:"overlay"`
-	Dev       bool   `json:"dev"`
+	Order      int      `json:"order"`
+	ReqType    string   `json:"reqType"`
+	ReqInt     int      `json:"reqInt"`
+	ReqString  string   `json:"reqString"`
+	ReqStrings []string `json:"reqStrings"`
+	Map        int      `json:"map"`
+	MapX       int      `json:"mapX"`
+	MapY       int      `json:"mapY"`
+	Secret     bool     `json:"secret"`
+	Parent     string   `json:"parent"`
+	Overlay    bool     `json:"overlay"`
+	Dev        bool     `json:"dev"`
 }
 
 type PlayerBadge struct {
-	BadgeId   string  `json:"badgeId"`
-	Game      string  `json:"game"`
-	MapId     int     `json:"mapId"`
-	MapX      int     `json:"mapX"`
-	MapY      int     `json:"mapY"`
-	Seconds   int     `json:"seconds"`
-	Secret    bool    `json:"secret"`
-	Overlay   bool    `json:"overlay"`
-	Percent   float32 `json:"percent"`
-	Unlocked  bool    `json:"unlocked"`
-	NewUnlock bool    `json:"newUnlock"`
+	BadgeId    string  `json:"badgeId"`
+	Game       string  `json:"game"`
+	MapId      int     `json:"mapId"`
+	MapX       int     `json:"mapX"`
+	MapY       int     `json:"mapY"`
+	Seconds    int     `json:"seconds"`
+	Secret     bool    `json:"secret"`
+	Overlay    bool    `json:"overlay"`
+	Percent    float32 `json:"percent"`
+	Goals      int     `json:"goals"`
+	GoalsTotal int     `json:"goalsTotal"`
+	Unlocked   bool    `json:"unlocked"`
+	NewUnlock  bool    `json:"newUnlock"`
 }
 
 type BadgePercentUnlocked struct {
@@ -152,6 +155,20 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 			case "tag":
 				for _, tag := range playerTags {
 					if tag == gameBadge.ReqString {
+						playerBadge.Unlocked = true
+						break
+					}
+				}
+			case "tags":
+				playerBadge.GoalsTotal = len(gameBadge.ReqStrings)
+				for _, tag := range playerTags {
+					for _, cTag := range gameBadge.ReqStrings {
+						if tag == cTag {
+							playerBadge.Goals++
+							break
+						}
+					}
+					if playerBadge.Goals == playerBadge.GoalsTotal {
 						playerBadge.Unlocked = true
 						break
 					}
