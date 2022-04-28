@@ -59,7 +59,7 @@ func StartRankings() {
 	if err != nil {
 		writeErrLog("SERVER", "exp", err.Error())
 	} else if len(eventPeriods) > 0 {
-		expCategory := &RankingCategory{CategoryId: "exp"}
+		expCategory := &RankingCategory{CategoryId: "exp", Game: config.gameName}
 		rankingCategories = append(rankingCategories, expCategory)
 
 		if len(eventPeriods) > 1 {
@@ -69,7 +69,7 @@ func StartRankings() {
 			expCategory.SubCategories = append(expCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal)})
 		}
 
-		eventLocationCountCategory := &RankingCategory{CategoryId: "eventLocationCount"}
+		eventLocationCountCategory := &RankingCategory{CategoryId: "eventLocationCount", Game: config.gameName}
 		rankingCategories = append(rankingCategories, eventLocationCountCategory)
 
 		if len(eventPeriods) > 1 {
@@ -79,7 +79,7 @@ func StartRankings() {
 			eventLocationCountCategory.SubCategories = append(eventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal)})
 		}
 
-		freeEventLocationCountCategory := &RankingCategory{CategoryId: "freeEventLocationCount"}
+		freeEventLocationCountCategory := &RankingCategory{CategoryId: "freeEventLocationCount", Game: config.gameName}
 		rankingCategories = append(rankingCategories, freeEventLocationCountCategory)
 
 		if len(eventPeriods) > 1 {
@@ -89,7 +89,7 @@ func StartRankings() {
 			freeEventLocationCountCategory.SubCategories = append(freeEventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal)})
 		}
 
-		eventLocationCompletionCategory := &RankingCategory{CategoryId: "eventLocationCompletion"}
+		eventLocationCompletionCategory := &RankingCategory{CategoryId: "eventLocationCompletion", Game: config.gameName}
 		rankingCategories = append(rankingCategories, eventLocationCompletionCategory)
 
 		if len(eventPeriods) > 1 {
