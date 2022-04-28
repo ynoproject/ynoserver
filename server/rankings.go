@@ -100,6 +100,20 @@ func StartRankings() {
 		}
 	}
 
+	if config.gameName == "2kki" {
+		timeTrialMapIds, err := readTimeTrialMapIds()
+		if err != nil {
+			writeErrLog("SERVER", "timeTrial", err.Error())
+		} else if len(timeTrialMapIds) > 0 {
+			timeTrialCategory := &RankingCategory{CategoryId: "timeTrial", Game: config.gameName}
+			rankingCategories = append(rankingCategories, timeTrialCategory)
+
+			for _, mapId := range timeTrialMapIds {
+				timeTrialCategory.SubCategories = append(timeTrialCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(mapId), Game: config.gameName})
+			}
+		}
+	}
+
 	for c, category := range rankingCategories {
 		err := writeRankingCategory(category.CategoryId, category.Game, c)
 		if err != nil {
