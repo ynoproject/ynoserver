@@ -886,8 +886,7 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 
 	session := r.Header.Get("X-Session")
 	if session == "" {
-		handleError(w, r, "session token not specified")
-		return
+		uuid, _, banned = readPlayerData(getIp(r))
 	} else {
 		uuid, _, _, _, banned = readPlayerDataFromSession(session)
 	}
@@ -932,10 +931,14 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		playerPage, err := readRankingEntryPage(uuid, categoryParam[0], subCategoryParam[0])
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
+		playerPage := 1
+		if session != "" {
+			var err error
+			playerPage, err = readRankingEntryPage(uuid, categoryParam[0], subCategoryParam[0])
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
 		}
 
 		w.Write([]byte(strconv.Itoa(playerPage)))
