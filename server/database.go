@@ -72,6 +72,10 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		return err
 	}
 
+	if allClients[recipientUUID] != nil { //close connection
+		close(allClients[recipientUUID].send)
+	}
+
 	return nil
 }
 
