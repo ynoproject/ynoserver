@@ -152,7 +152,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 			if gameBadge.Dev && playerRank < 2 {
 				continue
 			}
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, Overlay: gameBadge.Overlay}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay}
 			switch gameBadge.ReqType {
 			case "tag":
 				for _, tag := range playerTags {
