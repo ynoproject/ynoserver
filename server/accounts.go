@@ -69,7 +69,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	sessionId := randstr.String(32)
 	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", sessionId, user[0])
-	db.Exec("UPDATE accounts SET timestampLoggedIn = CURRENT_TIMESTAMP() WHERE user = ?", sessionId, user[0])
+	db.Exec("UPDATE accounts SET timestampLoggedIn = CURRENT_TIMESTAMP() WHERE user = ?", user[0])
 
 	w.Write([]byte(sessionId))
 }
