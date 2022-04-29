@@ -102,7 +102,7 @@ func StartApi() {
 					return
 				}
 
-				if strings.HasPrefix(string(body), "{\"error\"") {
+				if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
 					writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
 				} else {
 					_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response) VALUES (?, ?, ?)", actionParam[0], queryString, string(body))
