@@ -861,8 +861,8 @@ func writeGameBadges() (err error) {
 	}
 
 	if gameBadges, ok := badges[config.gameName]; ok {
-		for badgeId := range gameBadges {
-			_, err = db.Exec("INSERT INTO badges (badgeId, game) VALUES (?, ?)", badgeId, config.gameName)
+		for badgeId, badge := range gameBadges {
+			_, err = db.Exec("INSERT INTO badges (badgeId, game, dev) VALUES (?, ?, ?)", badgeId, config.gameName, badge.Dev)
 			if err != nil {
 				return err
 			}
@@ -1186,13 +1186,9 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 
 	switch categoryId {
 	case "badgeCount":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), a.uuid, COUNT(pb.uuid), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), a.uuid, COUNT(pb.uuid), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid JOIN badges b ON b.badgeId = pb.badgeId WHERE b.dev = 0"
 		if isFiltered {
-			query += " AND apb.badgeId = b.badgeId"
-		}
-		query += ") FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid"
-		if isFiltered {
-			query += " JOIN badges b ON b.badgeId = pb.badgeId AND b.game = ?"
+			query += " AND b.game = ?"
 		}
 		query += " GROUP BY a.uuid ORDER BY 5 DESC, 6"
 	case "exp":
