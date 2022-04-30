@@ -737,7 +737,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		ret := -1
-		if client, found := allClients[uuid]; found && (client.x > 0 || client.y > 0) {
+		if _, found := allClients[uuid]; found {
 			if !free {
 				exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
 				if err != nil {
