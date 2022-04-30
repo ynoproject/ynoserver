@@ -93,3 +93,30 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte("ok"))
 }
+
+func handleChangePw(w http.ResponseWriter, r *http.Request) {
+	//GET params user, old password, new password
+	user, password, newpassword := r.URL.Query()["user"], r.URL.Query()["password"], r.URL.Query()["newpassword"]
+	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len(newpassword) < 1 {
+		handleError(w, r, "bad response")
+		return
+	}
+
+	var userPassHash string
+	db.QueryRow("SELECT pass FROM accounts WHERE user = ?", user[0]).Scan(&userPassHash)
+
+	if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password[0])) != nil {
+		handleError(w, r, "bad login")
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newpassword[0]), bcrypt.DefaultCost)
+	if err != nil {
+		handleError(w, r, "bcrypt error")
+		return
+	}
+
+	db.Exec("UPDATE accounts SET password = ? WHERE user = ?", hashedPassword, user[0])
+
+	w.Write([]byte("ok"))
+}
