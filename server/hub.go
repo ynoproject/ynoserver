@@ -736,7 +736,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 						sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 					}
 				}
-				break
 			} else if len(c.SwitchIds) > 0 {
 				for s, sId := range c.SwitchIds {
 					if switchId == sId {

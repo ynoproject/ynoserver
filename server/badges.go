@@ -91,37 +91,36 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 		return
 	}
 	for _, c := range h.conditions {
-		if !c.TimeTrial {
-			if c.Trigger == trigger && (trigger == "" || value == c.Value) {
-				if c.SwitchId > 0 || len(c.SwitchIds) > 0 {
-					switchId := c.SwitchId
-					if len(c.SwitchIds) > 0 {
-						switchId = c.SwitchIds[0]
+		timeTrial := c.TimeTrial && config.gameName == "2kki"
+		if timeTrial || (c.Trigger == trigger && (trigger == "" || value == c.Value)) {
+			if c.SwitchId > 0 || len(c.SwitchIds) > 0 {
+				switchId := c.SwitchId
+				if len(c.SwitchIds) > 0 {
+					switchId = c.SwitchIds[0]
+				}
+				switchSyncType := 2
+				if c.SwitchDelay {
+					switchSyncType = 1
+				}
+				client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + strconv.Itoa(switchSyncType))
+			} else if c.VarId > 0 || len(c.VarIds) > 0 {
+				varId := c.VarId
+				if len(c.VarIds) > 0 {
+					varId = c.VarIds[0]
+				}
+				varSyncType := 2
+				if c.VarDelay {
+					varSyncType = 1
+				}
+				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + strconv.Itoa(varSyncType))
+			} else if checkConditionCoords(c, client) {
+				if !timeTrial {
+					_, err := tryWritePlayerTag(client.uuid, c.ConditionId)
+					if err != nil {
+						writeErrLog(client.ip, h.roomName, err.Error())
 					}
-					switchSyncType := 2
-					if c.SwitchDelay {
-						switchSyncType = 1
-					}
-					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + strconv.Itoa(switchSyncType))
-				} else if c.VarId > 0 || len(c.VarIds) > 0 {
-					varId := c.VarId
-					if len(c.VarIds) > 0 {
-						varId = c.VarIds[0]
-					}
-					varSyncType := 2
-					if c.VarDelay {
-						varSyncType = 1
-					}
-					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + strconv.Itoa(varSyncType))
-				} else if checkConditionCoords(c, client) {
-					if !c.TimeTrial || config.gameName != "2kki" {
-						_, err := tryWritePlayerTag(client.uuid, c.ConditionId)
-						if err != nil {
-							writeErrLog(client.ip, h.roomName, err.Error())
-						}
-					} else {
-						client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
-					}
+				} else {
+					client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 				}
 			}
 		}
