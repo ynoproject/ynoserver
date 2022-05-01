@@ -59,7 +59,6 @@ func StartApi() {
 	http.HandleFunc("/api/logout", handleLogout)
 	http.HandleFunc("/api/changepw", handleChangePw)
 
-
 	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
 		if config.gameName != "2kki" {
 			handleError(w, r, "endpoint not supported")
