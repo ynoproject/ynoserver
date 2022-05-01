@@ -723,16 +723,41 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			value = true
 		}
 		for _, c := range h.conditions {
-			if switchId == c.SwitchId && value == c.SwitchValue {
-				if !c.TimeTrial {
-					if checkConditionCoords(c, sender) {
-						_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-						if err != nil {
-							return false, err
+			if switchId == c.SwitchId {
+				if value == c.SwitchValue {
+					if !c.TimeTrial {
+						if checkConditionCoords(c, sender) {
+							_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+							if err != nil {
+								return false, err
+							}
 						}
+					} else if config.gameName == "2kki" {
+						sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 					}
-				} else if config.gameName == "2kki" {
-					sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
+				}
+				break
+			} else if len(c.SwitchIds) > 0 {
+				for s, sId := range c.SwitchIds {
+					if switchId == sId {
+						if value == c.SwitchValues[s] {
+							if s == len(c.SwitchIds)-1 {
+								if !c.TimeTrial {
+									if checkConditionCoords(c, sender) {
+										_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+										if err != nil {
+											return false, err
+										}
+									}
+								} else if config.gameName == "2kki" {
+									sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
+								}
+							} else {
+								sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchIds[s+1]) + paramDelimStr + "0")
+							}
+						}
+						break
+					}
 				}
 			}
 		}
@@ -762,16 +787,55 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		} else {
 			for _, c := range h.conditions {
-				if varId == c.VarId && value == c.VarValue {
-					if !c.TimeTrial {
-						if checkConditionCoords(c, sender) {
-							_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-							if err != nil {
-								return false, err
+				if varId == c.VarId {
+					if value == c.VarValue {
+						if !c.TimeTrial {
+							if checkConditionCoords(c, sender) {
+								_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+								if err != nil {
+									return false, err
+								}
 							}
+						} else if config.gameName == "2kki" {
+							sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 						}
-					} else if config.gameName == "2kki" {
-						sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
+					}
+				} else if len(c.VarIds) > 0 {
+					for v, vId := range c.VarIds {
+						if varId == vId {
+							valid := false
+							switch c.VarOp {
+							case "=":
+								valid = value == c.VarValues[v]
+							case "<":
+								valid = value < c.VarValues[v]
+							case ">":
+								valid = value > c.VarValues[v]
+							case "<=":
+								valid = value <= c.VarValues[v]
+							case ">=":
+								valid = value >= c.VarValues[v]
+							case "!=":
+								valid = value != c.VarValues[v]
+							}
+							if valid {
+								if v == len(c.VarIds)-1 {
+									if !c.TimeTrial {
+										if checkConditionCoords(c, sender) {
+											_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+											if err != nil {
+												return false, err
+											}
+										}
+									} else if config.gameName == "2kki" {
+										sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
+									}
+								} else {
+									sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarIds[v+1]) + paramDelimStr + "0")
+								}
+							}
+							break
+						}
 					}
 				}
 			}

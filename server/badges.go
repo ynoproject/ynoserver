@@ -9,21 +9,26 @@ import (
 )
 
 type Condition struct {
-	ConditionId string `json:"conditionId"`
-	Map         int    `json:"map"`
-	MapX1       int    `json:"mapX1"`
-	MapY1       int    `json:"mapY1"`
-	MapX2       int    `json:"mapX2"`
-	MapY2       int    `json:"mapY2"`
-	SwitchId    int    `json:"switchId"`
-	SwitchValue bool   `json:"switchValue"`
-	SwitchDelay bool   `json:"switchDelay"`
-	VarId       int    `json:"varId"`
-	VarValue    int    `json:"varValue"`
-	VarDelay    bool   `json:"varDelay"`
-	Trigger     string `json:"trigger"`
-	Value       string `json:"value"`
-	TimeTrial   bool   `json:"timeTrial"`
+	ConditionId  string `json:"conditionId"`
+	Map          int    `json:"map"`
+	MapX1        int    `json:"mapX1"`
+	MapY1        int    `json:"mapY1"`
+	MapX2        int    `json:"mapX2"`
+	MapY2        int    `json:"mapY2"`
+	SwitchId     int    `json:"switchId"`
+	SwitchValue  bool   `json:"switchValue"`
+	SwitchIds    []int  `json:"switchIds"`
+	SwitchValues []bool `json:"switchValues"`
+	SwitchDelay  bool   `json:"switchDelay"`
+	VarId        int    `json:"varId"`
+	VarValue     int    `json:"varValue"`
+	VarIds       []int  `json:"varIds"`
+	VarValues    []int  `json:"varValues"`
+	VarOp        string `json:"varOp"`
+	VarDelay     bool   `json:"varDelay"`
+	Trigger      string `json:"trigger"`
+	Value        string `json:"value"`
+	TimeTrial    bool   `json:"timeTrial"`
 }
 
 type Badge struct {
@@ -88,40 +93,36 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 	for _, c := range h.conditions {
 		if !c.TimeTrial {
 			if c.Trigger == trigger && (trigger == "" || value == c.Value) {
-				if c.SwitchId > 0 {
+				if c.SwitchId > 0 || len(c.SwitchIds) > 0 {
+					switchId := c.SwitchId
+					if len(c.SwitchIds) > 0 {
+						switchId = c.SwitchIds[0]
+					}
 					switchSyncType := 2
 					if c.SwitchDelay {
 						switchSyncType = 1
 					}
-					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + strconv.Itoa(switchSyncType))
-				} else if c.VarId > 0 {
+					client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + strconv.Itoa(switchSyncType))
+				} else if c.VarId > 0 || len(c.VarIds) > 0 {
+					varId := c.VarId
+					if len(c.VarIds) > 0 {
+						varId = c.VarIds[0]
+					}
 					varSyncType := 2
 					if c.VarDelay {
 						varSyncType = 1
 					}
-					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + strconv.Itoa(varSyncType))
+					client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + strconv.Itoa(varSyncType))
 				} else if checkConditionCoords(c, client) {
-					_, err := tryWritePlayerTag(client.uuid, c.ConditionId)
-					if err != nil {
-						writeErrLog(client.ip, h.roomName, err.Error())
+					if !c.TimeTrial || config.gameName != "2kki" {
+						_, err := tryWritePlayerTag(client.uuid, c.ConditionId)
+						if err != nil {
+							writeErrLog(client.ip, h.roomName, err.Error())
+						}
+					} else {
+						client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 					}
 				}
-			}
-		} else if config.gameName == "2kki" {
-			if c.SwitchId > 0 {
-				switchSyncType := 2
-				if c.SwitchDelay {
-					switchSyncType = 1
-				}
-				client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchId) + paramDelimStr + strconv.Itoa(switchSyncType))
-			} else if c.VarId > 0 {
-				varSyncType := 2
-				if c.VarDelay {
-					varSyncType = 1
-				}
-				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarId) + paramDelimStr + strconv.Itoa(varSyncType))
-			} else {
-				client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 			}
 		}
 	}
@@ -290,6 +291,9 @@ func SetConditions() {
 				if err == nil {
 					conditionId := conditionConfigFile.Name()[:len(conditionConfigFile.Name())-5]
 					condition.ConditionId = conditionId
+					if (condition.VarId > 0 || len(condition.VarIds) > 0) && condition.VarOp == "" {
+						condition.VarOp = "="
+					}
 					conditionConfig[gameId][conditionId] = condition
 				}
 			}
