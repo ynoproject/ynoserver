@@ -115,9 +115,12 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + strconv.Itoa(varSyncType))
 			} else if checkConditionCoords(c, client) {
 				if !timeTrial {
-					_, err := tryWritePlayerTag(client.uuid, c.ConditionId)
+					success, err := tryWritePlayerTag(client.uuid, c.ConditionId)
 					if err != nil {
 						writeErrLog(client.ip, h.roomName, err.Error())
+					}
+					if success {
+						client.send <- []byte("b")
 					}
 				} else {
 					client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")

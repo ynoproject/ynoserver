@@ -727,9 +727,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				if value == c.SwitchValue {
 					if !c.TimeTrial {
 						if checkConditionCoords(c, sender) {
-							_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+							success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 							if err != nil {
 								return false, err
+							}
+							if success {
+								sender.send <- []byte("b")
 							}
 						}
 					} else if config.gameName == "2kki" {
@@ -743,9 +746,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 							if s == len(c.SwitchIds)-1 {
 								if !c.TimeTrial {
 									if checkConditionCoords(c, sender) {
-										_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+										success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 										if err != nil {
 											return false, err
+										}
+										if success {
+											sender.send <- []byte("b")
 										}
 									}
 								} else if config.gameName == "2kki" {
@@ -776,9 +782,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 					if c.TimeTrial && value < 3600 {
 						if checkConditionCoords(c, sender) {
 							mapId, _ := strconv.Atoi(h.roomName)
-							_, err = tryWritePlayerTimeTrial(sender.uuid, mapId, value)
+							success, err := tryWritePlayerTimeTrial(sender.uuid, mapId, value)
 							if err != nil {
 								return false, err
+							}
+							if success {
+								sender.send <- []byte("b")
 							}
 						}
 					}
@@ -805,9 +814,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 					if valid {
 						if !c.TimeTrial {
 							if checkConditionCoords(c, sender) {
-								_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+								success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 								if err != nil {
 									return false, err
+								}
+								if success {
+									sender.send <- []byte("b")
 								}
 							}
 						} else if config.gameName == "2kki" {
@@ -836,9 +848,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 								if v == len(c.VarIds)-1 {
 									if !c.TimeTrial {
 										if checkConditionCoords(c, sender) {
-											_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+											success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 											if err != nil {
 												return false, err
+											}
+											if success {
+												sender.send <- []byte("b")
 											}
 										}
 									} else if config.gameName == "2kki" {
