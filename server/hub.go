@@ -788,7 +788,22 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		} else {
 			for _, c := range h.conditions {
 				if varId == c.VarId {
-					if value == c.VarValue {
+					valid := false
+					switch c.VarOp {
+					case "=":
+						valid = value == c.VarValue
+					case "<":
+						valid = value < c.VarValue
+					case ">":
+						valid = value > c.VarValue
+					case "<=":
+						valid = value <= c.VarValue
+					case ">=":
+						valid = value >= c.VarValue
+					case "!=":
+						valid = value != c.VarValue
+					}
+					if valid {
 						if !c.TimeTrial {
 							if checkConditionCoords(c, sender) {
 								_, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
