@@ -18,8 +18,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var (
+const (
 	maxID      = 512
+	paramDelimStr = "\uffff"
+	msgDelimStr   = "\ufffe"
+)
+
+var (
 	allClients = make(map[string]*Client)
 	upgrader   = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -29,8 +34,6 @@ var (
 		},
 	}
 	isOkString    = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
-	paramDelimStr = "\uffff"
-	msgDelimStr   = "\ufffe"
 
 	hubs []*Hub
 
