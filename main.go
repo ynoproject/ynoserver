@@ -26,9 +26,9 @@ func main() {
 	config_file := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
-	config := ParseConfig(*config_file)
+	configFileData := ParseConfig(*config_file)
 
-	res_index_data, err := ioutil.ReadFile(config.IndexPath)
+	res_index_data, err := ioutil.ReadFile(configFileData.IndexPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,42 +66,59 @@ func main() {
 
 	//list of invalid sound names
 	var ignoredSoundNames []string
-	if config.BadSounds != "" {
-		ignoredSoundNames = strings.Split(config.BadSounds, ",")
+	if configFileData.BadSounds != "" {
+		ignoredSoundNames = strings.Split(configFileData.BadSounds, ",")
 	}
 
 	//list of valid picture names
 	var pictureNames []string
-	if config.PictureNames != "" {
-		pictureNames = strings.Split(config.PictureNames, ",")
+	if configFileData.PictureNames != "" {
+		pictureNames = strings.Split(configFileData.PictureNames, ",")
 	}
 
 	// list of valid picture prefixes
 	var picturePrefixes []string
-	if config.PicturePrefixes != "" {
-		picturePrefixes = strings.Split(config.PicturePrefixes, ",")
+	if configFileData.PicturePrefixes != "" {
+		picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
 	}
 
 	var roomNames []string
-	badRooms := strings.Split(config.BadRooms, ",")
+	badRooms := strings.Split(configFileData.BadRooms, ",")
 
-	for i := 0; i < config.NumRooms; i++ {
+	for i := 0; i < configFileData.NumRooms; i++ {
 		if !contains(badRooms, i) {
 			roomNames = append(roomNames, strconv.Itoa(i))
 		}
 	}
 
-	SetConfig(spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName, config.SignKey, config.IPHubKey, config.Database.User, config.Database.Pass, config.Database.Host, config.Database.Name)
+	config = Config{
+		spriteNames:       spriteNames,
+		systemNames:       systemNames,
+		soundNames:        soundNames,
+		ignoredSoundNames: ignoredSoundNames,
+		pictureNames:      pictureNames,
+		picturePrefixes:   picturePrefixes,
+		gameName:          configFileData.GameName,
+
+		signKey:  configFileData.SignKey,
+		ipHubKey: configFileData.IPHubKey,
+
+		dbUser: configFileData.Database.User,
+		dbPass: configFileData.Database.Pass,
+		dbHost: configFileData.Database.Host,
+		dbName: configFileData.Database.Name,
+	}
+
 	SetConditions()
 	SetBadges()
 
 	CreateAllHubs(roomNames)
 
 	log.SetOutput(&lumberjack.Logger{
-		Filename:   config.Logging.File,
-		MaxSize:    config.Logging.MaxSize,
-		MaxBackups: config.Logging.MaxBackups,
-		MaxAge:     config.Logging.MaxAge,
+		Filename:   configFileData.Logging.File,
+		MaxSize:    configFileData.Logging.MaxSize,
+		MaxBackups: configFileData.Logging.MaxBackups,
+		MaxAge:     configFileData.Logging.MaxAge,
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
@@ -109,5 +126,5 @@ func main() {
 	StartEvents()
 	StartRankings()
 
-	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":"+strconv.Itoa(config.Port), nil), 500)
+	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
