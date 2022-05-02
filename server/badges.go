@@ -44,6 +44,7 @@ type Badge struct {
 	SecretCondition bool     `json:"secretCondition"`
 	Parent          string   `json:"parent"`
 	Overlay         bool     `json:"overlay"`
+	Art             string   `json:"art"`
 	Dev             bool     `json:"dev"`
 }
 
@@ -57,6 +58,7 @@ type PlayerBadge struct {
 	Secret          bool    `json:"secret"`
 	SecretCondition bool    `json:"secretCondition"`
 	Overlay         bool    `json:"overlay"`
+	Art             string  `json:"art"`
 	Percent         float32 `json:"percent"`
 	Goals           int     `json:"goals"`
 	GoalsTotal      int     `json:"goalsTotal"`
@@ -155,7 +157,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 			if gameBadge.Dev && playerRank < 2 {
 				continue
 			}
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art}
 			switch gameBadge.ReqType {
 			case "tag":
 				for _, tag := range playerTags {
