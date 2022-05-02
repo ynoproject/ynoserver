@@ -1224,7 +1224,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		}
 		query += " GROUP BY a.user ORDER BY 5 DESC, 6"
 	case "timeTrial":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY MIN(tt.seconds)), tt.uuid, MIN(tt.seconds), (SELECT MIN(att.timestampCompleted) FROM playerTimeTrials att WHERE att.uuid = tt.uuid AND att.mapId = tt.uuid AND att.seconds = tt.seconds) FROM playerTimeTrials tt WHERE tt.mapId = ? GROUP BY tt.uuid ORDER BY 5, 6"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY MIN(tt.seconds)), tt.uuid, MIN(tt.seconds), (SELECT MAX(att.timestampCompleted) FROM playerTimeTrials att WHERE att.uuid = tt.uuid AND att.mapId = tt.mapId AND att.seconds = tt.seconds) FROM playerTimeTrials tt WHERE tt.mapId = ? GROUP BY tt.uuid ORDER BY 5, 6"
 	}
 
 	if isFiltered {
