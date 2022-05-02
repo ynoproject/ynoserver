@@ -8,14 +8,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"ynoserver/server"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 )
-
-func writeLog(ip string, payload string, errorcode int) {
-	log.Printf("%v \"%v\" %v\n", ip, payload, errorcode)
-}
 
 func contains(s []string, num int) bool {
 	for _, v := range s {
@@ -31,7 +26,7 @@ func main() {
 	config_file := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
-	config := server.ParseConfig(*config_file)
+	config := ParseConfig(*config_file)
 
 	res_index_data, err := ioutil.ReadFile(config.IndexPath)
 	if err != nil {
@@ -96,11 +91,11 @@ func main() {
 		}
 	}
 
-	server.SetConfig(spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName, config.SignKey, config.IPHubKey, config.Database.User, config.Database.Pass, config.Database.Host, config.Database.Name)
-	server.SetConditions()
-	server.SetBadges()
+	SetConfig(spriteNames, systemNames, soundNames, ignoredSoundNames, pictureNames, picturePrefixes, config.GameName, config.SignKey, config.IPHubKey, config.Database.User, config.Database.Pass, config.Database.Host, config.Database.Name)
+	SetConditions()
+	SetBadges()
 
-	server.CreateAllHubs(roomNames)
+	CreateAllHubs(roomNames)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   config.Logging.File,
@@ -110,9 +105,9 @@ func main() {
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
-	server.StartApi()
-	server.StartEvents()
-	server.StartRankings()
+	StartApi()
+	StartEvents()
+	StartRankings()
 
 	log.Fatalf("%v %v \"%v\" %v", config.IP, "server", http.ListenAndServe(":"+strconv.Itoa(config.Port), nil), 500)
 }
