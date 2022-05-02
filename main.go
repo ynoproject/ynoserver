@@ -82,9 +82,9 @@ func main() {
 		picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
 	}
 
-	var roomNames []string
 	badRooms := strings.Split(configFileData.BadRooms, ",")
 
+	var roomNames []string
 	for i := 0; i < configFileData.NumRooms; i++ {
 		if !contains(badRooms, i) {
 			roomNames = append(roomNames, strconv.Itoa(i))
