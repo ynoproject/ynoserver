@@ -708,7 +708,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if len(msgFields) != msgLength {
 			return true, err
 		}
-		msgContents := msgFields[1]
+		msgContents := strings.TrimSpace(msgFields[1])
 		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return true, err
 		}

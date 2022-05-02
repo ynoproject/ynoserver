@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bytes"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -23,11 +22,6 @@ const (
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 4096
-)
-
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
 )
 
 type Picture struct {
@@ -129,7 +123,6 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		c.hub.processMsgCh <- &Message{data: message, sender: c}
 	}
 }
