@@ -123,7 +123,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 						client.send <- []byte("b")
 					}
 				} else {
-					client.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
+					client.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 				}
 			}
 		}
