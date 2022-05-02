@@ -2,17 +2,51 @@ package main
 
 import (
 	"crypto/sha1"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/gorilla/websocket"
 	"github.com/thanhpk/randstr"
 )
+
+const (
+	maxID      = 512
+	paramDelimStr = "\uffff"
+	msgDelimStr   = "\ufffe"
+)
+
+var (
+	allClients = make(map[string]*Client)
+	upgrader   = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+	isOkString    = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
+
+	hubs []*Hub
+
+	config     Config
+	conditions map[string]map[string]*Condition
+	badges     map[string]map[string]*Badge
+	db         *sql.DB
+)
+
+type ConnInfo struct {
+	Connect *websocket.Conn
+	Ip      string
+	Session string
+}
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
@@ -35,6 +69,32 @@ type Hub struct {
 	roomName string
 
 	conditions []*Condition
+}
+
+func CreateAllHubs(roomNames []string) {
+	db = getDatabaseHandle()
+
+	for _, roomName := range roomNames {
+		addHub(roomName)
+	}
+}
+
+func addHub(roomName string) {
+	hub := NewHub(roomName)
+	hubs = append(hubs, hub)
+	go hub.Run()
+}
+
+func NewHub(roomName string) *Hub {
+	return &Hub{
+		processMsgCh: make(chan *Message),
+		connect:      make(chan *ConnInfo),
+		unregister:   make(chan *Client),
+		clients:      make(map[*Client]bool),
+		id:           make(map[int]bool),
+		roomName:     roomName,
+		conditions:   getHubConditions(roomName),
+	}
 }
 
 func (h *Hub) Run() {

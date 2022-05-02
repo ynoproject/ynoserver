@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -127,4 +129,150 @@ func main() {
 	StartRankings()
 
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
+}
+
+func writeLog(ip string, roomName string, payload string, errorcode int) {
+	log.Printf("%v %v \"%v\" %v\n", ip, roomName, strings.Replace(payload, "\"", "'", -1), errorcode)
+}
+
+func writeErrLog(ip string, roomName string, payload string) {
+	writeLog(ip, roomName, payload, 400)
+}
+
+func isValidSpriteName(name string) bool {
+	if name == "" {
+		return true
+	}
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+
+	for _, otherName := range config.spriteNames {
+		if strings.EqualFold(otherName, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidSystemName(name string, ignoreSingleQuotes bool) bool {
+	if ignoreSingleQuotes {
+		name = strings.ReplaceAll(name, "'", "")
+	}
+	for _, otherName := range config.systemNames {
+		if ignoreSingleQuotes {
+			otherName = strings.ReplaceAll(otherName, "'", "")
+		}
+		if strings.EqualFold(otherName, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidSoundName(name string) bool {
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+
+	for _, otherName := range config.soundNames {
+		if strings.EqualFold(otherName, name) {
+			for _, ignoredName := range config.ignoredSoundNames {
+				if strings.EqualFold(ignoredName, name) {
+					return false
+				}
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func isValidPicName(name string) bool {
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+
+	nameLower := strings.ToLower(name)
+	for _, otherName := range config.pictureNames {
+		if otherName == nameLower {
+			return true
+		}
+	}
+	for _, prefix := range config.picturePrefixes {
+		if strings.HasPrefix(nameLower, prefix) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getIp(r *http.Request) string { //this breaks if you're using a revproxy that isn't on 127.0.0.1
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	if ip == "127.0.0.1" && r.Header.Get("x-forwarded-for") != "" {
+		ip = r.Header.Get("x-forwarded-for")
+	}
+
+	return ip
+}
+
+type IpHubResponse struct {
+	IP          string `json:"ip"`
+	CountryCode string `json:"countryCode"`
+	CountryName string `json:"countryName"`
+	Asn         int    `json:"asn"`
+	Isp         string `json:"isp"`
+	Block       int    `json:"block"`
+}
+
+func isVpn(ip string) (bool, error) {
+	apiKey := config.ipHubKey
+
+	if apiKey == "" {
+		return false, nil //VPN checking is not available
+	}
+
+	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/"+ip, nil)
+	if err != nil {
+		return false, err
+	}
+
+	req.Header.Set("X-Key", apiKey)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
+	var response IpHubResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return false, err
+	}
+
+	var blockedIp bool
+	if response.Block == 0 {
+		blockedIp = false
+	} else {
+		blockedIp = true
+	}
+
+	if response.Block > 0 {
+		log.Printf("Connection Blocked %v %v %v %v\n", response.IP, response.CountryName, response.Isp, response.Block)
+		return false, errors.New("connection banned")
+	}
+
+	return blockedIp, nil
+}
+
+func globalBroadcast(inpData []byte) {
+	for _, client := range allClients {
+		client.send <- inpData
+	}
 }
