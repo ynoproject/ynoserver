@@ -71,21 +71,19 @@ type Hub struct {
 	conditions []*Condition
 }
 
-func CreateAllHubs(roomNames []string) {
-	db = getDatabaseHandle()
-
+func createAllHubs(roomNames []string) {
 	for _, roomName := range roomNames {
 		addHub(roomName)
 	}
 }
 
 func addHub(roomName string) {
-	hub := NewHub(roomName)
+	hub := newHub(roomName)
 	hubs = append(hubs, hub)
-	go hub.Run()
+	go hub.run()
 }
 
-func NewHub(roomName string) *Hub {
+func newHub(roomName string) *Hub {
 	return &Hub{
 		processMsgCh: make(chan *Message),
 		connect:      make(chan *ConnInfo),
@@ -97,7 +95,7 @@ func NewHub(roomName string) *Hub {
 	}
 }
 
-func (h *Hub) Run() {
+func (h *Hub) run() {
 	http.HandleFunc("/"+h.roomName, h.serveWs)
 	for {
 		select {

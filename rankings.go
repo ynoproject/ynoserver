@@ -38,7 +38,7 @@ type Ranking struct {
 	SystemName string `json:"systemName"`
 }
 
-func StartRankings() {
+func startRankings() {
 	s := gocron.NewScheduler(time.UTC)
 
 	var rankingCategories []*RankingCategory

@@ -40,7 +40,7 @@ type EventLocationData struct {
 	MapIds  []string `json:"mapIds"`
 }
 
-func StartEvents() {
+func startEvents() {
 	if config.gameName == "2kki" {
 		s := gocron.NewScheduler(time.UTC)
 

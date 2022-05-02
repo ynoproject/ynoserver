@@ -45,7 +45,7 @@ type PartyMember struct {
 	Online        bool   `json:"online"`
 }
 
-func StartApi() {
+func startApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/saveSync", handleSaveSync)

@@ -111,10 +111,11 @@ func main() {
 		dbName: configFileData.Database.Name,
 	}
 
-	SetConditions()
-	SetBadges()
+	setDatabase()
+	setConditions()
+	setBadges()
 
-	CreateAllHubs(roomNames)
+	createAllHubs(roomNames)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,
@@ -124,9 +125,9 @@ func main() {
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
-	StartApi()
-	StartEvents()
-	StartRankings()
+	startApi()
+	startEvents()
+	startRankings()
 
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }

@@ -11,13 +11,13 @@ import (
 	"github.com/thanhpk/randstr"
 )
 
-func getDatabaseHandle() *sql.DB {
-	db, err := sql.Open("mysql", config.dbUser+":"+config.dbPass+"@tcp("+config.dbHost+")/"+config.dbName+"?parseTime=true")
+func setDatabase() {
+	conn, err := sql.Open("mysql", config.dbUser+":"+config.dbPass+"@tcp("+config.dbHost+")/"+config.dbName+"?parseTime=true")
 	if err != nil {
-		return nil
+		return
 	}
 
-	return db
+	db = conn
 }
 
 func readPlayerData(ip string) (uuid string, rank int, banned bool) {

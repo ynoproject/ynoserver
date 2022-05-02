@@ -265,7 +265,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	return playerBadges, nil
 }
 
-func SetConditions() {
+func setConditions() {
 	conditionConfig := make(map[string]map[string]*Condition)
 
 	gameConditionDirs, err := ioutil.ReadDir("badges/conditions/")
@@ -307,7 +307,7 @@ func SetConditions() {
 	conditions = conditionConfig
 }
 
-func SetBadges() {
+func setBadges() {
 	badgeConfig := make(map[string]map[string]*Badge)
 
 	gameBadgeDirs, err := ioutil.ReadDir("badges/data/")
