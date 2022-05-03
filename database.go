@@ -119,6 +119,17 @@ func readPlayerInfoFromSession(session string) (uuid string, name string, rank i
 	return uuid, name, rank, badge, badgeSlotRows
 }
 
+func readPlayerBadgeSlotRows(playerName string) (badgeSlotRows int) {
+	results := db.QueryRow("SELECT badgeSlotRows FROM accounts WHERE name = ?", playerName)
+	err := results.Scan(&badgeSlotRows)
+
+	if err != nil {
+		return 1
+	}
+
+	return badgeSlotRows
+}
+
 func setPlayerBadge(uuid string, badge string) (err error) {
 	_, err = db.Exec("UPDATE accounts SET badge = ? WHERE uuid = ?", badge, uuid)
 	if err != nil {
@@ -130,8 +141,8 @@ func setPlayerBadge(uuid string, badge string) (err error) {
 	return nil
 }
 
-func readPlayerBadgeSlots(uuid string, badgeSlotRows int) (badgeSlots []string, err error) {
-	results, err := db.Query("SELECT pb.badgeId FROM playerBadges pb WHERE pb.slotId > 0 AND pb.uuid = ? ORDER BY pb.slotId LIMIT ?", uuid, badgeSlotRows*5)
+func readPlayerBadgeSlots(playerName string, badgeSlotRows int) (badgeSlots []string, err error) {
+	results, err := db.Query("SELECT pb.badgeId FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid WHERE pb.slotId > 0 AND a.name = ? ORDER BY pb.slotId LIMIT ?", playerName, badgeSlotRows*5)
 	if err != nil {
 		return badgeSlots, err
 	}

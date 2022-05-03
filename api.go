@@ -788,6 +788,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 
 func handleBadge(w http.ResponseWriter, r *http.Request) {
 	var uuid string
+	var name string
 	var rank int
 	var badge string
 	var badgeSlotRows int
@@ -798,7 +799,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "session token not specified")
 		return
 	} else {
-		uuid, _, rank, badge, banned = readPlayerDataFromSession(session)
+		uuid, name, rank, badge, banned = readPlayerDataFromSession(session)
 	}
 
 	if banned {
@@ -813,7 +814,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.HasPrefix(commandParam[0], "slot") {
-		_, _, _, _, badgeSlotRows = readPlayerInfoFromSession(session)
+		badgeSlotRows = readPlayerBadgeSlotRows(name)
 	}
 
 	switch commandParam[0] {
@@ -899,7 +900,27 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(badgeDataJson))
 		return
 	case "slotList":
-		badgeSlots, err := readPlayerBadgeSlots(uuid, badgeSlotRows)
+		badgeSlots, err := readPlayerBadgeSlots(name, badgeSlotRows)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		badgeSlotsJson, err := json.Marshal(badgeSlots)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(badgeSlotsJson))
+	case "playerSlotList":
+		playerParam, ok := r.URL.Query()["player"]
+		if !ok || len(playerParam) < 1 {
+			handleError(w, r, "player not specified")
+			return
+		}
+
+		playerBadgeSlotRows := readPlayerBadgeSlotRows(playerParam[0])
+
+		badgeSlots, err := readPlayerBadgeSlots(playerParam[0], playerBadgeSlotRows)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
