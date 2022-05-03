@@ -794,27 +794,30 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	var badgeSlotRows int
 	var banned bool
 
-	session := r.Header.Get("X-Session")
-	if session == "" {
-		handleError(w, r, "session token not specified")
-		return
-	} else {
-		uuid, name, rank, badge, banned = readPlayerDataFromSession(session)
-	}
-
-	if banned {
-		handleError(w, r, "player is banned")
-		return
-	}
-
 	commandParam, ok := r.URL.Query()["command"]
 	if !ok || len(commandParam) < 1 {
 		handleError(w, r, "command not specified")
 		return
 	}
+	session := r.Header.Get("X-Session")
+	if session == "" {
+		if commandParam[0] == "playerSlotList" {
+			uuid, rank, banned = readPlayerData(getIp(r))
+		} else {
+			handleError(w, r, "session token not specified")
+			return
+		}
+	} else {
+		uuid, name, rank, badge, banned = readPlayerDataFromSession(session)
+	}
 
 	if strings.HasPrefix(commandParam[0], "slot") {
 		badgeSlotRows = readPlayerBadgeSlotRows(name)
+	}
+
+	if banned {
+		handleError(w, r, "player is banned")
+		return
 	}
 
 	switch commandParam[0] {
