@@ -166,7 +166,7 @@ func (h *Hub) run() {
 				rank:        rank,
 				badge:       badge,
 				spriteIndex: -1,
-				tone:        []int{128, 128, 128, 128},
+				tone:        [4]int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
 				mapId:       "0000",
 				key:         key}

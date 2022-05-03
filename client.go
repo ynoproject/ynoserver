@@ -81,7 +81,7 @@ type Client struct {
 	flash          [5]int
 	repeatingFlash bool
 
-	tone []int
+	tone [4]int
 
 	pictures map[int]*Picture
 
