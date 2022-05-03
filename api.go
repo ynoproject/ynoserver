@@ -11,10 +11,11 @@ import (
 )
 
 type PlayerInfo struct {
-	Uuid  string `json:"uuid"`
-	Name  string `json:"name"`
-	Rank  int    `json:"rank"`
-	Badge string `json:"badge"`
+	Uuid          string `json:"uuid"`
+	Name          string `json:"name"`
+	Rank          int    `json:"rank"`
+	Badge         string `json:"badge"`
+	BadgeSlotRows int    `json:"badgeSlotRows"`
 }
 
 type Party struct {
@@ -128,18 +129,20 @@ func startApi() {
 		var name string
 		var rank int
 		var badge string
+		var badgeSlotRows int
 
 		session := r.Header.Get("X-Session")
 		if session == "" {
 			uuid, name, rank = readPlayerInfo(getIp(r))
 		} else {
-			uuid, name, rank, badge = readPlayerInfoFromSession(session)
+			uuid, name, rank, badge, badgeSlotRows = readPlayerInfoFromSession(session)
 		}
 		playerInfo := PlayerInfo{
-			Uuid:  uuid,
-			Name:  name,
-			Rank:  rank,
-			Badge: badge,
+			Uuid:          uuid,
+			Name:          name,
+			Rank:          rank,
+			Badge:         badge,
+			BadgeSlotRows: badgeSlotRows,
 		}
 		playerInfoJson, err := json.Marshal(playerInfo)
 		if err != nil {
@@ -787,6 +790,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 	var rank int
 	var badge string
+	var badgeSlotRows int
 	var banned bool
 
 	session := r.Header.Get("X-Session")
@@ -808,8 +812,14 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.HasPrefix(commandParam[0], "slot") {
+		_, _, _, _, badgeSlotRows = readPlayerInfoFromSession(session)
+	}
+
 	switch commandParam[0] {
 	case "set":
+		fallthrough
+	case "slotSet":
 		idParam, ok := r.URL.Query()["id"]
 		if !ok || len(idParam) < 1 {
 			handleError(w, r, "id not specified")
@@ -855,7 +865,21 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		setPlayerBadge(uuid, badgeId)
+		if commandParam[0] == "set" {
+			setPlayerBadge(uuid, badgeId)
+		} else {
+			slotParam, ok := r.URL.Query()["slot"]
+			if !ok || len(slotParam) < 1 {
+				handleError(w, r, "slot not specified")
+				return
+			}
+			slotId, err := strconv.Atoi(slotParam[0])
+			if err != nil || slotId < 1 || slotId > badgeSlotRows*5 {
+				handleError(w, r, "invalid slot value")
+			}
+
+			setPlayerBadgeSlot(uuid, badgeId, slotId)
+		}
 	case "list":
 		tags, err := readPlayerTags(uuid)
 		if err != nil {
@@ -874,6 +898,18 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write([]byte(badgeDataJson))
 		return
+	case "slotList":
+		badgeSlots, err := readPlayerBadgeSlots(uuid, badgeSlotRows)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		badgeSlotsJson, err := json.Marshal(badgeSlots)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		w.Write([]byte(badgeSlotsJson))
 	default:
 		handleError(w, r, "unknown command")
 		return
