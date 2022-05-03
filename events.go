@@ -109,13 +109,14 @@ func add2kkiEventLocationsWithExp(eventType int, count int, exp int, playerUuid 
 	}
 
 	url := "https://2kki.app/getRandomLocations?count=" + strconv.Itoa(count) + "&ignoreSecret=1"
-	if eventType == 0 {
+	switch eventType{
+	case 0:
 		url += "&minDepth=3&maxDepth=9"
-	} else if eventType == 1 {
+	case 1:
 		url += "&minDepth=11"
-	} else if eventType == 2 {
+	case 2:
 		url += "&minDepth=9&maxDepth=14"
-	} else {
+	default:
 		url += "&minDepth=2"
 	}
 
