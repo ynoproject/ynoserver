@@ -876,7 +876,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			err = setPlayerBadgeSlot(uuid, badge, 1)
+			err = setPlayerBadgeSlot(uuid, badgeId, 1)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
