@@ -32,6 +32,7 @@ type Condition struct {
 }
 
 type Badge struct {
+	Group           string   `json:"group"`
 	Order           int      `json:"order"`
 	ReqType         string   `json:"reqType"`
 	ReqInt          int      `json:"reqInt"`
@@ -42,6 +43,7 @@ type Badge struct {
 	MapX            int      `json:"mapX"`
 	MapY            int      `json:"mapY"`
 	Secret          bool     `json:"secret"`
+	SecretMap       bool     `json:"secretMap"`
 	SecretCondition bool     `json:"secretCondition"`
 	Parent          string   `json:"parent"`
 	Overlay         bool     `json:"overlay"`
@@ -52,6 +54,7 @@ type Badge struct {
 type PlayerBadge struct {
 	BadgeId         string  `json:"badgeId"`
 	Game            string  `json:"game"`
+	Group           string  `json:"group"`
 	MapId           int     `json:"mapId"`
 	MapX            int     `json:"mapX"`
 	MapY            int     `json:"mapY"`
@@ -158,7 +161,12 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 			if gameBadge.Dev && playerRank < 2 {
 				continue
 			}
+
 			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art}
+			if gameBadge.SecretMap {
+				playerBadge.MapId = 0
+			}
+
 			switch gameBadge.ReqType {
 			case "tag":
 				for _, tag := range playerTags {
@@ -216,10 +224,32 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 	sort.Slice(playerBadges, func(a, b int) bool {
 		playerBadgeA := playerBadges[a]
 		playerBadgeB := playerBadges[b]
+
 		if playerBadgeA.Game != playerBadgeB.Game {
 			return strings.Compare(playerBadgeA.Game, playerBadgeB.Game) == -1
 		}
-		return badges[playerBadgeA.Game][playerBadgeA.BadgeId].Order < badges[playerBadgeB.Game][playerBadgeB.BadgeId].Order
+
+		if playerBadgeA.Group != playerBadgeB.Group {
+			return strings.Compare(playerBadgeA.Group, playerBadgeB.Group) == -1
+		}
+
+		gameBadgeA := badges[playerBadgeA.Game][playerBadgeA.BadgeId]
+		gameBadgeB := badges[playerBadgeB.Game][playerBadgeB.BadgeId]
+
+		if gameBadgeA.Map != gameBadgeB.Map {
+			sortMapA := gameBadgeA.Map
+			sortMapB := gameBadgeB.Map
+
+			if sortMapA == 0 {
+				sortMapA = 9999
+			} else if sortMapB == 0 {
+				sortMapB = 9999
+			}
+
+			return sortMapA < sortMapB
+		}
+
+		return gameBadgeA.Order < gameBadgeB.Order
 	})
 
 	playerUnlockedBadgeIds, err := readPlayerUnlockedBadgeIds(playerUuid)
