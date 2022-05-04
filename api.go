@@ -870,7 +870,17 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if commandParam[0] == "set" {
-			setPlayerBadge(uuid, badgeId)
+			err := setPlayerBadge(uuid, badgeId)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			err = setPlayerBadgeSlot(uuid, badge, 1)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
 		} else {
 			slotParam, ok := r.URL.Query()["slot"]
 			if !ok || len(slotParam) < 1 {
@@ -882,7 +892,19 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				handleError(w, r, "invalid slot value")
 			}
 
-			setPlayerBadgeSlot(uuid, badgeId, slotId)
+			err = setPlayerBadgeSlot(uuid, badgeId, slotId)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			if slotId == 1 {
+				err = setPlayerBadge(uuid, badgeId)
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
+			}
 		}
 	case "list":
 		tags, err := readPlayerTags(uuid)

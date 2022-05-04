@@ -136,8 +136,6 @@ func setPlayerBadge(uuid string, badge string) (err error) {
 		return err
 	}
 
-	_ = setPlayerBadgeSlot(uuid, badge, 1)
-
 	return nil
 }
 
@@ -189,13 +187,6 @@ func setPlayerBadgeSlot(uuid string, badgeId string, slotId int) (err error) {
 	_, err = db.Exec("UPDATE playerBadges SET slotId = ? WHERE uuid = ? AND badgeId = ?", slotId, uuid, badgeId)
 	if err != nil {
 		return err
-	}
-
-	if slotId == 1 {
-		err = setPlayerBadge(uuid, badgeId)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
