@@ -37,6 +37,7 @@ type Badge struct {
 	ReqInt          int      `json:"reqInt"`
 	ReqString       string   `json:"reqString"`
 	ReqStrings      []string `json:"reqStrings"`
+	ReqOr           bool     `json:"reqOr"`
 	Map             int      `json:"map"`
 	MapX            int      `json:"mapX"`
 	MapY            int      `json:"mapY"`
@@ -167,7 +168,9 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 					}
 				}
 			case "tags":
-				playerBadge.GoalsTotal = len(gameBadge.ReqStrings)
+				if !gameBadge.ReqOr {
+					playerBadge.GoalsTotal = len(gameBadge.ReqStrings)
+				}
 				for _, tag := range playerTags {
 					for _, cTag := range gameBadge.ReqStrings {
 						if tag == cTag {
@@ -175,7 +178,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 							break
 						}
 					}
-					if playerBadge.Goals == playerBadge.GoalsTotal {
+					if (gameBadge.ReqOr && playerBadge.Goals > 0) || (!gameBadge.ReqOr && playerBadge.Goals == playerBadge.GoalsTotal) {
 						playerBadge.Unlocked = true
 						break
 					}
