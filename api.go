@@ -936,6 +936,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(badgeSlotsJson))
+		return
 	case "playerSlotList":
 		playerParam, ok := r.URL.Query()["player"]
 		if !ok || len(playerParam) < 1 {
@@ -956,6 +957,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(badgeSlotsJson))
+		return
 	default:
 		handleError(w, r, "unknown command")
 		return
