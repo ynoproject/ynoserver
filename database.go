@@ -140,7 +140,7 @@ func setPlayerBadge(uuid string, badge string) (err error) {
 }
 
 func readPlayerBadgeSlots(playerName string, badgeSlotRows int) (badgeSlots []string, err error) {
-	results, err := db.Query("SELECT pb.badgeId FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid WHERE pb.slotId > 0 AND a.name = ? ORDER BY pb.slotId LIMIT ?", playerName, badgeSlotRows*5)
+	results, err := db.Query("SELECT pb.badgeId FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid WHERE pb.slotId > 0 AND a.user = ? ORDER BY pb.slotId LIMIT ?", playerName, badgeSlotRows*5)
 	if err != nil {
 		return badgeSlots, err
 	}
