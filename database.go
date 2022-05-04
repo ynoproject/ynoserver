@@ -186,9 +186,12 @@ func setPlayerBadgeSlot(uuid string, badgeId string, slotId int) (err error) {
 					return err
 				}
 			}
-		}
+		} else {
+			_, err = db.Exec("UPDATE playerBadges SET slotId = 0 WHERE uuid = ? AND slotId = ?", uuid, slotId)
+			if err != nil && err != sql.ErrNoRows {
+				return err
+			}
 
-		if badgeId == "null" {
 			_, err = db.Exec("UPDATE playerBadges SET slotId = slotId - 1 WHERE uuid = ? AND slotId > ?", uuid, slotId)
 			if err != nil && err != sql.ErrNoRows {
 				return err
