@@ -191,6 +191,13 @@ func setPlayerBadgeSlot(uuid string, badgeId string, slotId int) (err error) {
 		return err
 	}
 
+	if slotId == 1 {
+		err = setPlayerBadge(uuid, badgeId)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
