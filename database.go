@@ -172,15 +172,27 @@ func setPlayerBadgeSlot(uuid string, badgeId string, slotId int) (err error) {
 		}
 	} else if slotCurrentBadgeId == badgeId {
 		return
-	} else if badgeId == "null" {
-		_, err = db.Exec("UPDATE playerBadges SET slotId = 0 WHERE uuid = ? AND badgeId = ?", uuid, slotCurrentBadgeId)
-		if err != nil && err != sql.ErrNoRows {
-			return err
+	} else {
+		if badgeId != "null" {
+			var badgeCurrentSlotId int
+			results := db.QueryRow("SELECT slotId FROM playerBadges WHERE uuid = ? AND badgeId = ? LIMIT 1", uuid, badgeId)
+			err = results.Scan(&badgeCurrentSlotId)
+
+			if err != nil && err != sql.ErrNoRows {
+				return err
+			} else {
+				_, err = db.Exec("UPDATE playerBadges SET slotId = ? WHERE uuid = ? AND badgeId = ?", badgeCurrentSlotId, uuid, slotCurrentBadgeId)
+				if err != nil && err != sql.ErrNoRows {
+					return err
+				}
+			}
 		}
 
-		_, err = db.Exec("UPDATE playerBadges SET slotId = slotId - 1 WHERE uuid = ? AND slotId > ?", uuid, slotId)
-		if err != nil && err != sql.ErrNoRows {
-			return err
+		if badgeId == "null" {
+			_, err = db.Exec("UPDATE playerBadges SET slotId = slotId - 1 WHERE uuid = ? AND slotId > ?", uuid, slotId)
+			if err != nil && err != sql.ErrNoRows {
+				return err
+			}
 		}
 	}
 
