@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	maxID      = 512
+	maxID         = 512
 	paramDelimStr = "\uffff"
 	msgDelimStr   = "\ufffe"
 )
@@ -32,7 +32,7 @@ var (
 			return true
 		},
 	}
-	isOkString    = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
+	isOkString = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
 
 	hubs []*Hub
 
@@ -377,7 +377,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	var terminate bool
 
 	switch msgFields[0] {
-	case "m": //"i moved to x y"
+	case "m": //moved to x y
+		fallthrough
+	case "tp": //teleported to x y
 		if len(msgFields) != 3 {
 			return false, err
 		}
@@ -392,7 +394,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		sender.x = x
 		sender.y = y
-		h.broadcast([]byte("m" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2])) //user %id% moved to x y
+
+		if msgFields[0] == "m" {
+			h.broadcast([]byte("m" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2])) //user %id% moved to x y
+		} else {
+			checkHubConditions(h, sender, "teleport", "")
+		}
 	case "f": //change facing direction
 		if len(msgFields) != 2 {
 			return false, err
