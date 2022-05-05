@@ -46,7 +46,7 @@ type PartyMember struct {
 	Online        bool   `json:"online"`
 }
 
-func startApi() {
+func initApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/saveSync", handleSaveSync)
@@ -887,9 +887,11 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				handleError(w, r, "slot not specified")
 				return
 			}
+
 			slotId, err := strconv.Atoi(slotParam[0])
 			if err != nil || slotId < 1 || slotId > badgeSlotRows*5 {
 				handleError(w, r, "invalid slot value")
+				return
 			}
 
 			err = setPlayerBadgeSlot(uuid, badgeId, slotId)

@@ -40,7 +40,7 @@ type EventLocationData struct {
 	MapIds  []string `json:"mapIds"`
 }
 
-func startEvents() {
+func initEvents() {
 	if config.gameName == "2kki" {
 		s := gocron.NewScheduler(time.UTC)
 
@@ -109,7 +109,7 @@ func add2kkiEventLocationsWithExp(eventType int, count int, exp int, playerUuid 
 	}
 
 	url := "https://2kki.app/getRandomLocations?count=" + strconv.Itoa(count) + "&ignoreSecret=1"
-	switch eventType{
+	switch eventType {
 	case 0:
 		url += "&minDepth=3&maxDepth=9"
 	case 1:

@@ -120,7 +120,7 @@ func readPlayerInfoFromSession(session string) (uuid string, name string, rank i
 }
 
 func readPlayerBadgeSlotRows(playerName string) (badgeSlotRows int) {
-	results := db.QueryRow("SELECT badgeSlotRows FROM accounts WHERE name = ?", playerName)
+	results := db.QueryRow("SELECT badgeSlotRows FROM accounts WHERE user = ?", playerName)
 	err := results.Scan(&badgeSlotRows)
 
 	if err != nil {

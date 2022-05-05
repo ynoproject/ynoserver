@@ -125,9 +125,10 @@ func main() {
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
-	startApi()
-	startEvents()
-	startRankings()
+	initApi()
+	initEvents()
+	initBadges()
+	initRankings()
 
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
