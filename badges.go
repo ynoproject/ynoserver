@@ -3,9 +3,13 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/go-co-op/gocron"
 )
 
 type Condition struct {
@@ -29,6 +33,7 @@ type Condition struct {
 	Trigger      string `json:"trigger"`
 	Value        string `json:"value"`
 	TimeTrial    bool   `json:"timeTrial"`
+	Disabled     bool   `json:"disabled"`
 }
 
 type Badge struct {
@@ -48,6 +53,7 @@ type Badge struct {
 	Parent          string   `json:"parent"`
 	Overlay         bool     `json:"overlay"`
 	Art             string   `json:"art"`
+	Batch           int      `json:"batch"`
 	Dev             bool     `json:"dev"`
 }
 
@@ -68,6 +74,7 @@ type PlayerBadge struct {
 	GoalsTotal      int     `json:"goalsTotal"`
 	Unlocked        bool    `json:"unlocked"`
 	NewUnlock       bool    `json:"newUnlock"`
+	Hidden          bool    `json:"hidden"`
 }
 
 type BadgePercentUnlocked struct {
@@ -82,6 +89,47 @@ type TimeTrialRecord struct {
 
 func initBadges() {
 	db.Exec("UPDATE accounts JOIN (SELECT pb.uuid, COUNT(pb.badgeId) count FROM playerBadges pb GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN pb.count >= 50 THEN 2 ELSE 1 END")
+
+	s := gocron.NewScheduler(time.UTC)
+
+	s.Every(1).Wednesday().At("02:00").Do(func() {
+		updateActiveBadgesAndConditions()
+	})
+
+	s.Every(1).Saturday().At("02:00").Do(func() {
+		updateActiveBadgesAndConditions()
+	})
+
+	updateActiveBadgesAndConditions()
+}
+
+func updateActiveBadgesAndConditions() {
+	firstBatchDate := time.Date(2022, time.May, 7, 2, 0, 0, 0, time.UTC)
+	days := time.Now().UTC().Sub(firstBatchDate).Hours() / 24
+	currentBatch := int(math.Floor(days/7)*2) + 1
+	if math.Mod(days, 7) >= 4 {
+		currentBatch++
+	}
+
+	for game, gameBadges := range badges {
+		for _, gameBadge := range gameBadges {
+			if gameBadge.Batch > 0 {
+				gameBadge.Dev = gameBadge.Batch > currentBatch
+				switch gameBadge.ReqType {
+				case "tag":
+					if condition, ok := conditions[game][gameBadge.ReqString]; ok {
+						condition.Disabled = gameBadge.Dev
+					}
+				case "tags":
+					for _, tag := range gameBadge.ReqStrings {
+						if condition, ok := conditions[game][tag]; ok {
+							condition.Disabled = gameBadge.Dev
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func getHubConditions(roomName string) (hubConditions []*Condition) {
@@ -166,7 +214,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art, Hidden: gameBadge.Dev}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}
