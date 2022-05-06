@@ -187,6 +187,17 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 					client.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 				}
 			}
+		} else if trigger == "" && (c.Trigger == "event" || c.Trigger == "eventAction") {
+			_, err := strconv.Atoi(c.Value)
+			if err != nil {
+				writeErrLog(client.ip, h.roomName, err.Error())
+				continue
+			}
+			eventTriggerType := 0
+			if c.Trigger == "eventAction" {
+				eventTriggerType = 1
+			}
+			client.send <- []byte("sev" + paramDelimStr + c.Value + paramDelimStr + strconv.Itoa(eventTriggerType))
 		}
 	}
 }
