@@ -154,8 +154,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 		if c.Disabled && client.rank < 2 {
 			continue
 		}
-		timeTrial := c.TimeTrial && config.gameName == "2kki"
-		if timeTrial || (c.Trigger == trigger && (trigger == "" || value == c.Value)) {
+		if c.Trigger == trigger && (trigger == "" || value == c.Value) {
 			if c.SwitchId > 0 || len(c.SwitchIds) > 0 {
 				switchId := c.SwitchId
 				if len(c.SwitchIds) > 0 {
@@ -177,6 +176,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				}
 				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + strconv.Itoa(varSyncType))
 			} else if checkConditionCoords(c, client) {
+				timeTrial := c.TimeTrial && config.gameName == "2kki"
 				if !timeTrial {
 					success, err := tryWritePlayerTag(client.uuid, c.ConditionId)
 					if err != nil {
