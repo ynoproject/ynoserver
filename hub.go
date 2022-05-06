@@ -935,6 +935,16 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				}
 			}
 		}
+	case "sev":
+		actionBin, errconv := strconv.Atoi(msgFields[2])
+		if errconv != nil || actionBin < 0 || actionBin > 1 {
+			return false, err
+		}
+		triggerType := "event"
+		if actionBin == 1 {
+			triggerType = "eventAction"
+		}
+		checkHubConditions(h, sender, triggerType, msgFields[1])
 	default:
 		return false, err
 	}
