@@ -92,11 +92,11 @@ func initBadges() {
 
 	s := gocron.NewScheduler(time.UTC)
 
-	s.Every(1).Wednesday().At("02:00").Do(func() {
+	s.Every(1).Tuesday().At("18:00").Do(func() {
 		updateActiveBadgesAndConditions()
 	})
 
-	s.Every(1).Saturday().At("02:00").Do(func() {
+	s.Every(1).Friday().At("18:00").Do(func() {
 		updateActiveBadgesAndConditions()
 	})
 
@@ -104,7 +104,7 @@ func initBadges() {
 }
 
 func updateActiveBadgesAndConditions() {
-	firstBatchDate := time.Date(2022, time.May, 7, 2, 0, 0, 0, time.UTC)
+	firstBatchDate := time.Date(2022, time.May, 6, 18, 0, 0, 0, time.UTC)
 	days := time.Now().UTC().Sub(firstBatchDate).Hours() / 24
 	currentBatch := int(math.Floor(days/7)*2) + 1
 	if math.Mod(days, 7) >= 4 {
