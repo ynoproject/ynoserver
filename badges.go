@@ -92,15 +92,17 @@ func initBadges() {
 
 	s := gocron.NewScheduler(time.UTC)
 
-	s.Every(1).Tuesday().At("18:00").Do(func() {
+	s.Every(1).Tuesday().At("20:00").Do(func() {
 		updateActiveBadgesAndConditions()
 	})
 
-	s.Every(1).Friday().At("18:00").Do(func() {
+	s.Every(1).Friday().At("20:00").Do(func() {
 		updateActiveBadgesAndConditions()
 	})
 
 	updateActiveBadgesAndConditions()
+
+	s.StartAsync()
 }
 
 func updateActiveBadgesAndConditions() {

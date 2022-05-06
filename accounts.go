@@ -96,8 +96,8 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 
 func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	//GET params user, old password, new password
-	user, password, newpassword := r.URL.Query()["user"], r.URL.Query()["password"], r.URL.Query()["newpassword"]
-	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len(newpassword) < 1 {
+	user, password, newPassword := r.URL.Query()["user"], r.URL.Query()["password"], r.URL.Query()["newPassword"]
+	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len(newPassword) < 1 {
 		handleError(w, r, "bad response")
 		return
 	}
@@ -110,7 +110,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newpassword[0]), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword[0]), bcrypt.DefaultCost)
 	if err != nil {
 		handleError(w, r, "bcrypt error")
 		return
