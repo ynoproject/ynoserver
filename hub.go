@@ -775,6 +775,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
 		terminate = true
 	case "ss": // sync switch
+		if len(msgFields) != 3 {
+			return false, err
+		}
 		switchId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil {
 			return false, err
@@ -836,6 +839,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		}
 	case "sv": // sync variable
+		if len(msgFields) != 3 {
+			return false, err
+		}
 		varId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil {
 			return false, err
@@ -936,6 +942,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		}
 	case "sev":
+		if len(msgFields) != 3 {
+			return false, err
+		}
 		actionBin, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || actionBin < 0 || actionBin > 1 {
 			return false, err

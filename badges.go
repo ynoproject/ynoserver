@@ -149,6 +149,9 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 		return
 	}
 	for _, c := range h.conditions {
+		if c.Disabled && client.rank < 2 {
+			continue
+		}
 		timeTrial := c.TimeTrial && config.gameName == "2kki"
 		if timeTrial || (c.Trigger == trigger && (trigger == "" || value == c.Value)) {
 			if c.SwitchId > 0 || len(c.SwitchIds) > 0 {
