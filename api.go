@@ -801,7 +801,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 	session := r.Header.Get("X-Session")
 	if session == "" {
-		if commandParam[0] == "playerSlotList" {
+		if commandParam[0] == "list" || commandParam[0] == "playerSlotList" {
 			uuid, rank, banned = readPlayerData(getIp(r))
 		} else {
 			handleError(w, r, "session token not specified")
@@ -844,7 +844,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 					handleInternalError(w, r, err)
 					return
 				}
-				badgeData, err := readPlayerBadgeData(uuid, rank, tags)
+				badgeData, err := readPlayerBadgeData(uuid, rank, tags, true)
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
@@ -909,12 +909,16 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case "list":
-		tags, err := readPlayerTags(uuid)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
+		var tags []string
+		if session != "" {
+			var err error
+			tags, err = readPlayerTags(uuid)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
 		}
-		badgeData, err := readPlayerBadgeData(uuid, rank, tags)
+		badgeData, err := readPlayerBadgeData(uuid, rank, tags, session != "")
 		if err != nil {
 			handleInternalError(w, r, err)
 			return

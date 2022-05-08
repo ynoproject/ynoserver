@@ -53,6 +53,7 @@ type Badge struct {
 	Parent          string   `json:"parent"`
 	Overlay         bool     `json:"overlay"`
 	Art             string   `json:"art"`
+	Animated        bool     `json:"animated"`
 	Batch           int      `json:"batch"`
 	Dev             bool     `json:"dev"`
 }
@@ -69,6 +70,7 @@ type PlayerBadge struct {
 	SecretCondition bool    `json:"secretCondition"`
 	Overlay         bool    `json:"overlay"`
 	Art             string  `json:"art"`
+	Animated        bool    `json:"animated"`
 	Percent         float32 `json:"percent"`
 	Goals           int     `json:"goals"`
 	GoalsTotal      int     `json:"goalsTotal"`
@@ -208,18 +210,24 @@ func checkConditionCoords(condition *Condition, client *Client) bool {
 	return ((condition.MapX1 == 0 && condition.MapX2 == 0) || (condition.MapX1 <= client.x && condition.MapX2 >= client.x)) && ((condition.MapY1 == 0 && condition.MapY2 == 0) || (condition.MapY1 <= client.y && condition.MapY2 >= client.y))
 }
 
-func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string) (playerBadges []*PlayerBadge, err error) {
-	playerExp, err := readPlayerTotalEventExp(playerUuid)
-	if err != nil {
-		return playerBadges, err
-	}
-	playerEventLocationCompletion, err := readPlayerEventLocationCompletion(playerUuid)
-	if err != nil {
-		return playerBadges, err
-	}
-	timeTrialRecords, err := readPlayerTimeTrialRecords(playerUuid)
-	if err != nil {
-		return playerBadges, err
+func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool) (playerBadges []*PlayerBadge, err error) {
+	playerExp := 0
+	playerEventLocationCompletion := 0
+	var timeTrialRecords []*TimeTrialRecord
+
+	if loggedIn {
+		playerExp, err = readPlayerTotalEventExp(playerUuid)
+		if err != nil {
+			return playerBadges, err
+		}
+		playerEventLocationCompletion, err = readPlayerEventLocationCompletion(playerUuid)
+		if err != nil {
+			return playerBadges, err
+		}
+		timeTrialRecords, err = readPlayerTimeTrialRecords(playerUuid)
+		if err != nil {
+			return playerBadges, err
+		}
 	}
 
 	playerBadgesMap := make(map[string]*PlayerBadge)
@@ -230,44 +238,46 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art, Hidden: gameBadge.Dev}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Dev}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}
 
-			switch gameBadge.ReqType {
-			case "tag":
-				for _, tag := range playerTags {
-					if tag == gameBadge.ReqString {
-						playerBadge.Unlocked = true
-						break
-					}
-				}
-			case "tags":
-				if !gameBadge.ReqOr {
-					playerBadge.GoalsTotal = len(gameBadge.ReqStrings)
-				}
-				for _, tag := range playerTags {
-					for _, cTag := range gameBadge.ReqStrings {
-						if tag == cTag {
-							playerBadge.Goals++
+			if loggedIn {
+				switch gameBadge.ReqType {
+				case "tag":
+					for _, tag := range playerTags {
+						if tag == gameBadge.ReqString {
+							playerBadge.Unlocked = true
 							break
 						}
 					}
-					if (gameBadge.ReqOr && playerBadge.Goals > 0) || (!gameBadge.ReqOr && playerBadge.Goals == playerBadge.GoalsTotal) {
-						playerBadge.Unlocked = true
-						break
+				case "tags":
+					if !gameBadge.ReqOr {
+						playerBadge.GoalsTotal = len(gameBadge.ReqStrings)
 					}
-				}
-			case "exp":
-				playerBadge.Unlocked = playerExp >= gameBadge.ReqInt
-			case "expCompletion":
-				playerBadge.Unlocked = playerEventLocationCompletion >= gameBadge.ReqInt
-			case "timeTrial":
-				playerBadge.Seconds = gameBadge.ReqInt
-				for _, record := range timeTrialRecords {
-					if record.MapId == gameBadge.Map {
-						playerBadge.Unlocked = record.Seconds < gameBadge.ReqInt
+					for _, tag := range playerTags {
+						for _, cTag := range gameBadge.ReqStrings {
+							if tag == cTag {
+								playerBadge.Goals++
+								break
+							}
+						}
+						if (gameBadge.ReqOr && playerBadge.Goals > 0) || (!gameBadge.ReqOr && playerBadge.Goals == playerBadge.GoalsTotal) {
+							playerBadge.Unlocked = true
+							break
+						}
+					}
+				case "exp":
+					playerBadge.Unlocked = playerExp >= gameBadge.ReqInt
+				case "expCompletion":
+					playerBadge.Unlocked = playerEventLocationCompletion >= gameBadge.ReqInt
+				case "timeTrial":
+					playerBadge.Seconds = gameBadge.ReqInt
+					for _, record := range timeTrialRecords {
+						if record.MapId == gameBadge.Map {
+							playerBadge.Unlocked = record.Seconds < gameBadge.ReqInt
+						}
 					}
 				}
 			}
@@ -320,9 +330,13 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string)
 		return gameBadgeA.Order < gameBadgeB.Order
 	})
 
-	playerUnlockedBadgeIds, err := readPlayerUnlockedBadgeIds(playerUuid)
-	if err != nil {
-		return playerBadges, err
+	var playerUnlockedBadgeIds []string
+
+	if loggedIn {
+		playerUnlockedBadgeIds, err = readPlayerUnlockedBadgeIds(playerUuid)
+		if err != nil {
+			return playerBadges, err
+		}
 	}
 
 	unlockPercentages, err := readBadgeUnlockPercentages()
