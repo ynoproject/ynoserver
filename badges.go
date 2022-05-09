@@ -162,9 +162,12 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				if len(c.SwitchIds) > 0 {
 					switchId = c.SwitchIds[0]
 				}
-				switchSyncType := 2
-				if c.SwitchDelay {
-					switchSyncType = 1
+				switchSyncType := 0
+				if trigger == "" {
+					switchSyncType = 2
+					if c.SwitchDelay {
+						switchSyncType = 1
+					}
 				}
 				client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + strconv.Itoa(switchSyncType))
 			} else if c.VarId > 0 || len(c.VarIds) > 0 {
@@ -172,9 +175,12 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				if len(c.VarIds) > 0 {
 					varId = c.VarIds[0]
 				}
-				varSyncType := 2
-				if c.VarDelay {
-					varSyncType = 1
+				varSyncType := 0
+				if trigger == "" {
+					varSyncType = 2
+					if c.VarDelay {
+						varSyncType = 1
+					}
 				}
 				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + strconv.Itoa(varSyncType))
 			} else if checkConditionCoords(c, client) {
