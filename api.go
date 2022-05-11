@@ -79,7 +79,7 @@ func initApi() {
 
 		var response string
 
-		result := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? WHERE CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString)
+		result := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString)
 		err := result.Scan(&response)
 
 		if err != nil {
