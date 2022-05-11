@@ -39,6 +39,7 @@ type Condition struct {
 type Badge struct {
 	Group           string   `json:"group"`
 	Order           int      `json:"order"`
+	MapOrder        int      `json:"mapOrder"`
 	ReqType         string   `json:"reqType"`
 	ReqInt          int      `json:"reqInt"`
 	ReqString       string   `json:"reqString"`
@@ -320,7 +321,9 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		gameBadgeA := badges[playerBadgeA.Game][playerBadgeA.BadgeId]
 		gameBadgeB := badges[playerBadgeB.Game][playerBadgeB.BadgeId]
 
-		if gameBadgeA.Map != gameBadgeB.Map {
+		if gameBadgeA.Order != gameBadgeB.Order {
+			return gameBadgeA.Order < gameBadgeB.Order
+		} else if gameBadgeA.Map != gameBadgeB.Map {
 			sortMapA := gameBadgeA.Map
 			sortMapB := gameBadgeB.Map
 
@@ -333,7 +336,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 			return sortMapA < sortMapB
 		}
 
-		return gameBadgeA.Order < gameBadgeB.Order
+		return gameBadgeA.MapOrder < gameBadgeB.MapOrder
 	})
 
 	var playerUnlockedBadgeIds []string
