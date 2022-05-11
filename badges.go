@@ -108,7 +108,7 @@ func initBadges() {
 }
 
 func updateActiveBadgesAndConditions() {
-	firstBatchDate := time.Date(2022, time.May, 6, 18, 0, 0, 0, time.UTC)
+	firstBatchDate := time.Date(2022, time.May, 6, 20, 0, 0, 0, time.UTC)
 	days := time.Now().UTC().Sub(firstBatchDate).Hours() / 24
 	currentBatch := int(math.Floor(days/7)*2) + 1
 	if math.Mod(days, 7) >= 4 {
