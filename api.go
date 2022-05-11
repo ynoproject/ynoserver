@@ -79,7 +79,7 @@ func initApi() {
 
 		var response string
 
-		result := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ?", actionParam[0], queryString)
+		result := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? WHERE CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString)
 		err := result.Scan(&response)
 
 		if err != nil {
@@ -107,7 +107,7 @@ func initApi() {
 				if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
 					writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
 				} else {
-					_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response) VALUES (?, ?, ?)", actionParam[0], queryString, string(body))
+					_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)) ON DUPLICATE KEY SET response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)", actionParam[0], queryString, string(body), string(body))
 					if err != nil {
 						writeErrLog(getIp(r), r.URL.Path, err.Error())
 					}
