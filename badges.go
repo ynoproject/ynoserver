@@ -31,6 +31,7 @@ type Condition struct {
 	VarValues    []int    `json:"varValues"`
 	VarOps       []string `json:"varOps"`
 	VarDelay     bool     `json:"varDelay"`
+	VarTrigger   bool     `json:"varTrigger"`
 	Trigger      string   `json:"trigger"`
 	Value        string   `json:"value"`
 	TimeTrial    bool     `json:"timeTrial"`
@@ -169,7 +170,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 			continue
 		}
 		if c.Trigger == trigger && (trigger == "" || value == c.Value) {
-			if c.SwitchId > 0 || len(c.SwitchIds) > 0 {
+			if (c.SwitchId > 0 || len(c.SwitchIds) > 0) && !c.VarTrigger {
 				switchId := c.SwitchId
 				if len(c.SwitchIds) > 0 {
 					switchId = c.SwitchIds[0]

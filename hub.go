@@ -796,18 +796,26 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			for _, c := range h.conditions {
 				if switchId == c.SwitchId {
 					if value == c.SwitchValue {
-						if !c.TimeTrial {
-							if checkConditionCoords(c, sender) {
-								success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-								if err != nil {
-									return false, err
+						if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
+							if !c.TimeTrial {
+								if checkConditionCoords(c, sender) {
+									success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+									if err != nil {
+										return false, err
+									}
+									if success {
+										sender.send <- []byte("b")
+									}
 								}
-								if success {
-									sender.send <- []byte("b")
-								}
+							} else if config.gameName == "2kki" {
+								sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 							}
-						} else if config.gameName == "2kki" {
-							sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+						} else {
+							varId := c.VarId
+							if len(c.VarIds) > 0 {
+								varId = c.VarIds[0]
+							}
+							sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + "0")
 						}
 					}
 				} else if len(c.SwitchIds) > 0 {
@@ -815,18 +823,26 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 						if switchId == sId {
 							if value == c.SwitchValues[s] {
 								if s == len(c.SwitchIds)-1 {
-									if !c.TimeTrial {
-										if checkConditionCoords(c, sender) {
-											success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-											if err != nil {
-												return false, err
+									if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
+										if !c.TimeTrial {
+											if checkConditionCoords(c, sender) {
+												success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+												if err != nil {
+													return false, err
+												}
+												if success {
+													sender.send <- []byte("b")
+												}
 											}
-											if success {
-												sender.send <- []byte("b")
-											}
+										} else if config.gameName == "2kki" {
+											sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 										}
-									} else if config.gameName == "2kki" {
-										sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+									} else {
+										varId := c.VarId
+										if len(c.VarIds) > 0 {
+											varId = c.VarIds[0]
+										}
+										sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + "0")
 									}
 								} else {
 									sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchIds[s+1]) + paramDelimStr + "0")
@@ -884,18 +900,26 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 						valid = value != c.VarValue
 					}
 					if valid {
-						if !c.TimeTrial {
-							if checkConditionCoords(c, sender) {
-								success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-								if err != nil {
-									return false, err
+						if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
+							if !c.TimeTrial {
+								if checkConditionCoords(c, sender) {
+									success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+									if err != nil {
+										return false, err
+									}
+									if success {
+										sender.send <- []byte("b")
+									}
 								}
-								if success {
-									sender.send <- []byte("b")
-								}
+							} else if config.gameName == "2kki" {
+								sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 							}
-						} else if config.gameName == "2kki" {
-							sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+						} else {
+							switchId := c.SwitchId
+							if len(c.SwitchIds) > 0 {
+								switchId = c.SwitchIds[0]
+							}
+							sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + "0")
 						}
 					}
 				} else if len(c.VarIds) > 0 {
@@ -918,18 +942,26 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 							}
 							if valid {
 								if v == len(c.VarIds)-1 {
-									if !c.TimeTrial {
-										if checkConditionCoords(c, sender) {
-											success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-											if err != nil {
-												return false, err
+									if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
+										if !c.TimeTrial {
+											if checkConditionCoords(c, sender) {
+												success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+												if err != nil {
+													return false, err
+												}
+												if success {
+													sender.send <- []byte("b")
+												}
 											}
-											if success {
-												sender.send <- []byte("b")
-											}
+										} else if config.gameName == "2kki" {
+											sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 										}
-									} else if config.gameName == "2kki" {
-										sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+									} else {
+										switchId := c.SwitchId
+										if len(c.SwitchIds) > 0 {
+											switchId = c.SwitchIds[0]
+										}
+										sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + "0")
 									}
 								} else {
 									sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarIds[v+1]) + paramDelimStr + "0")
