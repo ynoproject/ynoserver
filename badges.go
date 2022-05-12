@@ -59,6 +59,16 @@ type Badge struct {
 	Dev             bool     `json:"dev"`
 }
 
+type SimplePlayerBadge struct {
+	BadgeId   string `json:"badgeId"`
+	Game      string `json:"game"`
+	Group     string `json:"group"`
+	Overlay   bool   `json:"overlay"`
+	Animated  bool   `json:"animated"`
+	Unlocked  bool   `json:"unlocked"`
+	NewUnlock bool   `json:"newUnlock"`
+}
+
 type PlayerBadge struct {
 	BadgeId         string  `json:"badgeId"`
 	Game            string  `json:"game"`
@@ -217,7 +227,7 @@ func checkConditionCoords(condition *Condition, client *Client) bool {
 	return ((condition.MapX1 == 0 && condition.MapX2 == 0) || (condition.MapX1 <= client.x && condition.MapX2 >= client.x)) && ((condition.MapY1 == 0 && condition.MapY2 == 0) || (condition.MapY1 <= client.y && condition.MapY2 >= client.y))
 }
 
-func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool) (playerBadges []*PlayerBadge, err error) {
+func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool, simple bool) (playerBadges []*PlayerBadge, err error) {
 	playerExp := 0
 	playerEventLocationCompletion := 0
 	var timeTrialRecords []*TimeTrialRecord
@@ -306,38 +316,40 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		playerBadges = append(playerBadges, playerBadge)
 	}
 
-	sort.Slice(playerBadges, func(a, b int) bool {
-		playerBadgeA := playerBadges[a]
-		playerBadgeB := playerBadges[b]
+	if !simple {
+		sort.Slice(playerBadges, func(a, b int) bool {
+			playerBadgeA := playerBadges[a]
+			playerBadgeB := playerBadges[b]
 
-		if playerBadgeA.Game != playerBadgeB.Game {
-			return strings.Compare(playerBadgeA.Game, playerBadgeB.Game) == -1
-		}
-
-		if playerBadgeA.Group != playerBadgeB.Group {
-			return strings.Compare(playerBadgeA.Group, playerBadgeB.Group) == -1
-		}
-
-		gameBadgeA := badges[playerBadgeA.Game][playerBadgeA.BadgeId]
-		gameBadgeB := badges[playerBadgeB.Game][playerBadgeB.BadgeId]
-
-		if gameBadgeA.Order != gameBadgeB.Order {
-			return gameBadgeA.Order < gameBadgeB.Order
-		} else if gameBadgeA.Map != gameBadgeB.Map {
-			sortMapA := gameBadgeA.Map
-			sortMapB := gameBadgeB.Map
-
-			if sortMapA == 0 {
-				sortMapA = 9999
-			} else if sortMapB == 0 {
-				sortMapB = 9999
+			if playerBadgeA.Game != playerBadgeB.Game {
+				return strings.Compare(playerBadgeA.Game, playerBadgeB.Game) == -1
 			}
 
-			return sortMapA < sortMapB
-		}
+			if playerBadgeA.Group != playerBadgeB.Group {
+				return strings.Compare(playerBadgeA.Group, playerBadgeB.Group) == -1
+			}
 
-		return gameBadgeA.MapOrder < gameBadgeB.MapOrder
-	})
+			gameBadgeA := badges[playerBadgeA.Game][playerBadgeA.BadgeId]
+			gameBadgeB := badges[playerBadgeB.Game][playerBadgeB.BadgeId]
+
+			if gameBadgeA.Order != gameBadgeB.Order {
+				return gameBadgeA.Order < gameBadgeB.Order
+			} else if gameBadgeA.Map != gameBadgeB.Map {
+				sortMapA := gameBadgeA.Map
+				sortMapB := gameBadgeB.Map
+
+				if sortMapA == 0 {
+					sortMapA = 9999
+				} else if sortMapB == 0 {
+					sortMapB = 9999
+				}
+
+				return sortMapA < sortMapB
+			}
+
+			return gameBadgeA.MapOrder < gameBadgeB.MapOrder
+		})
+	}
 
 	var playerUnlockedBadgeIds []string
 
@@ -348,16 +360,22 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		}
 	}
 
-	unlockPercentages, err := readBadgeUnlockPercentages()
-	if err != nil {
-		return playerBadges, err
+	var unlockPercentages []*BadgePercentUnlocked
+
+	if !simple {
+		unlockPercentages, err = readBadgeUnlockPercentages()
+		if err != nil {
+			return playerBadges, err
+		}
 	}
 
 	for _, badge := range playerBadges {
-		for _, badgePercentUnlocked := range unlockPercentages {
-			if badge.BadgeId == badgePercentUnlocked.BadgeId {
-				badge.Percent = badgePercentUnlocked.Percent
-				break
+		if !simple {
+			for _, badgePercentUnlocked := range unlockPercentages {
+				if badge.BadgeId == badgePercentUnlocked.BadgeId {
+					badge.Percent = badgePercentUnlocked.Percent
+					break
+				}
 			}
 		}
 
@@ -387,6 +405,35 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	}
 
 	return playerBadges, nil
+}
+
+func readSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool) (playerBadges []*SimplePlayerBadge, err error) {
+	badgeData, err := readPlayerBadgeData(playerUuid, playerRank, playerTags, loggedIn, true)
+	if err != nil {
+		return playerBadges, err
+	}
+
+	for _, badge := range badgeData {
+		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Overlay: badge.Overlay, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock}
+		playerBadges = append(playerBadges, simpleBadge)
+	}
+
+	return playerBadges, nil
+}
+
+func readPlayerNewUnlockedBadgeIds(playerUuid string, playerRank int, playerTags []string) (badgeIds []string, err error) {
+	badgeData, err := readPlayerBadgeData(playerUuid, playerRank, playerTags, true, true)
+	if err != nil {
+		return badgeIds, err
+	}
+
+	for _, badge := range badgeData {
+		if badge.NewUnlock {
+			badgeIds = append(badgeIds, badge.BadgeId)
+		}
+	}
+
+	return badgeIds, nil
 }
 
 func setConditions() {

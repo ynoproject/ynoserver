@@ -844,7 +844,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 					handleInternalError(w, r, err)
 					return
 				}
-				badgeData, err := readPlayerBadgeData(uuid, rank, tags, true)
+				badgeData, err := readPlayerBadgeData(uuid, rank, tags, true, true)
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
@@ -918,17 +918,62 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		badgeData, err := readPlayerBadgeData(uuid, rank, tags, session != "")
+		simple := false
+		simpleParam, ok := r.URL.Query()["simple"]
+		if ok && len(simpleParam) >= 1 {
+			simple = simpleParam[0] == "true"
+		}
+		if simple {
+			simpleBadgeData, err := readSimplePlayerBadgeData(uuid, rank, tags, session != "")
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			simpleBadgeDataJson, err := json.Marshal(simpleBadgeData)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			w.Write([]byte(simpleBadgeDataJson))
+		} else {
+			if session == "" {
+				handleError(w, r, "cannot retrieve player badge data for guest player")
+				return
+			}
+			badgeData, err := readPlayerBadgeData(uuid, rank, tags, true, false)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			badgeDataJson, err := json.Marshal(badgeData)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+			w.Write([]byte(badgeDataJson))
+		}
+		return
+	case "new":
+		var tags []string
+		if session != "" {
+			var err error
+			tags, err = readPlayerTags(uuid)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+		}
+		newUnlockedBadgeIds, err := readPlayerNewUnlockedBadgeIds(uuid, rank, tags)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		badgeDataJson, err := json.Marshal(badgeData)
+		newUnlockedBadgeIdsJson, err := json.Marshal(newUnlockedBadgeIds)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(badgeDataJson))
+		w.Write([]byte(newUnlockedBadgeIdsJson))
 		return
 	case "slotList":
 		badgeSlots, err := readPlayerBadgeSlots(name, badgeSlotRows)
