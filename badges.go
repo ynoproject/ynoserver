@@ -13,27 +13,28 @@ import (
 )
 
 type Condition struct {
-	ConditionId  string `json:"conditionId"`
-	Map          int    `json:"map"`
-	MapX1        int    `json:"mapX1"`
-	MapY1        int    `json:"mapY1"`
-	MapX2        int    `json:"mapX2"`
-	MapY2        int    `json:"mapY2"`
-	SwitchId     int    `json:"switchId"`
-	SwitchValue  bool   `json:"switchValue"`
-	SwitchIds    []int  `json:"switchIds"`
-	SwitchValues []bool `json:"switchValues"`
-	SwitchDelay  bool   `json:"switchDelay"`
-	VarId        int    `json:"varId"`
-	VarValue     int    `json:"varValue"`
-	VarIds       []int  `json:"varIds"`
-	VarValues    []int  `json:"varValues"`
-	VarOp        string `json:"varOp"`
-	VarDelay     bool   `json:"varDelay"`
-	Trigger      string `json:"trigger"`
-	Value        string `json:"value"`
-	TimeTrial    bool   `json:"timeTrial"`
-	Disabled     bool   `json:"disabled"`
+	ConditionId  string   `json:"conditionId"`
+	Map          int      `json:"map"`
+	MapX1        int      `json:"mapX1"`
+	MapY1        int      `json:"mapY1"`
+	MapX2        int      `json:"mapX2"`
+	MapY2        int      `json:"mapY2"`
+	SwitchId     int      `json:"switchId"`
+	SwitchValue  bool     `json:"switchValue"`
+	SwitchIds    []int    `json:"switchIds"`
+	SwitchValues []bool   `json:"switchValues"`
+	SwitchDelay  bool     `json:"switchDelay"`
+	VarId        int      `json:"varId"`
+	VarValue     int      `json:"varValue"`
+	VarOp        string   `json:"varOp"`
+	VarIds       []int    `json:"varIds"`
+	VarValues    []int    `json:"varValues"`
+	VarOps       []string `json:"varOps"`
+	VarDelay     bool     `json:"varDelay"`
+	Trigger      string   `json:"trigger"`
+	Value        string   `json:"value"`
+	TimeTrial    bool     `json:"timeTrial"`
+	Disabled     bool     `json:"disabled"`
 }
 
 type Badge struct {
@@ -466,8 +467,18 @@ func setConditions() {
 				if err == nil {
 					conditionId := conditionConfigFile.Name()[:len(conditionConfigFile.Name())-5]
 					condition.ConditionId = conditionId
-					if (condition.VarId > 0 || len(condition.VarIds) > 0) && condition.VarOp == "" {
-						condition.VarOp = "="
+					if condition.VarId > 0 {
+						if condition.VarOp == "" {
+							condition.VarOp = "="
+						}
+					} else if len(condition.VarIds) > 0 {
+						if len(condition.VarOps) < len(condition.VarIds) {
+							for v := range condition.VarIds {
+								if v >= len(condition.VarOps) {
+									condition.VarOps = append(condition.VarOps, "=")
+								}
+							}
+						}
 					}
 					conditionConfig[gameId][conditionId] = condition
 				}

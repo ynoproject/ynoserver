@@ -902,7 +902,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 					for v, vId := range c.VarIds {
 						if varId == vId {
 							valid := false
-							switch c.VarOp {
+							switch c.VarOps[v] {
 							case "=":
 								valid = value == c.VarValues[v]
 							case "<":
