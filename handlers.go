@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (h *Hub) handleTp(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleM(msg []string, sender *Client) (terminate bool, err error) {
 	if len(msg) != 3 {
 		return false, err
 	}
@@ -89,7 +89,7 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (terminate bool, err error
 	return terminate, nil
 }
 
-func (h *Hub) handleRfl(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleFl(msg []string, sender *Client) (terminate bool, err error) {
 	if len(msg) != 6 {
 		return false, err
 	}
@@ -190,7 +190,7 @@ func (h *Hub) handleSe(msg []string, sender *Client) (terminate bool, err error)
 	return terminate, nil
 }
 
-func (h *Hub) handleMp(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleP(msg []string, sender *Client) (terminate bool, err error) {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
