@@ -1170,14 +1170,14 @@ func tryWritePlayerMinigameScore(playerUuid string, minigameId string, score int
 	} else if score <= prevScore {
 		return false, nil
 	} else if prevScore > 0 {
-		_, err = db.Exec("UPDATE playerMinigameScores SET score = ?, timestampCompleted = ? WHERE uuid = ? AND minigameId = ?", score, time.Now(), playerUuid, minigameId)
+		_, err = db.Exec("UPDATE playerMinigameScores SET score = ?, timestampCompleted = ? WHERE uuid = ? AND game = ? AND minigameId = ?", score, time.Now(), playerUuid, config.gameName, minigameId)
 		if err != nil {
 			return false, err
 		}
 		return true, nil
 	}
 
-	_, err = db.Exec("INSERT INTO playerMinigameScores (uuid, minigameId, score, timestampCompleted) VALUES (?, ?, ?, ?)", playerUuid, minigameId, score, time.Now())
+	_, err = db.Exec("INSERT INTO playerMinigameScores (uuid, game, minigameId, score, timestampCompleted) VALUES (?, ?, ?, ?, ?, ?)", playerUuid, config.gameName, minigameId, score, time.Now())
 	if err != nil {
 		return false, err
 	}
