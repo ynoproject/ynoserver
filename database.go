@@ -1137,15 +1137,17 @@ func readPlayerMinigameScore(playerUuid string, minigameId string) (score int, e
 }
 
 func tryWritePlayerMinigameScore(playerUuid string, minigameId string, score int) (success bool, err error) {
+	if score <= 0 {
+		return false, nil
+	}
+
 	prevScore, err := readPlayerMinigameScore(playerUuid, minigameId)
 
 	if err != nil {
-		if err != sql.ErrNoRows {
-			return false, err
-		}
+		return false, err
 	} else if score <= prevScore {
 		return false, nil
-	} else {
+	} else if prevScore > 0 {
 		_, err = db.Exec("UPDATE playerMinigameScores SET score = ?, timestampCompleted = ? WHERE uuid = ? AND minigameId = ?", score, time.Now(), playerUuid, minigameId)
 		if err != nil {
 			return false, err
