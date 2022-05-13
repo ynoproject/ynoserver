@@ -1177,7 +1177,7 @@ func tryWritePlayerMinigameScore(playerUuid string, minigameId string, score int
 		return true, nil
 	}
 
-	_, err = db.Exec("INSERT INTO playerMinigameScores (uuid, game, minigameId, score, timestampCompleted) VALUES (?, ?, ?, ?, ?, ?)", playerUuid, config.gameName, minigameId, score, time.Now())
+	_, err = db.Exec("INSERT INTO playerMinigameScores (uuid, game, minigameId, score, timestampCompleted) VALUES (?, ?, ?, ?, ?)", playerUuid, config.gameName, minigameId, score, time.Now())
 	if err != nil {
 		return false, err
 	}
