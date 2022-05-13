@@ -394,43 +394,45 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	case "m": //moved to x y
 		fallthrough
 	case "tp": //teleported to x y
-		terminate, err = h.handleM(msgFields, sender)
+		err = h.handleM(msgFields, sender)
 	case "f": //change facing direction
-		terminate, err = h.handleF(msgFields, sender)
+		err = h.handleF(msgFields, sender)
 	case "spd": //change my speed to spd
-		terminate, err = h.handleSpd(msgFields, sender)
+		err = h.handleSpd(msgFields, sender)
 	case "spr": //change my sprite
-		terminate, err = h.handleSpr(msgFields, sender)
+		err = h.handleSpr(msgFields, sender)
 	case "fl": //player flash
 		fallthrough
 	case "rfl": //repeating player flash
-		terminate, err = h.handleFl(msgFields, sender)
+		err = h.handleFl(msgFields, sender)
 	case "rrfl": //remove repeating player flash
-		terminate, err = h.handleRrfl(msgFields, sender)
+		err = h.handleRrfl(msgFields, sender)
 	case "t": //change my tone
-		terminate, err = h.handleT(msgFields, sender)
+		err = h.handleT(msgFields, sender)
 	case "se": //play sound effect
-		terminate, err = h.handleSe(msgFields, sender)
+		err = h.handleSe(msgFields, sender)
 	case "ap": // picture shown
 		fallthrough
 	case "mp": // picture moved
-		terminate, err = h.handleP(msgFields, sender)
+		err = h.handleP(msgFields, sender)
 	case "rp": // picture erased
-		terminate, err = h.handleRp(msgFields, sender)
+		err = h.handleRp(msgFields, sender)
 	case "say":
 		fallthrough
 	case "gsay": //global say
 		fallthrough
 	case "psay": //party say
-		terminate, err = h.handleSay(msgFields, sender)
+		err = h.handleSay(msgFields, sender)
+		terminate = true
 	case "name": // nick set
-		terminate, err = h.handleName(msgFields, sender)
+		err = h.handleName(msgFields, sender)
+		terminate = true
 	case "ss": // sync switch
-		terminate, err = h.handleSs(msgFields, sender)
+		err = h.handleSs(msgFields, sender)
 	case "sv": // sync variable
-		terminate, err = h.handleSv(msgFields, sender)
+		err = h.handleSv(msgFields, sender)
 	case "sev":
-		terminate, err = h.handleSev(msgFields, sender)
+		err = h.handleSev(msgFields, sender)
 	default:
 		return false, err
 	}

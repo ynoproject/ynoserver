@@ -6,18 +6,18 @@ import (
 	"strings"
 )
 
-func (h *Hub) handleM(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
-		return false, err
+		return err
 	}
 	//check if the coordinates are valid
 	x, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || x < 0 {
-		return false, errconv
+		return errconv
 	}
 	y, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || y < 0 {
-		return false, errconv
+		return errconv
 	}
 	sender.x = x
 	sender.y = y
@@ -28,90 +28,90 @@ func (h *Hub) handleM(msg []string, sender *Client) (terminate bool, err error) 
 		checkHubConditions(h, sender, "teleport", "")
 	}
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleF(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleF(msg []string, sender *Client) (err error) {
 	if len(msg) != 2 {
-		return false, err
+		return err
 	}
 	//check if direction is valid
 	facing, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || facing < 0 || facing > 3 {
-		return false, errconv
+		return errconv
 	}
 	sender.facing = facing
 	h.broadcast([]byte("f" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1])) //user %id% facing changed to f
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleSpd(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleSpd(msg []string, sender *Client) (err error) {
 	if len(msg) != 2 {
-		return false, err
+		return err
 	}
 	spd, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	if spd < 0 || spd > 10 { //something's not right
-		return false, errconv
+		return errconv
 	}
 	sender.spd = spd
 	h.broadcast([]byte("spd" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleSpr(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
-		return false, err
+		return err
 	}
 	if !isValidSpriteName(msg[1]) {
-		return false, err
+		return err
 	}
 	if config.gameName == "2kki" { //totally normal yume 2kki check
 		if !strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") {
-			return false, err
+			return err
 		}
 		if strings.Contains(msg[1], "zenmaigaharaten_kisekae") && h.roomName != "176" {
-			return false, err
+			return err
 		}
 	}
 	index, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || index < 0 {
-		return false, errconv
+		return errconv
 	}
 	sender.spriteName = msg[1]
 	sender.spriteIndex = index
 	h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2]))
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleFl(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleFl(msg []string, sender *Client) (err error) {
 	if len(msg) != 6 {
-		return false, err
+		return err
 	}
 	red, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || red < 0 || red > 255 {
-		return false, errconv
+		return errconv
 	}
 	green, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || green < 0 || green > 255 {
-		return false, errconv
+		return errconv
 	}
 	blue, errconv := strconv.Atoi(msg[3])
 	if errconv != nil || blue < 0 || blue > 255 {
-		return false, errconv
+		return errconv
 	}
 	power, errconv := strconv.Atoi(msg[4])
 	if errconv != nil || power < 0 {
-		return false, errconv
+		return errconv
 	}
 	frames, errconv := strconv.Atoi(msg[5])
 	if errconv != nil || frames < 0 {
-		return false, errconv
+		return errconv
 	}
 	if msg[0] == "rfl" {
 		sender.flash[0] = red
@@ -123,39 +123,39 @@ func (h *Hub) handleFl(msg []string, sender *Client) (terminate bool, err error)
 	}
 	h.broadcast([]byte(msg[0] + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2] + paramDelimStr + msg[3] + paramDelimStr + msg[4] + paramDelimStr + msg[5]))
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleRrfl(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleRrfl(msg []string, sender *Client) (err error) {
 	sender.repeatingFlash = false
 	for i := 0; i < 5; i++ {
 		sender.flash[i] = 0
 	}
 	h.broadcast([]byte("rrfl" + paramDelimStr + strconv.Itoa(sender.id)))
 
-	return terminate, nil
+	return nil
 }
 
 
-func (h *Hub) handleT(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleT(msg []string, sender *Client) (err error) {
 	if len(msg) != 5 {
-		return false, err
+		return err
 	}
 	red, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || red < 0 || red > 255 {
-		return false, errconv
+		return errconv
 	}
 	green, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || green < 0 || green > 255 {
-		return false, errconv
+		return errconv
 	}
 	blue, errconv := strconv.Atoi(msg[3])
 	if errconv != nil || blue < 0 || blue > 255 {
-		return false, errconv
+		return errconv
 	}
 	gray, errconv := strconv.Atoi(msg[4])
 	if errconv != nil || red < 0 || gray > 255 {
-		return false, errconv
+		return errconv
 	}
 	sender.tone[0] = red
 	sender.tone[1] = green
@@ -163,134 +163,134 @@ func (h *Hub) handleT(msg []string, sender *Client) (terminate bool, err error) 
 	sender.tone[3] = gray
 	h.broadcast([]byte("t" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2] + paramDelimStr + msg[3] + paramDelimStr + msg[4]))
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleSe(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleSe(msg []string, sender *Client) (err error) {
 	if len(msg) != 5 || msg[1] == "" {
-		return false, err
+		return err
 	}
 	if !isValidSoundName(msg[1]) {
-		return false, err
+		return err
 	}
 	volume, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || volume < 0 || volume > 100 {
-		return false, errconv
+		return errconv
 	}
 	tempo, errconv := strconv.Atoi(msg[3])
 	if errconv != nil || tempo < 10 || tempo > 400 {
-		return false, errconv
+		return errconv
 	}
 	balance, errconv := strconv.Atoi(msg[4])
 	if errconv != nil || balance < 0 || balance > 100 {
-		return false, errconv
+		return errconv
 	}
 	h.broadcast([]byte("se" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2] + paramDelimStr + msg[3] + paramDelimStr + msg[4]))
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleP(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
 		msgLength = msgLength + 2
 	}
 	if len(msg) != msgLength {
-		return false, err
+		return err
 	}
 
 	if isShow {
 		checkHubConditions(h, sender, "picture", msg[17])
 		if !isValidPicName(msg[17]) {
-			return false, err
+			return err
 		}
 	}
 
 	picId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || picId < 1 {
-		return false, errconv
+		return errconv
 	}
 
 	positionX, errconv := strconv.Atoi(msg[2])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	positionY, errconv := strconv.Atoi(msg[3])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	mapX, errconv := strconv.Atoi(msg[4])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	mapY, errconv := strconv.Atoi(msg[5])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	panX, errconv := strconv.Atoi(msg[6])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	panY, errconv := strconv.Atoi(msg[7])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 
 	magnify, errconv := strconv.Atoi(msg[8])
 	if errconv != nil || magnify < 0 {
-		return false, errconv
+		return errconv
 	}
 	topTrans, errconv := strconv.Atoi(msg[9])
 	if errconv != nil || topTrans < 0 {
-		return false, errconv
+		return errconv
 	}
 	bottomTrans, errconv := strconv.Atoi(msg[10])
 	if errconv != nil || bottomTrans < 0 {
-		return false, errconv
+		return errconv
 	}
 
 	red, errconv := strconv.Atoi(msg[11])
 	if errconv != nil || red < 0 || red > 200 {
-		return false, errconv
+		return errconv
 	}
 	green, errconv := strconv.Atoi(msg[12])
 	if errconv != nil || green < 0 || green > 200 {
-		return false, errconv
+		return errconv
 	}
 	blue, errconv := strconv.Atoi(msg[13])
 	if errconv != nil || blue < 0 || blue > 200 {
-		return false, errconv
+		return errconv
 	}
 	saturation, errconv := strconv.Atoi(msg[14])
 	if errconv != nil || saturation < 0 || saturation > 200 {
-		return false, errconv
+		return errconv
 	}
 
 	effectMode, errconv := strconv.Atoi(msg[15])
 	if errconv != nil || effectMode < 0 {
-		return false, errconv
+		return errconv
 	}
 	effectPower, errconv := strconv.Atoi(msg[16])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 
 	var pic *Picture
 	if isShow {
 		picName := msg[17]
 		if picName == "" {
-			return false, err
+			return err
 		}
 
 		useTransparentColorBin, errconv := strconv.Atoi(msg[18])
 		if errconv != nil || useTransparentColorBin < 0 || useTransparentColorBin > 1 {
-			return false, errconv
+			return errconv
 		}
 
 		fixedToMapBin, errconv := strconv.Atoi(msg[19])
 		if errconv != nil || fixedToMapBin < 0 || fixedToMapBin > 1 {
-			return false, errconv
+			return errconv
 		}
 
 		pic = &Picture{
@@ -300,21 +300,21 @@ func (h *Hub) handleP(msg []string, sender *Client) (terminate bool, err error) 
 		}
 
 		if _, found := sender.pictures[picId]; found {
-			rpTerminate, rpErr := h.processMsg("rp"+paramDelimStr+msg[1], sender)
+			_, rpErr := h.processMsg("rp"+paramDelimStr+msg[1], sender)
 			if rpErr != nil {
-				return rpTerminate, rpErr
+				return rpErr
 			}
 		}
 	} else {
 		if _, found := sender.pictures[picId]; found {
 			duration, errconv := strconv.Atoi(msg[17])
 			if errconv != nil || duration < 0 {
-				return false, errconv
+				return errconv
 			}
 
 			pic = sender.pictures[picId]
 		} else {
-			return false, nil
+			return nil
 		}
 	}
 
@@ -341,40 +341,40 @@ func (h *Hub) handleP(msg []string, sender *Client) (terminate bool, err error) 
 	h.broadcast([]byte(message))
 	sender.pictures[picId] = pic
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleRp(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
 		if len(msg) != 2 {
-			return false, err
+			return err
 		}
 		picId, errconv := strconv.Atoi(msg[1])
 		if errconv != nil || picId < 1 {
-			return false, errconv
+			return errconv
 		}
 		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
 		delete(sender.pictures, picId)
 
-		return terminate, nil
+		return nil
 }
 
-func (h *Hub) handleSay(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
 	msgLength := 2
 	if msg[0] == "gsay" {
 		msgLength++
 	}
 	if len(msg) != msgLength {
-		return true, err
+		return err
 	}
 	msgContents := strings.TrimSpace(msg[1])
 	if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
-		return true, err
+		return err
 	}
 	switch msg[0] {
 	case "gsay":
 		enableLocBin, errconv := strconv.Atoi(msg[2])
 		if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
-			return false, errconv
+			return errconv
 		}
 
 		mapId := "0000"
@@ -400,14 +400,14 @@ func (h *Hub) handleSay(msg []string, sender *Client) (terminate bool, err error
 	case "psay":
 		partyId, err := readPlayerPartyId(sender.uuid)
 		if err != nil {
-			return true, err
+			return err
 		}
 		if partyId == 0 {
-			return true, errors.New("player not in a party")
+			return errors.New("player not in a party")
 		}
 		partyMemberUuids, err := readPartyMemberUuids(partyId)
 		if err != nil {
-			return true, err
+			return err
 		}
 		for _, uuid := range partyMemberUuids {
 			if _, ok := allClients[uuid]; ok {
@@ -417,34 +417,32 @@ func (h *Hub) handleSay(msg []string, sender *Client) (terminate bool, err error
 	default:
 		h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
 	}
-	terminate = true
 
-	return terminate, nil
+	return nil
 }
 
 
-func (h *Hub) handleName(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleName(msg []string, sender *Client) (err error) {
 	if sender.name != "" || len(msg) != 2 || !isOkString(msg[1]) || len(msg[1]) > 12 {
-		return true, err
+		return err
 	}
 	sender.name = msg[1]
 	h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
-	terminate = true
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleSs(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
-		return false, err
+		return err
 	}
 	switchId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	valueBin, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || valueBin < 0 || valueBin > 1 {
-		return false, errconv
+		return errconv
 	}
 	value := false
 	if valueBin == 1 {
@@ -489,7 +487,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (terminate bool, err error)
 								if checkConditionCoords(c, sender) {
 									success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 									if err != nil {
-										return false, err
+										return err
 									}
 									if success {
 										sender.send <- []byte("b")
@@ -514,7 +512,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (terminate bool, err error)
 									if checkConditionCoords(c, sender) {
 										success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 										if err != nil {
-											return false, err
+											return err
 										}
 										if success {
 											sender.send <- []byte("b")
@@ -539,20 +537,20 @@ func (h *Hub) handleSs(msg []string, sender *Client) (terminate bool, err error)
 		}
 	}
 
-	return terminate, nil
+	return nil
 }
 
-func (h *Hub) handleSv(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
-		return false, err
+		return err
 	}
 	varId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	value, errconv := strconv.Atoi(msg[2])
 	if errconv != nil {
-		return false, errconv
+		return errconv
 	}
 	sender.varCache[varId] = value
 	if varId == 88 && config.gameName == "2kki" {
@@ -562,7 +560,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (terminate bool, err error)
 					mapId, _ := strconv.Atoi(h.roomName)
 					success, err := tryWritePlayerTimeTrial(sender.uuid, mapId, value)
 					if err != nil {
-						return false, err
+						return err
 					}
 					if success {
 						sender.send <- []byte("b")
@@ -614,7 +612,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (terminate bool, err error)
 								if checkConditionCoords(c, sender) {
 									success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 									if err != nil {
-										return false, err
+										return err
 									}
 									if success {
 										sender.send <- []byte("b")
@@ -639,7 +637,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (terminate bool, err error)
 									if checkConditionCoords(c, sender) {
 										success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
 										if err != nil {
-											return false, err
+											return err
 										}
 										if success {
 											sender.send <- []byte("b")
@@ -664,17 +662,17 @@ func (h *Hub) handleSv(msg []string, sender *Client) (terminate bool, err error)
 		}
 	}
 
-	return terminate, nil
+	return nil
 }
 
 
-func (h *Hub) handleSev(msg []string, sender *Client) (terminate bool, err error) {
+func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
-		return false, err
+		return err
 	}
 	actionBin, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || actionBin < 0 || actionBin > 1 {
-		return false, errconv
+		return errconv
 	}
 	triggerType := "event"
 	if actionBin == 1 {
@@ -682,5 +680,5 @@ func (h *Hub) handleSev(msg []string, sender *Client) (terminate bool, err error
 	}
 	checkHubConditions(h, sender, triggerType, msg[1])
 
-	return terminate, nil
+	return nil
 }
