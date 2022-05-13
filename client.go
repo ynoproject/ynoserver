@@ -93,6 +93,8 @@ type Client struct {
 
 	tags []string
 
+	minigameScores []int
+
 	switchCache map[int]bool
 	varCache    map[int]int
 

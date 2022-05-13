@@ -273,6 +273,20 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				if len(c.VarIds) > 0 {
 					varId = c.VarIds[0]
 				}
+
+				if len(h.minigameConfigs) > 0 {
+					skipVarSync := false
+					for _, minigame := range h.minigameConfigs {
+						if minigame.VarId == varId {
+							skipVarSync = true
+							break
+						}
+					}
+					if skipVarSync {
+						continue
+					}
+				}
+
 				varSyncType := 0
 				if trigger == "" {
 					varSyncType = 2

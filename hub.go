@@ -69,6 +69,8 @@ type Hub struct {
 	roomName string
 
 	conditions []*Condition
+
+	minigameConfigs []*MinigameConfig
 }
 
 func createAllHubs(roomNames []string) {
@@ -85,13 +87,14 @@ func addHub(roomName string) {
 
 func newHub(roomName string) *Hub {
 	return &Hub{
-		processMsgCh: make(chan *Message),
-		connect:      make(chan *ConnInfo),
-		unregister:   make(chan *Client),
-		clients:      make(map[*Client]bool),
-		id:           make(map[int]bool),
-		roomName:     roomName,
-		conditions:   getHubConditions(roomName),
+		processMsgCh:    make(chan *Message),
+		connect:         make(chan *ConnInfo),
+		unregister:      make(chan *Client),
+		clients:         make(map[*Client]bool),
+		id:              make(map[int]bool),
+		roomName:        roomName,
+		conditions:      getHubConditions(roomName),
+		minigameConfigs: getHubMinigameConfigs(roomName),
 	}
 }
 
@@ -240,6 +243,15 @@ func (h *Hub) run() {
 			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge)) //user %id% has connected message
 
 			checkHubConditions(h, client, "", "")
+
+			for _, minigame := range h.minigameConfigs {
+				score, err := readPlayerMinigameScore(uuid, minigame.MinigameId)
+				if err != nil {
+					writeErrLog(conn.Ip, h.roomName, "failed to read player minigame score for "+minigame.MinigameId)
+				}
+				client.minigameScores = append(client.minigameScores, score)
+				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(minigame.VarId) + paramDelimStr + "2")
+			}
 
 			//send account-specific data like username
 			if isLoggedIn {
@@ -909,6 +921,14 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 				}
 			}
 		} else {
+			if len(sender.hub.minigameConfigs) > 0 {
+				for m, minigame := range sender.hub.minigameConfigs {
+					if minigame.VarId == varId && sender.minigameScores[m] < value {
+						tryWritePlayerMinigameScore(sender.uuid, minigame.MinigameId, value)
+					}
+				}
+			}
+
 			for _, c := range h.conditions {
 				validSwitches := c.VarTrigger
 				if !c.VarTrigger {

@@ -1121,6 +1121,46 @@ func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success
 	return true, nil
 }
 
+func readPlayerMinigameScore(playerUuid string, minigameId string) (score int, err error) {
+	results := db.QueryRow("SELECT score FROM playerMinigameScores WHERE uuid = ? AND minigameId = ?", playerUuid, minigameId)
+	err = results.Scan(&score)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		} else {
+			return 0, err
+		}
+	}
+
+	return score, nil
+}
+
+func tryWritePlayerMinigameScore(playerUuid string, minigameId string, score int) (success bool, err error) {
+	prevScore, err := readPlayerMinigameScore(playerUuid, minigameId)
+
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return false, err
+		}
+	} else if score <= prevScore {
+		return false, nil
+	} else {
+		_, err = db.Exec("UPDATE playerMinigameScores SET score = ?, timestampCompleted = ? WHERE uuid = ? AND minigameId = ?", score, time.Now(), playerUuid, minigameId)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	_, err = db.Exec("INSERT INTO playerMinigameScores (uuid, minigameId, score, timestampCompleted) VALUES (?, ?, ?, ?)", playerUuid, minigameId, score, time.Now())
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 	results, err := db.Query("SELECT categoryId, game FROM rankingCategories WHERE game IN ('', ?) ORDER BY ordinal", config.gameName)
 	if err != nil {
