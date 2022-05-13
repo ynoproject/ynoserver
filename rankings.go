@@ -114,6 +114,18 @@ func initRankings() {
 		}
 	}
 
+	gameMinigameIds, err := readGameMinigameIds()
+	if err != nil {
+		writeErrLog("SERVER", "minigame", err.Error())
+	} else {
+		minigameCategory := &RankingCategory{CategoryId: "minigame", Game: config.gameName}
+		rankingCategories = append(rankingCategories, minigameCategory)
+
+		for _, minigameId := range gameMinigameIds {
+			minigameCategory.SubCategories = append(minigameCategory.SubCategories, RankingSubCategory{SubCategoryId: minigameId, Game: config.gameName})
+		}
+	}
+
 	for c, category := range rankingCategories {
 		err := writeRankingCategory(category.CategoryId, category.Game, c)
 		if err != nil {

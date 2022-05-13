@@ -1121,6 +1121,28 @@ func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success
 	return true, nil
 }
 
+func readGameMinigameIds() (minigameIds []string, err error) {
+	results, err := db.Query("SELECT DISTINCT minigameId FROM playerMinigameScores WHERE game = ? ORDER BY minigameId", config.gameName)
+
+	if err != nil {
+		return minigameIds, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var minigameId string
+		err := results.Scan(&minigameId)
+		if err != nil {
+			return minigameIds, err
+		}
+
+		minigameIds = append(minigameIds, minigameId)
+	}
+
+	return minigameIds, nil
+}
+
 func readPlayerMinigameScore(playerUuid string, minigameId string) (score int, err error) {
 	results := db.QueryRow("SELECT score FROM playerMinigameScores WHERE uuid = ? AND minigameId = ?", playerUuid, minigameId)
 	err = results.Scan(&score)
@@ -1346,6 +1368,8 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		query += " GROUP BY a.user ORDER BY 5 DESC, 6"
 	case "timeTrial":
 		query += "SELECT ?, ?, RANK() OVER (ORDER BY MIN(tt.seconds)), tt.uuid, MIN(tt.seconds), (SELECT MAX(att.timestampCompleted) FROM playerTimeTrials att WHERE att.uuid = tt.uuid AND att.mapId = tt.mapId AND att.seconds = tt.seconds) FROM playerTimeTrials tt WHERE tt.mapId = ? GROUP BY tt.uuid ORDER BY 5, 6"
+	case "minigame":
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY MAX(ms.score) DESC), ms.uuid, MAX(ms.score), (SELECT MAX(ams.timestampCompleted) FROM playerMinigameScores ams WHERE ams.uuid = ms.uuid AND ams.minigameId = ms.minigameId AND ams.score = ms.score) FROM playerMinigameScores ms WHERE ms.minigameId = ? GROUP BY ms.uuid ORDER BY 5 DESC, 6"
 	}
 
 	if isFiltered {
