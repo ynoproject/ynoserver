@@ -592,7 +592,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 			for m, minigame := range sender.hub.minigameConfigs {
 				if minigame.VarId == varId && sender.minigameScores[m] < value {
 					if minigame.SwitchId > 0 {
-						sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+						sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(minigame.SwitchId) + paramDelimStr + "0")
 					} else {
 						tryWritePlayerMinigameScore(sender.uuid, minigame.MinigameId, value)
 					}
