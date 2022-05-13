@@ -344,17 +344,17 @@ func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 }
 
 func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
-		if len(msg) != 2 {
-			return err
-		}
-		picId, errconv := strconv.Atoi(msg[1])
-		if errconv != nil || picId < 1 {
-			return errconv
-		}
-		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
-		delete(sender.pictures, picId)
+	if len(msg) != 2 {
+		return err
+	}
+	picId, errconv := strconv.Atoi(msg[1])
+	if errconv != nil || picId < 1 {
+		return errconv
+	}
+	h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
+	delete(sender.pictures, picId)
 
-		return nil
+	return nil
 }
 
 func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
@@ -450,6 +450,14 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 	if switchId == 1430 && config.gameName == "2kki" {
 		sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 	} else {
+		if len(sender.hub.minigameConfigs) > 0 {
+			for m, minigame := range sender.hub.minigameConfigs {
+				if minigame.SwitchId == switchId && minigame.SwitchValue == value && sender.minigameScores[m] < sender.varCache[minigame.VarId] {
+					tryWritePlayerMinigameScore(sender.uuid, minigame.MinigameId, sender.varCache[minigame.VarId])
+				}
+			}
+		}
+
 		for _, c := range h.conditions {
 			validVars := !c.VarTrigger
 			if c.VarTrigger {
@@ -570,7 +578,11 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 		if len(sender.hub.minigameConfigs) > 0 {
 			for m, minigame := range sender.hub.minigameConfigs {
 				if minigame.VarId == varId && sender.minigameScores[m] < value {
-					tryWritePlayerMinigameScore(sender.uuid, minigame.MinigameId, value)
+					if minigame.SwitchId > 0 {
+						sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+					} else {
+						tryWritePlayerMinigameScore(sender.uuid, minigame.MinigameId, value)
+					}
 				}
 			}
 		}
