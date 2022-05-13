@@ -26,6 +26,7 @@ type Condition struct {
 	SwitchDelay  bool     `json:"switchDelay"`
 	VarId        int      `json:"varId"`
 	VarValue     int      `json:"varValue"`
+	VarValue2    int      `json:"varValue2"`
 	VarOp        string   `json:"varOp"`
 	VarIds       []int    `json:"varIds"`
 	VarValues    []int    `json:"varValues"`
@@ -34,6 +35,7 @@ type Condition struct {
 	VarTrigger   bool     `json:"varTrigger"`
 	Trigger      string   `json:"trigger"`
 	Value        string   `json:"value"`
+	Values       []string `json:"values"`
 	TimeTrial    bool     `json:"timeTrial"`
 	Disabled     bool     `json:"disabled"`
 }
@@ -73,6 +75,8 @@ func (c Condition) checkVar(varId int, value int) (bool, int) {
 			valid = value >= c.VarValue
 		case "!=":
 			valid = value != c.VarValue
+		case ">=<":
+			valid = value >= c.VarValue && value < c.VarValue2
 		}
 		return valid, 0
 	} else if len(c.VarIds) > 0 {
@@ -112,7 +116,7 @@ type Badge struct {
 	ReqInt          int      `json:"reqInt"`
 	ReqString       string   `json:"reqString"`
 	ReqStrings      []string `json:"reqStrings"`
-	ReqOr           bool     `json:"reqOr"`
+	ReqCount        int      `json:"reqCount"`
 	Map             int      `json:"map"`
 	MapX            int      `json:"mapX"`
 	MapY            int      `json:"mapY"`
@@ -235,7 +239,22 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 		if c.Disabled && client.rank < 2 {
 			continue
 		}
-		if c.Trigger == trigger && (trigger == "" || value == c.Value) {
+
+		valueMatched := trigger == ""
+		if c.Trigger == trigger && !valueMatched {
+			if len(c.Values) == 0 {
+				valueMatched = value == c.Value
+			} else {
+				for _, val := range c.Values {
+					if value == val {
+						valueMatched = true
+						break
+					}
+				}
+			}
+		}
+
+		if c.Trigger == trigger && valueMatched {
 			if (c.SwitchId > 0 || len(c.SwitchIds) > 0) && !c.VarTrigger {
 				switchId := c.SwitchId
 				if len(c.SwitchIds) > 0 {
@@ -277,16 +296,24 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				}
 			}
 		} else if trigger == "" && (c.Trigger == "event" || c.Trigger == "eventAction") {
-			_, err := strconv.Atoi(c.Value)
-			if err != nil {
-				writeErrLog(client.ip, h.roomName, err.Error())
-				continue
+			var values []string
+			if len(c.Values) == 0 {
+				values = append(values, c.Value)
+			} else {
+				values = c.Values
 			}
-			eventTriggerType := 0
-			if c.Trigger == "eventAction" {
-				eventTriggerType = 1
+			for _, value := range values {
+				_, err := strconv.Atoi(value)
+				if err != nil {
+					writeErrLog(client.ip, h.roomName, err.Error())
+					continue
+				}
+				eventTriggerType := 0
+				if c.Trigger == "eventAction" {
+					eventTriggerType = 1
+				}
+				client.send <- []byte("sev" + paramDelimStr + value + paramDelimStr + strconv.Itoa(eventTriggerType))
 			}
-			client.send <- []byte("sev" + paramDelimStr + c.Value + paramDelimStr + strconv.Itoa(eventTriggerType))
 		}
 	}
 }
@@ -338,8 +365,10 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 						}
 					}
 				case "tags":
-					if !gameBadge.ReqOr {
+					if gameBadge.ReqCount == 0 || gameBadge.ReqCount >= len(gameBadge.ReqStrings) {
 						playerBadge.GoalsTotal = len(gameBadge.ReqStrings)
+					} else {
+						playerBadge.GoalsTotal = gameBadge.ReqCount
 					}
 					for _, tag := range playerTags {
 						for _, cTag := range gameBadge.ReqStrings {
@@ -348,7 +377,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 								break
 							}
 						}
-						if (gameBadge.ReqOr && playerBadge.Goals > 0) || (!gameBadge.ReqOr && playerBadge.Goals == playerBadge.GoalsTotal) {
+						if (gameBadge.ReqCount > 0 && playerBadge.Goals >= gameBadge.ReqCount) || (gameBadge.ReqCount == 0 && playerBadge.Goals == playerBadge.GoalsTotal) {
 							playerBadge.Unlocked = true
 							break
 						}

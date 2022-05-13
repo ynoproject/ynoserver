@@ -797,7 +797,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 		} else {
 			for _, c := range h.conditions {
-
 				validVars := !c.VarTrigger
 				if c.VarTrigger {
 					if c.VarId > 0 {
@@ -911,7 +910,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		} else {
 			for _, c := range h.conditions {
-
 				validSwitches := c.VarTrigger
 				if !c.VarTrigger {
 					if c.SwitchId > 0 {
