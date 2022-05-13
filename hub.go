@@ -410,7 +410,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	case "t": //change my tone
 		err = h.handleT(msgFields, sender)
 	case "sys": //change my system graphic
-		err = h.handleSys(handleFields, sender)
+		err = h.handleSys(msgFields, sender)
 	case "se": //play sound effect
 		err = h.handleSe(msgFields, sender)
 	case "ap": // picture shown
