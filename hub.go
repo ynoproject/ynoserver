@@ -400,11 +400,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		//check if the coordinates are valid
 		x, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || x < 0 {
-			return false, err
+			return false, errconv
 		}
 		y, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || y < 0 {
-			return false, err
+			return false, errconv
 		}
 		sender.x = x
 		sender.y = y
@@ -421,7 +421,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		//check if direction is valid
 		facing, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || facing < 0 || facing > 3 {
-			return false, err
+			return false, errconv
 		}
 		sender.facing = facing
 		h.broadcast([]byte("f" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1])) //user %id% facing changed to f
@@ -431,10 +431,10 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		spd, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		if spd < 0 || spd > 10 { //something's not right
-			return false, err
+			return false, errconv
 		}
 		sender.spd = spd
 		h.broadcast([]byte("spd" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]))
@@ -455,7 +455,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		index, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || index < 0 {
-			return false, err
+			return false, errconv
 		}
 		sender.spriteName = msgFields[1]
 		sender.spriteIndex = index
@@ -468,23 +468,23 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		red, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || red < 0 || red > 255 {
-			return false, err
+			return false, errconv
 		}
 		green, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || green < 0 || green > 255 {
-			return false, err
+			return false, errconv
 		}
 		blue, errconv := strconv.Atoi(msgFields[3])
 		if errconv != nil || blue < 0 || blue > 255 {
-			return false, err
+			return false, errconv
 		}
 		power, errconv := strconv.Atoi(msgFields[4])
 		if errconv != nil || power < 0 {
-			return false, err
+			return false, errconv
 		}
 		frames, errconv := strconv.Atoi(msgFields[5])
 		if errconv != nil || frames < 0 {
-			return false, err
+			return false, errconv
 		}
 		if msgFields[0] == "rfl" {
 			sender.flash[0] = red
@@ -507,19 +507,19 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		red, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || red < 0 || red > 255 {
-			return false, err
+			return false, errconv
 		}
 		green, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || green < 0 || green > 255 {
-			return false, err
+			return false, errconv
 		}
 		blue, errconv := strconv.Atoi(msgFields[3])
 		if errconv != nil || blue < 0 || blue > 255 {
-			return false, err
+			return false, errconv
 		}
 		gray, errconv := strconv.Atoi(msgFields[4])
 		if errconv != nil || red < 0 || gray > 255 {
-			return false, err
+			return false, errconv
 		}
 		sender.tone[0] = red
 		sender.tone[1] = green
@@ -544,15 +544,15 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		volume, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || volume < 0 || volume > 100 {
-			return false, err
+			return false, errconv
 		}
 		tempo, errconv := strconv.Atoi(msgFields[3])
 		if errconv != nil || tempo < 10 || tempo > 400 {
-			return false, err
+			return false, errconv
 		}
 		balance, errconv := strconv.Atoi(msgFields[4])
 		if errconv != nil || balance < 0 || balance > 100 {
-			return false, err
+			return false, errconv
 		}
 		h.broadcast([]byte("se" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1] + paramDelimStr + msgFields[2] + paramDelimStr + msgFields[3] + paramDelimStr + msgFields[4]))
 	case "ap": // picture shown
@@ -576,71 +576,71 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 
 		picId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || picId < 1 {
-			return false, err
+			return false, errconv
 		}
 
 		positionX, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		positionY, errconv := strconv.Atoi(msgFields[3])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		mapX, errconv := strconv.Atoi(msgFields[4])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		mapY, errconv := strconv.Atoi(msgFields[5])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		panX, errconv := strconv.Atoi(msgFields[6])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		panY, errconv := strconv.Atoi(msgFields[7])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 
 		magnify, errconv := strconv.Atoi(msgFields[8])
 		if errconv != nil || magnify < 0 {
-			return false, err
+			return false, errconv
 		}
 		topTrans, errconv := strconv.Atoi(msgFields[9])
 		if errconv != nil || topTrans < 0 {
-			return false, err
+			return false, errconv
 		}
 		bottomTrans, errconv := strconv.Atoi(msgFields[10])
 		if errconv != nil || bottomTrans < 0 {
-			return false, err
+			return false, errconv
 		}
 
 		red, errconv := strconv.Atoi(msgFields[11])
 		if errconv != nil || red < 0 || red > 200 {
-			return false, err
+			return false, errconv
 		}
 		green, errconv := strconv.Atoi(msgFields[12])
 		if errconv != nil || green < 0 || green > 200 {
-			return false, err
+			return false, errconv
 		}
 		blue, errconv := strconv.Atoi(msgFields[13])
 		if errconv != nil || blue < 0 || blue > 200 {
-			return false, err
+			return false, errconv
 		}
 		saturation, errconv := strconv.Atoi(msgFields[14])
 		if errconv != nil || saturation < 0 || saturation > 200 {
-			return false, err
+			return false, errconv
 		}
 
 		effectMode, errconv := strconv.Atoi(msgFields[15])
 		if errconv != nil || effectMode < 0 {
-			return false, err
+			return false, errconv
 		}
 		effectPower, errconv := strconv.Atoi(msgFields[16])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 
 		var pic *Picture
@@ -652,12 +652,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 
 			useTransparentColorBin, errconv := strconv.Atoi(msgFields[18])
 			if errconv != nil || useTransparentColorBin < 0 || useTransparentColorBin > 1 {
-				return false, err
+				return false, errconv
 			}
 
 			fixedToMapBin, errconv := strconv.Atoi(msgFields[19])
 			if errconv != nil || fixedToMapBin < 0 || fixedToMapBin > 1 {
-				return false, err
+				return false, errconv
 			}
 
 			pic = &Picture{
@@ -676,7 +676,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			if _, found := sender.pictures[picId]; found {
 				duration, errconv := strconv.Atoi(msgFields[17])
 				if errconv != nil || duration < 0 {
-					return false, err
+					return false, errconv
 				}
 
 				pic = sender.pictures[picId]
@@ -713,7 +713,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		picId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil || picId < 1 {
-			return false, err
+			return false, errconv
 		}
 		h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgFields[1]))
 		delete(sender.pictures, picId)
@@ -737,7 +737,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		case "gsay":
 			enableLocBin, errconv := strconv.Atoi(msgFields[2])
 			if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
-				return false, err
+				return false, errconv
 			}
 
 			mapId := "0000"
@@ -794,11 +794,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		switchId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		valueBin, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || valueBin < 0 || valueBin > 1 {
-			return false, err
+			return false, errconv
 		}
 		value := false
 		if valueBin == 1 {
@@ -898,11 +898,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		varId, errconv := strconv.Atoi(msgFields[1])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		value, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil {
-			return false, err
+			return false, errconv
 		}
 		sender.varCache[varId] = value
 		if varId == 88 && config.gameName == "2kki" {
@@ -1019,7 +1019,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		}
 		actionBin, errconv := strconv.Atoi(msgFields[2])
 		if errconv != nil || actionBin < 0 || actionBin > 1 {
-			return false, err
+			return false, errconv
 		}
 		triggerType := "event"
 		if actionBin == 1 {
