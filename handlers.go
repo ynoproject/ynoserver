@@ -136,7 +136,6 @@ func (h *Hub) handleRrfl(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-
 func (h *Hub) handleT(msg []string, sender *Client) (err error) {
 	if len(msg) != 5 {
 		return err
@@ -421,7 +420,6 @@ func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-
 func (h *Hub) handleName(msg []string, sender *Client) (err error) {
 	if sender.name != "" || len(msg) != 2 || !isOkString(msg[1]) || len(msg[1]) > 12 {
 		return err
@@ -664,7 +662,6 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 
 	return nil
 }
-
 
 func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
