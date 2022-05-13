@@ -165,6 +165,19 @@ func (h *Hub) handleT(msg []string, sender *Client) (err error) {
 	return nil
 }
 
+func (h *Hub) handleSys(msg []string, sender *Client) (err error) {
+	if len(msg) != 2 {
+		return err
+	}
+	if !isValidSystemName(msg[1], false) {
+		return err
+	}
+	sender.systemName = msg[1]
+	h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
+
+	return nil
+}
+
 func (h *Hub) handleSe(msg []string, sender *Client) (err error) {
 	if len(msg) != 5 || msg[1] == "" {
 		return err

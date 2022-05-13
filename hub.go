@@ -409,6 +409,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		err = h.handleRrfl(msgFields, sender)
 	case "t": //change my tone
 		err = h.handleT(msgFields, sender)
+	case "sys": //change my system graphic
+		err = h.handleSys(handleFields, sender)
 	case "se": //play sound effect
 		err = h.handleSe(msgFields, sender)
 	case "ap": // picture shown
