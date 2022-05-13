@@ -38,6 +38,72 @@ type Condition struct {
 	Disabled     bool     `json:"disabled"`
 }
 
+func (c Condition) checkSwitch(switchId int, value bool) (bool, int) {
+	if switchId == c.SwitchId {
+		if c.SwitchValue == value {
+			return true, 0
+		}
+	} else if len(c.SwitchIds) > 0 {
+		for s, sId := range c.SwitchIds {
+			if switchId == sId {
+				if c.SwitchValue == value {
+					return true, s
+				}
+				break
+			}
+		}
+	}
+
+	return false, 0
+}
+
+func (c Condition) checkVar(varId int, value int) (bool, int) {
+	if varId == c.VarId {
+		valid := false
+		switch c.VarOp {
+		case "=":
+			valid = value == c.VarValue
+		case "<":
+			valid = value < c.VarValue
+		case ">":
+			valid = value > c.VarValue
+		case "<=":
+			valid = value <= c.VarValue
+		case ">=":
+			valid = value >= c.VarValue
+		case "!=":
+			valid = value != c.VarValue
+		}
+		return valid, 0
+	} else if len(c.VarIds) > 0 {
+		for v, vId := range c.VarIds {
+			if varId == vId {
+				valid := false
+				switch c.VarOps[v] {
+				case "=":
+					valid = value == c.VarValues[v]
+				case "<":
+					valid = value < c.VarValues[v]
+				case ">":
+					valid = value > c.VarValues[v]
+				case "<=":
+					valid = value <= c.VarValues[v]
+				case ">=":
+					valid = value >= c.VarValues[v]
+				case "!=":
+					valid = value != c.VarValues[v]
+				}
+				if valid {
+					return true, v
+				}
+				break
+			}
+		}
+	}
+
+	return false, 0
+}
+
 type Badge struct {
 	Group           string   `json:"group"`
 	Order           int      `json:"order"`

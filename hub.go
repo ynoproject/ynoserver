@@ -169,6 +169,8 @@ func (h *Hub) run() {
 				tone:        [4]int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
 				mapId:       "0000",
+				switchCache: make(map[int]bool),
+				varCache:    make(map[int]int),
 				key:         key}
 			go client.writePump()
 			go client.readPump()
@@ -790,65 +792,90 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if valueBin == 1 {
 			value = true
 		}
+		sender.switchCache[switchId] = value
 		if switchId == 1430 && config.gameName == "2kki" {
 			sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
 		} else {
 			for _, c := range h.conditions {
-				if switchId == c.SwitchId {
-					if value == c.SwitchValue {
-						if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
-							if !c.TimeTrial {
-								if checkConditionCoords(c, sender) {
-									success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-									if err != nil {
-										return false, err
-									}
-									if success {
-										sender.send <- []byte("b")
-									}
-								}
-							} else if config.gameName == "2kki" {
-								sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+
+				validVars := !c.VarTrigger
+				if c.VarTrigger {
+					if c.VarId > 0 {
+						if value, ok := sender.varCache[c.VarId]; ok {
+							if validVar, _ := c.checkVar(c.VarId, value); validVar {
+								validVars = true
 							}
-						} else {
-							varId := c.VarId
-							if len(c.VarIds) > 0 {
-								varId = c.VarIds[0]
-							}
-							sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + "0")
 						}
+					} else if len(c.VarIds) > 0 {
+						validVars = true
+						for _, vId := range c.VarIds {
+							if value, ok := sender.varCache[vId]; ok {
+								if validVar, _ := c.checkVar(vId, value); !validVar {
+									validVars = false
+									break
+								}
+							} else {
+								validVars = false
+								break
+							}
+						}
+					} else {
+						validVars = true
 					}
-				} else if len(c.SwitchIds) > 0 {
-					for s, sId := range c.SwitchIds {
-						if switchId == sId {
-							if value == c.SwitchValues[s] {
-								if s == len(c.SwitchIds)-1 {
-									if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
-										if !c.TimeTrial {
-											if checkConditionCoords(c, sender) {
-												success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-												if err != nil {
-													return false, err
-												}
-												if success {
-													sender.send <- []byte("b")
-												}
+				}
+
+				if validVars {
+					if switchId == c.SwitchId {
+						if valid, _ := c.checkSwitch(switchId, value); valid {
+							if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
+								if !c.TimeTrial {
+									if checkConditionCoords(c, sender) {
+										success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+										if err != nil {
+											return false, err
+										}
+										if success {
+											sender.send <- []byte("b")
+										}
+									}
+								} else if config.gameName == "2kki" {
+									sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+								}
+							} else {
+								varId := c.VarId
+								if len(c.VarIds) > 0 {
+									varId = c.VarIds[0]
+								}
+								sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + "0")
+							}
+						}
+					} else if len(c.SwitchIds) > 0 {
+						if valid, s := c.checkSwitch(switchId, value); valid {
+							if s == len(c.SwitchIds)-1 {
+								if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
+									if !c.TimeTrial {
+										if checkConditionCoords(c, sender) {
+											success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+											if err != nil {
+												return false, err
 											}
-										} else if config.gameName == "2kki" {
-											sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+											if success {
+												sender.send <- []byte("b")
+											}
 										}
-									} else {
-										varId := c.VarId
-										if len(c.VarIds) > 0 {
-											varId = c.VarIds[0]
-										}
-										sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + "0")
+									} else if config.gameName == "2kki" {
+										sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 									}
 								} else {
-									sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchIds[s+1]) + paramDelimStr + "0")
+									varId := c.VarId
+									if len(c.VarIds) > 0 {
+										varId = c.VarIds[0]
+									}
+									sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + "0")
 								}
+							} else {
+								sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchIds[s+1]) + paramDelimStr + "0")
 							}
-							break
 						}
 					}
 				}
@@ -866,6 +893,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		if errconv != nil {
 			return false, err
 		}
+		sender.varCache[varId] = value
 		if varId == 88 && config.gameName == "2kki" {
 			for _, c := range h.conditions {
 				if c.TimeTrial && value < 3600 {
@@ -883,91 +911,85 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			}
 		} else {
 			for _, c := range h.conditions {
-				if varId == c.VarId {
-					valid := false
-					switch c.VarOp {
-					case "=":
-						valid = value == c.VarValue
-					case "<":
-						valid = value < c.VarValue
-					case ">":
-						valid = value > c.VarValue
-					case "<=":
-						valid = value <= c.VarValue
-					case ">=":
-						valid = value >= c.VarValue
-					case "!=":
-						valid = value != c.VarValue
-					}
-					if valid {
-						if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
-							if !c.TimeTrial {
-								if checkConditionCoords(c, sender) {
-									success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-									if err != nil {
-										return false, err
-									}
-									if success {
-										sender.send <- []byte("b")
-									}
-								}
-							} else if config.gameName == "2kki" {
-								sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+
+				validSwitches := c.VarTrigger
+				if !c.VarTrigger {
+					if c.SwitchId > 0 {
+						if value, ok := sender.switchCache[c.SwitchId]; ok {
+							if validSwitch, _ := c.checkSwitch(c.SwitchId, value); validSwitch {
+								validSwitches = true
 							}
-						} else {
-							switchId := c.SwitchId
-							if len(c.SwitchIds) > 0 {
-								switchId = c.SwitchIds[0]
-							}
-							sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + "0")
 						}
-					}
-				} else if len(c.VarIds) > 0 {
-					for v, vId := range c.VarIds {
-						if varId == vId {
-							valid := false
-							switch c.VarOps[v] {
-							case "=":
-								valid = value == c.VarValues[v]
-							case "<":
-								valid = value < c.VarValues[v]
-							case ">":
-								valid = value > c.VarValues[v]
-							case "<=":
-								valid = value <= c.VarValues[v]
-							case ">=":
-								valid = value >= c.VarValues[v]
-							case "!=":
-								valid = value != c.VarValues[v]
+					} else if len(c.SwitchIds) > 0 {
+						validSwitches = true
+						for _, sId := range c.SwitchIds {
+							if value, ok := sender.switchCache[sId]; ok {
+								if validSwitch, _ := c.checkSwitch(sId, value); !validSwitch {
+									validSwitches = false
+									break
+								}
+							} else {
+								validSwitches = false
+								break
 							}
-							if valid {
-								if v == len(c.VarIds)-1 {
-									if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
-										if !c.TimeTrial {
-											if checkConditionCoords(c, sender) {
-												success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
-												if err != nil {
-													return false, err
-												}
-												if success {
-													sender.send <- []byte("b")
-												}
+						}
+					} else {
+						validSwitches = true
+					}
+				}
+
+				if validSwitches {
+					if varId == c.VarId {
+						if valid, _ := c.checkVar(varId, value); valid {
+							if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
+								if !c.TimeTrial {
+									if checkConditionCoords(c, sender) {
+										success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+										if err != nil {
+											return false, err
+										}
+										if success {
+											sender.send <- []byte("b")
+										}
+									}
+								} else if config.gameName == "2kki" {
+									sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+								}
+							} else {
+								switchId := c.SwitchId
+								if len(c.SwitchIds) > 0 {
+									switchId = c.SwitchIds[0]
+								}
+								sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + "0")
+							}
+						}
+					} else if len(c.VarIds) > 0 {
+						if valid, v := c.checkVar(varId, value); valid {
+							if v == len(c.VarIds)-1 {
+								if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
+									if !c.TimeTrial {
+										if checkConditionCoords(c, sender) {
+											success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+											if err != nil {
+												return false, err
 											}
-										} else if config.gameName == "2kki" {
-											sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+											if success {
+												sender.send <- []byte("b")
+											}
 										}
-									} else {
-										switchId := c.SwitchId
-										if len(c.SwitchIds) > 0 {
-											switchId = c.SwitchIds[0]
-										}
-										sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + "0")
+									} else if config.gameName == "2kki" {
+										sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 									}
 								} else {
-									sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarIds[v+1]) + paramDelimStr + "0")
+									switchId := c.SwitchId
+									if len(c.SwitchIds) > 0 {
+										switchId = c.SwitchIds[0]
+									}
+									sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + "0")
 								}
+							} else {
+								sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarIds[v+1]) + paramDelimStr + "0")
 							}
-							break
 						}
 					}
 				}

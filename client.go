@@ -93,6 +93,9 @@ type Client struct {
 
 	tags []string
 
+	switchCache map[int]bool
+	varCache    map[int]int
+
 	key     string
 	counter int
 }
