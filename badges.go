@@ -123,6 +123,7 @@ type Badge struct {
 	Secret          bool     `json:"secret"`
 	SecretMap       bool     `json:"secretMap"`
 	SecretCondition bool     `json:"secretCondition"`
+	Hidden          bool     `json:"hidden"`
 	Parent          string   `json:"parent"`
 	Overlay         bool     `json:"overlay"`
 	Art             string   `json:"art"`
@@ -173,7 +174,7 @@ type TimeTrialRecord struct {
 }
 
 func initBadges() {
-	db.Exec("UPDATE accounts JOIN (SELECT pb.uuid, COUNT(pb.badgeId) count FROM playerBadges pb GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN pb.count >= 50 THEN 2 ELSE 1 END")
+	db.Exec("UPDATE accounts JOIN (SELECT pb.uuid, COUNT(pb.badgeId) count FROM playerBadges pb GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN pb.count >= 150 THEN 3 WHEN pb.count >= 50 THEN 2 ELSE 1 END")
 
 	s := gocron.NewScheduler(time.UTC)
 
@@ -364,7 +365,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Dev}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Hidden || gameBadge.Dev}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}
@@ -408,6 +409,10 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 						}
 					}
 				}
+			}
+
+			if gameBadge.Hidden && playerRank < 2 && !playerBadge.Unlocked {
+				continue
 			}
 
 			playerBadgesMap[badgeId] = playerBadge
