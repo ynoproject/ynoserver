@@ -360,6 +360,15 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 
 	playerBadgesMap := make(map[string]*PlayerBadge)
 
+	var playerUnlockedBadgeIds []string
+
+	if loggedIn {
+		playerUnlockedBadgeIds, err = readPlayerUnlockedBadgeIds(playerUuid)
+		if err != nil {
+			return playerBadges, err
+		}
+	}
+
 	for game, gameBadges := range badges {
 		for badgeId, gameBadge := range gameBadges {
 			if gameBadge.Dev && playerRank < 2 {
@@ -407,6 +416,15 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 					for _, record := range timeTrialRecords {
 						if record.MapId == gameBadge.Map {
 							playerBadge.Unlocked = record.Seconds < gameBadge.ReqInt
+						}
+					}
+				}
+
+				if !playerBadge.Unlocked {
+					for _, unlockedBadgeId := range playerUnlockedBadgeIds {
+						if playerBadge.BadgeId == unlockedBadgeId {
+							playerBadge.Unlocked = true
+							break
 						}
 					}
 				}
@@ -468,15 +486,6 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		})
 	}
 
-	var playerUnlockedBadgeIds []string
-
-	if loggedIn {
-		playerUnlockedBadgeIds, err = readPlayerUnlockedBadgeIds(playerUuid)
-		if err != nil {
-			return playerBadges, err
-		}
-	}
-
 	var unlockPercentages []*BadgePercentUnlocked
 
 	if !simple {
@@ -510,13 +519,6 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 					return playerBadges, err
 				}
 				badge.NewUnlock = true
-			}
-		} else {
-			for _, unlockedBadgeId := range playerUnlockedBadgeIds {
-				if badge.BadgeId == unlockedBadgeId {
-					badge.Unlocked = true
-					break
-				}
 			}
 		}
 	}
