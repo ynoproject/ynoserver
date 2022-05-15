@@ -136,6 +136,7 @@ type SimplePlayerBadge struct {
 	BadgeId   string `json:"badgeId"`
 	Game      string `json:"game"`
 	Group     string `json:"group"`
+	Hidden    bool   `json:"hidden"`
 	Overlay   bool   `json:"overlay"`
 	Animated  bool   `json:"animated"`
 	Unlocked  bool   `json:"unlocked"`
@@ -152,6 +153,7 @@ type PlayerBadge struct {
 	Seconds         int     `json:"seconds"`
 	Secret          bool    `json:"secret"`
 	SecretCondition bool    `json:"secretCondition"`
+	Hidden          bool    `json:"hidden"`
 	Overlay         bool    `json:"overlay"`
 	Art             string  `json:"art"`
 	Animated        bool    `json:"animated"`
@@ -160,7 +162,6 @@ type PlayerBadge struct {
 	GoalsTotal      int     `json:"goalsTotal"`
 	Unlocked        bool    `json:"unlocked"`
 	NewUnlock       bool    `json:"newUnlock"`
-	Hidden          bool    `json:"hidden"`
 }
 
 type BadgePercentUnlocked struct {
@@ -530,7 +531,7 @@ func readSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []s
 	}
 
 	for _, badge := range badgeData {
-		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Overlay: badge.Overlay, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock}
+		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Hidden: badge.Hidden, Overlay: badge.Overlay, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock}
 		playerBadges = append(playerBadges, simpleBadge)
 	}
 
