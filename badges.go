@@ -112,6 +112,7 @@ type Badge struct {
 	Group           string   `json:"group"`
 	Order           int      `json:"order"`
 	MapOrder        int      `json:"mapOrder"`
+	Bp              int      `json:"bp"`
 	ReqType         string   `json:"reqType"`
 	ReqInt          int      `json:"reqInt"`
 	ReqString       string   `json:"reqString"`
@@ -147,6 +148,7 @@ type PlayerBadge struct {
 	BadgeId         string  `json:"badgeId"`
 	Game            string  `json:"game"`
 	Group           string  `json:"group"`
+	Bp              int     `json:"bp"`
 	MapId           int     `json:"mapId"`
 	MapX            int     `json:"mapX"`
 	MapY            int     `json:"mapY"`
@@ -375,7 +377,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Hidden || gameBadge.Dev}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Hidden || gameBadge.Dev}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}

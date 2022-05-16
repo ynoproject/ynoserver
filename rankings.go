@@ -47,11 +47,17 @@ func initRankings() {
 		badgeCountCategory := &RankingCategory{CategoryId: "badgeCount"}
 		rankingCategories = append(rankingCategories, badgeCountCategory)
 
+		bpCategory := &RankingCategory{CategoryId: "bp"}
+		rankingCategories = append(rankingCategories, bpCategory)
+
 		badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
+		bpCategory.SubCategories = append(bpCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
+
 		if _, ok := badges[config.gameName]; ok {
 			// Badge records needed for determining badge game
 			writeGameBadges()
 			badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
+			bpCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
 		}
 	}
 
