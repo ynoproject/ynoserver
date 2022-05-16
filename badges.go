@@ -177,8 +177,6 @@ type TimeTrialRecord struct {
 }
 
 func initBadges() {
-	updatePlayerBadgeSlotRows("")
-
 	s := gocron.NewScheduler(time.UTC)
 
 	s.Every(1).Tuesday().At("20:00").Do(func() {
@@ -342,11 +340,16 @@ func checkConditionCoords(condition *Condition, client *Client) bool {
 
 func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool, simple bool) (playerBadges []*PlayerBadge, err error) {
 	playerExp := 0
+	playerEventLocationCount := 0
 	playerEventLocationCompletion := 0
 	var timeTrialRecords []*TimeTrialRecord
 
 	if loggedIn {
 		playerExp, err = readPlayerTotalEventExp(playerUuid)
+		if err != nil {
+			return playerBadges, err
+		}
+		playerEventLocationCount, err = readPlayerEventLocationCount(playerUuid)
 		if err != nil {
 			return playerBadges, err
 		}
@@ -411,6 +414,8 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 					}
 				case "exp":
 					playerBadge.Unlocked = playerExp >= gameBadge.ReqInt
+				case "expCount":
+					playerBadge.Unlocked = playerEventLocationCount >= gameBadge.ReqInt
 				case "expCompletion":
 					playerBadge.Unlocked = playerEventLocationCompletion >= gameBadge.ReqInt
 				case "timeTrial":

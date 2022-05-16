@@ -54,8 +54,12 @@ func initRankings() {
 		badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
 
 		if _, ok := badges[config.gameName]; ok {
-			// Badge records needed for determining badge game
-			writeGameBadges()
+			// Use Yume 2kki server to update badge data
+			if config.gameName == "2kki" {
+				// Badge records needed for determining badge game
+				writeGameBadges()
+				updatePlayerBadgeSlotRows("")
+			}
 			bpCategory.SubCategories = append(bpCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
 			badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
 		}
@@ -149,7 +153,7 @@ func initRankings() {
 	s.Every(5).Minute().Do(func() {
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
-				// Use 2kki server to update 'all' rankings
+				// Use Yume 2kki server to update 'all' rankings
 				if subCategory.SubCategoryId == "all" && config.gameName != "2kki" {
 					continue
 				}
