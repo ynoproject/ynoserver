@@ -968,6 +968,13 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+		if len(newUnlockedBadgeIds) > 0 {
+			err := updatePlayerBadgeSlotRows(uuid)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+		}
 		newUnlockedBadgeIdsJson, err := json.Marshal(newUnlockedBadgeIds)
 		if err != nil {
 			handleInternalError(w, r, err)

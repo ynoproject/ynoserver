@@ -177,7 +177,7 @@ type TimeTrialRecord struct {
 }
 
 func initBadges() {
-	db.Exec("UPDATE accounts JOIN (SELECT pb.uuid, COUNT(pb.badgeId) count FROM playerBadges pb GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN pb.count >= 150 THEN 3 WHEN pb.count >= 50 THEN 2 ELSE 1 END")
+	updatePlayerBadgeSlotRows("")
 
 	s := gocron.NewScheduler(time.UTC)
 

@@ -130,6 +130,22 @@ func readPlayerBadgeSlotRows(playerName string) (badgeSlotRows int) {
 	return badgeSlotRows
 }
 
+func updatePlayerBadgeSlotRows(uuid string) (err error) {
+	query := "UPDATE accounts JOIN (SELECT pb.uuid, SUM(b.bp) bp FROM playerBadges pb JOIN badges b ON b.badgeId = pb.badgeId GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN pb.bp >= 5000 THEN 4 WHEN pb.bp >= 2500 THEN 3 WHEN pb.bp >= 1000 THEN 2 ELSE 1 END"
+	if uuid == "" {
+		_, err = db.Exec(query)
+	} else {
+		query += " WHERE accounts.uuid = ?"
+		_, err = db.Exec(query, uuid)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func setPlayerBadge(uuid string, badge string) (err error) {
 	_, err = db.Exec("UPDATE accounts SET badge = ? WHERE uuid = ?", badge, uuid)
 	if err != nil {
