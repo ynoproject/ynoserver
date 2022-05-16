@@ -430,7 +430,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 				}
 			}
 
-			if gameBadge.Hidden && playerRank < 2 && !playerBadge.Unlocked {
+			if !simple && gameBadge.Hidden && playerRank < 2 && !playerBadge.Unlocked {
 				continue
 			}
 
