@@ -127,6 +127,8 @@ type Badge struct {
 	Hidden          bool     `json:"hidden"`
 	Parent          string   `json:"parent"`
 	Overlay         bool     `json:"overlay"`
+	MaskOverlay     bool     `json:"maskOverlay"`
+	LocOverlay      bool     `json:"locOverlay"`
 	Art             string   `json:"art"`
 	Animated        bool     `json:"animated"`
 	Batch           int      `json:"batch"`
@@ -134,14 +136,16 @@ type Badge struct {
 }
 
 type SimplePlayerBadge struct {
-	BadgeId   string `json:"badgeId"`
-	Game      string `json:"game"`
-	Group     string `json:"group"`
-	Hidden    bool   `json:"hidden"`
-	Overlay   bool   `json:"overlay"`
-	Animated  bool   `json:"animated"`
-	Unlocked  bool   `json:"unlocked"`
-	NewUnlock bool   `json:"newUnlock"`
+	BadgeId     string `json:"badgeId"`
+	Game        string `json:"game"`
+	Group       string `json:"group"`
+	Hidden      bool   `json:"hidden"`
+	Overlay     bool   `json:"overlay"`
+	MaskOverlay bool   `json:"maskOverlay"`
+	LocOverlay  bool   `json:"locOverlay"`
+	Animated    bool   `json:"animated"`
+	Unlocked    bool   `json:"unlocked"`
+	NewUnlock   bool   `json:"newUnlock"`
 }
 
 type PlayerBadge struct {
@@ -157,6 +161,8 @@ type PlayerBadge struct {
 	SecretCondition bool    `json:"secretCondition"`
 	Hidden          bool    `json:"hidden"`
 	Overlay         bool    `json:"overlay"`
+	MaskOverlay     bool    `json:"maskOverlay"`
+	LocOverlay      bool    `json:"locOverlay"`
 	Art             string  `json:"art"`
 	Animated        bool    `json:"animated"`
 	Percent         float32 `json:"percent"`
@@ -380,7 +386,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Hidden || gameBadge.Dev}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, Overlay: gameBadge.Overlay, MaskOverlay: gameBadge.MaskOverlay, LocOverlay: gameBadge.LocOverlay, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Hidden || gameBadge.Dev}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}
@@ -540,7 +546,7 @@ func readSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []s
 	}
 
 	for _, badge := range badgeData {
-		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Hidden: badge.Hidden, Overlay: badge.Overlay, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock}
+		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Hidden: badge.Hidden, Overlay: badge.Overlay, MaskOverlay: badge.MaskOverlay, LocOverlay: badge.LocOverlay, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock}
 		playerBadges = append(playerBadges, simpleBadge)
 	}
 
