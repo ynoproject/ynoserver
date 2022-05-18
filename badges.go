@@ -559,20 +559,23 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 			return badges[playerBadgeA.Game][playerBadgeA.BadgeId].ReqInt < badges[playerBadgeB.Game][playerBadgeB.BadgeId].ReqInt
 		})
 		for _, playerBadge := range badgeCountPlayerBadges {
-			if !playerBadge.Unlocked {
-				reqBadgeCount := badges[playerBadge.Game][playerBadge.BadgeId].ReqInt
-				playerBadge.Goals = playerBadgeCount
-				playerBadge.GoalsTotal = reqBadgeCount
-				if playerBadgeCount >= reqBadgeCount {
-					playerBadge.Unlocked = true
-					err := unlockPlayerBadge(playerUuid, playerBadge.BadgeId)
-					if err != nil {
-						return playerBadges, err
-					}
-					playerBadge.NewUnlock = true
-					newUnlockedBadgeCount++
+			reqBadgeCount := badges[playerBadge.Game][playerBadge.BadgeId].ReqInt
+			playerBadge.Goals = playerBadgeCount
+			playerBadge.GoalsTotal = reqBadgeCount
+			if !playerBadge.Unlocked && playerBadgeCount >= reqBadgeCount {
+				playerBadge.Unlocked = true
+				err := unlockPlayerBadge(playerUuid, playerBadge.BadgeId)
+				if err != nil {
+					return playerBadges, err
 				}
+				playerBadge.NewUnlock = true
+				newUnlockedBadgeCount++
 			}
+		}
+	} else if !simple {
+		for _, playerBadge := range badgeCountPlayerBadges {
+			playerBadge.Goals = playerBadgeCount
+			playerBadge.GoalsTotal = badges[playerBadge.Game][playerBadge.BadgeId].ReqInt
 		}
 	}
 
