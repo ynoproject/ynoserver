@@ -349,6 +349,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	playerEventLocationCount := 0
 	playerEventLocationCompletion := 0
 	var timeTrialRecords []*TimeTrialRecord
+	playerBadgeCount := 0
 
 	if loggedIn {
 		playerExp, err = readPlayerTotalEventExp(playerUuid)
@@ -370,6 +371,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	}
 
 	playerBadgesMap := make(map[string]*PlayerBadge)
+	var badgeCountPlayerBadges []*PlayerBadge
 
 	var playerUnlockedBadgeIds []string
 
@@ -431,6 +433,8 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 							playerBadge.Unlocked = record.Seconds < gameBadge.ReqInt
 						}
 					}
+				case "badgeCount":
+					badgeCountPlayerBadges = append(badgeCountPlayerBadges, playerBadge)
 				}
 
 				if !playerBadge.Unlocked {
@@ -443,7 +447,11 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 				}
 			}
 
-			if !simple && gameBadge.Hidden && playerRank < 2 && !playerBadge.Unlocked {
+			if playerBadge.Unlocked {
+				if !gameBadge.Hidden {
+					playerBadgeCount++
+				}
+			} else if !simple && gameBadge.Hidden && playerRank < 2 {
 				continue
 			}
 
@@ -508,6 +516,8 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		}
 	}
 
+	newUnlockedBadgeCount := 0
+
 	for _, badge := range playerBadges {
 		if !simple {
 			for _, badgePercentUnlocked := range unlockPercentages {
@@ -532,6 +542,27 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 					return playerBadges, err
 				}
 				badge.NewUnlock = true
+				newUnlockedBadgeCount++
+			}
+		}
+	}
+
+	if newUnlockedBadgeCount > 0 {
+		playerBadgeCount += newUnlockedBadgeCount
+		sort.Slice(badgeCountPlayerBadges, func(a, b int) bool {
+			playerBadgeA := badgeCountPlayerBadges[a]
+			playerBadgeB := badgeCountPlayerBadges[b]
+
+			return badges[playerBadgeA.Game][playerBadgeA.BadgeId].ReqInt < badges[playerBadgeB.Game][playerBadgeB.BadgeId].ReqInt
+		})
+		for _, playerBadge := range badgeCountPlayerBadges {
+			if !playerBadge.Unlocked && playerBadgeCount >= badges[playerBadge.Game][playerBadge.BadgeId].ReqInt {
+				err := unlockPlayerBadge(playerUuid, playerBadge.BadgeId)
+				if err != nil {
+					return playerBadges, err
+				}
+				playerBadge.NewUnlock = true
+				newUnlockedBadgeCount++
 			}
 		}
 	}
