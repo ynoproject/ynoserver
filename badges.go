@@ -348,8 +348,8 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	playerExp := 0
 	playerEventLocationCount := 0
 	playerEventLocationCompletion := 0
-	var timeTrialRecords []*TimeTrialRecord
 	playerBadgeCount := 0
+	var timeTrialRecords []*TimeTrialRecord
 
 	if loggedIn {
 		playerExp, err = readPlayerTotalEventExp(playerUuid)
@@ -415,17 +415,18 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 								break
 							}
 						}
-						if (gameBadge.ReqCount > 0 && playerBadge.Goals >= gameBadge.ReqCount) || (gameBadge.ReqCount == 0 && playerBadge.Goals == playerBadge.GoalsTotal) {
-							playerBadge.Unlocked = true
-							break
-						}
 					}
 				case "exp":
-					playerBadge.Unlocked = playerExp >= gameBadge.ReqInt
+					playerBadge.Goals = playerExp
+					playerBadge.GoalsTotal = gameBadge.ReqInt
 				case "expCount":
-					playerBadge.Unlocked = playerEventLocationCount >= gameBadge.ReqInt
+					playerBadge.Goals = playerEventLocationCount
+					playerBadge.GoalsTotal = gameBadge.ReqInt
 				case "expCompletion":
-					playerBadge.Unlocked = playerEventLocationCompletion >= gameBadge.ReqInt
+					playerBadge.Goals = playerEventLocationCompletion
+					playerBadge.GoalsTotal = gameBadge.ReqInt
+				case "badgeCount":
+					badgeCountPlayerBadges = append(badgeCountPlayerBadges, playerBadge)
 				case "timeTrial":
 					playerBadge.Seconds = gameBadge.ReqInt
 					for _, record := range timeTrialRecords {
@@ -433,15 +434,17 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 							playerBadge.Unlocked = record.Seconds < gameBadge.ReqInt
 						}
 					}
-				case "badgeCount":
-					badgeCountPlayerBadges = append(badgeCountPlayerBadges, playerBadge)
 				}
 
 				if !playerBadge.Unlocked {
-					for _, unlockedBadgeId := range playerUnlockedBadgeIds {
-						if playerBadge.BadgeId == unlockedBadgeId {
-							playerBadge.Unlocked = true
-							break
+					if playerBadge.GoalsTotal > 0 && playerBadge.Goals >= playerBadge.GoalsTotal {
+						playerBadge.Unlocked = true
+					} else {
+						for _, unlockedBadgeId := range playerUnlockedBadgeIds {
+							if playerBadge.BadgeId == unlockedBadgeId {
+								playerBadge.Unlocked = true
+								break
+							}
 						}
 					}
 				}
@@ -556,13 +559,19 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 			return badges[playerBadgeA.Game][playerBadgeA.BadgeId].ReqInt < badges[playerBadgeB.Game][playerBadgeB.BadgeId].ReqInt
 		})
 		for _, playerBadge := range badgeCountPlayerBadges {
-			if !playerBadge.Unlocked && playerBadgeCount >= badges[playerBadge.Game][playerBadge.BadgeId].ReqInt {
-				err := unlockPlayerBadge(playerUuid, playerBadge.BadgeId)
-				if err != nil {
-					return playerBadges, err
+			if !playerBadge.Unlocked {
+				reqBadgeCount := badges[playerBadge.Game][playerBadge.BadgeId].ReqInt
+				playerBadge.Goals = playerBadgeCount
+				playerBadge.GoalsTotal = reqBadgeCount
+				if playerBadgeCount >= reqBadgeCount {
+					playerBadge.Unlocked = true
+					err := unlockPlayerBadge(playerUuid, playerBadge.BadgeId)
+					if err != nil {
+						return playerBadges, err
+					}
+					playerBadge.NewUnlock = true
+					newUnlockedBadgeCount++
 				}
-				playerBadge.NewUnlock = true
-				newUnlockedBadgeCount++
 			}
 		}
 	}
