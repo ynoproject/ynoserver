@@ -445,7 +445,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 			}
 
 			if playerBadge.Unlocked {
-				if !gameBadge.Hidden {
+				if !playerBadge.Hidden {
 					playerBadgeCount++
 				}
 			} else if !simple && gameBadge.Hidden && playerRank < 2 {
@@ -513,7 +513,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		}
 	}
 
-	newUnlockedBadgeCount := 0
+	unlockedBadge := false
 
 	for _, badge := range playerBadges {
 		if !simple {
@@ -539,13 +539,12 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 					return playerBadges, err
 				}
 				badge.NewUnlock = true
-				newUnlockedBadgeCount++
+				unlockedBadge = true
 			}
 		}
 	}
 
-	if newUnlockedBadgeCount > 0 {
-		playerBadgeCount += newUnlockedBadgeCount
+	if unlockedBadge {
 		sort.Slice(badgeCountPlayerBadges, func(a, b int) bool {
 			playerBadgeA := badgeCountPlayerBadges[a]
 			playerBadgeB := badgeCountPlayerBadges[b]
@@ -563,7 +562,6 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 					return playerBadges, err
 				}
 				playerBadge.NewUnlock = true
-				newUnlockedBadgeCount++
 			}
 		}
 	} else if !simple {
