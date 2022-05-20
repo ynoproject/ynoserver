@@ -461,7 +461,9 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 	}
 	sender.switchCache[switchId] = value
 	if switchId == 1430 && config.gameName == "2kki" {
-		sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
+		if value {
+			sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
+		}
 	} else {
 		if len(sender.hub.minigameConfigs) > 0 {
 			for m, minigame := range sender.hub.minigameConfigs {
