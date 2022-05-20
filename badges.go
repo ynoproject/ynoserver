@@ -109,28 +109,29 @@ func (c Condition) checkVar(varId int, value int) (bool, int) {
 }
 
 type Badge struct {
-	Group           string   `json:"group"`
-	Order           int      `json:"order"`
-	MapOrder        int      `json:"mapOrder"`
-	Bp              int      `json:"bp"`
-	ReqType         string   `json:"reqType"`
-	ReqInt          int      `json:"reqInt"`
-	ReqString       string   `json:"reqString"`
-	ReqStrings      []string `json:"reqStrings"`
-	ReqCount        int      `json:"reqCount"`
-	Map             int      `json:"map"`
-	MapX            int      `json:"mapX"`
-	MapY            int      `json:"mapY"`
-	Secret          bool     `json:"secret"`
-	SecretMap       bool     `json:"secretMap"`
-	SecretCondition bool     `json:"secretCondition"`
-	Hidden          bool     `json:"hidden"`
-	Parent          string   `json:"parent"`
-	OverlayType     int      `json:"overlayType"`
-	Art             string   `json:"art"`
-	Animated        bool     `json:"animated"`
-	Batch           int      `json:"batch"`
-	Dev             bool     `json:"dev"`
+	Group           string     `json:"group"`
+	Order           int        `json:"order"`
+	MapOrder        int        `json:"mapOrder"`
+	Bp              int        `json:"bp"`
+	ReqType         string     `json:"reqType"`
+	ReqInt          int        `json:"reqInt"`
+	ReqString       string     `json:"reqString"`
+	ReqStrings      []string   `json:"reqStrings"`
+	ReqStringArrays [][]string `json:"reqStringArrays"`
+	ReqCount        int        `json:"reqCount"`
+	Map             int        `json:"map"`
+	MapX            int        `json:"mapX"`
+	MapY            int        `json:"mapY"`
+	Secret          bool       `json:"secret"`
+	SecretMap       bool       `json:"secretMap"`
+	SecretCondition bool       `json:"secretCondition"`
+	Hidden          bool       `json:"hidden"`
+	Parent          string     `json:"parent"`
+	OverlayType     int        `json:"overlayType"`
+	Art             string     `json:"art"`
+	Animated        bool       `json:"animated"`
+	Batch           int        `json:"batch"`
+	Dev             bool       `json:"dev"`
 }
 
 type SimplePlayerBadge struct {
@@ -213,6 +214,14 @@ func updateActiveBadgesAndConditions() {
 					for _, tag := range gameBadge.ReqStrings {
 						if condition, ok := conditions[game][tag]; ok {
 							condition.Disabled = gameBadge.Dev
+						}
+					}
+				case "tagArrays":
+					for _, tags := range gameBadge.ReqStringArrays {
+						for _, tag := range tags {
+							if condition, ok := conditions[game][tag]; ok {
+								condition.Disabled = gameBadge.Dev
+							}
 						}
 					}
 				}
@@ -406,6 +415,26 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 						for _, cTag := range gameBadge.ReqStrings {
 							if tag == cTag {
 								playerBadge.Goals++
+								break
+							}
+						}
+					}
+				case "tagArrays":
+					if gameBadge.ReqCount == 0 || gameBadge.ReqCount >= len(gameBadge.ReqStringArrays) {
+						playerBadge.GoalsTotal = len(gameBadge.ReqStringArrays)
+					} else {
+						playerBadge.GoalsTotal = gameBadge.ReqCount
+					}
+					for _, cTags := range gameBadge.ReqStringArrays {
+						tagFound := false
+						for _, tag := range playerTags {
+							for _, cTag := range cTags {
+								if tag == cTag {
+									playerBadge.Goals++
+									break
+								}
+							}
+							if tagFound {
 								break
 							}
 						}
