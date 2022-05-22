@@ -66,7 +66,7 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	roomName string
+	roomName     string
 	singleplayer bool
 
 	conditions []*Condition
@@ -254,7 +254,11 @@ func (h *Hub) run() {
 					writeErrLog(conn.Ip, h.roomName, "failed to read player minigame score for "+minigame.MinigameId)
 				}
 				client.minigameScores = append(client.minigameScores, score)
-				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(minigame.VarId) + paramDelimStr + "1")
+				varSyncType := 1
+				if minigame.InitialVarSync {
+					varSyncType = 2
+				}
+				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(minigame.VarId) + paramDelimStr + strconv.Itoa(varSyncType))
 			}
 
 			//send account-specific data like username
