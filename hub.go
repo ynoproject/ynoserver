@@ -200,40 +200,42 @@ func (h *Hub) run() {
 			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge) //"your id is %id%" message
 
 			//send the new client info about the game state
-			for otherClient := range h.clients {
-				var accountBin int
-				if otherClient.account {
-					accountBin = 1
-				}
-				client.send <- []byte("c" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.uuid + paramDelimStr + strconv.Itoa(otherClient.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + otherClient.badge)
-				client.send <- []byte("m" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.x) + paramDelimStr + strconv.Itoa(otherClient.y))
-				client.send <- []byte("f" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.facing))
-				client.send <- []byte("spd" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.spd))
-				if otherClient.name != "" {
-					client.send <- []byte("name" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.name)
-				}
-				if otherClient.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
-					client.send <- []byte("spr" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.spriteName + paramDelimStr + strconv.Itoa(otherClient.spriteIndex))
-				}
-				if otherClient.repeatingFlash {
-					client.send <- []byte("rfl" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.flash[0]) + paramDelimStr + strconv.Itoa(otherClient.flash[1]) + paramDelimStr + strconv.Itoa(otherClient.flash[2]) + paramDelimStr + strconv.Itoa(otherClient.flash[3]) + paramDelimStr + strconv.Itoa(otherClient.flash[4]))
-				}
-				if otherClient.tone[0] != 128 || otherClient.tone[1] != 128 || otherClient.tone[2] != 128 || otherClient.tone[3] != 128 {
-					client.send <- []byte("t" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.tone[0]) + paramDelimStr + strconv.Itoa(otherClient.tone[1]) + paramDelimStr + strconv.Itoa(otherClient.tone[2]) + paramDelimStr + strconv.Itoa(otherClient.tone[3]))
-				}
-				if otherClient.systemName != "" {
-					client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.systemName)
-				}
-				for picId, pic := range otherClient.pictures {
-					var useTransparentColorBin int
-					if pic.useTransparentColor {
-						useTransparentColorBin = 1
+			if !h.singleplayer {
+				for otherClient := range h.clients {
+					var accountBin int
+					if otherClient.account {
+						accountBin = 1
 					}
-					var fixedToMapBin int
-					if pic.fixedToMap {
-						fixedToMapBin = 1
+					client.send <- []byte("c" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.uuid + paramDelimStr + strconv.Itoa(otherClient.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + otherClient.badge)
+					client.send <- []byte("m" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.x) + paramDelimStr + strconv.Itoa(otherClient.y))
+					client.send <- []byte("f" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.facing))
+					client.send <- []byte("spd" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.spd))
+					if otherClient.name != "" {
+						client.send <- []byte("name" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.name)
 					}
-					client.send <- []byte("ap" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(picId) + paramDelimStr + strconv.Itoa(pic.positionX) + paramDelimStr + strconv.Itoa(pic.positionY) + paramDelimStr + strconv.Itoa(pic.mapX) + paramDelimStr + strconv.Itoa(pic.mapY) + paramDelimStr + strconv.Itoa(pic.panX) + paramDelimStr + strconv.Itoa(pic.panY) + paramDelimStr + strconv.Itoa(pic.magnify) + paramDelimStr + strconv.Itoa(pic.topTrans) + paramDelimStr + strconv.Itoa(pic.bottomTrans) + paramDelimStr + strconv.Itoa(pic.red) + paramDelimStr + strconv.Itoa(pic.blue) + paramDelimStr + strconv.Itoa(pic.green) + paramDelimStr + strconv.Itoa(pic.saturation) + paramDelimStr + strconv.Itoa(pic.effectMode) + paramDelimStr + strconv.Itoa(pic.effectPower) + paramDelimStr + pic.name + paramDelimStr + strconv.Itoa(useTransparentColorBin) + paramDelimStr + strconv.Itoa(fixedToMapBin))
+					if otherClient.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
+						client.send <- []byte("spr" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.spriteName + paramDelimStr + strconv.Itoa(otherClient.spriteIndex))
+					}
+					if otherClient.repeatingFlash {
+						client.send <- []byte("rfl" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.flash[0]) + paramDelimStr + strconv.Itoa(otherClient.flash[1]) + paramDelimStr + strconv.Itoa(otherClient.flash[2]) + paramDelimStr + strconv.Itoa(otherClient.flash[3]) + paramDelimStr + strconv.Itoa(otherClient.flash[4]))
+					}
+					if otherClient.tone[0] != 128 || otherClient.tone[1] != 128 || otherClient.tone[2] != 128 || otherClient.tone[3] != 128 {
+						client.send <- []byte("t" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.tone[0]) + paramDelimStr + strconv.Itoa(otherClient.tone[1]) + paramDelimStr + strconv.Itoa(otherClient.tone[2]) + paramDelimStr + strconv.Itoa(otherClient.tone[3]))
+					}
+					if otherClient.systemName != "" {
+						client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.systemName)
+					}
+					for picId, pic := range otherClient.pictures {
+						var useTransparentColorBin int
+						if pic.useTransparentColor {
+							useTransparentColorBin = 1
+						}
+						var fixedToMapBin int
+						if pic.fixedToMap {
+							fixedToMapBin = 1
+						}
+						client.send <- []byte("ap" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(picId) + paramDelimStr + strconv.Itoa(pic.positionX) + paramDelimStr + strconv.Itoa(pic.positionY) + paramDelimStr + strconv.Itoa(pic.mapX) + paramDelimStr + strconv.Itoa(pic.mapY) + paramDelimStr + strconv.Itoa(pic.panX) + paramDelimStr + strconv.Itoa(pic.panY) + paramDelimStr + strconv.Itoa(pic.magnify) + paramDelimStr + strconv.Itoa(pic.topTrans) + paramDelimStr + strconv.Itoa(pic.bottomTrans) + paramDelimStr + strconv.Itoa(pic.red) + paramDelimStr + strconv.Itoa(pic.blue) + paramDelimStr + strconv.Itoa(pic.green) + paramDelimStr + strconv.Itoa(pic.saturation) + paramDelimStr + strconv.Itoa(pic.effectMode) + paramDelimStr + strconv.Itoa(pic.effectPower) + paramDelimStr + pic.name + paramDelimStr + strconv.Itoa(useTransparentColorBin) + paramDelimStr + strconv.Itoa(fixedToMapBin))
+					}
 				}
 			}
 			//register client in the structures
