@@ -67,25 +67,26 @@ type Hub struct {
 	unregister chan *Client
 
 	roomName string
+	singleplayer bool
 
 	conditions []*Condition
 
 	minigameConfigs []*MinigameConfig
 }
 
-func createAllHubs(roomNames []string) {
+func createAllHubs(roomNames []string, badRooms []string) {
 	for _, roomName := range roomNames {
-		addHub(roomName)
+		addHub(roomName, contains(badRooms, roomName))
 	}
 }
 
-func addHub(roomName string) {
-	hub := newHub(roomName)
+func addHub(roomName string, singleplayer bool) {
+	hub := newHub(roomName, singleplayer)
 	hubs = append(hubs, hub)
 	go hub.run()
 }
 
-func newHub(roomName string) *Hub {
+func newHub(roomName string, singleplayer bool) *Hub {
 	return &Hub{
 		processMsgCh:    make(chan *Message),
 		connect:         make(chan *ConnInfo),
@@ -93,6 +94,7 @@ func newHub(roomName string) *Hub {
 		clients:         make(map[*Client]bool),
 		id:              make(map[int]bool),
 		roomName:        roomName,
+		singleplayer:    singleplayer,
 		conditions:      getHubConditions(roomName),
 		minigameConfigs: getHubMinigameConfigs(roomName),
 	}
@@ -295,11 +297,13 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Hub) broadcast(data []byte) {
-	for client := range h.clients {
-		select {
-		case client.send <- data:
-		default:
-			h.deleteClient(client)
+	if !h.singleplayer {
+		for client := range h.clients {
+			select {
+			case client.send <- data:
+			default:
+				h.deleteClient(client)
+			}
 		}
 	}
 }

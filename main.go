@@ -14,9 +14,9 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func contains(s []string, num int) bool {
+func contains(s []string, str string) bool {
 	for _, v := range s {
-		if v == strconv.Itoa(num) {
+		if v == str {
 			return true
 		}
 	}
@@ -84,13 +84,9 @@ func main() {
 		picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
 	}
 
-	badRooms := strings.Split(configFileData.BadRooms, ",")
-
 	var roomNames []string
 	for i := 0; i < configFileData.NumRooms; i++ {
-		if !contains(badRooms, i) {
-			roomNames = append(roomNames, strconv.Itoa(i))
-		}
+		roomNames = append(roomNames, strconv.Itoa(i))
 	}
 
 	config = Config{
@@ -115,7 +111,9 @@ func main() {
 	setConditions()
 	setBadges()
 
-	createAllHubs(roomNames)
+	badRooms := strings.Split(configFileData.BadRooms, ",")
+
+	createAllHubs(roomNames, badRooms)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,
