@@ -67,7 +67,7 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		return errors.New("attempted self-ban")
 	}
 
-	_, err := db.Exec("UPDATE players SET banned = true WHERE uuid = ?", recipientUUID)
+	_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUUID)
 	if err != nil {
 		return err
 	}
