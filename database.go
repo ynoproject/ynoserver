@@ -72,8 +72,9 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		return err
 	}
 
-	if allClients[recipientUUID] != nil { //close connection
-		close(allClients[recipientUUID].send)
+	if allClients[recipientUUID] != nil { //unregister client and close connection
+		allClients[recipientUUID].hub.unregister <- allClients[recipientUUID]
+		allClients[recipientUUID].conn.Close()
 	}
 
 	return nil
