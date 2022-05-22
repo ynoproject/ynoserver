@@ -11,7 +11,7 @@
 #num_rooms: 100
 
 ## Maps to exclude from multiplayer
-#bad_rooms: ""
+#sp_rooms: ""
 
 ## Sounds to exclude from multiplayer
 #bad_sounds: ""

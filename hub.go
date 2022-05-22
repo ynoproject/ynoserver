@@ -74,9 +74,9 @@ type Hub struct {
 	minigameConfigs []*MinigameConfig
 }
 
-func createAllHubs(roomNames []string, badRooms []string) {
+func createAllHubs(roomNames []string, spRooms []string) {
 	for _, roomName := range roomNames {
-		addHub(roomName, contains(badRooms, roomName))
+		addHub(roomName, contains(spRooms, roomName))
 	}
 }
 

@@ -111,9 +111,9 @@ func main() {
 	setConditions()
 	setBadges()
 
-	badRooms := strings.Split(configFileData.BadRooms, ",")
+	spRooms := strings.Split(configFileData.SpRooms, ",")
 
-	createAllHubs(roomNames, badRooms)
+	createAllHubs(roomNames, spRooms)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,

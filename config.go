@@ -12,7 +12,7 @@ type ServerConfig struct {
 	Port            int    `yaml:"port"`
 	IndexPath       string `yaml:"index_path"`
 	NumRooms        int    `yaml:"num_rooms"`
-	BadRooms        string `yaml:"bad_rooms"`
+	SpRooms         string  `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
 	PictureNames    string `yaml:"picture_names"`
 	PicturePrefixes string `yaml:"picture_prefixes"`
