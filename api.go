@@ -701,7 +701,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		hasIncompleteEvent := false
+		var hasIncompleteEvent bool
 		for _, currentEventLocation := range currentEventLocationsData {
 			if !currentEventLocation.Complete {
 				hasIncompleteEvent = true
@@ -728,7 +728,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "location not specified")
 			return
 		}
-		free := false
+		var free bool
 		freeParam, ok := r.URL.Query()["free"]
 		if ok && len(freeParam) >= 1 && freeParam[0] != "0" {
 			free = true
@@ -766,7 +766,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 				handleInternalError(w, r, err)
 				return
 			}
-			hasIncompleteEvent := false
+			var hasIncompleteEvent bool
 			for _, currentEventLocation := range currentEventLocationsData {
 				if !currentEventLocation.Complete {
 					hasIncompleteEvent = true
@@ -833,7 +833,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		badgeId := idParam[0]
 
 		if badgeId != badge {
-			unlocked := false
+			var unlocked bool
 
 			switch badgeId {
 			case "null":
@@ -849,7 +849,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 					handleInternalError(w, r, err)
 					return
 				}
-				badgeFound := false
+				var badgeFound bool
 				for _, badge := range badgeData {
 					if badge.BadgeId == badgeId {
 						badgeFound = true
@@ -918,7 +918,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		simple := false
+		var simple bool
 		simpleParam, ok := r.URL.Query()["simple"]
 		if ok && len(simpleParam) >= 1 {
 			simple = simpleParam[0] == "true"

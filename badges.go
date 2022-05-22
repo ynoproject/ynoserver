@@ -61,7 +61,7 @@ func (c Condition) checkSwitch(switchId int, value bool) (bool, int) {
 
 func (c Condition) checkVar(varId int, value int) (bool, int) {
 	if varId == c.VarId {
-		valid := false
+		var valid bool
 		switch c.VarOp {
 		case "=":
 			valid = value == c.VarValue
@@ -82,7 +82,7 @@ func (c Condition) checkVar(varId int, value int) (bool, int) {
 	} else if len(c.VarIds) > 0 {
 		for v, vId := range c.VarIds {
 			if varId == vId {
-				valid := false
+				var valid bool
 				switch c.VarOps[v] {
 				case "=":
 					valid = value == c.VarValues[v]
@@ -286,7 +286,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				}
 
 				if len(h.minigameConfigs) > 0 {
-					skipVarSync := false
+					var skipVarSync bool
 					for _, minigame := range h.minigameConfigs {
 						if minigame.VarId == varId {
 							skipVarSync = true
@@ -426,7 +426,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 						playerBadge.GoalsTotal = gameBadge.ReqCount
 					}
 					for _, cTags := range gameBadge.ReqStringArrays {
-						tagFound := false
+						var tagFound bool
 						for _, tag := range playerTags {
 							for _, cTag := range cTags {
 								if tag == cTag {
@@ -542,7 +542,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		}
 	}
 
-	unlockedBadge := false
+	var unlockedBadge bool
 
 	for _, badge := range playerBadges {
 		if !simple {
@@ -555,7 +555,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		}
 
 		if badge.Unlocked {
-			unlocked := false
+			var unlocked bool
 			for _, unlockedBadgeId := range playerUnlockedBadgeIds {
 				if badge.BadgeId == unlockedBadgeId {
 					unlocked = true

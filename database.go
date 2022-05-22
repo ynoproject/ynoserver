@@ -922,7 +922,7 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 			return false, err
 		}
 
-		success := false
+		var success bool
 
 		defer results.Close()
 
@@ -1057,7 +1057,7 @@ func tryWritePlayerTag(playerUuid string, name string) (success bool, err error)
 	if _, ok := allClients[playerUuid]; ok { // Player must be online to add a tag
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
 		tags := allClients[playerUuid].tags
-		tagExists := false
+		var tagExists bool
 		for _, tag := range tags {
 			if tag == name {
 				tagExists = true

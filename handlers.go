@@ -455,7 +455,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 	if errconv != nil || valueBin < 0 || valueBin > 1 {
 		return errconv
 	}
-	value := false
+	var value bool
 	if valueBin == 1 {
 		value = true
 	}
