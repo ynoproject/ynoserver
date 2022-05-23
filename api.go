@@ -190,6 +190,43 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+	case "grantbadge":
+		playerParam, ok := r.URL.Query()["player"]
+		if !ok || len(playerParam) < 1 {
+			handleError(w, r, "player not specified")
+			return
+		}
+
+		idParam, ok := r.URL.Query()["id"]
+		if !ok || len(playerParam) < 1 {
+			handleError(w, r, "badge ID not specified")
+			return
+		}
+
+		var badgeExists bool
+
+		for _, gameBadges := range badges {
+			for badgeId := range gameBadges {
+				if badgeId == idParam[0] {
+					badgeExists = true
+					break
+				}
+			}
+			if badgeExists {
+				break
+			}
+		}
+
+		if !badgeExists {
+			handleError(w, r, "badge not found for the provided badge ID")
+			return
+		}
+
+		err := unlockPlayerBadge(playerParam[0], idParam[0])
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 	default:
 		handleError(w, r, "unknown command")
 		return

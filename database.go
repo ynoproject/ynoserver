@@ -999,7 +999,7 @@ func readPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, e
 }
 
 func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
-	_, err = db.Exec("INSERT INTO playerBadges (uuid, badgeId, timestampUnlocked) VALUES (?, ?, ?)", playerUuid, badgeId, time.Now())
+	_, err = db.Exec("INSERT INTO playerBadges (uuid, badgeId, timestampUnlocked) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE badgeId = badgeId", playerUuid, badgeId, time.Now())
 	if err != nil {
 		return err
 	}
