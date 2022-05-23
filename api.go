@@ -191,6 +191,8 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "grantbadge":
+		fallthrough
+	case "revokebadge":
 		playerParam, ok := r.URL.Query()["player"]
 		if !ok || len(playerParam) < 1 {
 			handleError(w, r, "player not specified")
@@ -222,7 +224,12 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err := unlockPlayerBadge(playerParam[0], idParam[0])
+		var err error
+		if commandParam[0] == "grantbadge" {
+			err = unlockPlayerBadge(playerParam[0], idParam[0])
+		} else {
+			err = removePlayerBadge(playerParam[0], idParam[0])
+		}
 		if err != nil {
 			handleInternalError(w, r, err)
 			return

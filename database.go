@@ -1011,6 +1011,47 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 	return nil
 }
 
+func removePlayerBadge(playerUuid string, badgeId string) (err error) {
+	var slotId int
+
+	results := db.QueryRow("SELECT slotId FROM playerBadges WHERE uuid = ? AND badgeId = ?", playerUuid, badgeId)
+	err = results.Scan(&slotId)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("DELETE FROM playerBadges WHERE uuid = ? AND badgeId = ?", playerUuid, badgeId)
+	if err != nil {
+		return err
+	}
+
+	if slotId > 0 {
+		_, err = db.Exec("UPDATE playerBadges SET slotId = slotId - 1 WHERE uuid = ? AND slotId > ?", playerUuid, slotId)
+		if err != nil {
+			return err
+		}
+
+		if slotId == 1 {
+			if client, ok := allClients[playerUuid]; ok {
+				var replacementBadgeId string
+				results = db.QueryRow("SELECT badgeId FROM playerBadges WHERE uuid = ? AND slotId = ?", playerUuid, slotId)
+				err = results.Scan(&replacementBadgeId)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						return nil
+					} else {
+						return err
+					}
+				}
+
+				client.badge = replacementBadgeId
+			}
+		}
+	}
+
+	return nil
+}
+
 func readBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, err error) {
 	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE aa.timestampLoggedIn IS NOT NULL) aa WHERE a.timestampLoggedIn IS NOT NULL GROUP BY b.badgeId")
 	if err != nil {
