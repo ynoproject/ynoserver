@@ -48,7 +48,7 @@ func (c Condition) checkSwitch(switchId int, value bool) (bool, int) {
 	} else if len(c.SwitchIds) > 0 {
 		for s, sId := range c.SwitchIds {
 			if switchId == sId {
-				if c.SwitchValue == value {
+				if c.SwitchValues[s] == value {
 					return true, s
 				}
 				break
