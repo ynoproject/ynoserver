@@ -317,9 +317,9 @@ func (h *Hub) broadcast(data []byte) {
 func (h *Hub) deleteClient(client *Client) {
 	updatePlayerGameData(client) //update database
 	delete(h.id, client.id)
-	close(client.send)
 	delete(h.clients, client)
 	delete(allClients, client.uuid)
+	close(client.send)
 	h.broadcast([]byte("d" + paramDelimStr + strconv.Itoa(client.id))) //user %id% has disconnected message
 }
 
