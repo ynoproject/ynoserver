@@ -227,9 +227,7 @@ type IpHubResponse struct {
 }
 
 func isVpn(ip string) (bool, error) {
-	apiKey := config.ipHubKey
-
-	if apiKey == "" {
+	if config.ipHubKey == "" {
 		return false, nil //VPN checking is not available
 	}
 
@@ -238,7 +236,7 @@ func isVpn(ip string) (bool, error) {
 		return false, err
 	}
 
-	req.Header.Set("X-Key", apiKey)
+	req.Header.Set("X-Key", config.ipHubKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
