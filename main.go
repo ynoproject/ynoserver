@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -218,11 +217,6 @@ func getIp(r *http.Request) string { //this breaks if you're using a revproxy th
 }
 
 type IpHubResponse struct {
-	IP          string `json:"ip"`
-	CountryCode string `json:"countryCode"`
-	CountryName string `json:"countryName"`
-	Asn         int    `json:"asn"`
-	Isp         string `json:"isp"`
 	Block       int    `json:"block"`
 }
 
@@ -259,11 +253,6 @@ func isVpn(ip string) (bool, error) {
 		blockedIp = false
 	} else {
 		blockedIp = true
-	}
-
-	if response.Block > 0 {
-		log.Printf("Connection Blocked %v %v %v %v\n", response.IP, response.CountryName, response.Isp, response.Block)
-		return false, errors.New("connection banned")
 	}
 
 	return blockedIp, nil
