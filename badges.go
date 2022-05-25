@@ -483,54 +483,21 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 
 			playerBadgesMap[badgeId] = playerBadge
 		}
-	}
 
-	for badgeId, playerBadge := range playerBadgesMap {
-		if playerBadge.Secret {
-			if badge, ok := badges[playerBadge.Game][badgeId]; ok {
-				parentBadgeId := badge.Parent
-				if parentBadgeId != "" {
-					playerBadge.Secret = !playerBadgesMap[parentBadgeId].Unlocked
+		for _, badgeId := range sortedBadgeIds[game] {
+			if playerBadge, ok := playerBadgesMap[badgeId]; ok {
+				if playerBadge.Secret {
+					if badge, ok := badges[playerBadge.Game][badgeId]; ok {
+						parentBadgeId := badge.Parent
+						if parentBadgeId != "" {
+							playerBadge.Secret = !playerBadgesMap[parentBadgeId].Unlocked
+						}
+					}
 				}
+
+				playerBadges = append(playerBadges, playerBadge)
 			}
 		}
-
-		playerBadges = append(playerBadges, playerBadge)
-	}
-
-	if !simple {
-		sort.Slice(playerBadges, func(a, b int) bool {
-			playerBadgeA := playerBadges[a]
-			playerBadgeB := playerBadges[b]
-
-			if playerBadgeA.Game != playerBadgeB.Game {
-				return strings.Compare(playerBadgeA.Game, playerBadgeB.Game) == -1
-			}
-
-			if playerBadgeA.Group != playerBadgeB.Group {
-				return strings.Compare(playerBadgeA.Group, playerBadgeB.Group) == -1
-			}
-
-			gameBadgeA := badges[playerBadgeA.Game][playerBadgeA.BadgeId]
-			gameBadgeB := badges[playerBadgeB.Game][playerBadgeB.BadgeId]
-
-			if gameBadgeA.Order != gameBadgeB.Order {
-				return gameBadgeA.Order < gameBadgeB.Order
-			} else if gameBadgeA.Map != gameBadgeB.Map {
-				sortMapA := gameBadgeA.Map
-				sortMapB := gameBadgeB.Map
-
-				if sortMapA == 0 {
-					sortMapA = 9999
-				} else if sortMapB == 0 {
-					sortMapB = 9999
-				}
-
-				return sortMapA < sortMapB
-			}
-
-			return gameBadgeA.MapOrder < gameBadgeB.MapOrder
-		})
 	}
 
 	var unlockPercentages []*BadgePercentUnlocked
@@ -686,6 +653,7 @@ func setConditions() {
 
 func setBadges() {
 	badgeConfig := make(map[string]map[string]*Badge)
+	sortedBadgeIds = make(map[string][]string)
 
 	gameBadgeDirs, err := ioutil.ReadDir("badges/data/")
 	if err != nil {
@@ -696,6 +664,7 @@ func setBadges() {
 		if gameBadgesDir.IsDir() {
 			gameId := gameBadgesDir.Name()
 			badgeConfig[gameId] = make(map[string]*Badge)
+			var badgeIds []string
 			configPath := "badges/data/" + gameId + "/"
 			badgeConfigs, err := ioutil.ReadDir(configPath)
 			if err != nil {
@@ -714,8 +683,37 @@ func setBadges() {
 				if err == nil {
 					badgeId := badgeConfigFile.Name()[:len(badgeConfigFile.Name())-5]
 					badgeConfig[gameId][badgeId] = badge
+					badgeIds = append(badgeIds, badgeId)
 				}
 			}
+
+			sort.Slice(badgeIds, func(a, b int) bool {
+				badgeA := badgeConfig[gameId][badgeIds[a]]
+				badgeB := badgeConfig[gameId][badgeIds[b]]
+
+				if badgeA.Group != badgeB.Group {
+					return strings.Compare(badgeA.Group, badgeB.Group) == -1
+				}
+
+				if badgeA.Order != badgeB.Order {
+					return badgeA.Order < badgeB.Order
+				} else if badgeA.Map != badgeB.Map {
+					sortMapA := badgeA.Map
+					sortMapB := badgeB.Map
+
+					if sortMapA == 0 {
+						sortMapA = 9999
+					} else if sortMapB == 0 {
+						sortMapB = 9999
+					}
+
+					return sortMapA < sortMapB
+				}
+
+				return badgeA.MapOrder < badgeB.MapOrder
+			})
+
+			sortedBadgeIds[gameId] = badgeIds
 		}
 	}
 
