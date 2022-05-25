@@ -348,10 +348,10 @@ func checkConditionCoords(condition *Condition, client *Client) bool {
 }
 
 func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool, simple bool) (playerBadges []*PlayerBadge, err error) {
-	playerExp := 0
-	playerEventLocationCount := 0
-	playerEventLocationCompletion := 0
-	playerBadgeCount := 0
+	var playerExp int
+	var playerEventLocationCount int
+	var playerEventLocationCompletion int
+	var playerBadgeCount int
 	var timeTrialRecords []*TimeTrialRecord
 
 	if loggedIn {
