@@ -1095,9 +1095,9 @@ func readPlayerTags(playerUuid string) (tags []string, err error) {
 }
 
 func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
-	if _, ok := allClients[playerUuid]; ok { // Player must be online to add a tag
+	if client, ok := allClients[playerUuid]; ok { // Player must be online to add a tag
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
-		tags := allClients[playerUuid].tags
+		tags := client.tags
 		var tagExists bool
 		for _, tag := range tags {
 			if tag == name {

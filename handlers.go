@@ -422,8 +422,8 @@ func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
 			return err
 		}
 		for _, uuid := range partyMemberUuids {
-			if _, ok := allClients[uuid]; ok {
-				allClients[uuid].send <- []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents)
+			if client, ok := allClients[uuid]; ok {
+				client.send <- []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents)
 			}
 		}
 	default:
