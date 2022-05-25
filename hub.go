@@ -144,14 +144,14 @@ func (h *Hub) run() {
 				continue //don't bother with handling their connection
 			}
 
-			id := -1
-			for i := 0; i <= maxID; i++ {
+			var id int
+			for i := 1; i <= maxID; i++ {
 				if !h.id[i] {
 					id = i
 					break
 				}
 			}
-			if id == -1 {
+			if id == 0 {
 				writeErrLog(conn.Ip, h.roomName, "room is full")
 				continue
 			}
