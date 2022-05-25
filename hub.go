@@ -127,7 +127,7 @@ func (h *Hub) run() {
 				uuid, rank, isBanned = readPlayerData(conn.Ip)
 			}
 
-			if isBanned && rank < 1 {
+			if isBanned {
 				writeErrLog(conn.Ip, h.roomName, "player is banned")
 				continue
 			}
