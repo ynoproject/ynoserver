@@ -768,7 +768,7 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 	}
 
 	var days int
-	offsetDays := 0
+	var offsetDays int
 	weekday := time.Now().UTC().Weekday()
 	if eventType == 0 {
 		days = 1

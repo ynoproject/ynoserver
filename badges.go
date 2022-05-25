@@ -271,7 +271,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				if len(c.SwitchIds) > 0 {
 					switchId = c.SwitchIds[0]
 				}
-				switchSyncType := 0
+				var switchSyncType int
 				if trigger == "" {
 					switchSyncType = 2
 					if c.SwitchDelay {
@@ -298,7 +298,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 					}
 				}
 
-				varSyncType := 0
+				var varSyncType int
 				if trigger == "" {
 					varSyncType = 2
 					if c.VarDelay {
@@ -333,7 +333,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 					writeErrLog(client.ip, h.roomName, err.Error())
 					continue
 				}
-				eventTriggerType := 0
+				var eventTriggerType int
 				if c.Trigger == "eventAction" {
 					eventTriggerType = 1
 				}
