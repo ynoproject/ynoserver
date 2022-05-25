@@ -405,7 +405,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "theme not specified")
 			return
 		}
-		if !isValidSystemName(themeParam[0], true) {
+		if !isValidSystem(themeParam[0], true) {
 			handleError(w, r, "invalid system name for theme")
 			return
 		}

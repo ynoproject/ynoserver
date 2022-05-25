@@ -67,7 +67,7 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
 		return err
 	}
-	if !isValidSpriteName(msg[1]) {
+	if !isValidSprite(msg[1]) {
 		return err
 	}
 	/*if config.gameName == "2kki" {
@@ -169,7 +169,7 @@ func (h *Hub) handleSys(msg []string, sender *Client) (err error) {
 	if len(msg) != 2 {
 		return err
 	}
-	if !isValidSystemName(msg[1], false) {
+	if !isValidSystem(msg[1], false) {
 		return err
 	}
 	sender.systemName = msg[1]
@@ -182,7 +182,7 @@ func (h *Hub) handleSe(msg []string, sender *Client) (err error) {
 	if len(msg) != 5 || msg[1] == "" {
 		return err
 	}
-	if !isValidSoundName(msg[1]) {
+	if !isValidSound(msg[1]) {
 		return err
 	}
 	volume, errconv := strconv.Atoi(msg[2])

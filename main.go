@@ -138,7 +138,7 @@ func writeErrLog(ip string, roomName string, payload string) {
 	writeLog(ip, roomName, payload, 400)
 }
 
-func isValidSpriteName(name string) bool {
+func isValidSprite(name string) bool {
 	if name == "" {
 		return true
 	}
@@ -154,7 +154,7 @@ func isValidSpriteName(name string) bool {
 	return false
 }
 
-func isValidSystemName(name string, ignoreSingleQuotes bool) bool {
+func isValidSystem(name string, ignoreSingleQuotes bool) bool {
 	if ignoreSingleQuotes {
 		name = strings.ReplaceAll(name, "'", "")
 	}
@@ -169,7 +169,7 @@ func isValidSystemName(name string, ignoreSingleQuotes bool) bool {
 	return false
 }
 
-func isValidSoundName(name string) bool {
+func isValidSound(name string) bool {
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return false
 	}
