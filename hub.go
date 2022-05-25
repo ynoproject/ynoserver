@@ -185,11 +185,6 @@ func (h *Hub) run() {
 				client.mapId = fmt.Sprintf("%04d", mapIdInt)
 			}
 
-			var isLoggedInBin int
-			if isLoggedIn {
-				isLoggedInBin = 1
-			}
-
 			tags, err := readPlayerTags(uuid)
 			if err != nil {
 				writeErrLog(conn.Ip, h.roomName, "failed to read player tags")
@@ -197,7 +192,7 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge) //"your id is %id%" message
+			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(isLoggedIn) + paramDelimStr + badge) //"your id is %id%" message
 
 			//send the new client info about the game state
 			if !h.singleplayer {
@@ -244,7 +239,7 @@ func (h *Hub) run() {
 			allClients[uuid] = client
 
 			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + strconv.Itoa(isLoggedInBin) + paramDelimStr + badge)) //user %id% has connected message
+			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(isLoggedIn) + paramDelimStr + badge)) //user %id% has connected message
 
 			checkHubConditions(h, client, "", "")
 

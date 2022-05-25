@@ -276,3 +276,11 @@ func globalBroadcast(inpData []byte) {
 		client.send <- inpData
 	}
 }
+
+func btoa(b bool) string { //bool to ascii int
+	if b {
+		return "1"
+	}
+
+	return "0"
+}
