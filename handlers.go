@@ -70,14 +70,14 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 	if !isValidSpriteName(msg[1]) {
 		return err
 	}
-	if config.gameName == "2kki" {
+	/*if config.gameName == "2kki" {
 		if !strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") {
 			return err
 		}
 		if strings.Contains(msg[1], "zenmaigaharaten_kisekae") && h.roomName != "176" {
 			return err
 		}
-	}
+	}*/
 	index, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || index < 0 {
 		return errconv
