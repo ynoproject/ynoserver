@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -148,8 +149,6 @@ type PlayerBadge struct {
 	BadgeId         string  `json:"badgeId"`
 	Game            string  `json:"game"`
 	Group           string  `json:"group"`
-	Order           int     `json:"order"`
-	MapOrder        int     `json:"mapOrder"`
 	Bp              int     `json:"bp"`
 	MapId           int     `json:"mapId"`
 	MapX            int     `json:"mapX"`
@@ -392,7 +391,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Order: gameBadge.Order, MapOrder: gameBadge.MapOrder, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, OverlayType: gameBadge.OverlayType, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Hidden || gameBadge.Dev}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, OverlayType: gameBadge.OverlayType, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Hidden || gameBadge.Dev}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}
@@ -497,6 +496,41 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 		}
 
 		playerBadges = append(playerBadges, playerBadge)
+	}
+
+	if !simple {
+		sort.Slice(playerBadges, func(a, b int) bool {
+			playerBadgeA := playerBadges[a]
+			playerBadgeB := playerBadges[b]
+
+			if playerBadgeA.Game != playerBadgeB.Game {
+				return strings.Compare(playerBadgeA.Game, playerBadgeB.Game) == -1
+			}
+
+			if playerBadgeA.Group != playerBadgeB.Group {
+				return strings.Compare(playerBadgeA.Group, playerBadgeB.Group) == -1
+			}
+
+			gameBadgeA := badges[playerBadgeA.Game][playerBadgeA.BadgeId]
+			gameBadgeB := badges[playerBadgeB.Game][playerBadgeB.BadgeId]
+
+			if gameBadgeA.Order != gameBadgeB.Order {
+				return gameBadgeA.Order < gameBadgeB.Order
+			} else if gameBadgeA.Map != gameBadgeB.Map {
+				sortMapA := gameBadgeA.Map
+				sortMapB := gameBadgeB.Map
+
+				if sortMapA == 0 {
+					sortMapA = 9999
+				} else if sortMapB == 0 {
+					sortMapB = 9999
+				}
+
+				return sortMapA < sortMapB
+			}
+
+			return gameBadgeA.MapOrder < gameBadgeB.MapOrder
+		})
 	}
 
 	var unlockPercentages []*BadgePercentUnlocked
