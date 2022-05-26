@@ -23,6 +23,9 @@ func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 	sender.y = y
 
 	if msg[0] == "m" {
+		if sender.syncCoords {
+			checkHubConditions(h, sender, "coords", "")
+		}
 		h.broadcast([]byte("m" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2])) //user %id% moved to x y
 	} else {
 		checkHubConditions(h, sender, "teleport", "")

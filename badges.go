@@ -320,31 +320,38 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 					client.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
 				}
 			}
-		} else if trigger == "" && (c.Trigger == "event" || c.Trigger == "eventAction") {
-			var values []string
-			if len(c.Values) == 0 {
-				values = append(values, c.Value)
-			} else {
-				values = c.Values
-			}
-			for _, value := range values {
-				_, err := strconv.Atoi(value)
-				if err != nil {
-					writeErrLog(client.ip, h.roomName, err.Error())
-					continue
+		} else if trigger == "" {
+			if c.Trigger == "event" || c.Trigger == "eventAction" {
+				var values []string
+				if len(c.Values) == 0 {
+					values = append(values, c.Value)
+				} else {
+					values = c.Values
 				}
-				var eventTriggerType int
-				if c.Trigger == "eventAction" {
-					eventTriggerType = 1
+				for _, value := range values {
+					_, err := strconv.Atoi(value)
+					if err != nil {
+						writeErrLog(client.ip, h.roomName, err.Error())
+						continue
+					}
+					var eventTriggerType int
+					if c.Trigger == "eventAction" {
+						eventTriggerType = 1
+					}
+					client.send <- []byte("sev" + paramDelimStr + value + paramDelimStr + strconv.Itoa(eventTriggerType))
 				}
-				client.send <- []byte("sev" + paramDelimStr + value + paramDelimStr + strconv.Itoa(eventTriggerType))
+			} else if c.Trigger == "coords" {
+				client.syncCoords = true
 			}
 		}
 	}
 }
 
 func checkConditionCoords(condition *Condition, client *Client) bool {
-	return ((condition.MapX1 == 0 && condition.MapX2 == 0) || (condition.MapX1 <= client.x && condition.MapX2 >= client.x)) && ((condition.MapY1 == 0 && condition.MapY2 == 0) || (condition.MapY1 <= client.y && condition.MapY2 >= client.y))
+	return ((condition.MapX1 <= 0 && condition.MapX2 <= 0) ||
+		((condition.MapX1 == -1 || condition.MapX1 <= client.x) && (condition.MapX2 == -1 || condition.MapX2 >= client.x))) &&
+		((condition.MapY1 <= 0 && condition.MapY2 <= 0) ||
+			((condition.MapY1 == -1 || condition.MapY1 <= client.y) && (condition.MapY2 == -1 || condition.MapY2 >= client.y)))
 }
 
 func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool, simple bool) (playerBadges []*PlayerBadge, err error) {

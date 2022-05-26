@@ -93,6 +93,8 @@ type Client struct {
 
 	tags []string
 
+	syncCoords bool
+
 	minigameScores []int
 
 	switchCache map[int]bool
