@@ -374,63 +374,65 @@ func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
 }
 
 func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
-	msgLength := 2
-	if msg[0] == "gsay" {
-		msgLength++
-	}
-	if len(msg) != msgLength {
-		return err
-	}
-	msgContents := strings.TrimSpace(msg[1])
-	if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
-		return err
-	}
-	switch msg[0] {
-	case "gsay":
-		enableLocBin, errconv := strconv.Atoi(msg[2])
-		if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
-			return errconv
+	if !sender.muted {
+		msgLength := 2
+		if msg[0] == "gsay" {
+			msgLength++
 		}
-
-		mapId := "0000"
-		prevMapId := "0000"
-		var prevLocations string
-		x := -1
-		y := -1
-
-		if enableLocBin == 1 {
-			mapId = sender.mapId
-			prevMapId = sender.prevMapId
-			prevLocations = sender.prevLocations
-			x = sender.x
-			y = sender.y
-		}
-
-		var accountBin int
-		if sender.account {
-			accountBin = 1
-		}
-
-		globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + strconv.Itoa(x) + paramDelimStr + strconv.Itoa(y) + paramDelimStr + msgContents))
-	case "psay":
-		partyId, err := readPlayerPartyId(sender.uuid)
-		if err != nil {
+		if len(msg) != msgLength {
 			return err
 		}
-		if partyId == 0 {
-			return errors.New("player not in a party")
-		}
-		partyMemberUuids, err := readPartyMemberUuids(partyId)
-		if err != nil {
+		msgContents := strings.TrimSpace(msg[1])
+		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return err
 		}
-		for _, uuid := range partyMemberUuids {
-			if client, ok := allClients[uuid]; ok {
-				client.send <- []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents)
+		switch msg[0] {
+		case "gsay":
+			enableLocBin, errconv := strconv.Atoi(msg[2])
+			if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
+				return errconv
 			}
+	
+			mapId := "0000"
+			prevMapId := "0000"
+			var prevLocations string
+			x := -1
+			y := -1
+	
+			if enableLocBin == 1 {
+				mapId = sender.mapId
+				prevMapId = sender.prevMapId
+				prevLocations = sender.prevLocations
+				x = sender.x
+				y = sender.y
+			}
+	
+			var accountBin int
+			if sender.account {
+				accountBin = 1
+			}
+	
+			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + strconv.Itoa(x) + paramDelimStr + strconv.Itoa(y) + paramDelimStr + msgContents))
+		case "psay":
+			partyId, err := readPlayerPartyId(sender.uuid)
+			if err != nil {
+				return err
+			}
+			if partyId == 0 {
+				return errors.New("player not in a party")
+			}
+			partyMemberUuids, err := readPartyMemberUuids(partyId)
+			if err != nil {
+				return err
+			}
+			for _, uuid := range partyMemberUuids {
+				if client, ok := allClients[uuid]; ok {
+					client.send <- []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents)
+				}
+			}
+		default:
+			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
 		}
-	default:
-		h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
 	}
 
 	return nil

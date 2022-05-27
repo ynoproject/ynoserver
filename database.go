@@ -79,6 +79,48 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 	return nil
 }
 
+func tryMutePlayer(senderUUID string, recipientUUID string) error { //called by api only
+	if readPlayerRank(senderUUID) <= readPlayerRank(recipientUUID) {
+		return errors.New("insufficient rank")
+	}
+
+	if senderUUID == recipientUUID {
+		return errors.New("attempted self-mute")
+	}
+
+	_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUUID)
+	if err != nil {
+		return err
+	}
+
+	if client, ok := allClients[recipientUUID]; ok { //mute client if they're connected
+		client.muted = true
+	}
+
+	return nil
+}
+
+func tryUnmutePlayer(senderUUID string, recipientUUID string) error { //called by api only
+	if readPlayerRank(senderUUID) <= readPlayerRank(recipientUUID) {
+		return errors.New("insufficient rank")
+	}
+
+	if senderUUID == recipientUUID {
+		return errors.New("attempted self-unmute")
+	}
+
+	_, err := db.Exec("UPDATE players SET muted = 0 WHERE uuid = ?", recipientUUID)
+	if err != nil {
+		return err
+	}
+
+	if client, ok := allClients[recipientUUID]; ok { //unmute client if they're connected
+		client.muted = false
+	}
+
+	return nil
+}
+
 func createPlayerData(ip string, uuid string, rank int, banned bool) error {
 	_, err := db.Exec("INSERT INTO players (ip, uuid, rank, banned) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE uuid = ?, rank = ?, banned = ?", ip, uuid, rank, banned, uuid, rank, banned)
 	if err != nil {

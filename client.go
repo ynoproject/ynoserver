@@ -71,6 +71,8 @@ type Client struct {
 	rank    int
 	badge   string
 
+	muted bool
+
 	x, y   int
 	facing int
 	spd    int
