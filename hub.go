@@ -134,13 +134,12 @@ func (h *Hub) run() {
 			}
 
 			var same_ip int
-			ip_limit := 3
 			for otherClient := range h.clients {
 				if otherClient.ip == conn.Ip {
 					same_ip++
 				}
 			}
-			if same_ip >= ip_limit {
+			if same_ip >= 3 {
 				writeErrLog(conn.Ip, h.roomName, "too many connections")
 				continue //don't bother with handling their connection
 			}
