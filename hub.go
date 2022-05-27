@@ -109,17 +109,14 @@ func (h *Hub) run() {
 			var uuid string
 			var name string
 			var rank int
+			var badge string
 			var banned bool
 			var loggedIn bool
-			badge := "null" //workaround for bug
 
 			if conn.Session != "" {
 				uuid, name, rank, badge, banned = readPlayerDataFromSession(conn.Session)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					loggedIn = true
-				}
-				if badge == "" {
-					badge = "null"
 				}
 			}
 
@@ -130,6 +127,10 @@ func (h *Hub) run() {
 			if banned {
 				writeErrLog(conn.Ip, h.roomName, "player is banned")
 				continue
+			}
+
+			if badge == "" {
+				badge = "null"
 			}
 
 			var same_ip int
