@@ -84,7 +84,6 @@ func initApi() {
 
 		if err != nil {
 			if err == sql.ErrNoRows {
-
 				url := "https://2kki.app/" + actionParam[0]
 				if len(queryString) > 0 {
 					url += "?" + queryString
