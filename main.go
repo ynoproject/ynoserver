@@ -46,8 +46,7 @@ func main() {
 	var spriteNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
 		if k != "_dirname" {
-			name := v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))] //trim extension
-			spriteNames = append(spriteNames, name)
+			spriteNames = append(spriteNames, v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
 	}
 
@@ -55,8 +54,7 @@ func main() {
 	var soundNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
 		if k != "_dirname" {
-			name := v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))] //trim extension
-			soundNames = append(soundNames, name)
+			soundNames = append(soundNames, v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
 	}
 
@@ -64,8 +62,7 @@ func main() {
 	var systemNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
 		if k != "_dirname" {
-			name := v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))] //trim extension
-			systemNames = append(systemNames, name)
+			systemNames = append(systemNames, v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
 	}
 
