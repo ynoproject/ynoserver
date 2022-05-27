@@ -162,9 +162,9 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	session := r.Header.Get("X-Session")
 	if session == "" {
-		uuid, rank, _ = readPlayerData(getIp(r))
+		uuid, rank, _, _ = readPlayerData(getIp(r))
 	} else {
-		uuid, _, rank, _, _ = readPlayerDataFromSession(session)
+		uuid, _, rank, _, _, _ = readPlayerDataFromSession(session)
 	}
 	if rank == 0 {
 		handleError(w, r, "access denied")
@@ -273,9 +273,9 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 
 	session := r.Header.Get("X-Session")
 	if session == "" {
-		uuid, rank, banned = readPlayerData(getIp(r))
+		uuid, rank, banned, _ = readPlayerData(getIp(r))
 	} else {
-		uuid, _, rank, _, banned = readPlayerDataFromSession(session)
+		uuid, _, rank, _, banned, _ = readPlayerDataFromSession(session)
 	}
 
 	if banned {
@@ -629,7 +629,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "session token not specified")
 		return
 	} else {
-		uuid, _, _, _, banned = readPlayerDataFromSession(session)
+		uuid, _, _, _, banned, _ = readPlayerDataFromSession(session)
 	}
 
 	if banned {
@@ -714,7 +714,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "session token not specified")
 		return
 	} else {
-		uuid, _, _, _, banned = readPlayerDataFromSession(session)
+		uuid, _, _, _, banned, _ = readPlayerDataFromSession(session)
 	}
 
 	if banned {
@@ -870,13 +870,13 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	session := r.Header.Get("X-Session")
 	if session == "" {
 		if commandParam[0] == "list" || commandParam[0] == "playerSlotList" {
-			uuid, rank, banned = readPlayerData(getIp(r))
+			uuid, rank, banned, _ = readPlayerData(getIp(r))
 		} else {
 			handleError(w, r, "session token not specified")
 			return
 		}
 	} else {
-		uuid, name, rank, badge, banned = readPlayerDataFromSession(session)
+		uuid, name, rank, badge, banned, _ = readPlayerDataFromSession(session)
 	}
 
 	if strings.HasPrefix(commandParam[0], "slot") {
@@ -1098,9 +1098,9 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 
 	session := r.Header.Get("X-Session")
 	if session == "" {
-		uuid, _, banned = readPlayerData(getIp(r))
+		uuid, _, banned, _ = readPlayerData(getIp(r))
 	} else {
-		uuid, _, _, _, banned = readPlayerDataFromSession(session)
+		uuid, _, _, _, banned, _ = readPlayerDataFromSession(session)
 	}
 
 	if banned {
@@ -1206,9 +1206,9 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 
 	session := r.Header.Get("X-Session")
 	if session == "" {
-		uuid, _, _ = readPlayerData(getIp(r))
+		uuid, _, _, _ = readPlayerData(getIp(r))
 	} else {
-		uuid, _, _, _, _ = readPlayerDataFromSession(session)
+		uuid, _, _, _, _, _ = readPlayerDataFromSession(session)
 	}
 
 	prevMapIdParam, ok := r.URL.Query()["prevMapId"]

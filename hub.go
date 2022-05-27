@@ -111,17 +111,18 @@ func (h *Hub) run() {
 			var rank int
 			var badge string
 			var banned bool
+			var muted bool
 			var loggedIn bool
 
 			if conn.Session != "" {
-				uuid, name, rank, badge, banned = readPlayerDataFromSession(conn.Session)
+				uuid, name, rank, badge, banned, muted = readPlayerDataFromSession(conn.Session)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					loggedIn = true
 				}
 			}
 
 			if !loggedIn {
-				uuid, rank, banned = readPlayerData(conn.Ip)
+				uuid, rank, banned, muted = readPlayerData(conn.Ip)
 			}
 
 			if banned {
@@ -166,6 +167,7 @@ func (h *Hub) run() {
 				send:        make(chan []byte, 256),
 				id:          id,
 				account:     loggedIn,
+				muted:       muted,
 				name:        name,
 				uuid:        uuid,
 				rank:        rank,

@@ -20,7 +20,7 @@ func setDatabase() {
 	db = conn
 }
 
-func readPlayerData(ip string) (uuid string, rank int, banned bool) {
+func readPlayerData(ip string) (uuid string, rank int, banned bool, muted bool) {
 	results := db.QueryRow("SELECT uuid, rank, banned FROM players WHERE ip = ?", ip)
 	err := results.Scan(&uuid, &rank, &banned)
 
@@ -30,22 +30,22 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool) {
 			banned, _ := isVpn(ip)
 			createPlayerData(ip, uuid, 0, banned)
 		} else {
-			return "", 0, false
+			return "", 0, false, false
 		}
 	}
 
-	return uuid, rank, banned
+	return uuid, rank, banned, muted
 }
 
-func readPlayerDataFromSession(session string) (uuid string, name string, rank int, badge string, banned bool) {
-	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", session)
+func readPlayerDataFromSession(session string) (uuid string, name string, rank int, badge string, banned bool, muted bool) {
+	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned, pd.muted FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", session)
 	err := result.Scan(&uuid, &name, &rank, &badge, &banned)
 
 	if err != nil {
-		return "", "", 0, "", false
+		return "", "", 0, "", false, false
 	}
 
-	return uuid, name, rank, badge, banned
+	return uuid, name, rank, badge, banned, muted
 }
 
 func readPlayerRank(uuid string) (rank int) {
