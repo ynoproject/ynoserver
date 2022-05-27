@@ -679,16 +679,16 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 			return errconv
 		}
 
+		client := getClientStruct(sender.uuid)
+		if client == nil {
+			enableLocBin = 0 //client struct data can't be used
+		}
+
 		mapId := "0000"
 		prevMapId := "0000"
 		var prevLocations string
 		x := -1
 		y := -1
-
-		client := getClientStruct(sender.uuid)
-		if client == nil {
-			enableLocBin = 0 //client struct data can't be used
-		}
 
 		if enableLocBin == 1 {
 			mapId = client.mapId
