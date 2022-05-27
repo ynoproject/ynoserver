@@ -163,22 +163,23 @@ func (h *Hub) run() {
 			client := &Client{
 				hub:         h,
 				conn:        conn.Connect,
-				ip:          conn.Ip,
 				send:        make(chan []byte, 256),
+				ip:          conn.Ip,
 				id:          id,
+				key:         key,
 				account:     loggedIn,
-				muted:       muted,
 				name:        name,
 				uuid:        uuid,
 				rank:        rank,
 				badge:       badge,
+				muted:       muted,
 				spriteIndex: -1,
 				tone:        [4]int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
 				mapId:       "0000",
 				switchCache: make(map[int]bool),
 				varCache:    make(map[int]int),
-				key:         key}
+			}
 			go client.writePump()
 			go client.readPump()
 
