@@ -32,9 +32,14 @@ var (
 	sessionClients = make(map[string]*SessionClient)
 )
 
-func initSessionWs() {
+func initSession() {
+	startSessionWs()
+	startPartyUpdateTimer()
+}
+
+func startSessionWs() {
 	session = newSessionWs()
-	session.run()
+	go session.run()
 }
 
 func newSessionWs() (*Session) {

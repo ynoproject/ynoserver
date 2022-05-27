@@ -127,7 +127,7 @@ func main() {
 	initEvents()
 	initBadges()
 	initRankings()
-	initSessionWs()
+	initSession()
 
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
