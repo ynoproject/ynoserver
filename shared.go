@@ -1,8 +1,8 @@
 package main
 
 func getPlayerInfo(conn *ConnInfo) (uuid string, name string, rank int, badge string, banned bool, muted bool, account bool) {
-	if conn.Session != "" {
-		uuid, name, rank, badge, banned, muted = readPlayerDataFromSession(conn.Session)
+	if conn.Token != "" {
+		uuid, name, rank, badge, banned, muted = readPlayerDataFromToken(conn.Token)
 		if uuid != "" { //if we got a uuid back then we're logged in
 			account = true
 		}

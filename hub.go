@@ -46,7 +46,7 @@ var (
 type ConnInfo struct {
 	Connect *websocket.Conn
 	Ip      string
-	Session string
+	Token string
 }
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -270,13 +270,13 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var playerSession string
-	session, ok := r.URL.Query()["token"]
-	if ok && len(session[0]) == 32 {
-		playerSession = session[0]
+	var playerToken string
+	token, ok := r.URL.Query()["token"]
+	if ok && len(token[0]) == 32 {
+		playerToken = token[0]
 	}
 
-	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Session: playerSession}
+	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
 }
 
 func (h *Hub) broadcast(data []byte) {

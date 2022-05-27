@@ -66,29 +66,29 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionId := randstr.String(32)
-	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", sessionId, user[0])
+	token := randstr.String(32)
+	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", token, user[0])
 	db.Exec("UPDATE accounts SET timestampLoggedIn = CURRENT_TIMESTAMP() WHERE user = ?", user[0])
 
-	w.Write([]byte(sessionId))
+	w.Write([]byte(token))
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-	session := r.Header.Get("X-Session")
+	token := r.Header.Get("X-Session")
 
-	if session == "" {
-		handleError(w, r, "session token not specified")
+	if token == "" {
+		handleError(w, r, "token not specified")
 		return
 	}
 
-	uuid, _, _, _, _, _ := readPlayerDataFromSession(session)
+	uuid, _, _, _, _, _ := readPlayerDataFromToken(token)
 
 	if uuid == "" {
-		handleError(w, r, "invalid session token")
+		handleError(w, r, "invalid token")
 		return
 	}
 
-	db.Exec("DELETE FROM playerSessions WHERE sessionId = ? AND uuid = ?", session, uuid)
+	db.Exec("DELETE FROM playerSessions WHERE sessionId = ? AND uuid = ?", token, uuid)
 
 	w.Write([]byte("ok"))
 }

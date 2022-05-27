@@ -37,8 +37,8 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool, muted bool) 
 	return uuid, rank, banned, muted
 }
 
-func readPlayerDataFromSession(session string) (uuid string, name string, rank int, badge string, banned bool, muted bool) {
-	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned, pd.muted FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", session)
+func readPlayerDataFromToken(token string) (uuid string, name string, rank int, badge string, banned bool, muted bool) {
+	result := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned, pd.muted FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token)
 	err := result.Scan(&uuid, &name, &rank, &badge, &banned, &muted)
 
 	if err != nil {
@@ -161,8 +161,8 @@ func readPlayerInfo(ip string) (uuid string, name string, rank int) {
 	return uuid, name, rank
 }
 
-func readPlayerInfoFromSession(session string) (uuid string, name string, rank int, badge string, badgeSlotRows int) {
-	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, a.badgeSlotRows FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", session)
+func readPlayerInfoFromToken(token string) (uuid string, name string, rank int, badge string, badgeSlotRows int) {
+	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, a.badgeSlotRows FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token)
 	err := results.Scan(&uuid, &name, &rank, &badge, &badgeSlotRows)
 
 	if err != nil {
