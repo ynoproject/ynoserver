@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -43,25 +44,28 @@ func main() {
 
 	//list of valid game character sprite resource keys
 	var spriteNames []string
-	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
+	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
 		if k != "_dirname" {
-			spriteNames = append(spriteNames, k)
+			name := strings.TrimSuffix(v.(string), filepath.Ext(v.(string)))
+			spriteNames = append(spriteNames, name)
 		}
 	}
 
 	//list of valid sound resource keys
 	var soundNames []string
-	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
+	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
 		if k != "_dirname" {
-			soundNames = append(soundNames, k)
+			name := strings.TrimSuffix(v.(string), filepath.Ext(v.(string)))
+			soundNames = append(soundNames, name)
 		}
 	}
 
 	//list of valid system resource keys
 	var systemNames []string
-	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
+	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
 		if k != "_dirname" {
-			systemNames = append(systemNames, k)
+			name := strings.TrimSuffix(v.(string), filepath.Ext(v.(string)))
+			systemNames = append(systemNames, name)
 		}
 	}
 
@@ -147,7 +151,7 @@ func isValidSprite(name string) bool {
 	}
 
 	for _, otherName := range config.spriteNames {
-		if strings.EqualFold(otherName, name) {
+		if otherName == name {
 			return true
 		}
 	}
@@ -162,7 +166,7 @@ func isValidSystem(name string, ignoreSingleQuotes bool) bool {
 		if ignoreSingleQuotes {
 			otherName = strings.ReplaceAll(otherName, "'", "")
 		}
-		if strings.EqualFold(otherName, name) {
+		if otherName == name {
 			return true
 		}
 	}
@@ -175,9 +179,9 @@ func isValidSound(name string) bool {
 	}
 
 	for _, otherName := range config.soundNames {
-		if strings.EqualFold(otherName, name) {
+		if otherName == name {
 			for _, ignoredName := range config.ignoredSoundNames {
-				if strings.EqualFold(ignoredName, name) {
+				if ignoredName == name {
 					return false
 				}
 			}
@@ -192,12 +196,13 @@ func isValidPicName(name string) bool {
 		return false
 	}
 
-	nameLower := strings.ToLower(name)
 	for _, otherName := range config.pictureNames {
-		if strings.ToLower(otherName) == nameLower {
+		if otherName == name {
 			return true
 		}
 	}
+
+	nameLower := strings.ToLower(name)
 	for _, prefix := range config.picturePrefixes {
 		if strings.HasPrefix(nameLower, prefix) {
 			return true
