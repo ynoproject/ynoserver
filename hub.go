@@ -109,26 +109,25 @@ func (h *Hub) run() {
 			var uuid string
 			var name string
 			var rank int
-			badge := "null"
-
-			var isBanned bool
-			var isLoggedIn bool
+			var banned bool
+			var loggedIn bool
+			badge := "null" //workaround for bug
 
 			if conn.Session != "" {
-				uuid, name, rank, badge, isBanned = readPlayerDataFromSession(conn.Session)
+				uuid, name, rank, badge, banned = readPlayerDataFromSession(conn.Session)
 				if uuid != "" { //if we got a uuid back then we're logged in
-					isLoggedIn = true
+					loggedIn = true
 				}
 				if badge == "" {
 					badge = "null"
 				}
 			}
 
-			if !isLoggedIn {
-				uuid, rank, isBanned = readPlayerData(conn.Ip)
+			if !loggedIn {
+				uuid, rank, banned = readPlayerData(conn.Ip)
 			}
 
-			if isBanned {
+			if banned {
 				writeErrLog(conn.Ip, h.roomName, "player is banned")
 				continue
 			}
@@ -165,7 +164,7 @@ func (h *Hub) run() {
 				ip:          conn.Ip,
 				send:        make(chan []byte, 256),
 				id:          id,
-				account:     isLoggedIn,
+				account:     loggedIn,
 				name:        name,
 				uuid:        uuid,
 				rank:        rank,
@@ -192,7 +191,7 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(isLoggedIn) + paramDelimStr + badge) //"your id is %id%" message
+			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(loggedIn) + paramDelimStr + badge) //"your id is %id%" message
 
 			//send the new client info about the game state
 			if !h.singleplayer {
@@ -239,7 +238,7 @@ func (h *Hub) run() {
 			allClients[uuid] = client
 
 			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(isLoggedIn) + paramDelimStr + badge)) //user %id% has connected message
+			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(loggedIn) + paramDelimStr + badge)) //user %id% has connected message
 
 			checkHubConditions(h, client, "", "")
 
@@ -257,7 +256,7 @@ func (h *Hub) run() {
 			}
 
 			//send account-specific data like username
-			if isLoggedIn {
+			if loggedIn {
 				h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + name)) //send name of client with account
 			}
 
