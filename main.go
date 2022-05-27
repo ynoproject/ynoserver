@@ -194,7 +194,7 @@ func isValidPicName(name string) bool {
 
 	nameLower := strings.ToLower(name)
 	for _, otherName := range config.pictureNames {
-		if otherName == nameLower {
+		if strings.ToLower(otherName) == nameLower {
 			return true
 		}
 	}
