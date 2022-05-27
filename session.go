@@ -152,6 +152,7 @@ func (s *Session) broadcast(data []byte) {
 }
 
 func (s *Session) deleteClient(client *SessionClient) {
+	updatePlayerGameData(client) //update database
 	delete(s.id, client.id)
 	delete(s.clients, client)
 	delete(sessionClients, client.uuid)

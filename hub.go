@@ -292,7 +292,6 @@ func (h *Hub) broadcast(data []byte) {
 }
 
 func (h *Hub) deleteClient(client *Client) {
-	updatePlayerGameData(client) //update database
 	delete(h.id, client.id)
 	delete(h.clients, client)
 	delete(hubClients, client.session.uuid)
