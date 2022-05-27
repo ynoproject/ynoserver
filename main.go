@@ -28,7 +28,7 @@ func main() {
 	config_file := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
-	configFileData := ParseConfig(*config_file)
+	configFileData := parseConfig(*config_file)
 
 	res_index_data, err := ioutil.ReadFile(configFileData.IndexPath)
 	if err != nil {

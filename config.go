@@ -33,7 +33,7 @@ type ServerConfig struct {
 	} `yaml:"logging"`
 }
 
-func ParseConfig(file string) ServerConfig {
+func parseConfig(file string) ServerConfig {
 	yamlFile, err := ioutil.ReadFile(file)
 	if err != nil {
 		panic(err)
