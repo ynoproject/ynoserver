@@ -65,6 +65,9 @@ type Client struct {
 
 	id int
 
+	key     string
+	counter int
+
 	account bool
 	name    string
 	uuid    string
@@ -101,9 +104,6 @@ type Client struct {
 
 	switchCache map[int]bool
 	varCache    map[int]int
-
-	key     string
-	counter int
 }
 
 type Message struct {
