@@ -37,7 +37,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	if uuid != "" {
 		db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip)
 	} else {
-		uuid, _, _ = readPlayerData(ip)
+		uuid, _, _, _ = readPlayerData(ip)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
@@ -82,7 +82,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid, _, _, _, _ := readPlayerDataFromSession(session)
+	uuid, _, _, _, _, _ := readPlayerDataFromSession(session)
 
 	if uuid == "" {
 		handleError(w, r, "invalid session token")
