@@ -251,9 +251,7 @@ func isVpn(ip string) (bool, error) {
 	}
 
 	var blockedIp bool
-	if response.Block == 0 {
-		blockedIp = false
-	} else {
+	if response.Block != 0 {
 		blockedIp = true
 	}
 
