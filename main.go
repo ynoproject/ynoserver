@@ -42,7 +42,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//list of valid game character sprite resource keys
+	//list of game character sprite names
 	var spriteNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
 		if k != "_dirname" {
@@ -51,7 +51,7 @@ func main() {
 		}
 	}
 
-	//list of valid sound resource keys
+	//list of game sound names
 	var soundNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
 		if k != "_dirname" {
@@ -60,7 +60,7 @@ func main() {
 		}
 	}
 
-	//list of valid system resource keys
+	//list of game system names
 	var systemNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
 		if k != "_dirname" {
@@ -69,19 +69,19 @@ func main() {
 		}
 	}
 
-	//list of invalid sound names
+	//list of sound names to ignore
 	var ignoredSoundNames []string
 	if configFileData.BadSounds != "" {
 		ignoredSoundNames = strings.Split(configFileData.BadSounds, ",")
 	}
 
-	//list of valid picture names
+	//list of picture names to allow
 	var pictureNames []string
 	if configFileData.PictureNames != "" {
 		pictureNames = strings.Split(configFileData.PictureNames, ",")
 	}
 
-	// list of valid picture prefixes
+	// list of picture prefixes to allow
 	var picturePrefixes []string
 	if configFileData.PicturePrefixes != "" {
 		picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
