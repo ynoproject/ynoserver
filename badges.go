@@ -243,11 +243,11 @@ func getHubConditions(roomName string) (hubConditions []*Condition) {
 }
 
 func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
-	if !client.account {
+	if !client.session.account {
 		return
 	}
 	for _, c := range h.conditions {
-		if c.Disabled && client.rank < 2 {
+		if c.Disabled && client.session.rank < 2 {
 			continue
 		}
 
@@ -309,9 +309,9 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 			} else if checkConditionCoords(c, client) {
 				timeTrial := c.TimeTrial && config.gameName == "2kki"
 				if !timeTrial {
-					success, err := tryWritePlayerTag(client.uuid, c.ConditionId)
+					success, err := tryWritePlayerTag(client.session.uuid, c.ConditionId)
 					if err != nil {
-						writeErrLog(client.ip, h.roomName, err.Error())
+						writeErrLog(client.session.ip, h.roomName, err.Error())
 					}
 					if success {
 						client.send <- []byte("b")
@@ -331,7 +331,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				for _, value := range values {
 					_, err := strconv.Atoi(value)
 					if err != nil {
-						writeErrLog(client.ip, h.roomName, err.Error())
+						writeErrLog(client.session.ip, h.roomName, err.Error())
 						continue
 					}
 					var eventTriggerType int
@@ -354,14 +354,14 @@ func checkConditionCoords(condition *Condition, client *Client) bool {
 			((condition.MapY1 == -1 || condition.MapY1 <= client.y) && (condition.MapY2 == -1 || condition.MapY2 >= client.y)))
 }
 
-func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool, simple bool) (playerBadges []*PlayerBadge, err error) {
+func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, account bool, simple bool) (playerBadges []*PlayerBadge, err error) {
 	var playerExp int
 	var playerEventLocationCount int
 	var playerEventLocationCompletion int
 	var playerBadgeCount int
 	var timeTrialRecords []*TimeTrialRecord
 
-	if loggedIn {
+	if account {
 		playerExp, err = readPlayerTotalEventExp(playerUuid)
 		if err != nil {
 			return playerBadges, err
@@ -385,7 +385,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 
 	var playerUnlockedBadgeIds []string
 
-	if loggedIn {
+	if account {
 		playerUnlockedBadgeIds, err = readPlayerUnlockedBadgeIds(playerUuid)
 		if err != nil {
 			return playerBadges, err
@@ -403,7 +403,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 				playerBadge.MapId = 0
 			}
 
-			if loggedIn {
+			if account {
 				switch gameBadge.ReqType {
 				case "tag":
 					for _, tag := range playerTags {
@@ -577,8 +577,8 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	return playerBadges, nil
 }
 
-func readSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []string, loggedIn bool) (playerBadges []*SimplePlayerBadge, err error) {
-	badgeData, err := readPlayerBadgeData(playerUuid, playerRank, playerTags, loggedIn, true)
+func readSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []string, account bool) (playerBadges []*SimplePlayerBadge, err error) {
+	badgeData, err := readPlayerBadgeData(playerUuid, playerRank, playerTags, account, true)
 	if err != nil {
 		return playerBadges, err
 	}

@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	allClients = make(map[string]*Client)
+	hubClients = make(map[string]*Client)
 	upgrader   = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -106,23 +106,13 @@ func (h *Hub) run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			var uuid string
-			var name string
-			var rank int
-			var badge string
-			var banned bool
-			var muted bool
-			var loggedIn bool
+			uuid, _, _, _, _, banned, _ := getPlayerInfo(conn)
 
-			if conn.Session != "" {
-				uuid, name, rank, badge, banned, muted = readPlayerDataFromSession(conn.Session)
-				if uuid != "" { //if we got a uuid back then we're logged in
-					loggedIn = true
-				}
-			}
-
-			if !loggedIn {
-				uuid, rank, banned, muted = readPlayerData(conn.Ip)
+			var session *SessionClient
+			if s, ok := sessionClients[uuid]; ok {
+				session = s
+			} else {
+				writeErrLog(conn.Ip, h.roomName, "player has no client session")
 			}
 
 			if banned {
@@ -130,13 +120,9 @@ func (h *Hub) run() {
 				continue
 			}
 
-			if badge == "" {
-				badge = "null"
-			}
-
 			var same_ip int
 			for otherClient := range h.clients {
-				if otherClient.ip == conn.Ip {
+				if otherClient.session.ip == conn.Ip {
 					same_ip++
 				}
 			}
@@ -164,16 +150,9 @@ func (h *Hub) run() {
 				hub:         h,
 				conn:        conn.Connect,
 				send:        make(chan []byte, 256),
-				ip:          conn.Ip,
+				session:     session,
 				id:          id,
 				key:         key,
-				account:     loggedIn,
-				name:        name,
-				uuid:        uuid,
-				rank:        rank,
-				badge:       badge,
-				muted:       muted,
-				spriteIndex: -1,
 				tone:        [4]int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
 				mapId:       "0000",
@@ -195,24 +174,24 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(loggedIn) + paramDelimStr + badge) //"your id is %id%" message
+			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + key + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(session.rank) + paramDelimStr + btoa(session.account) + paramDelimStr + session.badge) //"your id is %id%" message
 
 			//send the new client info about the game state
 			if !h.singleplayer {
 				for otherClient := range h.clients {
 					var accountBin int
-					if otherClient.account {
+					if otherClient.session.account {
 						accountBin = 1
 					}
-					client.send <- []byte("c" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.uuid + paramDelimStr + strconv.Itoa(otherClient.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + otherClient.badge)
+					client.send <- []byte("c" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.session.uuid + paramDelimStr + strconv.Itoa(otherClient.session.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + otherClient.session.badge)
 					client.send <- []byte("m" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.x) + paramDelimStr + strconv.Itoa(otherClient.y))
 					client.send <- []byte("f" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.facing))
 					client.send <- []byte("spd" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.spd))
-					if otherClient.name != "" {
-						client.send <- []byte("name" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.name)
+					if otherClient.session.name != "" {
+						client.send <- []byte("name" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.session.name)
 					}
-					if otherClient.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
-						client.send <- []byte("spr" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.spriteName + paramDelimStr + strconv.Itoa(otherClient.spriteIndex))
+					if otherClient.session.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
+						client.send <- []byte("spr" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.session.spriteName + paramDelimStr + strconv.Itoa(otherClient.session.spriteIndex))
 					}
 					if otherClient.repeatingFlash {
 						client.send <- []byte("rfl" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.flash[0]) + paramDelimStr + strconv.Itoa(otherClient.flash[1]) + paramDelimStr + strconv.Itoa(otherClient.flash[2]) + paramDelimStr + strconv.Itoa(otherClient.flash[3]) + paramDelimStr + strconv.Itoa(otherClient.flash[4]))
@@ -220,8 +199,8 @@ func (h *Hub) run() {
 					if otherClient.tone[0] != 128 || otherClient.tone[1] != 128 || otherClient.tone[2] != 128 || otherClient.tone[3] != 128 {
 						client.send <- []byte("t" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + strconv.Itoa(otherClient.tone[0]) + paramDelimStr + strconv.Itoa(otherClient.tone[1]) + paramDelimStr + strconv.Itoa(otherClient.tone[2]) + paramDelimStr + strconv.Itoa(otherClient.tone[3]))
 					}
-					if otherClient.systemName != "" {
-						client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.systemName)
+					if otherClient.session.systemName != "" {
+						client.send <- []byte("sys" + paramDelimStr + strconv.Itoa(otherClient.id) + paramDelimStr + otherClient.session.systemName)
 					}
 					for picId, pic := range otherClient.pictures {
 						var useTransparentColorBin int
@@ -239,10 +218,10 @@ func (h *Hub) run() {
 			//register client in the structures
 			h.id[id] = true
 			h.clients[client] = true
-			allClients[uuid] = client
+			hubClients[uuid] = client
 
 			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(loggedIn) + paramDelimStr + badge)) //user %id% has connected message
+			h.broadcast([]byte("c" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(session.rank) + paramDelimStr + btoa(session.account) + paramDelimStr + session.badge)) //user %id% has connected message
 
 			checkHubConditions(h, client, "", "")
 
@@ -260,8 +239,8 @@ func (h *Hub) run() {
 			}
 
 			//send account-specific data like username
-			if loggedIn {
-				h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + name)) //send name of client with account
+			if session.account {
+				h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + session.name)) //send name of client with account
 			}
 
 			writeLog(conn.Ip, h.roomName, "connect", 200)
@@ -270,12 +249,12 @@ func (h *Hub) run() {
 				h.deleteClient(client)
 			}
 
-			writeLog(client.ip, h.roomName, "disconnect", 200)
+			writeLog(client.session.ip, h.roomName, "disconnect", 200)
 		case message := <-h.processMsgCh:
 			errs := h.processMsgs(message)
 			if len(errs) > 0 {
 				for _, err := range errs {
-					writeErrLog(message.sender.ip, h.roomName, err.Error())
+					writeErrLog(message.sender.session.ip, h.roomName, err.Error())
 				}
 			}
 		}
@@ -316,7 +295,7 @@ func (h *Hub) deleteClient(client *Client) {
 	updatePlayerGameData(client) //update database
 	delete(h.id, client.id)
 	delete(h.clients, client)
-	delete(allClients, client.uuid)
+	delete(hubClients, client.session.uuid)
 	close(client.send)
 	h.broadcast([]byte("d" + paramDelimStr + strconv.Itoa(client.id))) //user %id% has disconnected message
 }
@@ -451,7 +430,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		return false, err
 	}
 
-	writeLog(sender.ip, h.roomName, msgStr, 200)
+	writeLog(sender.session.ip, h.roomName, msgStr, 200)
 
 	return terminate, nil
 }

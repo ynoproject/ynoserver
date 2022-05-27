@@ -10,91 +10,31 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
-
-	// Maximum message size allowed from peer.
-	maxMessageSize = 4096
-)
-
-type Picture struct {
-	name string
-
-	positionX int
-	positionY int
-	mapX      int
-	mapY      int
-	panX      int
-	panY      int
-
-	magnify     int
-	topTrans    int
-	bottomTrans int
-
-	red        int
-	green      int
-	blue       int
-	saturation int
-
-	effectMode  int
-	effectPower int
-
-	useTransparentColor bool
-	fixedToMap          bool
-}
-
-// Client is a middleman between the websocket connection and the hub.
-type Client struct {
-	hub *Hub
-
-	// The websocket connection.
+type SessionClient struct {
 	conn *websocket.Conn
-
-	// Buffered channel of outbound messages.
 	send chan []byte
 
-	session *SessionClient
+	ip string
 
 	id int
 
-	key     string
-	counter int
+	account bool
+	name    string
+	uuid    string
+	rank    int
+	badge   string
 
-	x, y   int
-	facing int
-	spd    int
+	muted bool
 
-	flash          [5]int
-	repeatingFlash bool
+	spriteName  string
+	spriteIndex int
 
-	tone [4]int
-
-	pictures map[int]*Picture
-
-	mapId         string
-	prevMapId     string
-	prevLocations string
-
-	tags []string
-
-	syncCoords bool
-
-	minigameScores []int
-
-	switchCache map[int]bool
-	varCache    map[int]int
+	systemName string
 }
 
-type Message struct {
+type SessionMessage struct {
 	data   []byte
-	sender *Client //who sent the message
+	sender *SessionClient //who sent the message
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -102,9 +42,9 @@ type Message struct {
 // The application runs readPump in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
-func (c *Client) readPump() {
+func (c *SessionClient) readPump() {
 	defer func() {
-		c.hub.unregister <- c
+		session.unregister <- c
 		c.conn.Close()
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
@@ -114,11 +54,11 @@ func (c *Client) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				writeLog(c.session.ip, c.hub.roomName, err.Error(), 500)
+				writeLog(c.ip, "session", err.Error(), 500)
 			}
 			break
 		}
-		c.hub.processMsgCh <- &Message{data: message, sender: c}
+		session.processMsgCh <- &SessionMessage{data: message, sender: c}
 	}
 }
 
@@ -127,7 +67,7 @@ func (c *Client) readPump() {
 // A goroutine running writePump is started for each connection. The
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
-func (c *Client) writePump() {
+func (c *SessionClient) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()

@@ -127,6 +127,7 @@ func main() {
 	initEvents()
 	initBadges()
 	initRankings()
+	initSessionWs()
 
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
@@ -255,12 +256,6 @@ func isVpn(ip string) (vpn bool) {
 	}
 
 	return vpn
-}
-
-func globalBroadcast(inpData []byte) {
-	for _, client := range allClients {
-		client.send <- inpData
-	}
 }
 
 func btoa(b bool) string { //bool to ascii int

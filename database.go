@@ -72,7 +72,7 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		return err
 	}
 
-	if client, ok := allClients[recipientUUID]; ok { //unregister client and close connection
+	if client, ok := hubClients[recipientUUID]; ok { //unregister client and close connection
 		client.hub.unregister <- client
 	}
 
@@ -93,8 +93,8 @@ func tryMutePlayer(senderUUID string, recipientUUID string) error { //called by 
 		return err
 	}
 
-	if client, ok := allClients[recipientUUID]; ok { //mute client if they're connected
-		client.muted = true
+	if client, ok := hubClients[recipientUUID]; ok { //mute client if they're connected
+		client.session.muted = true
 	}
 
 	return nil
@@ -114,8 +114,8 @@ func tryUnmutePlayer(senderUUID string, recipientUUID string) error { //called b
 		return err
 	}
 
-	if client, ok := allClients[recipientUUID]; ok { //unmute client if they're connected
-		client.muted = false
+	if client, ok := hubClients[recipientUUID]; ok { //unmute client if they're connected
+		client.session.muted = false
 	}
 
 	return nil
@@ -130,8 +130,19 @@ func createPlayerData(ip string, uuid string, rank int, banned bool) error {
 	return nil
 }
 
+func readPlayerGameData(uuid string) (systemName string, spriteName string, spriteIndex int) {
+	results := db.QueryRow("SELECT pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, config.gameName)
+	err := results.Scan(&systemName, &spriteName, &spriteIndex)
+
+	if err != nil {
+		return "", "", 0
+	}
+
+	return systemName, spriteName, spriteIndex
+}
+
 func updatePlayerGameData(client *Client) error {
-	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", client.uuid, config.gameName, client.name, client.systemName, client.spriteName, client.spriteIndex, client.name, client.systemName, client.spriteName, client.spriteIndex)
+	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", client.session.uuid, config.gameName, client.session.name, client.session.systemName, client.session.spriteName, client.session.spriteIndex, client.session.name, client.session.systemName, client.session.spriteName, client.session.spriteIndex)
 	if err != nil {
 		return err
 	}
@@ -341,18 +352,18 @@ func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember
 		}
 		partyMember.Account = accountBin == 1
 
-		if client, ok := allClients[partyMember.Uuid]; ok {
-			if client.name != "" {
-				partyMember.Name = client.name
+		if client, ok := hubClients[partyMember.Uuid]; ok {
+			if client.session.name != "" {
+				partyMember.Name = client.session.name
 			}
-			if client.systemName != "" {
-				partyMember.SystemName = client.systemName
+			if client.session.systemName != "" {
+				partyMember.SystemName = client.session.systemName
 			}
-			if client.spriteName != "" {
-				partyMember.SpriteName = client.spriteName
+			if client.session.spriteName != "" {
+				partyMember.SpriteName = client.session.spriteName
 			}
-			if client.spriteIndex > -1 {
-				partyMember.SpriteIndex = client.spriteIndex
+			if client.session.spriteIndex > -1 {
+				partyMember.SpriteIndex = client.session.spriteIndex
 			}
 			partyMember.Online = true
 			partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
@@ -434,18 +445,18 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			return partyMembers, err
 		}
 		partyMember.Account = accountBin == 1
-		if client, ok := allClients[partyMember.Uuid]; ok {
-			if client.name != "" {
-				partyMember.Name = client.name
+		if client, ok := hubClients[partyMember.Uuid]; ok {
+			if client.session.name != "" {
+				partyMember.Name = client.session.name
 			}
-			if client.systemName != "" {
-				partyMember.SystemName = client.systemName
+			if client.session.systemName != "" {
+				partyMember.SystemName = client.session.systemName
 			}
-			if client.spriteName != "" {
-				partyMember.SpriteName = client.spriteName
+			if client.session.spriteName != "" {
+				partyMember.SpriteName = client.session.spriteName
 			}
-			if client.spriteIndex > -1 {
-				partyMember.SpriteIndex = client.spriteIndex
+			if client.session.spriteIndex > -1 {
+				partyMember.SpriteIndex = client.session.spriteIndex
 			}
 			partyMember.MapId = client.mapId
 			partyMember.PrevMapId = client.prevMapId
@@ -559,7 +570,7 @@ func assumeNextPartyOwner(partyId int) error {
 	var nextOnlinePlayerUuid string
 
 	for _, uuid := range partyMemberUuids {
-		if _, ok := allClients[uuid]; ok {
+		if _, ok := hubClients[uuid]; ok {
 			nextOnlinePlayerUuid = uuid
 			break
 		}
@@ -895,7 +906,7 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 }
 
 func tryCompleteEventLocation(periodId int, playerUuid string, location string) (exp int, err error) {
-	if client, ok := allClients[playerUuid]; ok {
+	if client, ok := hubClients[playerUuid]; ok {
 		clientMapId := client.mapId
 
 		results, err := db.Query("SELECT el.id, el.type, el.exp, el.mapIds FROM eventLocations el WHERE el.periodId = ? AND el.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", periodId, location)
@@ -955,7 +966,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 }
 
 func tryCompletePlayerEventLocation(periodId int, playerUuid string, location string) (complete bool, err error) {
-	if client, ok := allClients[playerUuid]; ok {
+	if client, ok := hubClients[playerUuid]; ok {
 		clientMapId := client.mapId
 
 		results, err := db.Query("SELECT pel.id, pel.mapIds FROM playerEventLocations pel WHERE pel.periodId = ? AND pel.title = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", periodId, location, playerUuid)
@@ -1046,8 +1057,8 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 		return err
 	}
 
-	if client, ok := allClients[playerUuid]; ok {
-		client.badge = badgeId
+	if client, ok := hubClients[playerUuid]; ok {
+		client.session.badge = badgeId
 	}
 
 	return nil
@@ -1074,7 +1085,7 @@ func removePlayerBadge(playerUuid string, badgeId string) (err error) {
 		}
 
 		if slotId == 1 {
-			if client, ok := allClients[playerUuid]; ok {
+			if client, ok := hubClients[playerUuid]; ok {
 				var replacementBadgeId string
 				results = db.QueryRow("SELECT badgeId FROM playerBadges WHERE uuid = ? AND slotId = ?", playerUuid, slotId)
 				err = results.Scan(&replacementBadgeId)
@@ -1086,7 +1097,7 @@ func removePlayerBadge(playerUuid string, badgeId string) (err error) {
 					}
 				}
 
-				client.badge = replacementBadgeId
+				client.session.badge = replacementBadgeId
 			}
 		}
 	}
@@ -1137,7 +1148,7 @@ func readPlayerTags(playerUuid string) (tags []string, err error) {
 }
 
 func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
-	if client, ok := allClients[playerUuid]; ok { // Player must be online to add a tag
+	if client, ok := hubClients[playerUuid]; ok { // Player must be online to add a tag
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
 		tags := client.tags
 		var tagExists bool

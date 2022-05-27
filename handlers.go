@@ -85,8 +85,8 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 	if errconv != nil || index < 0 {
 		return errconv
 	}
-	sender.spriteName = msg[1]
-	sender.spriteIndex = index
+	sender.session.spriteName = msg[1]
+	sender.session.spriteIndex = index
 	h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2]))
 
 	return nil
@@ -175,7 +175,7 @@ func (h *Hub) handleSys(msg []string, sender *Client) (err error) {
 	if !isValidSystem(msg[1], false) {
 		return err
 	}
-	sender.systemName = msg[1]
+	sender.session.systemName = msg[1]
 	h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
 
 	return nil
@@ -374,76 +374,26 @@ func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
 }
 
 func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
-	if !sender.muted {
-		msgLength := 2
-		if msg[0] == "gsay" {
-			msgLength++
-		}
-		if len(msg) != msgLength {
+	if !sender.session.muted {
+		if len(msg) != 2 {
 			return err
 		}
 		msgContents := strings.TrimSpace(msg[1])
-		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
+		if sender.session.name == "" || sender.session.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return err
 		}
-		switch msg[0] {
-		case "gsay":
-			enableLocBin, errconv := strconv.Atoi(msg[2])
-			if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
-				return errconv
-			}
-	
-			mapId := "0000"
-			prevMapId := "0000"
-			var prevLocations string
-			x := -1
-			y := -1
-	
-			if enableLocBin == 1 {
-				mapId = sender.mapId
-				prevMapId = sender.prevMapId
-				prevLocations = sender.prevLocations
-				x = sender.x
-				y = sender.y
-			}
-	
-			var accountBin int
-			if sender.account {
-				accountBin = 1
-			}
-	
-			globalBroadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + strconv.Itoa(x) + paramDelimStr + strconv.Itoa(y) + paramDelimStr + msgContents))
-		case "psay":
-			partyId, err := readPlayerPartyId(sender.uuid)
-			if err != nil {
-				return err
-			}
-			if partyId == 0 {
-				return errors.New("player not in a party")
-			}
-			partyMemberUuids, err := readPartyMemberUuids(partyId)
-			if err != nil {
-				return err
-			}
-			for _, uuid := range partyMemberUuids {
-				if client, ok := allClients[uuid]; ok {
-					client.send <- []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents)
-				}
-			}
-		default:
-			h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
-		}
+		h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
 	}
 
 	return nil
 }
 
 func (h *Hub) handleName(msg []string, sender *Client) (err error) {
-	if sender.name != "" || len(msg) != 2 || !isOkString(msg[1]) || len(msg[1]) > 12 {
+	if sender.session.name != "" || len(msg) != 2 || !isOkString(msg[1]) || len(msg[1]) > 12 {
 		return err
 	}
-	sender.name = msg[1]
-	h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.name))
+	sender.session.name = msg[1]
+	h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.session.name))
 
 	return nil
 }
@@ -473,7 +423,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 		if len(sender.hub.minigameConfigs) > 0 {
 			for m, minigame := range sender.hub.minigameConfigs {
 				if minigame.SwitchId == switchId && minigame.SwitchValue == value && sender.minigameScores[m] < sender.varCache[minigame.VarId] {
-					tryWritePlayerMinigameScore(sender.uuid, minigame.MinigameId, sender.varCache[minigame.VarId])
+					tryWritePlayerMinigameScore(sender.session.uuid, minigame.MinigameId, sender.varCache[minigame.VarId])
 				}
 			}
 		}
@@ -511,7 +461,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 						if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
 							if !c.TimeTrial {
 								if checkConditionCoords(c, sender) {
-									success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+									success, err := tryWritePlayerTag(sender.session.uuid, c.ConditionId)
 									if err != nil {
 										return err
 									}
@@ -536,7 +486,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 							if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
 								if !c.TimeTrial {
 									if checkConditionCoords(c, sender) {
-										success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+										success, err := tryWritePlayerTag(sender.session.uuid, c.ConditionId)
 										if err != nil {
 											return err
 										}
@@ -584,7 +534,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 			if c.TimeTrial && value < 3600 {
 				if checkConditionCoords(c, sender) {
 					mapId, _ := strconv.Atoi(h.roomName)
-					success, err := tryWritePlayerTimeTrial(sender.uuid, mapId, value)
+					success, err := tryWritePlayerTimeTrial(sender.session.uuid, mapId, value)
 					if err != nil {
 						return err
 					}
@@ -601,7 +551,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 					if minigame.SwitchId > 0 {
 						sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(minigame.SwitchId) + paramDelimStr + "0")
 					} else {
-						tryWritePlayerMinigameScore(sender.uuid, minigame.MinigameId, value)
+						tryWritePlayerMinigameScore(sender.session.uuid, minigame.MinigameId, value)
 					}
 				}
 			}
@@ -640,7 +590,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 						if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
 							if !c.TimeTrial {
 								if checkConditionCoords(c, sender) {
-									success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+									success, err := tryWritePlayerTag(sender.session.uuid, c.ConditionId)
 									if err != nil {
 										return err
 									}
@@ -665,7 +615,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 							if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
 								if !c.TimeTrial {
 									if checkConditionCoords(c, sender) {
-										success, err := tryWritePlayerTag(sender.uuid, c.ConditionId)
+										success, err := tryWritePlayerTag(sender.session.uuid, c.ConditionId)
 										if err != nil {
 											return err
 										}
@@ -708,6 +658,84 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 		triggerType = "eventAction"
 	}
 	checkHubConditions(h, sender, triggerType, msg[1])
+
+	return nil
+}
+
+//SESSION
+
+func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
+	if !sender.muted {
+		if len(msg) != 3 {
+			return err
+		}
+		msgContents := strings.TrimSpace(msg[1])
+		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
+			return err
+		}
+
+		enableLocBin, errconv := strconv.Atoi(msg[2])
+		if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
+			return errconv
+		}
+
+		mapId := "0000"
+		prevMapId := "0000"
+		var prevLocations string
+		x := -1
+		y := -1
+
+		client := getClientStruct(sender.uuid)
+		if client == nil {
+			enableLocBin = 0 //client struct data can't be used
+		}
+
+		if enableLocBin == 1 {
+			mapId = client.mapId
+			prevMapId = client.prevMapId
+			prevLocations = client.prevLocations
+			x = client.x
+			y = client.y
+		}
+
+		var accountBin int
+		if sender.account {
+			accountBin = 1
+		}
+
+		session.broadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + strconv.Itoa(x) + paramDelimStr + strconv.Itoa(y) + paramDelimStr + msgContents))
+	}
+
+	return nil
+}
+
+func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
+	if !sender.muted {
+		if len(msg) != 2 {
+			return err
+		}
+		msgContents := strings.TrimSpace(msg[1])
+		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
+			return err
+		}
+
+		partyId, err := readPlayerPartyId(sender.uuid)
+		if err != nil {
+			return err
+		}
+		if partyId == 0 {
+			return errors.New("player not in a party")
+		}
+		partyMemberUuids, err := readPartyMemberUuids(partyId)
+		if err != nil {
+			return err
+		}
+		for _, uuid := range partyMemberUuids {
+			if client, ok := sessionClients[uuid]; ok {
+				client.send <- []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents)
+			}
+		}
+	}
 
 	return nil
 }

@@ -151,7 +151,7 @@ func initApi() {
 		w.Write([]byte(playerInfoJson))
 	})
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(strconv.Itoa(len(allClients))))
+		w.Write([]byte(strconv.Itoa(len(hubClients))))
 	})
 }
 
@@ -806,7 +806,7 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		ret := -1
-		if _, found := allClients[uuid]; found {
+		if _, found := hubClients[uuid]; found {
 			if !free {
 				exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
 				if err != nil {
@@ -1227,7 +1227,7 @@ func handlePloc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if client, found := allClients[uuid]; found {
+	if client, found := hubClients[uuid]; found {
 		client.prevMapId = prevMapIdParam[0]
 		if len(prevLocationsParam) > 0 {
 			client.prevLocations = prevLocationsParam[0]
