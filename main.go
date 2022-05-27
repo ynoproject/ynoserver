@@ -222,32 +222,32 @@ type IpHubResponse struct {
 	Block       int    `json:"block"`
 }
 
-func isVpn(ip string) (bool, error) {
+func isVpn(ip string) (bool) {
 	if config.ipHubKey == "" {
-		return false, nil //VPN checking is not available
+		return false //VPN checking is not available
 	}
 
 	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/"+ip, nil)
 	if err != nil {
-		return false, err
+		return false
 	}
 
 	req.Header.Set("X-Key", config.ipHubKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, err
+		return false
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return false, err
+		return false
 	}
 
 	var response IpHubResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return false, err
+		return false
 	}
 
 	var blockedIp bool
@@ -255,7 +255,7 @@ func isVpn(ip string) (bool, error) {
 		blockedIp = true
 	}
 
-	return blockedIp, nil
+	return blockedIp
 }
 
 func globalBroadcast(inpData []byte) {

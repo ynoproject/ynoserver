@@ -26,8 +26,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	ip := getIp(r)
 
-	ipIsVpn, _ := isVpn(ip)
-	if ipIsVpn {
+	if isVpn(ip) {
 		handleError(w, r, "bad response")
 	}
 

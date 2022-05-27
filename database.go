@@ -27,8 +27,7 @@ func readPlayerData(ip string) (uuid string, rank int, banned bool, muted bool) 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			uuid = randstr.String(16)
-			banned, _ := isVpn(ip)
-			createPlayerData(ip, uuid, 0, banned)
+			createPlayerData(ip, uuid, 0, isVpn(ip))
 		} else {
 			return "", 0, false, false
 		}
