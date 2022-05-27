@@ -222,7 +222,7 @@ type IpHubResponse struct {
 	Block       int    `json:"block"`
 }
 
-func isVpn(ip string) (bool) {
+func isVpn(ip string) (vpn bool) {
 	if config.ipHubKey == "" {
 		return false //VPN checking is not available
 	}
@@ -250,12 +250,11 @@ func isVpn(ip string) (bool) {
 		return false
 	}
 
-	var blockedIp bool
 	if response.Block != 0 {
-		blockedIp = true
+		vpn = true
 	}
 
-	return blockedIp
+	return vpn
 }
 
 func globalBroadcast(inpData []byte) {
