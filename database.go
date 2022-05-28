@@ -352,18 +352,18 @@ func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember
 		}
 		partyMember.Account = accountBin == 1
 
-		if client, ok := hubClients[partyMember.Uuid]; ok {
-			if client.session.name != "" {
-				partyMember.Name = client.session.name
+		if client, ok := sessionClients[partyMember.Uuid]; ok {
+			if client.name != "" {
+				partyMember.Name = client.name
 			}
-			if client.session.systemName != "" {
-				partyMember.SystemName = client.session.systemName
+			if client.systemName != "" {
+				partyMember.SystemName = client.systemName
 			}
-			if client.session.spriteName != "" {
-				partyMember.SpriteName = client.session.spriteName
+			if client.spriteName != "" {
+				partyMember.SpriteName = client.spriteName
 			}
-			if client.session.spriteIndex > -1 {
-				partyMember.SpriteIndex = client.session.spriteIndex
+			if client.spriteIndex > -1 {
+				partyMember.SpriteIndex = client.spriteIndex
 			}
 			partyMember.Online = true
 			partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
@@ -445,24 +445,26 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			return partyMembers, err
 		}
 		partyMember.Account = accountBin == 1
-		if client, ok := hubClients[partyMember.Uuid]; ok {
-			if client.session.name != "" {
-				partyMember.Name = client.session.name
+		if client, ok := sessionClients[partyMember.Uuid]; ok {
+			if client.name != "" {
+				partyMember.Name = client.name
 			}
-			if client.session.systemName != "" {
-				partyMember.SystemName = client.session.systemName
+			if client.systemName != "" {
+				partyMember.SystemName = client.systemName
 			}
-			if client.session.spriteName != "" {
-				partyMember.SpriteName = client.session.spriteName
+			if client.spriteName != "" {
+				partyMember.SpriteName = client.spriteName
 			}
-			if client.session.spriteIndex > -1 {
-				partyMember.SpriteIndex = client.session.spriteIndex
+			if client.spriteIndex > -1 {
+				partyMember.SpriteIndex = client.spriteIndex
 			}
-			partyMember.MapId = client.mapId
-			partyMember.PrevMapId = client.prevMapId
-			partyMember.PrevLocations = client.prevLocations
-			partyMember.X = client.x
-			partyMember.Y = client.y
+			if hubClient, ok := hubClients[partyMember.Uuid]; ok {
+				partyMember.MapId = hubClient.mapId
+				partyMember.PrevMapId = hubClient.prevMapId
+				partyMember.PrevLocations = hubClient.prevLocations
+				partyMember.X = hubClient.x
+				partyMember.Y = hubClient.y
+			}
 			partyMember.Online = true
 		} else {
 			partyMember.MapId = "0000"
