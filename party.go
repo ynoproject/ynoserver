@@ -39,6 +39,8 @@ func startPartyUpdateTimer() {
 	s := gocron.NewScheduler(time.UTC)
 	
 	s.Every(5).Seconds().Do(func() { sendPartyUpdate() })
+
+	s.StartAsync()
 }
 
 func sendPartyUpdate() error {
