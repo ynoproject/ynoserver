@@ -60,9 +60,9 @@ func (s *Session) serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var playerToken string
-	token := r.Header.Get("X-Session")
-	if len(token) == 32 {
-		playerToken = token
+	token, ok := r.URL.Query()["token"]
+	if ok && len(token[0]) == 32 {
+		playerToken = token[0]
 	}
 
 	s.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
