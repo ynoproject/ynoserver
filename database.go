@@ -466,8 +466,11 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 				partyMember.Y = hubClient.y
 			}
 			partyMember.Online = true
-		} else {
+		}
+		if partyMember.MapId == "" {
 			partyMember.MapId = "0000"
+		}
+		if partyMember.PrevMapId == "" {
 			partyMember.PrevMapId = "0000"
 		}
 		partyMembers = append(partyMembers, partyMember)
