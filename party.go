@@ -38,7 +38,7 @@ type PartyMember struct {
 func startPartyUpdateTimer() {
 	s := gocron.NewScheduler(time.UTC)
 	
-	s.Every(5).Seconds().Do(sendPartyUpdate())
+	s.Every(5).Seconds().Do(func() { sendPartyUpdate() })
 }
 
 func sendPartyUpdate() error {
