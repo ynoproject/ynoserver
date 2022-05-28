@@ -48,6 +48,7 @@ func newSessionWs() (*Session) {
 		processMsgCh: make(chan *SessionMessage),
 		connect:      make(chan *ConnInfo),
 		unregister:   make(chan *SessionClient),
+		id:           make(map[int]bool),
 	}
 }
 
