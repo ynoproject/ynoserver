@@ -165,5 +165,6 @@ func initRankings() {
 		}
 	})
 
+	time.Sleep(time.Second * 5) //workaround
 	s.StartAsync()
 }
