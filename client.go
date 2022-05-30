@@ -52,6 +52,7 @@ type Picture struct {
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
+	session *SessionClient
 	hub *Hub
 
 	// The websocket connection.
@@ -59,8 +60,6 @@ type Client struct {
 
 	// Buffered channel of outbound messages.
 	send chan []byte
-
-	session *SessionClient
 
 	id int
 
