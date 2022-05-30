@@ -25,7 +25,6 @@ func initApi() {
 	http.HandleFunc("/api/eventLocations", handleEventLocations)
 	http.HandleFunc("/api/badge", handleBadge)
 	http.HandleFunc("/api/ranking", handleRanking)
-	http.HandleFunc("/api/ploc", handlePloc)
 
 	http.HandleFunc("/api/register", handleRegister)
 	http.HandleFunc("/api/login", handleLogin)
@@ -1134,49 +1133,6 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "unknown command")
 		return
 	}
-}
-
-func handlePloc(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-
-	token := r.Header.Get("X-Session")
-	if token == "" {
-		uuid, _, _, _ = readPlayerData(getIp(r))
-	} else {
-		uuid, _, _, _, _, _ = readPlayerDataFromToken(token)
-	}
-
-	prevMapIdParam, ok := r.URL.Query()["prevMapId"]
-	if !ok || len(prevMapIdParam) < 1 {
-		handleError(w, r, "prevMapId not specified")
-		return
-	}
-
-	if len(prevMapIdParam[0]) != 4 {
-		handleError(w, r, "invalid prevMapId")
-		return
-	}
-
-	prevLocationsParam, ok := r.URL.Query()["prevLocations"]
-	if !ok {
-		handleError(w, r, "prevLocations not specified")
-		return
-	}
-
-	if client, found := hubClients[uuid]; found {
-		client.prevMapId = prevMapIdParam[0]
-		if len(prevLocationsParam) > 0 {
-			client.prevLocations = prevLocationsParam[0]
-		} else {
-			client.prevLocations = ""
-		}
-		checkHubConditions(client.hub, client, "prevMap", client.prevMapId)
-	} else {
-		handleError(w, r, "client not found")
-		return
-	}
-
-	w.Write([]byte("ok"))
 }
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {

@@ -207,6 +207,8 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	}
 
 	switch msgFields[0] {
+	case "ploc":
+		err = s.handlePloc(msgFields, sender)
 	case "gsay": //global say
 		err = s.handleGSay(msgFields, sender)
 	case "psay": //party say
@@ -229,7 +231,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	return nil
 }
 
-func getClientStruct(uuid string) *Client {
+func getHubClient(uuid string) *Client {
 	if client, ok := hubClients[uuid]; ok {
 		return client
 	}

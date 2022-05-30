@@ -46,7 +46,7 @@ var (
 type ConnInfo struct {
 	Connect *websocket.Conn
 	Ip      string
-	Token string
+	Token   string
 }
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -407,10 +407,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	case "rp": // picture erased
 		err = h.handleRp(msgFields, sender)
 	case "say":
-		fallthrough
-	case "gsay": //global say
-		fallthrough
-	case "psay": //party say
 		err = h.handleSay(msgFields, sender)
 		terminate = true
 	case "name": // nick set

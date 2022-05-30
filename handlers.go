@@ -665,14 +665,36 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 
 //SESSION
 
+func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
+	if len(msg) != 2 {
+		return errors.New("command length mismatch")
+	}
+
+	if len(msg[0]) != 4 {
+		return errors.New("invalid prev map ID")
+	}
+
+	if client := getHubClient(sender.uuid); client != nil {
+		client.prevMapId = msg[0]
+		client.prevLocations = msg[1]
+		checkHubConditions(client.hub, client, "prevMap", client.prevMapId)
+	} else {
+		return errors.New("client not found")
+	}
+
+	return nil
+}
+
 func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 	if !sender.muted {
 		if len(msg) != 3 {
-			return err
+			return errors.New("command length mismatch")
 		}
 		msgContents := strings.TrimSpace(msg[1])
-		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
-			return err
+		if sender.name == "" || sender.systemName == "" {
+			return errors.New("invalid client")
+		} else if msgContents == "" || len(msgContents) > 150 {
+			return errors.New("invalid message")
 		}
 
 		enableLocBin, errconv := strconv.Atoi(msg[2])
@@ -680,7 +702,7 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 			return errconv
 		}
 
-		client := getClientStruct(sender.uuid)
+		client := getHubClient(sender.uuid)
 		if client == nil {
 			enableLocBin = 0 //client struct data can't be used
 		}
@@ -714,11 +736,13 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 	if !sender.muted {
 		if len(msg) != 2 {
-			return err
+			return errors.New("command length mismatch")
 		}
 		msgContents := strings.TrimSpace(msg[1])
-		if sender.name == "" || sender.systemName == "" || msgContents == "" || len(msgContents) > 150 {
-			return err
+		if sender.name == "" || sender.systemName == "" {
+			return errors.New("invalid client")
+		} else if msgContents == "" || len(msgContents) > 150 {
+			return errors.New("invalid message")
 		}
 
 		partyId, err := readPlayerPartyId(sender.uuid)
