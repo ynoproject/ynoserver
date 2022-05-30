@@ -113,6 +113,7 @@ func (h *Hub) run() {
 				session = s
 			} else {
 				writeErrLog(conn.Ip, h.roomName, "player has no client session")
+				continue
 			}
 
 			if banned {
