@@ -211,10 +211,10 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 		err = s.handleGSay(msgFields, sender)
 	case "psay": //party say
 		err = s.handlePSay(msgFields, sender)
-	case "p": //party update
-		err = s.handleP(msgFields, sender)
+	case "pt": //party update
+		err = s.handlePt(msgFields, sender)
 		if err != nil {
-			session.broadcast([]byte("p" + paramDelimStr + "null"))
+			session.broadcast([]byte("pt" + paramDelimStr + "null"))
 		}
 	default:
 		return err

@@ -76,7 +76,7 @@ func sendPartyUpdate() error {
 					} else {
 						jsonData = string(partyDataJson)
 					}
-					client.send <- []byte("p" + paramDelimStr + jsonData) //send JSON to client
+					client.send <- []byte("pt" + paramDelimStr + jsonData) //send JSON to client
 				}
 			}
 		}

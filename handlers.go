@@ -704,7 +704,8 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 			accountBin = 1
 		}
 
-		session.broadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + strconv.Itoa(x) + paramDelimStr + strconv.Itoa(y) + paramDelimStr + msgContents))
+		session.broadcast([]byte("p" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge))
+		session.broadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + strconv.Itoa(x) + paramDelimStr + strconv.Itoa(y) + paramDelimStr + msgContents))
 	}
 
 	return nil
@@ -741,7 +742,7 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handleP(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
 	partyId, err := readPlayerPartyId(sender.uuid)
 	if err != nil {
 		return err
@@ -760,7 +761,7 @@ func (s *Session) handleP(msg []string, sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	sender.send <- []byte("p" + paramDelimStr + string(partyDataJson))
+	sender.send <- []byte("pt" + paramDelimStr + string(partyDataJson))
 
 	return nil
 }
