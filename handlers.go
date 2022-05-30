@@ -760,7 +760,7 @@ func (s *Session) handleP(msg []string, sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	session.broadcast([]byte("p" + paramDelimStr + string(partyDataJson)))
+	sender.send <- []byte("p" + paramDelimStr + string(partyDataJson))
 
 	return nil
 }
