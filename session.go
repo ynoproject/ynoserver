@@ -232,11 +232,3 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 
 	return nil
 }
-
-func getHubClient(uuid string) *Client {
-	if client, ok := hubClients[uuid]; ok {
-		return client
-	}
-
-	return nil
-}

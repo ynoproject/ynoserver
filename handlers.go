@@ -660,7 +660,7 @@ func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 		return err
 	}
 	sender.name = msg[1]
-	if client := getHubClient(sender.uuid); client != nil {
+	if client, ok := hubClients[sender.uuid]; ok {
 		client.hub.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + sender.name)) //broadcast name change to hub if client is in one
 	}
 
@@ -676,7 +676,7 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 		return errors.New("invalid prev map ID")
 	}
 
-	if client := getHubClient(sender.uuid); client != nil {
+	if client,ok := hubClients[sender.uuid]; ok {
 		client.prevMapId = msg[1]
 		client.prevLocations = msg[2]
 		checkHubConditions(client.hub, client, "prevMap", client.prevMapId)
@@ -704,8 +704,8 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 			return errconv
 		}
 
-		client := getHubClient(sender.uuid)
-		if client == nil {
+		client, ok := hubClients[sender.uuid]
+		if !ok {
 			enableLocBin = 0 //client struct data can't be used
 		}
 
