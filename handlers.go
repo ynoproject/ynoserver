@@ -676,7 +676,7 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 		return errors.New("invalid prev map ID")
 	}
 
-	if client,ok := hubClients[sender.uuid]; ok {
+	if client, ok := hubClients[sender.uuid]; ok {
 		client.prevMapId = msg[1]
 		client.prevLocations = msg[2]
 		checkHubConditions(client.hub, client, "prevMap", client.prevMapId)
