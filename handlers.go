@@ -27,7 +27,7 @@ func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 		if sender.syncCoords {
 			checkHubConditions(h, sender, "coords", "")
 		}
-		h.broadcast([]byte("m" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2])) //user %id% moved to x y
+		h.broadcast([]byte("m" + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2])) //user %id% moved to x y
 	} else {
 		checkHubConditions(h, sender, "teleport", "")
 	}
@@ -45,7 +45,7 @@ func (h *Hub) handleF(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.facing = facing
-	h.broadcast([]byte("f" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1])) //user %id% facing changed to f
+	h.broadcast([]byte("f" + delim + strconv.Itoa(sender.id) + delim + msg[1])) //user %id% facing changed to f
 
 	return nil
 }
@@ -62,7 +62,7 @@ func (h *Hub) handleSpd(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.spd = spd
-	h.broadcast([]byte("spd" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
+	h.broadcast([]byte("spd" + delim + strconv.Itoa(sender.id) + delim + msg[1]))
 
 	return nil
 }
@@ -88,7 +88,7 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 	}
 	sender.session.spriteName = msg[1]
 	sender.session.spriteIndex = index
-	h.broadcast([]byte("spr" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2]))
+	h.broadcast([]byte("spr" + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2]))
 
 	return nil
 }
@@ -125,7 +125,7 @@ func (h *Hub) handleFl(msg []string, sender *Client) (err error) {
 		sender.flash[4] = frames
 		sender.repeatingFlash = true
 	}
-	h.broadcast([]byte(msg[0] + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2] + paramDelimStr + msg[3] + paramDelimStr + msg[4] + paramDelimStr + msg[5]))
+	h.broadcast([]byte(msg[0] + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2] + delim + msg[3] + delim + msg[4] + delim + msg[5]))
 
 	return nil
 }
@@ -135,7 +135,7 @@ func (h *Hub) handleRrfl(msg []string, sender *Client) (err error) {
 	for i := 0; i < 5; i++ {
 		sender.flash[i] = 0
 	}
-	h.broadcast([]byte("rrfl" + paramDelimStr + strconv.Itoa(sender.id)))
+	h.broadcast([]byte("rrfl" + delim + strconv.Itoa(sender.id)))
 
 	return nil
 }
@@ -164,7 +164,7 @@ func (h *Hub) handleT(msg []string, sender *Client) (err error) {
 	sender.tone[1] = green
 	sender.tone[2] = blue
 	sender.tone[3] = gray
-	h.broadcast([]byte("t" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2] + paramDelimStr + msg[3] + paramDelimStr + msg[4]))
+	h.broadcast([]byte("t" + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2] + delim + msg[3] + delim + msg[4]))
 
 	return nil
 }
@@ -177,7 +177,7 @@ func (h *Hub) handleSys(msg []string, sender *Client) (err error) {
 		return err
 	}
 	sender.session.systemName = msg[1]
-	h.broadcast([]byte("sys" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
+	h.broadcast([]byte("sys" + delim + strconv.Itoa(sender.id) + delim + msg[1]))
 
 	return nil
 }
@@ -201,7 +201,7 @@ func (h *Hub) handleSe(msg []string, sender *Client) (err error) {
 	if errconv != nil || balance < 0 || balance > 100 {
 		return errconv
 	}
-	h.broadcast([]byte("se" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2] + paramDelimStr + msg[3] + paramDelimStr + msg[4]))
+	h.broadcast([]byte("se" + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2] + delim + msg[3] + delim + msg[4]))
 
 	return nil
 }
@@ -316,7 +316,7 @@ func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 		}
 
 		if _, found := sender.pictures[picId]; found {
-			_, rpErr := h.processMsg("rp"+paramDelimStr+msg[1], sender)
+			_, rpErr := h.processMsg("rp"+delim+msg[1], sender)
 			if rpErr != nil {
 				return rpErr
 			}
@@ -350,9 +350,9 @@ func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	message := msg[0] + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1] + paramDelimStr + msg[2] + paramDelimStr + msg[3] + paramDelimStr + msg[4] + paramDelimStr + msg[5] + paramDelimStr + msg[6] + paramDelimStr + msg[7] + paramDelimStr + msg[8] + paramDelimStr + msg[9] + paramDelimStr + msg[10] + paramDelimStr + msg[11] + paramDelimStr + msg[12] + paramDelimStr + msg[13] + paramDelimStr + msg[14] + paramDelimStr + msg[15] + paramDelimStr + msg[16] + paramDelimStr + msg[17]
+	message := msg[0] + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2] + delim + msg[3] + delim + msg[4] + delim + msg[5] + delim + msg[6] + delim + msg[7] + delim + msg[8] + delim + msg[9] + delim + msg[10] + delim + msg[11] + delim + msg[12] + delim + msg[13] + delim + msg[14] + delim + msg[15] + delim + msg[16] + delim + msg[17]
 	if isShow {
-		message += paramDelimStr + msg[18] + paramDelimStr + msg[19]
+		message += delim + msg[18] + delim + msg[19]
 	}
 	h.broadcast([]byte(message))
 	sender.pictures[picId] = pic
@@ -368,7 +368,7 @@ func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
 	if errconv != nil || picId < 1 {
 		return errconv
 	}
-	h.broadcast([]byte("rp" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msg[1]))
+	h.broadcast([]byte("rp" + delim + strconv.Itoa(sender.id) + delim + msg[1]))
 	delete(sender.pictures, picId)
 
 	return nil
@@ -383,7 +383,7 @@ func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
 		if sender.session.name == "" || sender.session.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 			return err
 		}
-		h.broadcast([]byte("say" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + msgContents))
+		h.broadcast([]byte("say" + delim + strconv.Itoa(sender.id) + delim + msgContents))
 	}
 
 	return nil
@@ -394,7 +394,7 @@ func (h *Hub) handleName(msg []string, sender *Client) (err error) {
 		return err
 	}
 	sender.session.name = msg[1]
-	h.broadcast([]byte("name" + paramDelimStr + strconv.Itoa(sender.id) + paramDelimStr + sender.session.name))
+	h.broadcast([]byte("name" + delim + strconv.Itoa(sender.id) + delim + sender.session.name))
 
 	return nil
 }
@@ -418,7 +418,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 	sender.switchCache[switchId] = value
 	if switchId == 1430 && config.gameName == "2kki" {
 		if value {
-			sender.send <- []byte("sv" + paramDelimStr + "88" + paramDelimStr + "0")
+			sender.send <- []byte("sv" + delim + "88" + delim + "0")
 		}
 	} else {
 		if len(sender.hub.minigameConfigs) > 0 {
@@ -471,14 +471,14 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 									}
 								}
 							} else if config.gameName == "2kki" {
-								sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+								sender.send <- []byte("ss" + delim + "1430" + delim + "0")
 							}
 						} else {
 							varId := c.VarId
 							if len(c.VarIds) > 0 {
 								varId = c.VarIds[0]
 							}
-							sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + "0")
+							sender.send <- []byte("sv" + delim + strconv.Itoa(varId) + delim + "0")
 						}
 					}
 				} else if len(c.SwitchIds) > 0 {
@@ -496,17 +496,17 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 										}
 									}
 								} else if config.gameName == "2kki" {
-									sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+									sender.send <- []byte("ss" + delim + "1430" + delim + "0")
 								}
 							} else {
 								varId := c.VarId
 								if len(c.VarIds) > 0 {
 									varId = c.VarIds[0]
 								}
-								sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + "0")
+								sender.send <- []byte("sv" + delim + strconv.Itoa(varId) + delim + "0")
 							}
 						} else {
-							sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(c.SwitchIds[s+1]) + paramDelimStr + "0")
+							sender.send <- []byte("ss" + delim + strconv.Itoa(c.SwitchIds[s+1]) + delim + "0")
 						}
 					}
 				}
@@ -550,7 +550,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 			for m, minigame := range sender.hub.minigameConfigs {
 				if minigame.VarId == varId && sender.minigameScores[m] < value {
 					if minigame.SwitchId > 0 {
-						sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(minigame.SwitchId) + paramDelimStr + "0")
+						sender.send <- []byte("ss" + delim + strconv.Itoa(minigame.SwitchId) + delim + "0")
 					} else {
 						tryWritePlayerMinigameScore(sender.session.uuid, minigame.MinigameId, value)
 					}
@@ -600,14 +600,14 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 									}
 								}
 							} else if config.gameName == "2kki" {
-								sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+								sender.send <- []byte("ss" + delim + "1430" + delim + "0")
 							}
 						} else {
 							switchId := c.SwitchId
 							if len(c.SwitchIds) > 0 {
 								switchId = c.SwitchIds[0]
 							}
-							sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + "0")
+							sender.send <- []byte("ss" + delim + strconv.Itoa(switchId) + delim + "0")
 						}
 					}
 				} else if len(c.VarIds) > 0 {
@@ -625,17 +625,17 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 										}
 									}
 								} else if config.gameName == "2kki" {
-									sender.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+									sender.send <- []byte("ss" + delim + "1430" + delim + "0")
 								}
 							} else {
 								switchId := c.SwitchId
 								if len(c.SwitchIds) > 0 {
 									switchId = c.SwitchIds[0]
 								}
-								sender.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + "0")
+								sender.send <- []byte("ss" + delim + strconv.Itoa(switchId) + delim + "0")
 							}
 						} else {
-							sender.send <- []byte("sv" + paramDelimStr + strconv.Itoa(c.VarIds[v+1]) + paramDelimStr + "0")
+							sender.send <- []byte("sv" + delim + strconv.Itoa(c.VarIds[v+1]) + delim + "0")
 						}
 					}
 				}
@@ -726,8 +726,8 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 			accountBin = 1
 		}
 
-		session.broadcast([]byte("p" + paramDelimStr + sender.uuid + paramDelimStr + sender.name + paramDelimStr + sender.systemName + paramDelimStr + strconv.Itoa(sender.rank) + paramDelimStr + strconv.Itoa(accountBin) + paramDelimStr + sender.badge))
-		session.broadcast([]byte("gsay" + paramDelimStr + sender.uuid + paramDelimStr + mapId + paramDelimStr + prevMapId + paramDelimStr + prevLocations + paramDelimStr + strconv.Itoa(x) + paramDelimStr + strconv.Itoa(y) + paramDelimStr + msgContents))
+		session.broadcast([]byte("p" + delim + sender.uuid + delim + sender.name + delim + sender.systemName + delim + strconv.Itoa(sender.rank) + delim + strconv.Itoa(accountBin) + delim + sender.badge))
+		session.broadcast([]byte("gsay" + delim + sender.uuid + delim + mapId + delim + prevMapId + delim + prevLocations + delim + strconv.Itoa(x) + delim + strconv.Itoa(y) + delim + msgContents))
 	}
 
 	return nil
@@ -758,7 +758,7 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 		}
 		for _, uuid := range partyMemberUuids {
 			if client, ok := sessionClients[uuid]; ok {
-				client.send <- []byte("psay" + paramDelimStr + sender.uuid + paramDelimStr + msgContents)
+				client.send <- []byte("psay" + delim + sender.uuid + delim + msgContents)
 			}
 		}
 	}
@@ -785,7 +785,7 @@ func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	sender.send <- []byte("pt" + paramDelimStr + string(partyDataJson))
+	sender.send <- []byte("pt" + delim + string(partyDataJson))
 
 	return nil
 }

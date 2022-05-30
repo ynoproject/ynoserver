@@ -278,7 +278,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 						switchSyncType = 1
 					}
 				}
-				client.send <- []byte("ss" + paramDelimStr + strconv.Itoa(switchId) + paramDelimStr + strconv.Itoa(switchSyncType))
+				client.send <- []byte("ss" + delim + strconv.Itoa(switchId) + delim + strconv.Itoa(switchSyncType))
 			} else if c.VarId > 0 || len(c.VarIds) > 0 {
 				varId := c.VarId
 				if len(c.VarIds) > 0 {
@@ -305,7 +305,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 						varSyncType = 1
 					}
 				}
-				client.send <- []byte("sv" + paramDelimStr + strconv.Itoa(varId) + paramDelimStr + strconv.Itoa(varSyncType))
+				client.send <- []byte("sv" + delim + strconv.Itoa(varId) + delim + strconv.Itoa(varSyncType))
 			} else if checkConditionCoords(c, client) {
 				timeTrial := c.TimeTrial && config.gameName == "2kki"
 				if !timeTrial {
@@ -317,7 +317,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 						client.send <- []byte("b")
 					}
 				} else {
-					client.send <- []byte("ss" + paramDelimStr + "1430" + paramDelimStr + "0")
+					client.send <- []byte("ss" + delim + "1430" + delim + "0")
 				}
 			}
 		} else if trigger == "" {
@@ -338,7 +338,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 					if c.Trigger == "eventAction" {
 						eventTriggerType = 1
 					}
-					client.send <- []byte("sev" + paramDelimStr + value + paramDelimStr + strconv.Itoa(eventTriggerType))
+					client.send <- []byte("sev" + delim + value + delim + strconv.Itoa(eventTriggerType))
 				}
 			} else if c.Trigger == "coords" {
 				client.syncCoords = true

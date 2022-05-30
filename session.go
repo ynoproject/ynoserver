@@ -123,7 +123,7 @@ func (s *Session) run() {
 			go client.writePump()
 			go client.readPump()
 
-			client.send <- []byte("s" + paramDelimStr + strconv.Itoa(id) + paramDelimStr + uuid + paramDelimStr + strconv.Itoa(rank) + paramDelimStr + btoa(account) + paramDelimStr + badge) //"your id is %id%" message
+			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge) //"your id is %id%" message
 			//register client in the structures
 			s.id[id] = true
 			s.clients[client] = true
@@ -186,7 +186,7 @@ func (s *Session) processMsgs(msg *SessionMessage) []error {
 	}
 
 	//message processing
-	msgs := strings.Split(string(msg.data), msgDelimStr)
+	msgs := strings.Split(string(msg.data), mdelim)
 
 	for _, msgStr := range msgs {
 		err := s.processMsg(msgStr, msg.sender)
@@ -200,7 +200,7 @@ func (s *Session) processMsgs(msg *SessionMessage) []error {
 
 func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	err := errors.New(msgStr)
-	msgFields := strings.Split(msgStr, paramDelimStr)
+	msgFields := strings.Split(msgStr, delim)
 
 	if len(msgFields) == 0 {
 		return err
@@ -216,7 +216,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	case "pt": //party update
 		err = s.handlePt(msgFields, sender)
 		if err != nil {
-			session.broadcast([]byte("pt" + paramDelimStr + "null"))
+			session.broadcast([]byte("pt" + delim + "null"))
 		}
 	default:
 		return err
