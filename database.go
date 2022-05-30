@@ -97,8 +97,8 @@ func tryMutePlayer(senderUUID string, recipientUUID string) error { //called by 
 		return err
 	}
 
-	if client, ok := hubClients[recipientUUID]; ok { //mute client if they're connected
-		client.session.muted = true
+	if client, ok := sessionClients[recipientUUID]; ok { //mute client if they're connected
+		client.muted = true
 	}
 
 	return nil
@@ -118,8 +118,8 @@ func tryUnmutePlayer(senderUUID string, recipientUUID string) error { //called b
 		return err
 	}
 
-	if client, ok := hubClients[recipientUUID]; ok { //unmute client if they're connected
-		client.session.muted = false
+	if client, ok := sessionClients[recipientUUID]; ok { //unmute client if they're connected
+		client.muted = false
 	}
 
 	return nil
@@ -1083,8 +1083,8 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 		return err
 	}
 
-	if client, ok := hubClients[playerUuid]; ok {
-		client.session.badge = badgeId
+	if client, ok := sessionClients[playerUuid]; ok {
+		client.badge = badgeId
 	}
 
 	return nil
