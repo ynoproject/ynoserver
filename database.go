@@ -76,6 +76,10 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		client.hub.unregister <- client
 	}
 
+	if client, ok := sessionClients[recipientUUID]; ok { //do the same for session
+		session.unregister <- client
+	}
+
 	return nil
 }
 
