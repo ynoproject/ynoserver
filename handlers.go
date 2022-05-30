@@ -666,17 +666,17 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 //SESSION
 
 func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
-	if len(msg) != 2 {
+	if len(msg) != 3 {
 		return errors.New("command length mismatch")
 	}
 
-	if len(msg[0]) != 4 {
+	if len(msg[1]) != 4 {
 		return errors.New("invalid prev map ID")
 	}
 
 	if client := getHubClient(sender.uuid); client != nil {
-		client.prevMapId = msg[0]
-		client.prevLocations = msg[1]
+		client.prevMapId = msg[1]
+		client.prevLocations = msg[2]
 		checkHubConditions(client.hub, client, "prevMap", client.prevMapId)
 	} else {
 		return errors.New("client not found")
