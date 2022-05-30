@@ -270,7 +270,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(strconv.Itoa(partyId)))
 		return
 	case "list":
-		partyListData, err := readAllPartyData()
+		partyListData, err := readAllPartyData(true)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -281,42 +281,6 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(partyListDataJson))
-		return
-	case "get":
-		partyIdParam, ok := r.URL.Query()["partyId"]
-		if !ok || len(partyIdParam) < 1 {
-			handleError(w, r, "partyId not specified")
-			return
-		}
-		partyId, err := strconv.Atoi(partyIdParam[0])
-		if err != nil {
-			handleError(w, r, "invalid partyId value")
-			return
-		}
-		partyData, err := readPartyData(uuid)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte("401 - Unauthorized"))
-				return
-			}
-			handleInternalError(w, r, err)
-			return
-		}
-		if partyData.Id != partyId {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("401 - Unauthorized"))
-			return
-		}
-		if uuid != partyData.OwnerUuid {
-			partyData.Pass = ""
-		}
-		partyDataJson, err := json.Marshal(partyData)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write([]byte(partyDataJson))
 		return
 	case "description":
 		partyIdParam, ok := r.URL.Query()["partyId"]

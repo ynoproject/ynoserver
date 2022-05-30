@@ -291,13 +291,13 @@ func readPlayerPartyId(uuid string) (partyId int, err error) {
 	return partyId, nil
 }
 
-func readAllPartyData() (parties []*Party, err error) { //called by api only
-	partyMembersByParty, err := readAllPartyMemberDataByParty()
+func readAllPartyData(simple bool) (parties []*Party, err error) { //called by api only
+	partyMembersByParty, err := readAllPartyMemberDataByParty(simple)
 	if err != nil {
 		return parties, err
 	}
 
-	results, err := db.Query("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM parties p WHERE p.game = ?", config.gameName)
+	results, err := db.Query("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM parties p WHERE p.game = ?", config.gameName)
 
 	if err != nil {
 		return parties, err
@@ -307,7 +307,7 @@ func readAllPartyData() (parties []*Party, err error) { //called by api only
 
 	for results.Next() {
 		party := &Party{}
-		err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
+		err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
 		if err != nil {
 			return parties, err
 		}
@@ -322,6 +322,9 @@ func readAllPartyData() (parties []*Party, err error) { //called by api only
 		}
 
 		if hasOnlineMember {
+			if simple {
+				party.Pass = ""
+			}
 			parties = append(parties, party)
 		}
 	}
@@ -329,10 +332,10 @@ func readAllPartyData() (parties []*Party, err error) { //called by api only
 	return parties, nil
 }
 
-func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember, err error) {
+func readAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*PartyMember, err error) {
 	partyMembersByParty = make(map[int][]*PartyMember)
 
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId IS NOT NULL AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", config.gameName)
 
 	if err != nil {
 		return partyMembersByParty, err
@@ -365,9 +368,23 @@ func readAllPartyMemberDataByParty() (partyMembersByParty map[int][]*PartyMember
 			if client.spriteIndex > -1 {
 				partyMember.SpriteIndex = client.spriteIndex
 			}
+			if !simple {
+				if hubClient, ok := hubClients[partyMember.Uuid]; ok {
+					partyMember.MapId = hubClient.mapId
+					partyMember.PrevMapId = hubClient.prevMapId
+					partyMember.PrevLocations = hubClient.prevLocations
+					partyMember.X = hubClient.x
+					partyMember.Y = hubClient.y
+				}
+			}
 			partyMember.Online = true
+
 			partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
 		} else {
+			if !simple {
+				partyMember.MapId = "0000"
+				partyMember.PrevMapId = "0000"
+			}
 			offlinePartyMembersByParty[partyId] = append(offlinePartyMembersByParty[partyId], partyMember)
 		}
 	}
@@ -396,36 +413,6 @@ func readPartyData(playerUuid string) (party Party, err error) { //called by api
 	}
 
 	return party, nil
-}
-
-func readPartyDescription(partyId int) (description string, err error) { //called by api only
-	results := db.QueryRow("SELECT description FROM parties WHERE id = ?", partyId)
-	err = results.Scan(&description)
-	if err != nil {
-		return description, err
-	}
-
-	return description, nil
-}
-
-func readPartyPublic(partyId int) (public bool, err error) { //called by api only
-	results := db.QueryRow("SELECT public FROM parties WHERE id = ?", partyId)
-	err = results.Scan(&public)
-	if err != nil {
-		return public, err
-	}
-
-	return public, nil
-}
-
-func readPartyPass(partyId int) (pass string, err error) { //called by api only
-	results := db.QueryRow("SELECT pass FROM parties WHERE id = ?", partyId)
-	err = results.Scan(&pass)
-	if err != nil {
-		return pass, err
-	}
-
-	return pass, nil
 }
 
 func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
@@ -477,6 +464,36 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 	}
 
 	return partyMembers, nil
+}
+
+func readPartyDescription(partyId int) (description string, err error) { //called by api only
+	results := db.QueryRow("SELECT description FROM parties WHERE id = ?", partyId)
+	err = results.Scan(&description)
+	if err != nil {
+		return description, err
+	}
+
+	return description, nil
+}
+
+func readPartyPublic(partyId int) (public bool, err error) { //called by api only
+	results := db.QueryRow("SELECT public FROM parties WHERE id = ?", partyId)
+	err = results.Scan(&public)
+	if err != nil {
+		return public, err
+	}
+
+	return public, nil
+}
+
+func readPartyPass(partyId int) (pass string, err error) { //called by api only
+	results := db.QueryRow("SELECT pass FROM parties WHERE id = ?", partyId)
+	err = results.Scan(&pass)
+	if err != nil {
+		return pass, err
+	}
+
+	return pass, nil
 }
 
 func createPartyData(name string, public bool, pass string, theme string, description string, playerUuid string) (partyId int, err error) {

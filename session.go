@@ -42,7 +42,7 @@ func startSessionWs() {
 	go session.run()
 }
 
-func newSessionWs() (*Session) {
+func newSessionWs() *Session {
 	return &Session{
 		clients:      make(map[*SessionClient]bool),
 		processMsgCh: make(chan *SessionMessage),
@@ -198,7 +198,7 @@ func (s *Session) processMsgs(msg *SessionMessage) []error {
 	return errs
 }
 
-func (s *Session) processMsg(msgStr string, sender *SessionClient) (error) {
+func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	err := errors.New(msgStr)
 	msgFields := strings.Split(msgStr, paramDelimStr)
 
@@ -211,6 +211,11 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) (error) {
 		err = s.handleGSay(msgFields, sender)
 	case "psay": //party say
 		err = s.handlePSay(msgFields, sender)
+	case "p": //party update
+		err = s.handleP(msgFields, sender)
+		if err != nil {
+			session.broadcast([]byte("p" + paramDelimStr + "null"))
+		}
 	default:
 		return err
 	}

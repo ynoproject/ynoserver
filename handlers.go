@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -736,6 +737,30 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 			}
 		}
 	}
+
+	return nil
+}
+
+func (s *Session) handleP(msg []string, sender *SessionClient) (err error) {
+	partyId, err := readPlayerPartyId(sender.uuid)
+	if err != nil {
+		return err
+	}
+	if partyId == 0 {
+		return errors.New("player not in a party")
+	}
+	partyData, err := readPartyData(sender.uuid)
+	if err != nil {
+		return err
+	}
+	if sender.uuid != partyData.OwnerUuid {
+		partyData.Pass = ""
+	}
+	partyDataJson, err := json.Marshal(partyData)
+	if err != nil {
+		return err
+	}
+	session.broadcast([]byte("p" + paramDelimStr + string(partyDataJson)))
 
 	return nil
 }
