@@ -704,18 +704,13 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 			return errconv
 		}
 
-		client, ok := hubClients[sender.uuid]
-		if !ok {
-			enableLocBin = 0 //client struct data can't be used
-		}
-
 		mapId := "0000"
 		prevMapId := "0000"
 		var prevLocations string
 		x := -1
 		y := -1
 
-		if enableLocBin == 1 {
+		if client, ok := hubClients[sender.uuid]; ok && enableLocBin == 1 {
 			mapId = client.mapId
 			prevMapId = client.prevMapId
 			prevLocations = client.prevLocations
