@@ -389,16 +389,6 @@ func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-func (h *Hub) handleName(msg []string, sender *Client) (err error) {
-	if sender.session.name != "" || len(msg) != 2 || !isOkString(msg[1]) || len(msg[1]) > 12 {
-		return err
-	}
-	sender.session.name = msg[1]
-	h.broadcast([]byte("name" + delim + strconv.Itoa(sender.id) + delim + sender.session.name))
-
-	return nil
-}
-
 func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
 		return err
@@ -664,6 +654,18 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 }
 
 //SESSION
+
+func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
+	if sender.name != "" || len(msg) != 2 || !isOkString(msg[1]) || len(msg[1]) > 12 {
+		return err
+	}
+	sender.name = msg[1]
+	if client := getHubClient(sender.uuid); client != nil {
+		client.hub.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + sender.name)) //broadcast name change to hub if client is in one
+	}
+
+	return nil
+}
 
 func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 	if len(msg) != 2 {

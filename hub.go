@@ -409,9 +409,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	case "say":
 		err = h.handleSay(msgFields, sender)
 		terminate = true
-	case "name": // nick set
-		err = h.handleName(msgFields, sender)
-		terminate = true
 	case "ss": // sync switch
 		err = h.handleSs(msgFields, sender)
 	case "sv": // sync variable

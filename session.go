@@ -207,6 +207,8 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	}
 
 	switch msgFields[0] {
+	case "name": // nick set
+		err = s.handleName(msgFields, sender)
 	case "ploc":
 		err = s.handlePloc(msgFields, sender)
 	case "gsay": //global say
