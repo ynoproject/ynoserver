@@ -223,7 +223,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	case "pt": //party update
 		err = s.handlePt(msgFields, sender)
 		if err != nil {
-			session.broadcast([]byte("pt" + delim + "null"))
+			sender.send <- ([]byte("pt" + delim + "null"))
 		}
 	default:
 		return err
