@@ -49,6 +49,10 @@ func readPlayerDataFromToken(token string) (uuid string, name string, rank int, 
 }
 
 func readPlayerRank(uuid string) (rank int) {
+	if client, ok := sessionClients[uuid]; ok {
+		return client.rank //return rank from session if client is connected
+	}
+
 	results := db.QueryRow("SELECT rank FROM players WHERE uuid = ?", uuid)
 	err := results.Scan(&rank)
 	if err != nil {
