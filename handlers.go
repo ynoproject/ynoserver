@@ -786,3 +786,21 @@ func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
 
 	return nil
 }
+
+func (s *Session) handleI(msg []string, sender *SessionClient) (err error) {
+	playerInfo := PlayerInfo{
+		Uuid:          sender.uuid,
+		Name:          sender.name,
+		Rank:          sender.rank,
+		Badge:         sender.badge,
+		BadgeSlotRows: readPlayerBadgeSlotRows(sender.name),
+	}
+	playerInfoJson, err := json.Marshal(playerInfo)
+	if err != nil {
+		return err
+	}
+
+	sender.send <- []byte("i" + delim + string(playerInfoJson))
+
+	return nil
+}

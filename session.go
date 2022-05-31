@@ -225,6 +225,8 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 		if err != nil {
 			sender.send <- ([]byte("pt" + delim + "null"))
 		}
+	case "i": //player info
+		err = s.handleI(msgFields, sender)
 	default:
 		return err
 	}
