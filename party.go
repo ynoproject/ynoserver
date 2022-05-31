@@ -2,9 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"time"
-
-	"github.com/go-co-op/gocron"
 )
 
 type Party struct {
@@ -33,14 +30,6 @@ type PartyMember struct {
 	X             int    `json:"x"`
 	Y             int    `json:"y"`
 	Online        bool   `json:"online"`
-}
-
-func startPartyUpdateTimer() {
-	s := gocron.NewScheduler(time.UTC)
-
-	s.Every(5).Seconds().Do(func() { sendPartyUpdate() })
-
-	s.StartAsync()
 }
 
 func sendPartyUpdate() error {

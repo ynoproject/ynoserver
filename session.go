@@ -30,20 +30,21 @@ type Session struct {
 }
 
 var (
-	session *Session
-
+	session = newSessionWs()
 	sessionClients = make(map[string]*SessionClient)
 )
 
 func initSession() {
-	startSessionWs()
-	startPartyUpdateTimer()
-	startPlayerCountUpdateTimer()
-}
-
-func startSessionWs() {
-	session = newSessionWs()
 	go session.run()
+
+	s := gocron.NewScheduler(time.UTC)
+
+	s.Every(5).Seconds().Do(func() { 
+		session.broadcast([]byte("pc" + delim + strconv.Itoa(len(sessionClients))))
+		sendPartyUpdate()
+	})
+
+	s.StartAsync()
 }
 
 func newSessionWs() *Session {
@@ -235,14 +236,4 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	writeLog(sender.ip, "session", msgStr, 200)
 
 	return nil
-}
-
-func startPlayerCountUpdateTimer() {
-	s := gocron.NewScheduler(time.UTC)
-	
-	s.Every(5).Seconds().Do(func() {
-		session.broadcast([]byte("pc" + delim + strconv.Itoa(len(sessionClients))))
-	})
-
-	s.StartAsync()
 }
