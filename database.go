@@ -204,6 +204,10 @@ func updatePlayerBadgeSlotRows(uuid string) (err error) {
 }
 
 func setPlayerBadge(uuid string, badge string) (err error) {
+	if client, ok := sessionClients[uuid]; ok {
+		client.badge = badge
+	}
+
 	_, err = db.Exec("UPDATE accounts SET badge = ? WHERE uuid = ?", badge, uuid)
 	if err != nil {
 		return err
@@ -1081,10 +1085,6 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 	_, err = db.Exec("INSERT INTO playerBadges (uuid, badgeId, timestampUnlocked) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE badgeId = badgeId", playerUuid, badgeId, time.Now())
 	if err != nil {
 		return err
-	}
-
-	if client, ok := sessionClients[playerUuid]; ok {
-		client.badge = badgeId
 	}
 
 	return nil
