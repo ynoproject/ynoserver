@@ -248,11 +248,11 @@ func (h *Hub) run() {
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				h.deleteClient(client)
-			} else {
-				writeErrLog(client.session.ip, h.roomName, "attempted to unregister nil client")
+				writeLog(client.session.ip, h.roomName, "disconnect", 200)
+				continue
 			}
 
-			writeLog(client.session.ip, h.roomName, "disconnect", 200)
+			writeErrLog(client.session.ip, h.roomName, "attempted to unregister nil client")
 		case message := <-h.processMsgCh:
 			errs := h.processMsgs(message)
 			if len(errs) > 0 {
