@@ -8,15 +8,15 @@ type MinigameConfig struct {
 	SwitchValue    bool   `json:"switchValue"`
 }
 
-func getHubMinigameConfigs(roomName string) (minigameConfigs []*MinigameConfig) {
+func getHubMinigameConfigs(roomName int) (minigameConfigs []*MinigameConfig) {
 	switch config.gameName {
 	case "yume":
-		if roomName == "155" {
+		if roomName == 155 {
 			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "nasu", VarId: 88, SwitchId: 215})
 		}
 	case "2kki":
 		switch roomName {
-		case "102":
+		case 102:
 			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "rby", VarId: 1010, InitialVarSync: true})
 		}
 	}

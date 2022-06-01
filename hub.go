@@ -67,7 +67,7 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	roomName     string
+	roomName     int
 	singleplayer bool
 
 	conditions []*Condition
@@ -75,19 +75,19 @@ type Hub struct {
 	minigameConfigs []*MinigameConfig
 }
 
-func createAllHubs(roomNames []string, spRooms []string) {
+func createAllHubs(roomNames []int, spRooms []int) {
 	for _, roomName := range roomNames {
 		addHub(roomName, contains(spRooms, roomName))
 	}
 }
 
-func addHub(roomName string, singleplayer bool) {
+func addHub(roomName int, singleplayer bool) {
 	hub := newHub(roomName, singleplayer)
 	hubs = append(hubs, hub)
 	go hub.run()
 }
 
-func newHub(roomName string, singleplayer bool) *Hub {
+func newHub(roomName int, singleplayer bool) *Hub {
 	return &Hub{
 		processMsgCh:    make(chan *Message),
 		connect:         make(chan *ConnInfo),
@@ -102,13 +102,13 @@ func newHub(roomName string, singleplayer bool) *Hub {
 }
 
 func (h *Hub) run() {
-	http.HandleFunc("/"+h.roomName, h.serveWs)
+	http.HandleFunc("/"+strconv.Itoa(h.roomName), h.serveWs)
 	for {
 		select {
 		case conn := <-h.connect:
 			uuid, _, _, _, _, banned, _ := getPlayerInfo(conn)
 			if banned {
-				writeErrLog(conn.Ip, h.roomName, "player is banned")
+				writeErrLog(conn.Ip, strconv.Itoa(h.roomName), "player is banned")
 				continue
 			}
 
@@ -116,7 +116,7 @@ func (h *Hub) run() {
 			if s, ok := sessionClients[uuid]; ok {
 				session = s
 			} else {
-				writeErrLog(conn.Ip, h.roomName, "player has no session")
+				writeErrLog(conn.Ip, strconv.Itoa(h.roomName), "player has no session")
 				continue
 			}
 
@@ -127,7 +127,7 @@ func (h *Hub) run() {
 				}
 			}
 			if same_ip >= 3 {
-				writeErrLog(conn.Ip, h.roomName, "too many connections")
+				writeErrLog(conn.Ip, strconv.Itoa(h.roomName), "too many connections")
 				continue //don't bother with handling their connection
 			}
 
@@ -139,7 +139,7 @@ func (h *Hub) run() {
 				}
 			}
 			if id == 0 {
-				writeErrLog(conn.Ip, h.roomName, "room is full")
+				writeErrLog(conn.Ip, strconv.Itoa(h.roomName), "room is full")
 				continue
 			}
 
@@ -162,14 +162,12 @@ func (h *Hub) run() {
 			go client.writePump()
 			go client.readPump()
 
-			mapIdInt, errconv := strconv.Atoi(h.roomName)
-			if errconv == nil {
-				client.mapId = fmt.Sprintf("%04d", mapIdInt)
-			}
+
+			client.mapId = fmt.Sprintf("%04d", h.roomName)
 
 			tags, err := readPlayerTags(uuid)
 			if err != nil {
-				writeErrLog(conn.Ip, h.roomName, "failed to read player tags")
+				writeErrLog(conn.Ip, strconv.Itoa(h.roomName), "failed to read player tags")
 			} else {
 				client.tags = tags
 			}
@@ -228,7 +226,7 @@ func (h *Hub) run() {
 			for _, minigame := range h.minigameConfigs {
 				score, err := readPlayerMinigameScore(uuid, minigame.MinigameId)
 				if err != nil {
-					writeErrLog(conn.Ip, h.roomName, "failed to read player minigame score for "+minigame.MinigameId)
+					writeErrLog(conn.Ip, strconv.Itoa(h.roomName), "failed to read player minigame score for "+minigame.MinigameId)
 				}
 				client.minigameScores = append(client.minigameScores, score)
 				varSyncType := 1
@@ -243,20 +241,20 @@ func (h *Hub) run() {
 				h.broadcast([]byte("name" + delim + strconv.Itoa(id) + delim + session.name)) //send name of client with account
 			}
 
-			writeLog(conn.Ip, h.roomName, "connect", 200)
+			writeLog(conn.Ip, strconv.Itoa(h.roomName), "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				h.deleteClient(client)
-				writeLog(client.session.ip, h.roomName, "disconnect", 200)
+				writeLog(client.session.ip, strconv.Itoa(h.roomName), "disconnect", 200)
 				continue
 			}
 
-			writeErrLog(client.session.ip, h.roomName, "attempted to unregister nil client")
+			writeErrLog(client.session.ip, strconv.Itoa(h.roomName), "attempted to unregister nil client")
 		case message := <-h.processMsgCh:
 			errs := h.processMsgs(message)
 			if len(errs) > 0 {
 				for _, err := range errs {
-					writeErrLog(message.sender.session.ip, h.roomName, err.Error())
+					writeErrLog(message.sender.session.ip, strconv.Itoa(h.roomName), err.Error())
 				}
 			}
 		}
@@ -424,7 +422,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		return false, err
 	}
 
-	writeLog(sender.session.ip, h.roomName, msgStr, 200)
+	writeLog(sender.session.ip, strconv.Itoa(h.roomName), msgStr, 200)
 
 	return terminate, nil
 }

@@ -78,7 +78,7 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 		if !strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") {
 			return err
 		}
-		if strings.Contains(msg[1], "zenmaigaharaten_kisekae") && h.roomName != "176" {
+		if strings.Contains(msg[1], "zenmaigaharaten_kisekae") && h.roomName != 176 {
 			return err
 		}
 	}
@@ -524,8 +524,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 		for _, c := range h.conditions {
 			if c.TimeTrial && value < 3600 {
 				if checkConditionCoords(c, sender) {
-					mapId, _ := strconv.Atoi(h.roomName)
-					success, err := tryWritePlayerTimeTrial(sender.session.uuid, mapId, value)
+					success, err := tryWritePlayerTimeTrial(sender.session.uuid, h.roomName, value)
 					if err != nil {
 						return err
 					}

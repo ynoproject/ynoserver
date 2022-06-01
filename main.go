@@ -14,9 +14,9 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func contains(s []string, str string) bool {
+func contains(s []int, num int) bool {
 	for _, v := range s {
-		if v == str {
+		if v == num {
 			return true
 		}
 	}
@@ -113,7 +113,7 @@ func main() {
 
 	spRooms := strings.Split(configFileData.SpRooms, ",")
 
-	createAllHubs(roomNames, spRooms)
+	createAllHubs(atoiArray(roomNames), atoiArray(spRooms))
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,
@@ -264,4 +264,17 @@ func btoa(b bool) string { //bool to ascii int
 	}
 
 	return "0"
+}
+
+func atoiArray(strArray []string) (intArray []int) {
+	for _, str := range strArray {
+		num, err := strconv.Atoi(str)
+		if err != nil {
+			return nil
+		}
+
+		intArray = append(intArray, num)
+	}
+
+	return intArray
 }
