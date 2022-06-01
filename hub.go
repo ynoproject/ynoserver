@@ -280,7 +280,7 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Hub) broadcast(data []byte) {
-	if !h.singleplayer {
+	if h.singleplayer {
 		return
 	}
 
