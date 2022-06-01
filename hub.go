@@ -112,7 +112,7 @@ func (h *Hub) run() {
 			if s, ok := sessionClients[uuid]; ok {
 				session = s
 			} else {
-				writeErrLog(conn.Ip, h.roomName, "player has no client session")
+				writeErrLog(conn.Ip, h.roomName, "player has no session")
 				continue
 			}
 
