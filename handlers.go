@@ -375,16 +375,18 @@ func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
 }
 
 func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
-	if !sender.session.muted {
-		if len(msg) != 2 {
-			return err
-		}
-		msgContents := strings.TrimSpace(msg[1])
-		if sender.session.name == "" || sender.session.systemName == "" || msgContents == "" || len(msgContents) > 150 {
-			return err
-		}
-		h.broadcast([]byte("say" + delim + strconv.Itoa(sender.id) + delim + msgContents))
+	if sender.session.muted {
+		return nil
 	}
+
+	if len(msg) != 2 {
+		return err
+	}
+	msgContents := strings.TrimSpace(msg[1])
+	if sender.session.name == "" || sender.session.systemName == "" || msgContents == "" || len(msgContents) > 150 {
+		return err
+	}
+	h.broadcast([]byte("say" + delim + strconv.Itoa(sender.id) + delim + msgContents))
 
 	return nil
 }
@@ -687,75 +689,79 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 }
 
 func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
-	if !sender.muted {
-		if len(msg) != 3 {
-			return errors.New("command length mismatch")
-		}
-		msgContents := strings.TrimSpace(msg[1])
-		if sender.name == "" || sender.systemName == "" {
-			return errors.New("invalid client")
-		} else if msgContents == "" || len(msgContents) > 150 {
-			return errors.New("invalid message")
-		}
-
-		enableLocBin, errconv := strconv.Atoi(msg[2])
-		if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
-			return errconv
-		}
-
-		mapId := "0000"
-		prevMapId := "0000"
-		var prevLocations string
-		x := -1
-		y := -1
-
-		if client, ok := hubClients[sender.uuid]; ok && enableLocBin == 1 {
-			mapId = client.mapId
-			prevMapId = client.prevMapId
-			prevLocations = client.prevLocations
-			x = client.x
-			y = client.y
-		}
-
-		var accountBin int
-		if sender.account {
-			accountBin = 1
-		}
-
-		session.broadcast([]byte("p" + delim + sender.uuid + delim + sender.name + delim + sender.systemName + delim + strconv.Itoa(sender.rank) + delim + strconv.Itoa(accountBin) + delim + sender.badge))
-		session.broadcast([]byte("gsay" + delim + sender.uuid + delim + mapId + delim + prevMapId + delim + prevLocations + delim + strconv.Itoa(x) + delim + strconv.Itoa(y) + delim + msgContents))
+	if sender.muted {
+		return nil
 	}
+
+	if len(msg) != 3 {
+		return errors.New("command length mismatch")
+	}
+	msgContents := strings.TrimSpace(msg[1])
+	if sender.name == "" || sender.systemName == "" {
+		return errors.New("invalid client")
+	} else if msgContents == "" || len(msgContents) > 150 {
+		return errors.New("invalid message")
+	}
+
+	enableLocBin, errconv := strconv.Atoi(msg[2])
+	if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
+		return errconv
+	}
+
+	mapId := "0000"
+	prevMapId := "0000"
+	var prevLocations string
+	x := -1
+	y := -1
+
+	if client, ok := hubClients[sender.uuid]; ok && enableLocBin == 1 {
+		mapId = client.mapId
+		prevMapId = client.prevMapId
+		prevLocations = client.prevLocations
+		x = client.x
+		y = client.y
+	}
+
+	var accountBin int
+	if sender.account {
+		accountBin = 1
+	}
+
+	session.broadcast([]byte("p" + delim + sender.uuid + delim + sender.name + delim + sender.systemName + delim + strconv.Itoa(sender.rank) + delim + strconv.Itoa(accountBin) + delim + sender.badge))
+	session.broadcast([]byte("gsay" + delim + sender.uuid + delim + mapId + delim + prevMapId + delim + prevLocations + delim + strconv.Itoa(x) + delim + strconv.Itoa(y) + delim + msgContents))
 
 	return nil
 }
 
 func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
-	if !sender.muted {
-		if len(msg) != 2 {
-			return errors.New("command length mismatch")
-		}
-		msgContents := strings.TrimSpace(msg[1])
-		if sender.name == "" || sender.systemName == "" {
-			return errors.New("invalid client")
-		} else if msgContents == "" || len(msgContents) > 150 {
-			return errors.New("invalid message")
-		}
+	if sender.muted {
+		return nil
+	}
 
-		partyId, err := readPlayerPartyId(sender.uuid)
-		if err != nil {
-			return err
-		}
-		if partyId == 0 {
-			return errors.New("player not in a party")
-		}
-		partyMemberUuids, err := readPartyMemberUuids(partyId)
-		if err != nil {
-			return err
-		}
-		for _, uuid := range partyMemberUuids {
-			if client, ok := sessionClients[uuid]; ok {
-				client.send <- []byte("psay" + delim + sender.uuid + delim + msgContents)
-			}
+	if len(msg) != 2 {
+		return errors.New("command length mismatch")
+	}
+	msgContents := strings.TrimSpace(msg[1])
+	if sender.name == "" || sender.systemName == "" {
+		return errors.New("invalid client")
+	} else if msgContents == "" || len(msgContents) > 150 {
+		return errors.New("invalid message")
+	}
+
+	partyId, err := readPlayerPartyId(sender.uuid)
+	if err != nil {
+		return err
+	}
+	if partyId == 0 {
+		return errors.New("player not in a party")
+	}
+	partyMemberUuids, err := readPartyMemberUuids(partyId)
+	if err != nil {
+		return err
+	}
+	for _, uuid := range partyMemberUuids {
+		if client, ok := sessionClients[uuid]; ok {
+			client.send <- []byte("psay" + delim + sender.uuid + delim + msgContents)
 		}
 	}
 
