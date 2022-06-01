@@ -230,10 +230,10 @@ func updateActiveBadgesAndConditions() {
 	}
 }
 
-func getHubConditions(roomName int) (hubConditions []*Condition) {
+func getHubConditions(roomId int) (hubConditions []*Condition) {
 	if gameConditions, ok := conditions[config.gameName]; ok {
 		for _, condition := range gameConditions {
-			if condition.Map == roomName {
+			if condition.Map == roomId {
 				hubConditions = append(hubConditions, condition)
 			}
 		}
@@ -310,7 +310,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				if !timeTrial {
 					success, err := tryWritePlayerTag(client.session.uuid, c.ConditionId)
 					if err != nil {
-						writeErrLog(client.session.ip, strconv.Itoa(h.roomName), err.Error())
+						writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
 					}
 					if success {
 						client.send <- []byte("b")
@@ -330,7 +330,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				for _, value := range values {
 					_, err := strconv.Atoi(value)
 					if err != nil {
-						writeErrLog(client.session.ip, strconv.Itoa(h.roomName), err.Error())
+						writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
 						continue
 					}
 					var eventTriggerType int

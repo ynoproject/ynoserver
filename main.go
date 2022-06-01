@@ -84,9 +84,9 @@ func main() {
 		picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
 	}
 
-	var roomNames []string
+	var roomIds []int
 	for i := 0; i < configFileData.NumRooms; i++ {
-		roomNames = append(roomNames, strconv.Itoa(i))
+		roomIds = append(roomIds, i)
 	}
 
 	config = Config{
@@ -113,7 +113,7 @@ func main() {
 
 	spRooms := strings.Split(configFileData.SpRooms, ",")
 
-	createAllHubs(atoiArray(roomNames), atoiArray(spRooms))
+	createAllHubs(roomIds, atoiArray(spRooms))
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,
@@ -132,12 +132,12 @@ func main() {
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
 
-func writeLog(ip string, roomName string, payload string, errorcode int) {
-	log.Printf("%v %v \"%v\" %v\n", ip, roomName, strings.Replace(payload, "\"", "'", -1), errorcode)
+func writeLog(ip string, location string, payload string, errorcode int) {
+	log.Printf("%v %v \"%v\" %v\n", ip, location, strings.Replace(payload, "\"", "'", -1), errorcode)
 }
 
-func writeErrLog(ip string, roomName string, payload string) {
-	writeLog(ip, roomName, payload, 400)
+func writeErrLog(ip string, location string, payload string) {
+	writeLog(ip, location, payload, 400)
 }
 
 func isValidSprite(name string) bool {
