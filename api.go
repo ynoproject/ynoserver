@@ -123,7 +123,7 @@ func initApi() {
 		w.Write([]byte(playerInfoJson))
 	})
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(strconv.Itoa(len(hubClients))))
+		w.Write([]byte(strconv.Itoa(len(sessionClients))))
 	})
 }
 
