@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -228,6 +229,16 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+	case "restart":
+		if readPlayerRank(uuid) < 2 {
+			handleError(w, r, "access denied")
+			return
+		}
+
+		w.Write([]byte("ok")) //can't send it later
+		writeLog(getIp(r), r.URL.Path, "restarting server", 200)
+
+		os.Exit(0)
 	default:
 		handleError(w, r, "unknown command")
 		return
