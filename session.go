@@ -138,6 +138,8 @@ func (s *Session) run() {
 		case client := <-s.unregister:
 			if _, ok := s.clients[client]; ok {
 				s.deleteClient(client)
+			} else {
+				writeErrLog(client.ip, "session", "attempted to unregister nil client")
 			}
 
 			writeLog(client.ip, "session", "disconnect", 200)
