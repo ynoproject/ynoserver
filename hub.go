@@ -107,17 +107,16 @@ func (h *Hub) run() {
 		select {
 		case conn := <-h.connect:
 			uuid, _, _, _, _, banned, _ := getPlayerInfo(conn)
+			if banned {
+				writeErrLog(conn.Ip, h.roomName, "player is banned")
+				continue
+			}
 
 			var session *SessionClient
 			if s, ok := sessionClients[uuid]; ok {
 				session = s
 			} else {
 				writeErrLog(conn.Ip, h.roomName, "player has no session")
-				continue
-			}
-
-			if banned {
-				writeErrLog(conn.Ip, h.roomName, "player is banned")
 				continue
 			}
 
