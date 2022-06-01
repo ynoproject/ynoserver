@@ -281,12 +281,14 @@ func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
 
 func (h *Hub) broadcast(data []byte) {
 	if !h.singleplayer {
-		for client := range h.clients {
-			select {
-			case client.send <- data:
-			default:
-				h.deleteClient(client)
-			}
+		return
+	}
+
+	for client := range h.clients {
+		select {
+		case client.send <- data:
+		default:
+			h.deleteClient(client)
 		}
 	}
 }
