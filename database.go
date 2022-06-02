@@ -235,8 +235,12 @@ func readPlayerBadgeSlots(playerName string, badgeSlotRows int, badgeSlotCols in
 	for r := 1; r <= badgeSlotRows; r++ {
 		var badgeSlotRow []string
 		for c := 1; c <= badgeSlotCols; c++ {
-			if badgeRow > r || (badgeRow == r && badgeCol > c) {
-				badgeSlotRow = append(badgeSlotRow, "null")
+			if badgeRow > r || (badgeRow == r && badgeCol >= c) {
+				if badgeRow == r && badgeCol == c {
+					badgeSlotRow = append(badgeSlotRow, badgeId)
+				} else {
+					badgeSlotRow = append(badgeSlotRow, "null")
+				}
 			} else {
 				for {
 					if !results.Next() {
