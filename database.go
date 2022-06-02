@@ -220,31 +220,54 @@ func setPlayerBadge(uuid string, badge string) (err error) {
 	return nil
 }
 
-func readPlayerBadgeSlots(playerName string, badgeSlotRows int) (badgeSlots []string, err error) {
-	results, err := db.Query("SELECT pb.badgeId FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid WHERE pb.slotId > 0 AND a.user = ? ORDER BY pb.slotId LIMIT ?", playerName, badgeSlotRows*5)
+func readPlayerBadgeSlots(playerName string, badgeSlotRows int, badgeSlotCols int) (badgeSlots [][]string, err error) {
+	results, err := db.Query("SELECT pb.badgeId, pb.slotRow, pb.slotCol FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid WHERE pb.slotRow BETWEEN 1 AND ? AND pb.slotCol BETWEEN 1 AND ? AND a.user = ? ORDER BY pb.slotRow, pb.slotCol", playerName, badgeSlotRows, badgeSlotCols)
 	if err != nil {
 		return badgeSlots, err
 	}
 
 	defer results.Close()
 
-	for results.Next() {
-		var badgeId string
+	var badgeId string
+	var badgeRow int
+	var badgeCol int
 
-		err := results.Scan(&badgeId)
-		if err != nil {
-			return badgeSlots, err
+	for r := 1; r <= badgeSlotRows; r++ {
+		var badgeSlotRow []string
+		for c := 1; c <= badgeSlotCols; c++ {
+			if badgeRow > r || badgeCol > c {
+				badgeSlotRow = append(badgeSlotRow, "null")
+			} else {
+				for {
+					if !results.Next() {
+						break
+					}
+					err := results.Scan(&badgeId, &badgeRow, &badgeCol)
+					if err != nil {
+						break
+					}
+
+					if badgeRow >= r || badgeCol >= c {
+						if badgeRow == r && badgeCol == c {
+							badgeSlotRow = append(badgeSlotRow, badgeId)
+						}
+						break
+					}
+				}
+				if len(badgeSlotRow) < c {
+					badgeSlotRow = append(badgeSlotRow, "null")
+				}
+			}
 		}
-
-		badgeSlots = append(badgeSlots, badgeId)
+		badgeSlots = append(badgeSlots, badgeSlotRow)
 	}
 
 	return badgeSlots, nil
 }
 
-func setPlayerBadgeSlot(uuid string, badgeId string, slotId int) (err error) {
+func setPlayerBadgeSlot(uuid string, badgeId string, slotRow int, slotCol int) (err error) {
 	var slotCurrentBadgeId string
-	results := db.QueryRow("SELECT badgeId FROM playerBadges WHERE uuid = ? AND slotId = ? LIMIT 1", uuid, slotId)
+	results := db.QueryRow("SELECT badgeId FROM playerBadges WHERE uuid = ? AND slotRow = ? AND slotCol = ? LIMIT 1", uuid, slotRow, slotCol)
 	err = results.Scan(&slotCurrentBadgeId)
 
 	if err != nil {
@@ -255,32 +278,28 @@ func setPlayerBadgeSlot(uuid string, badgeId string, slotId int) (err error) {
 		return
 	} else {
 		if badgeId != "null" {
-			var badgeCurrentSlotId int
-			results := db.QueryRow("SELECT slotId FROM playerBadges WHERE uuid = ? AND badgeId = ? LIMIT 1", uuid, badgeId)
-			err = results.Scan(&badgeCurrentSlotId)
+			var badgeCurrentSlotRow int
+			var badgeCurrentSlotCol int
+			results := db.QueryRow("SELECT slotRow, slotCol FROM playerBadges WHERE uuid = ? AND badgeId = ? LIMIT 1", uuid, badgeId)
+			err = results.Scan(&badgeCurrentSlotRow, &badgeCurrentSlotCol)
 
 			if err != nil && err != sql.ErrNoRows {
 				return err
 			} else {
-				_, err = db.Exec("UPDATE playerBadges SET slotId = ? WHERE uuid = ? AND badgeId = ?", badgeCurrentSlotId, uuid, slotCurrentBadgeId)
+				_, err = db.Exec("UPDATE playerBadges SET slotRow = ?, slotCol = ? WHERE uuid = ? AND badgeId = ?", badgeCurrentSlotRow, badgeCurrentSlotCol, uuid, slotCurrentBadgeId)
 				if err != nil && err != sql.ErrNoRows {
 					return err
 				}
 			}
 		} else {
-			_, err = db.Exec("UPDATE playerBadges SET slotId = 0 WHERE uuid = ? AND slotId = ?", uuid, slotId)
-			if err != nil && err != sql.ErrNoRows {
-				return err
-			}
-
-			_, err = db.Exec("UPDATE playerBadges SET slotId = slotId - 1 WHERE uuid = ? AND slotId > ?", uuid, slotId)
+			_, err = db.Exec("UPDATE playerBadges SET slotRow = 0, slotCol = 0 WHERE uuid = ? AND slotRow = ? AND slotCol = ?", uuid, slotRow, slotCol)
 			if err != nil && err != sql.ErrNoRows {
 				return err
 			}
 		}
 	}
 
-	_, err = db.Exec("UPDATE playerBadges SET slotId = ? WHERE uuid = ? AND badgeId = ?", slotId, uuid, badgeId)
+	_, err = db.Exec("UPDATE playerBadges SET slotRow = ?, slotCol = ? WHERE uuid = ? AND badgeId = ?", slotRow, slotCol, uuid, badgeId)
 	if err != nil {
 		return err
 	}
@@ -1125,10 +1144,11 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 }
 
 func removePlayerBadge(playerUuid string, badgeId string) (err error) {
-	var slotId int
+	var slotRow int
+	var slotCol int
 
-	results := db.QueryRow("SELECT slotId FROM playerBadges WHERE uuid = ? AND badgeId = ?", playerUuid, badgeId)
-	err = results.Scan(&slotId)
+	results := db.QueryRow("SELECT slotRow, slotCol FROM playerBadges WHERE uuid = ? AND badgeId = ?", playerUuid, badgeId)
+	err = results.Scan(&slotRow, &slotCol)
 	if err != nil {
 		return err
 	}
@@ -1138,28 +1158,9 @@ func removePlayerBadge(playerUuid string, badgeId string) (err error) {
 		return err
 	}
 
-	if slotId > 0 {
-		_, err = db.Exec("UPDATE playerBadges SET slotId = slotId - 1 WHERE uuid = ? AND slotId > ?", playerUuid, slotId)
-		if err != nil {
-			return err
-		}
-
-		if slotId == 1 {
-			if client, ok := hubClients[playerUuid]; ok {
-				var replacementBadgeId string
-				results = db.QueryRow("SELECT badgeId FROM playerBadges WHERE uuid = ? AND slotId = ?", playerUuid, slotId)
-				err = results.Scan(&replacementBadgeId)
-				if err != nil {
-					if err == sql.ErrNoRows {
-						return nil
-					} else {
-						return err
-					}
-				}
-
-				client.session.badge = replacementBadgeId
-			}
-		}
+	_, err = db.Exec("UPDATE accounts SET badge = 'null' WHERE uuid = ? AND badge = ?", playerUuid, badgeId)
+	if err != nil {
+		return err
 	}
 
 	return nil

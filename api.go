@@ -761,6 +761,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	var rank int
 	var badge string
 	var badgeSlotRows int
+	var badgeSlotCols int
 	var banned bool
 
 	commandParam, ok := r.URL.Query()["command"]
@@ -782,6 +783,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 
 	if strings.HasPrefix(commandParam[0], "slot") {
 		badgeSlotRows = readPlayerBadgeSlotRows(name)
+		badgeSlotCols = 5
 	}
 
 	if banned {
@@ -844,37 +846,35 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				handleInternalError(w, r, err)
 				return
 			}
-
-			err = setPlayerBadgeSlot(uuid, badgeId, 1)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
 		} else {
-			slotParam, ok := r.URL.Query()["slot"]
-			if !ok || len(slotParam) < 1 {
-				handleError(w, r, "slot not specified")
+			rowParam, ok := r.URL.Query()["row"]
+			if !ok || len(rowParam) < 1 {
+				handleError(w, r, "row not specified")
 				return
 			}
 
-			slotId, err := strconv.Atoi(slotParam[0])
-			if err != nil || slotId < 1 || slotId > badgeSlotRows*5 {
-				handleError(w, r, "invalid slot value")
+			colParam, ok := r.URL.Query()["col"]
+			if !ok || len(colParam) < 1 {
+				handleError(w, r, "col not specified")
 				return
 			}
 
-			err = setPlayerBadgeSlot(uuid, badgeId, slotId)
+			slotRow, err := strconv.Atoi(rowParam[0])
+			if err != nil || slotRow < 1 || slotRow > badgeSlotRows {
+				handleError(w, r, "invalid row value")
+				return
+			}
+
+			slotCol, err := strconv.Atoi(colParam[0])
+			if err != nil || slotCol < 1 || slotCol > badgeSlotCols {
+				handleError(w, r, "invalid col value")
+				return
+			}
+
+			err = setPlayerBadgeSlot(uuid, badgeId, slotRow, slotCol)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
-			}
-
-			if slotId == 1 {
-				err = setPlayerBadge(uuid, badgeId)
-				if err != nil {
-					handleInternalError(w, r, err)
-					return
-				}
 			}
 		}
 	case "list":
@@ -952,7 +952,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(newUnlockedBadgeIdsJson))
 		return
 	case "slotList":
-		badgeSlots, err := readPlayerBadgeSlots(name, badgeSlotRows)
+		badgeSlots, err := readPlayerBadgeSlots(name, badgeSlotRows, 5)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -973,7 +973,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 
 		playerBadgeSlotRows := readPlayerBadgeSlotRows(playerParam[0])
 
-		badgeSlots, err := readPlayerBadgeSlots(playerParam[0], playerBadgeSlotRows)
+		badgeSlots, err := readPlayerBadgeSlots(playerParam[0], playerBadgeSlotRows, 5)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
