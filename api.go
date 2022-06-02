@@ -674,18 +674,6 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch commandParam[0] {
-	case "period":
-		period, err := readCurrentEventPeriodData()
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		periodJson, err := json.Marshal(period)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write([]byte(periodJson))
 	case "exp":
 		periodId, err := readCurrentEventPeriodId()
 		if err != nil {
@@ -703,38 +691,6 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write([]byte(playerEventExpDataJson))
-	case "list":
-		periodId, err := readCurrentEventPeriodId()
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		currentEventLocationsData, err := readCurrentPlayerEventLocationsData(periodId, uuid)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		var hasIncompleteEvent bool
-		for _, currentEventLocation := range currentEventLocationsData {
-			if !currentEventLocation.Complete {
-				hasIncompleteEvent = true
-				break
-			}
-		}
-		if !hasIncompleteEvent && config.gameName == "2kki" {
-			add2kkiEventLocationsWithExp(-1, 1, 0, uuid)
-			currentEventLocationsData, err = readCurrentPlayerEventLocationsData(periodId, uuid)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-		}
-		currentEventLocationsDataJson, err := json.Marshal(currentEventLocationsData)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write([]byte(currentEventLocationsDataJson))
 	case "claim":
 		locationParam, ok := r.URL.Query()["location"]
 		if !ok || len(locationParam) < 1 {

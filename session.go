@@ -30,7 +30,7 @@ type Session struct {
 }
 
 var (
-	session = newSessionWs()
+	session        = newSessionWs()
 	sessionClients = make(map[string]*SessionClient)
 )
 
@@ -39,7 +39,7 @@ func initSession() {
 
 	s := gocron.NewScheduler(time.UTC)
 
-	s.Every(5).Seconds().Do(func() { 
+	s.Every(5).Seconds().Do(func() {
 		session.broadcast([]byte("pc" + delim + strconv.Itoa(len(sessionClients))))
 		sendPartyUpdate()
 	})
@@ -214,7 +214,9 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	}
 
 	switch msgFields[0] {
-	case "name": // nick set
+	case "i": //player info
+		err = s.handleI(msgFields, sender)
+	case "name": //nick set
 		err = s.handleName(msgFields, sender)
 	case "ploc":
 		err = s.handlePloc(msgFields, sender)
@@ -227,8 +229,10 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 		if err != nil {
 			sender.send <- ([]byte("pt" + delim + "null"))
 		}
-	case "i": //player info
-		err = s.handleI(msgFields, sender)
+	case "ep": //event period
+		err = s.handleEp(msgFields, sender)
+	case "el": //event location list
+		err = s.handleEl(msgFields, sender)
 	default:
 		return err
 	}

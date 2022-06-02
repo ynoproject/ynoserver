@@ -715,15 +715,22 @@ func clearGameSaveData(playerUuid string) (err error) { //called by api only
 }
 
 func readCurrentEventPeriodId() (periodId int, err error) {
+	if currentEventPeriodId > -1 {
+		return currentEventPeriodId, nil
+	}
+
 	result := db.QueryRow("SELECT id FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName)
 	err = result.Scan(&periodId)
 
 	if err != nil {
+		currentEventPeriodId = 0
 		if err == sql.ErrNoRows {
 			return 0, nil
 		}
 		return 0, err
 	}
+
+	currentEventPeriodId = periodId
 
 	return periodId, nil
 }
@@ -932,6 +939,29 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 		}
 
 		eventLocation.Type = -1
+
+		eventLocations = append(eventLocations, eventLocation)
+	}
+
+	return eventLocations, nil
+}
+
+func readNewEventLocationsData(periodId int) (eventLocations []*EventLocation, err error) {
+	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.exp, el.endDate FROM eventLocations el WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", periodId)
+
+	if err != nil {
+		return eventLocations, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		eventLocation := &EventLocation{}
+
+		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.Exp, &eventLocation.EndDate)
+		if err != nil {
+			return eventLocations, err
+		}
 
 		eventLocations = append(eventLocations, eventLocation)
 	}

@@ -656,6 +656,24 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 
 //SESSION
 
+func (s *Session) handleI(msg []string, sender *SessionClient) (err error) {
+	playerInfo := PlayerInfo{
+		Uuid:          sender.uuid,
+		Name:          sender.name,
+		Rank:          sender.rank,
+		Badge:         sender.badge,
+		BadgeSlotRows: readPlayerBadgeSlotRows(sender.name),
+	}
+	playerInfoJson, err := json.Marshal(playerInfo)
+	if err != nil {
+		return err
+	}
+
+	sender.send <- []byte("i" + delim + string(playerInfoJson))
+
+	return nil
+}
+
 func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 	if sender.name != "" || len(msg) != 2 || !isOkString(msg[1]) || len(msg[1]) > 12 {
 		return err
@@ -792,20 +810,48 @@ func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handleI(msg []string, sender *SessionClient) (err error) {
-	playerInfo := PlayerInfo{
-		Uuid:          sender.uuid,
-		Name:          sender.name,
-		Rank:          sender.rank,
-		Badge:         sender.badge,
-		BadgeSlotRows: readPlayerBadgeSlotRows(sender.name),
-	}
-	playerInfoJson, err := json.Marshal(playerInfo)
+func (s *Session) handleEp(msg []string, sender *SessionClient) (err error) {
+	period, err := readCurrentEventPeriodData()
 	if err != nil {
 		return err
 	}
+	periodJson, err := json.Marshal(period)
+	if err != nil {
+		return err
+	}
+	sender.send <- []byte("ep" + delim + string(periodJson))
 
-	sender.send <- []byte("i" + delim + string(playerInfoJson))
+	return nil
+}
+
+func (s *Session) handleEl(msg []string, sender *SessionClient) (err error) {
+	periodId, err := readCurrentEventPeriodId()
+	if err != nil {
+		return err
+	}
+	currentEventLocationsData, err := readCurrentPlayerEventLocationsData(periodId, sender.uuid)
+	if err != nil {
+		return err
+	}
+	var hasIncompleteEvent bool
+	for _, currentEventLocation := range currentEventLocationsData {
+		if !currentEventLocation.Complete {
+			hasIncompleteEvent = true
+			break
+		}
+	}
+	if !hasIncompleteEvent && config.gameName == "2kki" {
+		add2kkiEventLocationsWithExp(-1, 1, 0, sender.uuid)
+		currentEventLocationsData, err = readCurrentPlayerEventLocationsData(periodId, sender.uuid)
+		if err != nil {
+			return err
+		}
+	}
+	currentEventLocationsDataJson, err := json.Marshal(currentEventLocationsData)
+	if err != nil {
+		return err
+	}
+	sender.send <- []byte("el" + delim + string(currentEventLocationsDataJson))
 
 	return nil
 }
