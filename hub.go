@@ -374,7 +374,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	return terminate, nil
 }
 
-func (h *Hub) sendPlayerInfo(client *Client) {
+func (h *Hub) handleValidClient(client *Client) {
 	//tell everyone that a new client has connected
 	h.broadcast([]byte("c" + delim + strconv.Itoa(client.id) + delim + client.session.uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) //user %id% has connected message
 

@@ -13,7 +13,8 @@ func (h *Hub) handleIdent(msg []string, sender *Client) (err error) {
 	}
 
 	sender.valid = true
-	h.sendPlayerInfo(sender)
+	sender.send <- []byte("ident") //tell client they're valid
+	h.handleValidClient(sender)
 
 	return nil
 }
