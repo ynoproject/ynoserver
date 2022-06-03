@@ -657,12 +657,14 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 //SESSION
 
 func (s *Session) handleI(msg []string, sender *SessionClient) (err error) {
+	badgeSlotRows, badgeSlotCols := readPlayerBadgeSlotCounts(sender.name)
 	playerInfo := PlayerInfo{
 		Uuid:          sender.uuid,
 		Name:          sender.name,
 		Rank:          sender.rank,
 		Badge:         sender.badge,
-		BadgeSlotRows: readPlayerBadgeSlotRows(sender.name),
+		BadgeSlotRows: badgeSlotRows,
+		BadgeSlotCols: badgeSlotCols,
 	}
 	playerInfoJson, err := json.Marshal(playerInfo)
 	if err != nil {

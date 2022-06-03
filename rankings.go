@@ -58,7 +58,7 @@ func initRankings() {
 			if config.gameName == "2kki" {
 				// Badge records needed for determining badge game
 				writeGameBadges()
-				updatePlayerBadgeSlotRows("")
+				updatePlayerBadgeSlotCounts("")
 			}
 			bpCategory.SubCategories = append(bpCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
 			badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
