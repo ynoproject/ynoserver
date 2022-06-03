@@ -67,6 +67,8 @@ type Client struct {
 	key     string
 	counter int
 
+	valid bool
+
 	x, y   int
 	facing int
 	spd    int

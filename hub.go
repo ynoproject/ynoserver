@@ -174,72 +174,10 @@ func (h *Hub) run() {
 
 			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + key + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
 
-			//send the new client info about the game state
-			if !h.singleplayer {
-				for otherClient := range h.clients {
-					var accountBin int
-					if otherClient.session.account {
-						accountBin = 1
-					}
-					client.send <- []byte("c" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.uuid + delim + strconv.Itoa(otherClient.session.rank) + delim + strconv.Itoa(accountBin) + delim + otherClient.session.badge)
-					client.send <- []byte("m" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.x) + delim + strconv.Itoa(otherClient.y))
-					client.send <- []byte("f" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.facing))
-					client.send <- []byte("spd" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.spd))
-					if otherClient.session.name != "" {
-						client.send <- []byte("name" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.name)
-					}
-					if otherClient.session.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
-						client.send <- []byte("spr" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.spriteName + delim + strconv.Itoa(otherClient.session.spriteIndex))
-					}
-					if otherClient.repeatingFlash {
-						client.send <- []byte("rfl" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.flash[0]) + delim + strconv.Itoa(otherClient.flash[1]) + delim + strconv.Itoa(otherClient.flash[2]) + delim + strconv.Itoa(otherClient.flash[3]) + delim + strconv.Itoa(otherClient.flash[4]))
-					}
-					if otherClient.tone[0] != 128 || otherClient.tone[1] != 128 || otherClient.tone[2] != 128 || otherClient.tone[3] != 128 {
-						client.send <- []byte("t" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.tone[0]) + delim + strconv.Itoa(otherClient.tone[1]) + delim + strconv.Itoa(otherClient.tone[2]) + delim + strconv.Itoa(otherClient.tone[3]))
-					}
-					if otherClient.session.systemName != "" {
-						client.send <- []byte("sys" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.systemName)
-					}
-					for picId, pic := range otherClient.pictures {
-						var useTransparentColorBin int
-						if pic.useTransparentColor {
-							useTransparentColorBin = 1
-						}
-						var fixedToMapBin int
-						if pic.fixedToMap {
-							fixedToMapBin = 1
-						}
-						client.send <- []byte("ap" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(picId) + delim + strconv.Itoa(pic.positionX) + delim + strconv.Itoa(pic.positionY) + delim + strconv.Itoa(pic.mapX) + delim + strconv.Itoa(pic.mapY) + delim + strconv.Itoa(pic.panX) + delim + strconv.Itoa(pic.panY) + delim + strconv.Itoa(pic.magnify) + delim + strconv.Itoa(pic.topTrans) + delim + strconv.Itoa(pic.bottomTrans) + delim + strconv.Itoa(pic.red) + delim + strconv.Itoa(pic.blue) + delim + strconv.Itoa(pic.green) + delim + strconv.Itoa(pic.saturation) + delim + strconv.Itoa(pic.effectMode) + delim + strconv.Itoa(pic.effectPower) + delim + pic.name + delim + strconv.Itoa(useTransparentColorBin) + delim + strconv.Itoa(fixedToMapBin))
-					}
-				}
-			}
 			//register client in the structures
 			h.id[id] = true
 			h.clients[client] = true
 			hubClients[uuid] = client
-
-			//tell everyone that a new client has connected
-			h.broadcast([]byte("c" + delim + strconv.Itoa(id) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge)) //user %id% has connected message
-
-			checkHubConditions(h, client, "", "")
-
-			for _, minigame := range h.minigameConfigs {
-				score, err := readPlayerMinigameScore(uuid, minigame.MinigameId)
-				if err != nil {
-					writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "failed to read player minigame score for "+minigame.MinigameId)
-				}
-				client.minigameScores = append(client.minigameScores, score)
-				varSyncType := 1
-				if minigame.InitialVarSync {
-					varSyncType = 2
-				}
-				client.send <- []byte("sv" + delim + strconv.Itoa(minigame.VarId) + delim + strconv.Itoa(varSyncType))
-			}
-
-			//send account-specific data like username
-			if session.account {
-				h.broadcast([]byte("name" + delim + strconv.Itoa(id) + delim + session.name)) //send name of client with account
-			}
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
@@ -378,46 +316,52 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 
 	var terminate bool
 
-	switch msgFields[0] {
-	case "m": //moved to x y
-		fallthrough
-	case "tp": //teleported to x y
-		err = h.handleM(msgFields, sender)
-	case "f": //change facing direction
-		err = h.handleF(msgFields, sender)
-	case "spd": //change my speed to spd
-		err = h.handleSpd(msgFields, sender)
-	case "spr": //change my sprite
-		err = h.handleSpr(msgFields, sender)
-	case "fl": //player flash
-		fallthrough
-	case "rfl": //repeating player flash
-		err = h.handleFl(msgFields, sender)
-	case "rrfl": //remove repeating player flash
-		err = h.handleRrfl(msgFields, sender)
-	case "t": //change my tone
-		err = h.handleT(msgFields, sender)
-	case "sys": //change my system graphic
-		err = h.handleSys(msgFields, sender)
-	case "se": //play sound effect
-		err = h.handleSe(msgFields, sender)
-	case "ap": // picture shown
-		fallthrough
-	case "mp": // picture moved
-		err = h.handleP(msgFields, sender)
-	case "rp": // picture erased
-		err = h.handleRp(msgFields, sender)
-	case "say":
-		err = h.handleSay(msgFields, sender)
-		terminate = true
-	case "ss": // sync switch
-		err = h.handleSs(msgFields, sender)
-	case "sv": // sync variable
-		err = h.handleSv(msgFields, sender)
-	case "sev":
-		err = h.handleSev(msgFields, sender)
-	default:
-		return false, err
+	if !sender.valid {
+		if msgFields[0] == "ident" {
+			err = h.handleIdent(msgFields, sender)
+		}
+	} else {
+		switch msgFields[0] {
+		case "m": //moved to x y
+			fallthrough
+		case "tp": //teleported to x y
+			err = h.handleM(msgFields, sender)
+		case "f": //change facing direction
+			err = h.handleF(msgFields, sender)
+		case "spd": //change my speed to spd
+			err = h.handleSpd(msgFields, sender)
+		case "spr": //change my sprite
+			err = h.handleSpr(msgFields, sender)
+		case "fl": //player flash
+			fallthrough
+		case "rfl": //repeating player flash
+			err = h.handleFl(msgFields, sender)
+		case "rrfl": //remove repeating player flash
+			err = h.handleRrfl(msgFields, sender)
+		case "t": //change my tone
+			err = h.handleT(msgFields, sender)
+		case "sys": //change my system graphic
+			err = h.handleSys(msgFields, sender)
+		case "se": //play sound effect
+			err = h.handleSe(msgFields, sender)
+		case "ap": // picture shown
+			fallthrough
+		case "mp": // picture moved
+			err = h.handleP(msgFields, sender)
+		case "rp": // picture erased
+			err = h.handleRp(msgFields, sender)
+		case "say":
+			err = h.handleSay(msgFields, sender)
+			terminate = true
+		case "ss": // sync switch
+			err = h.handleSs(msgFields, sender)
+		case "sv": // sync variable
+			err = h.handleSv(msgFields, sender)
+		case "sev":
+			err = h.handleSev(msgFields, sender)
+		default:
+			return false, err
+		}
 	}
 
 	if err != nil {
@@ -427,4 +371,73 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	writeLog(sender.session.ip, strconv.Itoa(h.roomId), msgStr, 200)
 
 	return terminate, nil
+}
+
+func (h *Hub) sendPlayerInfo(client *Client) {
+	//tell everyone that a new client has connected
+	h.broadcast([]byte("c" + delim + strconv.Itoa(client.id) + delim + client.session.uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) //user %id% has connected message
+
+	//send account-specific data like username
+	if client.session.account {
+		h.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + client.session.name)) //send name of client with account
+	}
+
+	//send the new client info about the game state
+	if !h.singleplayer {
+		for otherClient := range h.clients {
+			if !otherClient.valid {
+				continue
+			}
+
+			var accountBin int
+			if otherClient.session.account {
+				accountBin = 1
+			}
+			client.send <- []byte("c" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.uuid + delim + strconv.Itoa(otherClient.session.rank) + delim + strconv.Itoa(accountBin) + delim + otherClient.session.badge)
+			client.send <- []byte("m" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.x) + delim + strconv.Itoa(otherClient.y))
+			client.send <- []byte("f" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.facing))
+			client.send <- []byte("spd" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.spd))
+			if otherClient.session.name != "" {
+				client.send <- []byte("name" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.name)
+			}
+			if otherClient.session.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
+				client.send <- []byte("spr" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.spriteName + delim + strconv.Itoa(otherClient.session.spriteIndex))
+			}
+			if otherClient.repeatingFlash {
+				client.send <- []byte("rfl" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.flash[0]) + delim + strconv.Itoa(otherClient.flash[1]) + delim + strconv.Itoa(otherClient.flash[2]) + delim + strconv.Itoa(otherClient.flash[3]) + delim + strconv.Itoa(otherClient.flash[4]))
+			}
+			if otherClient.tone[0] != 128 || otherClient.tone[1] != 128 || otherClient.tone[2] != 128 || otherClient.tone[3] != 128 {
+				client.send <- []byte("t" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.tone[0]) + delim + strconv.Itoa(otherClient.tone[1]) + delim + strconv.Itoa(otherClient.tone[2]) + delim + strconv.Itoa(otherClient.tone[3]))
+			}
+			if otherClient.session.systemName != "" {
+				client.send <- []byte("sys" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.systemName)
+			}
+			for picId, pic := range otherClient.pictures {
+				var useTransparentColorBin int
+				if pic.useTransparentColor {
+					useTransparentColorBin = 1
+				}
+				var fixedToMapBin int
+				if pic.fixedToMap {
+					fixedToMapBin = 1
+				}
+				client.send <- []byte("ap" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(picId) + delim + strconv.Itoa(pic.positionX) + delim + strconv.Itoa(pic.positionY) + delim + strconv.Itoa(pic.mapX) + delim + strconv.Itoa(pic.mapY) + delim + strconv.Itoa(pic.panX) + delim + strconv.Itoa(pic.panY) + delim + strconv.Itoa(pic.magnify) + delim + strconv.Itoa(pic.topTrans) + delim + strconv.Itoa(pic.bottomTrans) + delim + strconv.Itoa(pic.red) + delim + strconv.Itoa(pic.blue) + delim + strconv.Itoa(pic.green) + delim + strconv.Itoa(pic.saturation) + delim + strconv.Itoa(pic.effectMode) + delim + strconv.Itoa(pic.effectPower) + delim + pic.name + delim + strconv.Itoa(useTransparentColorBin) + delim + strconv.Itoa(fixedToMapBin))
+			}
+		}
+	}
+
+	checkHubConditions(h, client, "", "")
+
+	for _, minigame := range h.minigameConfigs {
+		score, err := readPlayerMinigameScore(client.session.uuid, minigame.MinigameId)
+		if err != nil {
+			writeErrLog(client.session.ip, strconv.Itoa(h.roomId), "failed to read player minigame score for "+minigame.MinigameId)
+		}
+		client.minigameScores = append(client.minigameScores, score)
+		varSyncType := 1
+		if minigame.InitialVarSync {
+			varSyncType = 2
+		}
+		client.send <- []byte("sv" + delim + strconv.Itoa(minigame.VarId) + delim + strconv.Itoa(varSyncType))
+	}
 }

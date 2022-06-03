@@ -7,6 +7,17 @@ import (
 	"strings"
 )
 
+func (h *Hub) handleIdent(msg []string, sender *Client) (err error) {
+	if len(msg) != 1 {
+		return err
+	}
+
+	sender.valid = true
+	h.sendPlayerInfo(sender)
+
+	return nil
+}
+
 func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
 		return err
