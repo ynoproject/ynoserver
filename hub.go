@@ -155,15 +155,12 @@ func (h *Hub) run() {
 				key:         key,
 				tone:        [4]int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
-				mapId:       "0000",
+				mapId:       fmt.Sprintf("%04d", h.roomId),
 				switchCache: make(map[int]bool),
 				varCache:    make(map[int]int),
 			}
 			go client.writePump()
 			go client.readPump()
-
-
-			client.mapId = fmt.Sprintf("%04d", h.roomId)
 
 			tags, err := readPlayerTags(uuid)
 			if err != nil {
