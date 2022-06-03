@@ -169,30 +169,30 @@ func readPlayerInfo(ip string) (uuid string, name string, rank int) {
 	return uuid, name, rank
 }
 
-func readPlayerInfoFromToken(token string) (uuid string, name string, rank int, badge string, badgeSlotRows int) {
-	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, a.badgeSlotRows FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token)
-	err := results.Scan(&uuid, &name, &rank, &badge, &badgeSlotRows)
+func readPlayerInfoFromToken(token string) (uuid string, name string, rank int, badge string, badgeSlotRows int, badgeSlotCols int) {
+	results := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, a.badgeSlotRows, a.badgeSlotCols FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token)
+	err := results.Scan(&uuid, &name, &rank, &badge, &badgeSlotRows, &badgeSlotCols)
 
 	if err != nil {
-		return "", "", 0, "", 0
+		return "", "", 0, "", 0, 0
 	}
 
-	return uuid, name, rank, badge, badgeSlotRows
+	return uuid, name, rank, badge, badgeSlotRows, badgeSlotCols
 }
 
-func readPlayerBadgeSlotRows(playerName string) (badgeSlotRows int) {
-	results := db.QueryRow("SELECT badgeSlotRows FROM accounts WHERE user = ?", playerName)
+func readPlayerBadgeSlotCounts(playerName string) (badgeSlotRows int, badgeSlotCols int) {
+	results := db.QueryRow("SELECT badgeSlotRows, badgeSlotCounts FROM accounts WHERE user = ?", playerName)
 	err := results.Scan(&badgeSlotRows)
 
 	if err != nil {
-		return 1
+		return 1, 3
 	}
 
-	return badgeSlotRows
+	return badgeSlotRows, badgeSlotCols
 }
 
-func updatePlayerBadgeSlotRows(uuid string) (err error) {
-	query := "UPDATE accounts JOIN (SELECT pb.uuid, SUM(b.bp) bp FROM playerBadges pb JOIN badges b ON b.badgeId = pb.badgeId GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN pb.bp >= 5000 THEN 4 WHEN pb.bp >= 2500 THEN 3 WHEN pb.bp >= 1000 THEN 2 ELSE 1 END"
+func updatePlayerBadgeSlotCounts(uuid string) (err error) {
+	query := "UPDATE accounts JOIN (SELECT pb.uuid, SUM(b.bp) bp, COUNT(b.badgeId) bc FROM playerBadges pb JOIN badges b ON b.badgeId = pb.badgeId GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN bp < 1000 THEN 1 WHEN bp < 2500 THEN 2 WHEN bp < 5000 THEN 3 WHEN bp < 10000 THEN 4 WHEN bp < 17500 THEN 5 WHEN bp < 30000 THEN 6 ELSE 7 END, CASE WHEN bc < 50 THEN 3 WHEN bc < 150 THEN 4 WHEN bc < 300 THEN 5 WHEN bc < 500 THEN 6 ELSE 7 END"
 	if uuid == "" {
 		_, err = db.Exec(query)
 	} else {

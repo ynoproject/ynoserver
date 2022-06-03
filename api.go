@@ -17,6 +17,7 @@ type PlayerInfo struct {
 	Rank          int    `json:"rank"`
 	Badge         string `json:"badge"`
 	BadgeSlotRows int    `json:"badgeSlotRows"`
+	BadgeSlotCols int    `json:"badgeSlotCols"`
 }
 
 func initApi() {
@@ -101,12 +102,13 @@ func initApi() {
 		var rank int
 		var badge string
 		var badgeSlotRows int
+		var badgeSlotCols int
 
 		token := r.Header.Get("X-Session")
 		if token == "" {
 			uuid, name, rank = readPlayerInfo(getIp(r))
 		} else {
-			uuid, name, rank, badge, badgeSlotRows = readPlayerInfoFromToken(token)
+			uuid, name, rank, badge, badgeSlotRows, badgeSlotCols = readPlayerInfoFromToken(token)
 		}
 		playerInfo := PlayerInfo{
 			Uuid:          uuid,
@@ -114,6 +116,7 @@ func initApi() {
 			Rank:          rank,
 			Badge:         badge,
 			BadgeSlotRows: badgeSlotRows,
+			BadgeSlotCols: badgeSlotCols,
 		}
 		playerInfoJson, err := json.Marshal(playerInfo)
 		if err != nil {
@@ -782,8 +785,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.HasPrefix(commandParam[0], "slot") {
-		badgeSlotRows = readPlayerBadgeSlotRows(name)
-		badgeSlotCols = 5
+		badgeSlotRows, badgeSlotCols = readPlayerBadgeSlotCounts(name)
 	}
 
 	if banned {
@@ -938,7 +940,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if len(newUnlockedBadgeIds) > 0 {
-			err := updatePlayerBadgeSlotRows(uuid)
+			err := updatePlayerBadgeSlotCounts(uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -971,9 +973,9 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		playerBadgeSlotRows := readPlayerBadgeSlotRows(playerParam[0])
+		playerBadgeSlotRows, playerBadgeSlotCols := readPlayerBadgeSlotCounts(playerParam[0])
 
-		badgeSlots, err := readPlayerBadgeSlots(playerParam[0], playerBadgeSlotRows, 5)
+		badgeSlots, err := readPlayerBadgeSlots(playerParam[0], playerBadgeSlotRows, playerBadgeSlotCols)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
