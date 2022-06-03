@@ -220,6 +220,10 @@ func (h *Hub) broadcast(data []byte) {
 	}
 
 	for client := range h.clients {
+		if !client.valid {
+			continue
+		}
+
 		select {
 		case client.send <- data:
 		default:
