@@ -52,9 +52,7 @@ func initApi() {
 
 		var response string
 
-		result := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString)
-		err := result.Scan(&response)
-
+		err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString).Scan(&response)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				url := "https://2kki.app/" + actionParam[0]

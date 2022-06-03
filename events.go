@@ -49,15 +49,13 @@ func initEvents() {
 	if config.gameName == "2kki" {
 		s := gocron.NewScheduler(time.UTC)
 
-		eventLocationsCountResult := db.QueryRow("SELECT COUNT(*) FROM eventLocations")
-		eventLocationsCountResult.Scan(&eventLocationsCount)
+		db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&eventLocationsCount)
 
 		periodId, err := readCurrentEventPeriodId()
 		if err == nil {
 			var count int
 
-			result := db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE()", periodId)
-			result.Scan(&count)
+			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE()", periodId).Scan(&count)
 
 			if count < 2 {
 				add2kkiEventLocations(0, 2-count)
@@ -65,16 +63,14 @@ func initEvents() {
 
 			weekday := time.Now().UTC().Weekday()
 
-			result = db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday))
-			result.Scan(&count)
+			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)).Scan(&count)
 
 			if count < 1 {
 				add2kkiEventLocations(1, 1)
 			}
 
 			if weekday == time.Friday || weekday == time.Saturday {
-				result = db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday))
-				result.Scan(&count)
+				db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday)).Scan(&count)
 
 				if count < 1 {
 					add2kkiEventLocations(2, 1)
@@ -102,8 +98,7 @@ func initEvents() {
 
 		s.Every(5).Minutes().Do(func() {
 			var newEventLocationsCount int
-			eventLocationsCountResult := db.QueryRow("SELECT COUNT(*) FROM eventLocations")
-			eventLocationsCountResult.Scan(&newEventLocationsCount)
+			db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&newEventLocationsCount)
 			if newEventLocationsCount != eventLocationsCount {
 				eventLocationsCount = newEventLocationsCount
 				sendEventLocationsUpdate()
