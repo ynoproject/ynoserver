@@ -182,7 +182,7 @@ func readPlayerInfoFromToken(token string) (uuid string, name string, rank int, 
 
 func readPlayerBadgeSlotCounts(playerName string) (badgeSlotRows int, badgeSlotCols int) {
 	results := db.QueryRow("SELECT badgeSlotRows, badgeSlotCols FROM accounts WHERE user = ?", playerName)
-	err := results.Scan(&badgeSlotRows)
+	err := results.Scan(&badgeSlotRows, &badgeSlotCols)
 
 	if err != nil {
 		return 1, 3
