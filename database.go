@@ -219,8 +219,6 @@ func readPlayerBadgeSlots(playerName string, badgeSlotRows int, badgeSlotCols in
 		return badgeSlots, err
 	}
 
-	defer results.Close()
-
 	var badgeId string
 	var badgeRow int
 	var badgeCol int
@@ -258,6 +256,8 @@ func readPlayerBadgeSlots(playerName string, badgeSlotRows int, badgeSlotCols in
 		}
 		badgeSlots = append(badgeSlots, badgeSlotRow)
 	}
+
+	results.Close()
 
 	return badgeSlots, nil
 }
@@ -328,8 +328,6 @@ func readAllPartyData(simple bool) (parties []*Party, err error) { //called by a
 		return parties, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		party := &Party{}
 		err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
@@ -354,6 +352,8 @@ func readAllPartyData(simple bool) (parties []*Party, err error) { //called by a
 		}
 	}
 
+	results.Close()
+
 	return parties, nil
 }
 
@@ -364,8 +364,6 @@ func readAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*
 	if err != nil {
 		return partyMembersByParty, err
 	}
-
-	defer results.Close()
 
 	var offlinePartyMembersByParty map[int][]*PartyMember = make(map[int][]*PartyMember)
 
@@ -413,6 +411,8 @@ func readAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*
 		}
 	}
 
+	results.Close()
+
 	for partyId, offlinePartyMembers := range offlinePartyMembersByParty {
 		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], offlinePartyMembers...)
 	}
@@ -445,7 +445,6 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 		return partyMembers, err
 	}
 
-	defer results.Close()
 
 	for results.Next() {
 		var partyId int
@@ -486,6 +485,8 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 		}
 		partyMembers = append(partyMembers, partyMember)
 	}
+
+	results.Close()
 
 	return partyMembers, nil
 }
@@ -571,8 +572,6 @@ func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
 		return partyMemberUuids, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		var uuid string
 		err := results.Scan(&uuid)
@@ -581,6 +580,8 @@ func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
 		}
 		partyMemberUuids = append(partyMemberUuids, uuid)
 	}
+
+	results.Close()
 
 	return partyMemberUuids, nil
 }
@@ -742,8 +743,6 @@ func readEventPeriodData() (eventPeriods []*EventPeriod, err error) {
 		return eventPeriods, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		eventPeriod := &EventPeriod{}
 
@@ -754,6 +753,8 @@ func readEventPeriodData() (eventPeriods []*EventPeriod, err error) {
 
 		eventPeriods = append(eventPeriods, eventPeriod)
 	}
+
+	results.Close()
 
 	return eventPeriods, nil
 }
@@ -903,8 +904,6 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 		return eventLocations, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		eventLocation := &EventLocation{}
 
@@ -922,7 +921,12 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 		eventLocations = append(eventLocations, eventLocation)
 	}
 
+	results.Close()
+
 	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.endDate FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.playerEvent = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId)
+	if err != nil {
+		return eventLocations, err
+	}
 
 	for results.Next() {
 		eventLocation := &EventLocation{}
@@ -937,6 +941,8 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 		eventLocations = append(eventLocations, eventLocation)
 	}
 
+	results.Close()
+
 	return eventLocations, nil
 }
 
@@ -945,8 +951,6 @@ func readNewEventLocationsData(periodId int) (eventLocations []*EventLocation, e
 	if err != nil {
 		return eventLocations, err
 	}
-
-	defer results.Close()
 
 	for results.Next() {
 		eventLocation := &EventLocation{}
@@ -958,6 +962,8 @@ func readNewEventLocationsData(periodId int) (eventLocations []*EventLocation, e
 
 		eventLocations = append(eventLocations, eventLocation)
 	}
+
+	results.Close()
 
 	return eventLocations, nil
 }
@@ -975,8 +981,6 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 		if err != nil {
 			return -1, err
 		}
-
-		defer results.Close()
 
 		for results.Next() {
 			var eventId string
@@ -1015,6 +1019,8 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			}
 		}
 
+		results.Close()
+
 		return exp, nil
 	}
 
@@ -1032,7 +1038,6 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 
 		var success bool
 
-		defer results.Close()
 
 		for results.Next() {
 			var eventId string
@@ -1061,6 +1066,8 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 				}
 			}
 		}
+
+		results.Close()
 
 		return success, nil
 	}
@@ -1092,7 +1099,6 @@ func readPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, e
 		return unlockedBadgeIds, err
 	}
 
-	defer results.Close()
 
 	for results.Next() {
 		var badgeId string
@@ -1102,6 +1108,8 @@ func readPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, e
 		}
 		unlockedBadgeIds = append(unlockedBadgeIds, badgeId)
 	}
+
+	results.Close()
 
 	return unlockedBadgeIds, nil
 }
@@ -1144,8 +1152,6 @@ func readBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, er
 		return unlockPercentages, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		percentUnlocked := &BadgePercentUnlocked{}
 
@@ -1157,6 +1163,8 @@ func readBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, er
 		unlockPercentages = append(unlockPercentages, percentUnlocked)
 	}
 
+	results.Close()
+
 	return unlockPercentages, nil
 }
 
@@ -1166,8 +1174,6 @@ func readPlayerTags(playerUuid string) (tags []string, err error) {
 		return tags, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		var tagName string
 		err := results.Scan(&tagName)
@@ -1176,6 +1182,8 @@ func readPlayerTags(playerUuid string) (tags []string, err error) {
 		}
 		tags = append(tags, tagName)
 	}
+
+	results.Close()
 
 	return tags, nil
 }
@@ -1209,8 +1217,6 @@ func readTimeTrialMapIds() (mapIds []int, err error) {
 		return mapIds, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		var mapId int
 		err := results.Scan(&mapId)
@@ -1221,6 +1227,8 @@ func readTimeTrialMapIds() (mapIds []int, err error) {
 		mapIds = append(mapIds, mapId)
 	}
 
+	results.Close()
+
 	return mapIds, nil
 }
 
@@ -1229,8 +1237,6 @@ func readPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTria
 	if err != nil {
 		return timeTrialRecords, err
 	}
-
-	defer results.Close()
 
 	for results.Next() {
 		timeTrialRecord := &TimeTrialRecord{}
@@ -1242,6 +1248,8 @@ func readPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTria
 
 		timeTrialRecords = append(timeTrialRecords, timeTrialRecord)
 	}
+
+	results.Close()
 
 	return timeTrialRecords, nil
 }
@@ -1278,8 +1286,6 @@ func readGameMinigameIds() (minigameIds []string, err error) {
 		return minigameIds, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		var minigameId string
 		err := results.Scan(&minigameId)
@@ -1289,6 +1295,8 @@ func readGameMinigameIds() (minigameIds []string, err error) {
 
 		minigameIds = append(minigameIds, minigameId)
 	}
+
+	results.Close()
 
 	return minigameIds, nil
 }
@@ -1339,8 +1347,6 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		return rankingCategories, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		rankingCategory := &RankingCategory{}
 
@@ -1352,12 +1358,12 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		rankingCategories = append(rankingCategories, rankingCategory)
 	}
 
+	results.Close()
+
 	results, err = db.Query("SELECT sc.categoryId, sc.subCategoryId, sc.game, CEILING(COUNT(r.uuid) / 25) FROM rankingSubCategories sc JOIN rankingEntries r ON r.categoryId = sc.categoryId AND r.subCategoryId = sc.subCategoryId WHERE sc.game IN ('', ?) GROUP BY sc.categoryId, sc.subCategoryId, sc.game ORDER BY 1, sc.ordinal", config.gameName)
 	if err != nil {
 		return rankingCategories, err
 	}
-
-	defer results.Close()
 
 	var lastCategoryId string
 	var lastCategory *RankingCategory
@@ -1379,9 +1385,12 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 				}
 			}
 		}
+		
 
 		lastCategory.SubCategories = append(lastCategory.SubCategories, *rankingSubCategory)
 	}
+
+	results.Close()
 
 	return rankingCategories, nil
 }
@@ -1431,8 +1440,6 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 		return rankings, err
 	}
 
-	defer results.Close()
-
 	for results.Next() {
 		ranking := &Ranking{}
 
@@ -1447,6 +1454,8 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 
 		rankings = append(rankings, ranking)
 	}
+
+	results.Close()
 
 	return rankings, nil
 }
