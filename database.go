@@ -1573,5 +1573,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		return err
 	}
 
+	time.Sleep(time.Second * 5) //hack: wait for the query to finish
+
 	return nil
 }
