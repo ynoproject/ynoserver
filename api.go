@@ -954,7 +954,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(newUnlockedBadgeIdsJson))
 		return
 	case "slotList":
-		badgeSlots, err := readPlayerBadgeSlots(name, badgeSlotRows, 5)
+		badgeSlots, err := readPlayerBadgeSlots(name, badgeSlotRows, badgeSlotCols)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
