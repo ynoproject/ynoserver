@@ -85,19 +85,19 @@ func initEvents() {
 		s.Every(1).Day().At("00:00").Do(func() {
 			add2kkiEventLocations(0, 2)
 			eventLocationsCount += 2
-			sendNewEventLocationsUpdate()
+			sendEventLocationsUpdate()
 		})
 
 		s.Every(1).Sunday().At("00:00").Do(func() {
 			add2kkiEventLocations(1, 1)
 			eventLocationsCount++
-			sendNewEventLocationsUpdate()
+			sendEventLocationsUpdate()
 		})
 
 		s.Every(1).Friday().At("00:00").Do(func() {
 			add2kkiEventLocations(2, 1)
 			eventLocationsCount++
-			sendNewEventLocationsUpdate()
+			sendEventLocationsUpdate()
 		})
 
 		s.Every(5).Minutes().Do(func() {
@@ -119,30 +119,6 @@ func sendEventLocationsUpdate() {
 	for _, sessionClient := range sessionClients {
 		if sessionClient.account {
 			session.handleEl(emptyMsg, sessionClient)
-		}
-	}
-}
-
-// Optimized to only send non player specific event locations as the old ones expire
-func sendNewEventLocationsUpdate() {
-	errLogType := "new event locations update"
-	periodId, err := readCurrentEventPeriodId()
-	if err != nil {
-		writeErrLog("SERVER", errLogType, err.Error())
-	}
-	newEventLocationsData, err := readNewEventLocationsData(periodId)
-	if err != nil {
-		writeErrLog("SERVER", errLogType, err.Error())
-	}
-	newEventLocationsDataJson, err := json.Marshal(newEventLocationsData)
-	if err != nil {
-		writeErrLog("SERVER", errLogType, err.Error())
-	}
-	msg := []byte("el" + delim + string(newEventLocationsDataJson))
-
-	for _, sessionClient := range sessionClients {
-		if sessionClient.account {
-			sessionClient.send <- msg
 		}
 	}
 }
