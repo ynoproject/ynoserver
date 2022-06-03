@@ -375,16 +375,16 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 }
 
 func (h *Hub) handleValidClient(client *Client) {
-	//tell everyone that a new client has connected
-	h.broadcast([]byte("c" + delim + strconv.Itoa(client.id) + delim + client.session.uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) //user %id% has connected message
-
-	//send account-specific data like username
-	if client.session.account {
-		h.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + client.session.name)) //send name of client with account
-	}
-
-	//send the new client info about the game state
 	if !h.singleplayer {
+		//tell everyone that a new client has connected
+		h.broadcast([]byte("c" + delim + strconv.Itoa(client.id) + delim + client.session.uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) //user %id% has connected message
+
+		//send account-specific data like username
+		if client.session.account {
+			h.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + client.session.name)) //send name of client with account
+		}
+
+		//send the new client info about the game state
 		for otherClient := range h.clients {
 			if !otherClient.valid {
 				continue
