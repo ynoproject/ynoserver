@@ -324,7 +324,6 @@ func readAllPartyData(simple bool) (parties []*Party, err error) { //called by a
 	}
 
 	results, err := db.Query("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM parties p WHERE p.game = ?", config.gameName)
-
 	if err != nil {
 		return parties, err
 	}
@@ -589,7 +588,6 @@ func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
 func readPartyMemberCount(partyId int) (count int, err error) {
 	results := db.QueryRow("SELECT COUNT(*) FROM partyMembers WHERE partyId = ?", partyId)
 	err = results.Scan(&count)
-
 	if err != nil {
 		return count, err
 	}
@@ -600,7 +598,6 @@ func readPartyMemberCount(partyId int) (count int, err error) {
 func readPartyOwnerUuid(partyId int) (ownerUuid string, err error) {
 	results := db.QueryRow("SELECT owner FROM parties WHERE id = ?", partyId)
 	err = results.Scan(&ownerUuid)
-
 	if err != nil {
 		return ownerUuid, err
 	}
@@ -1347,8 +1344,7 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 	for results.Next() {
 		rankingCategory := &RankingCategory{}
 
-		results.Scan(&rankingCategory.CategoryId, &rankingCategory.Game)
-
+		err := results.Scan(&rankingCategory.CategoryId, &rankingCategory.Game)
 		if err != nil {
 			return rankingCategories, err
 		}
@@ -1370,8 +1366,7 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		rankingSubCategory := &RankingSubCategory{}
 
 		var categoryId string
-		results.Scan(&categoryId, &rankingSubCategory.SubCategoryId, &rankingSubCategory.Game, &rankingSubCategory.PageCount)
-
+		err := results.Scan(&categoryId, &rankingSubCategory.SubCategoryId, &rankingSubCategory.Game, &rankingSubCategory.PageCount)
 		if err != nil {
 			return rankingCategories, err
 		}
@@ -1446,7 +1441,6 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 		} else {
 			err = results.Scan(&ranking.Position, &ranking.Name, &ranking.Rank, &ranking.Badge, &ranking.SystemName, &ranking.ValueFloat)
 		}
-
 		if err != nil {
 			return rankings, err
 		}
