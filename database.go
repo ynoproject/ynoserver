@@ -707,10 +707,6 @@ func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) {
 func readSaveData(playerUuid string) (saveData string, err error) { //called by api only
 	result := db.QueryRow("SELECT data FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 
-	if err != nil {
-		return saveData, err
-	}
-
 	err = result.Scan(&saveData)
 	if err != nil {
 		return saveData, err
