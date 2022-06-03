@@ -918,7 +918,7 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 	return eventLocations, nil
 }
 
-func readNewEventLocationsData(periodId int) (eventLocations []*EventLocation, err error) {
+/*func readNewEventLocationsData(periodId int) (eventLocations []*EventLocation, err error) {
 	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.exp, el.endDate FROM eventLocations el WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", periodId)
 	if err != nil {
 		return eventLocations, err
@@ -938,7 +938,7 @@ func readNewEventLocationsData(periodId int) (eventLocations []*EventLocation, e
 	results.Close()
 
 	return eventLocations, nil
-}
+}*/
 
 func tryCompleteEventLocation(periodId int, playerUuid string, location string) (exp int, err error) {
 	if client, ok := hubClients[playerUuid]; ok {
