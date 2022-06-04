@@ -11,7 +11,6 @@ type ServerConfig struct {
 	IP              string `yaml:"ip"`
 	Port            int    `yaml:"port"`
 	IndexPath       string `yaml:"index_path"`
-	NumRooms        int    `yaml:"num_rooms"`
 	SpRooms         string `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
 	PictureNames    string `yaml:"picture_names"`
@@ -53,9 +52,6 @@ func parseConfig(file string) ServerConfig {
 	}
 	if config.Port == 0 {
 		config.Port = 8080
-	}
-	if config.NumRooms == 0 {
-		config.NumRooms = 100
 	}
 	if config.Logging.File == "" {
 		config.Logging.File = "server.log"

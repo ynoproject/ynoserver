@@ -66,6 +66,18 @@ func main() {
 		}
 	}
 
+	//list of game map ids
+	var mapIds []int
+	for _, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{}) {
+		if str := v.(string); len(str) == 11 { //map filenames are always 11 characters long
+			if str[7:] == ".lmu" { //check if extension is .lmu
+				if num, err := strconv.Atoi(str[3:4]); err == nil { //MapXXXX.lmu, remove "Map" and ".lmu"
+					mapIds = append(mapIds, num)
+				}
+			}
+		}
+	}
+
 	//list of sound names to ignore
 	var ignoredSoundNames []string
 	if configFileData.BadSounds != "" {
@@ -82,11 +94,6 @@ func main() {
 	var picturePrefixes []string
 	if configFileData.PicturePrefixes != "" {
 		picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
-	}
-
-	var roomIds []int
-	for i := 0; i < configFileData.NumRooms; i++ {
-		roomIds = append(roomIds, i)
 	}
 
 	config = Config{
@@ -113,7 +120,7 @@ func main() {
 
 	spRooms := strings.Split(configFileData.SpRooms, ",")
 
-	createAllHubs(roomIds, atoiArray(spRooms))
+	createAllHubs(mapIds, atoiArray(spRooms))
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,
