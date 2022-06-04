@@ -87,7 +87,7 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 		return err
 	}
 	if config.gameName == "2kki" {
-		if !strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") {
+		if !strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") && !strings.Contains(msg[1], "#null") {
 			return err
 		}
 		if strings.Contains(msg[1], "zenmaigaharaten_kisekae") && h.roomId != 176 {
