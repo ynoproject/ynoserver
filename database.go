@@ -11,6 +11,10 @@ import (
 	"github.com/thanhpk/randstr"
 )
 
+var (
+	db *sql.DB
+)
+
 func setDatabase() {
 	conn, err := sql.Open("mysql", config.dbUser+":"+config.dbPass+"@tcp("+config.dbHost+")/"+config.dbName+"?parseTime=true")
 	if err != nil {

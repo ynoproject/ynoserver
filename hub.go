@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/sha1"
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -40,7 +39,6 @@ var (
 	conditions     map[string]map[string]*Condition
 	badges         map[string]map[string]*Badge
 	sortedBadgeIds map[string][]string
-	db             *sql.DB
 )
 
 type ConnInfo struct {
