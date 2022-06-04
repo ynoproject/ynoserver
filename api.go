@@ -20,6 +20,15 @@ type PlayerInfo struct {
 	BadgeSlotCols int    `json:"badgeSlotCols"`
 }
 
+type SyncedPicsInfo struct {
+	PictureNames []string `json:"pictureNames"`
+	PicturePrefixes []string `json:"picturePrefixes"` 
+}
+
+var (
+	syncedPicsResponse *[]byte //cached response
+)
+
 func initApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
@@ -27,6 +36,7 @@ func initApi() {
 	http.HandleFunc("/api/eventLocations", handleEventLocations)
 	http.HandleFunc("/api/badge", handleBadge)
 	http.HandleFunc("/api/ranking", handleRanking)
+	http.HandleFunc("/api/syncedPics", handleSyncedPics)
 
 	http.HandleFunc("/api/register", handleRegister)
 	http.HandleFunc("/api/login", handleLogin)
@@ -1100,6 +1110,27 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "unknown command")
 		return
 	}
+}
+
+func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
+	if syncedPicsResponse != nil {
+		w.Write(*syncedPicsResponse) //use cached response
+		return
+	}
+
+	response, err := json.Marshal(SyncedPicsInfo{
+		PictureNames: config.pictureNames,
+		PicturePrefixes: config.picturePrefixes,
+	})
+
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+	
+	syncedPicsResponse = &response //store response for later use
+
+	w.Write([]byte(response))
 }
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {
