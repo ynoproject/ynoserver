@@ -68,8 +68,8 @@ func main() {
 
 	//list of game map ids
 	var mapIds []int
-	for _, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{}) {
-		if str := v.(string); len(str) == 11 { //map filenames are always 11 characters long
+	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{}) {
+		if str := k; len(str) == 11 { //map filenames are always 11 characters long
 			if str[7:] == ".lmu" { //check if extension is .lmu
 				if num, err := strconv.Atoi(str[3:4]); err == nil { //MapXXXX.lmu, remove "Map" and ".lmu"
 					mapIds = append(mapIds, num)
