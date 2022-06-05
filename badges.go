@@ -319,7 +319,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 			}
 		} else if trigger == "" {
 			if c.Trigger == "picture" {
-				client.send <- []byte("sp" + delim + value)
+				client.send <- []byte("sp" + delim + c.Value)
 			} else if c.Trigger == "event" || c.Trigger == "eventAction" {
 				var values []string
 				if len(c.Values) == 0 {
