@@ -318,7 +318,9 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				}
 			}
 		} else if trigger == "" {
-			if c.Trigger == "event" || c.Trigger == "eventAction" {
+			if c.Trigger == "picture" {
+				client.send <- []byte("sp" + delim + value)
+			} else if c.Trigger == "event" || c.Trigger == "eventAction" {
 				var values []string
 				if len(c.Values) == 0 {
 					values = append(values, c.Value)
