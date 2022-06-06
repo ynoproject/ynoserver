@@ -142,6 +142,16 @@ func (h *Hub) handleFl(msg []string, sender *Client) (err error) {
 	return nil
 }
 
+func (h *Hub) handleRrfl(msg []string, sender *Client) (err error) {
+	sender.repeatingFlash = false
+	for i := 0; i < 5; i++ {
+		sender.flash[i] = 0
+	}
+	h.broadcast([]byte("rrfl" + delim + strconv.Itoa(sender.id)))
+
+	return nil
+}
+
 func (h *Hub) handleH(msg []string, sender *Client) (err error) {
 	if len(msg) != 2 {
 		return err
@@ -152,16 +162,6 @@ func (h *Hub) handleH(msg []string, sender *Client) (err error) {
 	}
 	sender.hidden = hiddenBin == 1
 	h.broadcast([]byte(msg[0] + delim + strconv.Itoa(sender.id) + delim + msg[1]))
-
-	return nil
-}
-
-func (h *Hub) handleRrfl(msg []string, sender *Client) (err error) {
-	sender.repeatingFlash = false
-	for i := 0; i < 5; i++ {
-		sender.flash[i] = 0
-	}
-	h.broadcast([]byte("rrfl" + delim + strconv.Itoa(sender.id)))
 
 	return nil
 }
