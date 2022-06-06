@@ -76,6 +76,8 @@ type Client struct {
 	flash          [5]int
 	repeatingFlash bool
 
+	hidden bool
+
 	pictures map[int]*Picture
 
 	mapId         string

@@ -336,6 +336,8 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			err = h.handleFl(msgFields, sender)
 		case "rrfl": //remove repeating player flash
 			err = h.handleRrfl(msgFields, sender)
+		case "h": //change sprite visibility
+			err = h.handleH(msgFields, sender)
 		case "sys": //change my system graphic
 			err = h.handleSys(msgFields, sender)
 		case "se": //play sound effect
@@ -401,6 +403,9 @@ func (h *Hub) handleValidClient(client *Client) {
 			}
 			if otherClient.repeatingFlash {
 				client.send <- []byte("rfl" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.flash[0]) + delim + strconv.Itoa(otherClient.flash[1]) + delim + strconv.Itoa(otherClient.flash[2]) + delim + strconv.Itoa(otherClient.flash[3]) + delim + strconv.Itoa(otherClient.flash[4]))
+			}
+			if otherClient.hidden {
+				client.send <- []byte("h" + delim + strconv.Itoa(otherClient.id) + delim + "1")
 			}
 			if otherClient.session.systemName != "" {
 				client.send <- []byte("sys" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.systemName)
