@@ -54,7 +54,7 @@ type Picture struct {
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	session *SessionClient
-	hub *Hub
+	hub     *Hub
 
 	// The websocket connection.
 	conn *websocket.Conn
@@ -75,8 +75,6 @@ type Client struct {
 
 	flash          [5]int
 	repeatingFlash bool
-
-	tone [4]int
 
 	pictures map[int]*Picture
 

@@ -152,35 +152,6 @@ func (h *Hub) handleRrfl(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-func (h *Hub) handleT(msg []string, sender *Client) (err error) {
-	if len(msg) != 5 {
-		return err
-	}
-	red, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || red < 0 || red > 255 {
-		return errconv
-	}
-	green, errconv := strconv.Atoi(msg[2])
-	if errconv != nil || green < 0 || green > 255 {
-		return errconv
-	}
-	blue, errconv := strconv.Atoi(msg[3])
-	if errconv != nil || blue < 0 || blue > 255 {
-		return errconv
-	}
-	gray, errconv := strconv.Atoi(msg[4])
-	if errconv != nil || red < 0 || gray > 255 {
-		return errconv
-	}
-	sender.tone[0] = red
-	sender.tone[1] = green
-	sender.tone[2] = blue
-	sender.tone[3] = gray
-	h.broadcast([]byte("t" + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2] + delim + msg[3] + delim + msg[4]))
-
-	return nil
-}
-
 func (h *Hub) handleSys(msg []string, sender *Client) (err error) {
 	if len(msg) != 2 {
 		return err

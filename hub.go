@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	maxID         = 512
-	delim = "\uffff"
-	mdelim   = "\ufffe"
+	maxID  = 512
+	delim  = "\uffff"
+	mdelim = "\ufffe"
 )
 
 var (
@@ -65,7 +65,7 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	roomId     int
+	roomId       int
 	singleplayer bool
 
 	conditions []*Condition
@@ -151,7 +151,6 @@ func (h *Hub) run() {
 				session:     session,
 				id:          id,
 				key:         key,
-				tone:        [4]int{128, 128, 128, 128},
 				pictures:    make(map[int]*Picture),
 				mapId:       fmt.Sprintf("%04d", h.roomId),
 				switchCache: make(map[int]bool),
@@ -337,8 +336,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			err = h.handleFl(msgFields, sender)
 		case "rrfl": //remove repeating player flash
 			err = h.handleRrfl(msgFields, sender)
-		case "t": //change my tone
-			err = h.handleT(msgFields, sender)
 		case "sys": //change my system graphic
 			err = h.handleSys(msgFields, sender)
 		case "se": //play sound effect
@@ -404,9 +401,6 @@ func (h *Hub) handleValidClient(client *Client) {
 			}
 			if otherClient.repeatingFlash {
 				client.send <- []byte("rfl" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.flash[0]) + delim + strconv.Itoa(otherClient.flash[1]) + delim + strconv.Itoa(otherClient.flash[2]) + delim + strconv.Itoa(otherClient.flash[3]) + delim + strconv.Itoa(otherClient.flash[4]))
-			}
-			if otherClient.tone[0] != 128 || otherClient.tone[1] != 128 || otherClient.tone[2] != 128 || otherClient.tone[3] != 128 {
-				client.send <- []byte("t" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.tone[0]) + delim + strconv.Itoa(otherClient.tone[1]) + delim + strconv.Itoa(otherClient.tone[2]) + delim + strconv.Itoa(otherClient.tone[3]))
 			}
 			if otherClient.session.systemName != "" {
 				client.send <- []byte("sys" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.systemName)
