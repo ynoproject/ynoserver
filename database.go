@@ -1280,9 +1280,8 @@ func readPlayerMinigameScore(playerUuid string, minigameId string) (score int, e
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
-		} else {
-			return 0, err
 		}
+		return 0, err
 	}
 
 	return score, nil
