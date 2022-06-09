@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -118,4 +119,24 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	db.Exec("UPDATE accounts SET password = ? WHERE user = ?", hashedPassword, user[0])
 
 	w.Write([]byte("ok"))
+}
+
+func setRandomPw(uuid string) (newPassword string, err error) {
+	var userCount int
+	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", uuid).Scan(&userCount)
+
+	if userCount == 0 {
+		return "", errors.New("user not found")
+	}
+
+	newPassword = randstr.String(8)
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	db.Exec("UPDATE accounts SET password = ? WHERE uuid = ?", hashedPassword, uuid)
+
+	return newPassword, nil
 }

@@ -240,6 +240,31 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+	case "changepw":
+		if readPlayerRank(uuid) < 2 {
+			handleError(w, r, "access denied")
+			return
+		}
+
+		playerParam, ok := r.URL.Query()["player"]
+		if !ok || len(playerParam) < 1 {
+			handleError(w, r, "player not specified")
+			return
+		}
+
+		passParam, ok := r.URL.Query()["pass"]
+		if !ok || len(passParam) < 1 {
+			handleError(w, r, "new password not specified")
+			return
+		}
+
+		newPw, err := setRandomPw(playerParam[0])
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		w.Write([]byte(newPw))
 	case "restart":
 		if readPlayerRank(uuid) < 2 {
 			handleError(w, r, "access denied")
