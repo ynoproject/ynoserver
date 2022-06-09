@@ -18,6 +18,8 @@ func getHubMinigameConfigs(roomId int) (minigameConfigs []*MinigameConfig) {
 		switch roomId {
 		case 102:
 			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "rby", VarId: 1010, InitialVarSync: true})
+		case 618:
+			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "rby_ex", VarId: 79, InitialVarSync: true})
 		}
 	}
 	return minigameConfigs
