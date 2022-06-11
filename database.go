@@ -1500,18 +1500,22 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		query += "SELECT ?, ?, RANK() OVER (ORDER BY MAX(ms.score) DESC), ms.uuid, MAX(ms.score), (SELECT MAX(ams.timestampCompleted) FROM playerMinigameScores ams WHERE ams.uuid = ms.uuid AND ams.minigameId = ms.minigameId AND ams.score = ms.score) FROM playerMinigameScores ms WHERE ms.minigameId = ? GROUP BY ms.uuid ORDER BY 5 DESC, 6"
 	}
 
-	var result sql.Result //make go wait for query to finish
 	if isFiltered {
-		result, err = db.Exec(query, categoryId, subCategoryId, subCategoryId)
+		result, err := db.Exec(query, categoryId, subCategoryId, subCategoryId)
+		if result == nil { //do something with result to silence warning
+			return nil
+		}
+		if err != nil {
+			return err
+		}
 	} else {
-		result, err = db.Exec(query, categoryId, subCategoryId)
-	}
-	if err != nil {
-		return err
-	}
-
-	if result == nil { //do something with result to silence warning
-		return nil
+		result, err := db.Exec(query, categoryId, subCategoryId)
+		if result == nil { //do something with result to silence warning
+			return nil
+		}
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
