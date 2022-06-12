@@ -14,7 +14,7 @@ func generateKey() uint32 {
 }
 
 func verifySignature(key uint32, msg []byte) bool {
-	var byteKey []byte
+	byteKey := make([]byte, 4)
 
 	binary.BigEndian.PutUint32(byteKey, key)
 
@@ -27,7 +27,7 @@ func verifySignature(key uint32, msg []byte) bool {
 }
 
 func verifyCounter(counter *uint32, msg []byte) bool {
-	if cnt := binary.BigEndian.Uint32(msg[4:4]); *counter < cnt {
+	if cnt := binary.BigEndian.Uint32(msg[4:len(msg) - 4]); *counter < cnt {
 		*counter = cnt
 		return true
 	}
