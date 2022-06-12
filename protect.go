@@ -26,8 +26,8 @@ func verifySignature(key uint32, msg []byte) bool {
 	return bytes.Equal(hash.Sum(nil)[:4], msg[:4])
 }
 
-func verifyCounter(counter *uint32, msg []byte) bool {
-	if cnt := binary.BigEndian.Uint32(msg[4:len(msg) - 4]); *counter < cnt {
+func verifyCounter(counter *uint16, msg []byte) bool {
+	if cnt := binary.BigEndian.Uint16(msg[4:len(msg) - 2]); *counter < cnt {
 		*counter = cnt
 		return true
 	}
