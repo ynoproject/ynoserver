@@ -438,7 +438,6 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 		return partyMembers, err
 	}
 
-
 	for results.Next() {
 		var partyId int
 		var accountBin int
@@ -781,7 +780,7 @@ func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp,
 }
 
 func readPlayerTotalEventExp(playerUuid string) (totalEventExp int, err error) {
-	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid).Scan(&totalEventExp)
+	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid).Scan(&totalEventExp)
 	if err != nil {
 		return totalEventExp, err
 	}
@@ -790,7 +789,7 @@ func readPlayerTotalEventExp(playerUuid string) (totalEventExp int, err error) {
 }
 
 func readPlayerPeriodEventExp(periodId int, playerUuid string) (periodEventExp int, err error) {
-	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid).Scan(&periodEventExp)
+	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid).Scan(&periodEventExp)
 	if err != nil {
 		return periodEventExp, err
 	}
@@ -801,7 +800,7 @@ func readPlayerPeriodEventExp(periodId int, playerUuid string) (periodEventExp i
 func readPlayerWeekEventExp(periodId int, playerUuid string) (weekEventExp int, err error) {
 	weekdayIndex := int(time.Now().UTC().Weekday())
 
-	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex).Scan(&weekEventExp)
+	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex).Scan(&weekEventExp)
 	if err != nil {
 		return weekEventExp, err
 	}
@@ -819,7 +818,7 @@ func readPlayerEventLocationCount(playerUuid string) (eventLocationCount int, er
 }
 
 func readPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletion int, err error) {
-	err = db.QueryRow("SELECT COALESCE(FLOOR((COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count) * 100), 0) FROM eventCompletions ec LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.playerEvent = 1 JOIN (SELECT COUNT(DISTINCT COALESCE(ael.title, apel.title)) count FROM eventCompletions aec LEFT JOIN eventLocations ael ON ael.id = aec.eventId AND aec.playerEvent = 0 LEFT JOIN playerEventLocations	apel ON apel.id = aec.eventId AND aec.playerEvent = 1 WHERE (ael.title IS NOT NULL OR apel.title IS NOT NULL)) aec WHERE ec.uuid = ? AND (el.title IS NOT NULL OR pel.title IS NOT NULL)", playerUuid).Scan(&eventLocationCompletion)
+	err = db.QueryRow("SELECT COALESCE(FLOOR((COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count) * 100), 0) FROM eventCompletions ec LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 JOIN (SELECT COUNT(DISTINCT COALESCE(ael.title, apel.title)) count FROM eventCompletions aec LEFT JOIN eventLocations ael ON ael.id = aec.eventId AND aec.type = 0 LEFT JOIN playerEventLocations	apel ON apel.id = aec.eventId AND aec.type = 1 WHERE (ael.title IS NOT NULL OR apel.title IS NOT NULL)) aec WHERE ec.uuid = ? AND (el.title IS NOT NULL OR pel.title IS NOT NULL)", playerUuid).Scan(&eventLocationCompletion)
 	if err != nil {
 		return eventLocationCompletion, err
 	}
@@ -875,7 +874,7 @@ func writePlayerEventLocationData(periodId int, playerUuid string, title string,
 }
 
 func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventLocations []*EventLocation, err error) {
-	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.playerEvent = 0 AND ec.uuid = ? WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, periodId)
+	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.type = 0 AND ec.uuid = ? WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, periodId)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -899,7 +898,7 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 
 	results.Close()
 
-	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.endDate FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.playerEvent = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId)
+	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.endDate FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -983,7 +982,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 						eventExp = 40 - weekEventExp
 					}
 
-					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, playerEvent, timestampCompleted, exp) VALUES (?, ?, 0, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
+					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 0, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
 					if err != nil {
 						break
 					}
@@ -1014,7 +1013,6 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 
 		var success bool
 
-
 		for results.Next() {
 			var eventId string
 			var mapIdsJson string
@@ -1032,7 +1030,7 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 
 			for _, mapId := range mapIds {
 				if clientMapId == mapId {
-					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, playerEvent, timestampCompleted, exp) VALUES (?, ?, 1, ?, 0)", eventId, playerUuid, time.Now())
+					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 1, ?, 0)", eventId, playerUuid, time.Now())
 					if err != nil {
 						break
 					}
@@ -1074,7 +1072,6 @@ func readPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, e
 	if err != nil {
 		return unlockedBadgeIds, err
 	}
-
 
 	for results.Next() {
 		var badgeId string
@@ -1357,7 +1354,6 @@ func readRankingCategories() (rankingCategories []*RankingCategory, err error) {
 				}
 			}
 		}
-		
 
 		lastCategory.SubCategories = append(lastCategory.SubCategories, *rankingSubCategory)
 	}
@@ -1463,7 +1459,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		}
 		query += " GROUP BY a.uuid ORDER BY 5 DESC, 6"
 	case "exp":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(ec.exp) DESC), ec.uuid, SUM(ec.exp), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(ec.exp) DESC), ec.uuid, SUM(ec.exp), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0"
 		if isFiltered {
 			query += " JOIN eventPeriods ep ON ep.id = el.periodId AND ep.periodOrdinal = ?"
 		}
@@ -1481,7 +1477,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 			}
 			query += " ON el.id = ec.eventId JOIN eventPeriods ep ON ep.id = el.periodId AND ep.periodOrdinal = ? "
 		}
-		query += "WHERE ec.playerEvent = "
+		query += "WHERE ec.type = "
 		if isFree {
 			query += "1"
 		} else {
@@ -1489,7 +1485,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		}
 		query += " GROUP BY ec.uuid ORDER BY 5 DESC, 6"
 	case "eventLocationCompletion":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count DESC), a.uuid, COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count, (SELECT MAX(aect.timestampCompleted) FROM eventCompletions aect WHERE aect.uuid = ec.uuid) FROM eventCompletions ec JOIN accounts a ON a.uuid = ec.uuid LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.playerEvent = 0 LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.playerEvent = 1 JOIN (SELECT COUNT(DISTINCT COALESCE(ael.title, apel.title)) count FROM eventCompletions aec LEFT JOIN eventLocations ael ON ael.id = aec.eventId AND aec.playerEvent = 0 LEFT JOIN playerEventLocations apel ON apel.id = aec.eventId AND aec.playerEvent = 1 WHERE (ael.title IS NOT NULL OR apel.title IS NOT NULL)) aec"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count DESC), a.uuid, COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count, (SELECT MAX(aect.timestampCompleted) FROM eventCompletions aect WHERE aect.uuid = ec.uuid) FROM eventCompletions ec JOIN accounts a ON a.uuid = ec.uuid LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 JOIN (SELECT COUNT(DISTINCT COALESCE(ael.title, apel.title)) count FROM eventCompletions aec LEFT JOIN eventLocations ael ON ael.id = aec.eventId AND aec.type = 0 LEFT JOIN playerEventLocations apel ON apel.id = aec.eventId AND aec.type = 1 WHERE (ael.title IS NOT NULL OR apel.title IS NOT NULL)) aec"
 		if isFiltered {
 			query += " JOIN eventPeriods ep ON ep.id = COALESCE(el.periodId, pel.periodId) AND ep.periodOrdinal = ?"
 		}

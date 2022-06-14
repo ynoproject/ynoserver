@@ -243,6 +243,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 	if !client.session.account {
 		return
 	}
+
 	for _, c := range h.conditions {
 		if c.Disabled && client.session.rank < 2 {
 			continue
