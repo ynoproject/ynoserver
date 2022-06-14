@@ -24,28 +24,35 @@ func setDatabase() {
 	db = conn
 }
 
-func readPlayerData(ip string) (uuid string, rank int, banned bool, muted bool) {
-	err := db.QueryRow("SELECT uuid, rank, banned, muted FROM players WHERE ip = ?", ip).Scan(&uuid, &rank, &banned, &muted)
+func readPlayerData(ip string) (uuid string, rank int, accessType AccessType) {
+	var accessTypeInt int
+	err := db.QueryRow("SELECT uuid, rank, accessType FROM players WHERE ip = ?", ip).Scan(&uuid, &rank, &accessTypeInt)
+	accessType = AccessType(accessTypeInt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			uuid = randstr.String(16)
-			banned = isVpn(ip)
-			createPlayerData(ip, uuid, 0, banned)
+			if isVpn(ip) {
+				accessType |= Banned
+			}
+			createPlayerData(ip, uuid, 0, accessType)
 		} else {
-			return "", 0, false, false
+			return "", 0, 0
 		}
 	}
 
-	return uuid, rank, banned, muted
+	return uuid, rank, accessType
 }
 
-func readPlayerDataFromToken(token string) (uuid string, name string, rank int, badge string, banned bool, muted bool) {
-	err := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned, pd.muted FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token).Scan(&uuid, &name, &rank, &badge, &banned, &muted)
+func readPlayerDataFromToken(token string) (uuid string, name string, rank int, badge string, accessType AccessType) {
+	var accessTypeInt int
+	err := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.accessType FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token).Scan(&uuid, &name, &rank, &badge, &accessTypeInt)
 	if err != nil {
-		return "", "", 0, "", false, false
+		return "", "", 0, "", 0
 	}
 
-	return uuid, name, rank, badge, banned, muted
+	accessType = AccessType(accessTypeInt)
+
+	return uuid, name, rank, badge, accessType
 }
 
 func readPlayerRank(uuid string) (rank int) {
@@ -70,7 +77,32 @@ func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by a
 		return errors.New("attempted self-ban")
 	}
 
-	_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUUID)
+	_, err := db.Exec("UPDATE players SET accessType = accessType | ? WHERE uuid = ?", int(Banned), recipientUUID)
+	if err != nil {
+		return err
+	}
+
+	if client, ok := hubClients[recipientUUID]; ok { //unregister client and close connection
+		client.hub.unregister <- client
+	}
+
+	if client, ok := sessionClients[recipientUUID]; ok { //do the same for session
+		session.unregister <- client
+	}
+
+	return nil
+}
+
+func tryShadowBanPlayer(senderUUID string, recipientUUID string) error { //called by api only
+	if readPlayerRank(senderUUID) <= readPlayerRank(recipientUUID) {
+		return errors.New("insufficient rank")
+	}
+
+	if senderUUID == recipientUUID {
+		return errors.New("attempted self-shadowban")
+	}
+
+	_, err := db.Exec("UPDATE players SET accessType = accessType | ? WHERE uuid = ?", int(ShadowBanned), recipientUUID)
 	if err != nil {
 		return err
 	}
@@ -95,13 +127,13 @@ func tryMutePlayer(senderUUID string, recipientUUID string) error { //called by 
 		return errors.New("attempted self-mute")
 	}
 
-	_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUUID)
+	_, err := db.Exec("UPDATE players SET accessType = accessType | ? WHERE uuid = ?", int(Muted), recipientUUID)
 	if err != nil {
 		return err
 	}
 
 	if client, ok := sessionClients[recipientUUID]; ok { //mute client if they're connected
-		client.muted = true
+		client.accessType |= Muted
 	}
 
 	return nil
@@ -121,15 +153,15 @@ func tryUnmutePlayer(senderUUID string, recipientUUID string) error { //called b
 		return err
 	}
 
-	if client, ok := sessionClients[recipientUUID]; ok { //unmute client if they're connected
-		client.muted = false
+	if client, ok := sessionClients[recipientUUID]; ok && client.accessType == 1 { //unmute client if they're connected
+		client.accessType ^= Muted
 	}
 
 	return nil
 }
 
-func createPlayerData(ip string, uuid string, rank int, banned bool) error {
-	_, err := db.Exec("INSERT INTO players (ip, uuid, rank, banned) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE uuid = ?, rank = ?, banned = ?", ip, uuid, rank, banned, uuid, rank, banned)
+func createPlayerData(ip string, uuid string, rank int, accessType AccessType) error {
+	_, err := db.Exec("INSERT INTO players (ip, uuid, rank, accessType) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE uuid = ?, rank = ?, accessType = ?", ip, uuid, rank, accessType, uuid, rank, accessType)
 	if err != nil {
 		return err
 	}
@@ -393,7 +425,7 @@ func readAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*
 					partyMember.Y = hubClient.y
 				}
 			}
-			partyMember.Online = true
+			partyMember.Online = client.online
 
 			partyMembersByParty[partyId] = append(partyMembersByParty[partyId], partyMember)
 		} else {
@@ -467,7 +499,7 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 				partyMember.X = hubClient.x
 				partyMember.Y = hubClient.y
 			}
-			partyMember.Online = true
+			partyMember.Online = client.online
 		}
 		if partyMember.MapId == "" {
 			partyMember.MapId = "0000"

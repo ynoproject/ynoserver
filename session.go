@@ -66,12 +66,18 @@ func (s *Session) serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var playerToken string
-	token, ok := r.URL.Query()["token"]
-	if ok && len(token[0]) == 32 {
-		playerToken = token[0]
+	tokenParam, ok := r.URL.Query()["token"]
+	if ok && len(tokenParam[0]) == 32 {
+		playerToken = tokenParam[0]
 	}
 
-	s.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
+	var offline bool
+	offlineParam, ok := r.URL.Query()["offline"]
+	if ok && offlineParam[0] == "1" {
+		offline = true
+	}
+
+	s.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken, Online: !offline}
 }
 
 func (s *Session) run() {
@@ -79,9 +85,12 @@ func (s *Session) run() {
 	for {
 		select {
 		case conn := <-s.connect:
-			uuid, name, rank, badge, banned, muted, account := getPlayerInfo(conn)
-			if banned {
-				writeErrLog(conn.Ip, "session", "player is banned")
+			uuid, name, rank, badge, accessType, account := getPlayerInfo(conn)
+			if accessType.isShadowBanned() {
+				writeErrLog(conn.Ip, "session", "player is shadowbanned, setting connection to offline")
+				conn.Online = false
+			} else if accessType.isBanned() {
+				writeErrLog(conn.Ip, "session", "player is banned, aborting connection")
 				continue
 			}
 
@@ -115,12 +124,13 @@ func (s *Session) run() {
 				send:        make(chan []byte, 256),
 				ip:          conn.Ip,
 				id:          id,
+				online:      conn.Online,
 				account:     account,
 				name:        name,
 				uuid:        uuid,
 				rank:        rank,
 				badge:       badge,
-				muted:       muted,
+				accessType:  accessType,
 				spriteName:  spriteName,
 				spriteIndex: spriteIndex,
 				systemName:  systemName,

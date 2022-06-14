@@ -45,6 +45,7 @@ type ConnInfo struct {
 	Connect *websocket.Conn
 	Ip      string
 	Token   string
+	Online  bool
 }
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -104,9 +105,13 @@ func (h *Hub) run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			uuid, _, _, _, _, banned, _ := getPlayerInfo(conn)
-			if banned {
+			uuid, _, _, _, accessType, _ := getPlayerInfo(conn)
+			if accessType.isBanned() {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player is banned")
+				continue
+			}
+			if accessType.isShadowBanned() {
+				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player is shadowbanned")
 				continue
 			}
 
@@ -217,7 +222,7 @@ func (h *Hub) broadcast(data []byte) {
 	}
 
 	for client := range h.clients {
-		if !client.valid {
+		if !client.valid || !client.online {
 			continue
 		}
 
@@ -372,7 +377,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 }
 
 func (h *Hub) handleValidClient(client *Client) {
-	if !h.singleplayer {
+	if !h.singleplayer && client.online {
 		//tell everyone that a new client has connected
 		h.broadcast([]byte("c" + delim + strconv.Itoa(client.id) + delim + client.session.uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) //user %id% has connected message
 

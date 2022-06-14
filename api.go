@@ -21,8 +21,8 @@ type PlayerInfo struct {
 }
 
 type SyncedPicsInfo struct {
-	PictureNames []string `json:"pictureNames"`
-	PicturePrefixes []string `json:"picturePrefixes"` 
+	PictureNames    []string `json:"pictureNames"`
+	PicturePrefixes []string `json:"picturePrefixes"`
 }
 
 var (
@@ -144,9 +144,9 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("X-Session")
 	if token == "" {
-		uuid, rank, _, _ = readPlayerData(getIp(r))
+		uuid, rank, _ = readPlayerData(getIp(r))
 	} else {
-		uuid, _, rank, _, _, _ = readPlayerDataFromToken(token)
+		uuid, _, rank, _, _ = readPlayerDataFromToken(token)
 	}
 	if rank == 0 {
 		handleError(w, r, "access denied")
@@ -161,17 +161,9 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	switch commandParam[0] {
 	case "ban":
-		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) < 1 {
-			handleError(w, r, "player not specified")
-			return
-		}
-
-		err := tryBanPlayer(uuid, playerParam[0])
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
+		fallthrough
+	case "shadowBan":
+		fallthrough
 	case "mute":
 		playerParam, ok := r.URL.Query()["player"]
 		if !ok || len(playerParam) < 1 {
@@ -179,7 +171,16 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err := tryMutePlayer(uuid, playerParam[0])
+		var err error
+		switch commandParam[0] {
+		case "base":
+			err = tryBanPlayer(uuid, playerParam[0])
+		case "shadowBan":
+			err = tryShadowBanPlayer(uuid, playerParam[0])
+		case "mute":
+			err = tryMutePlayer(uuid, playerParam[0])
+		}
+
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -286,17 +287,21 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 func handleParty(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 	var rank int
-	var banned bool
+	var accessType AccessType
 
 	token := r.Header.Get("X-Session")
 	if token == "" {
-		uuid, rank, banned, _ = readPlayerData(getIp(r))
+		uuid, rank, accessType = readPlayerData(getIp(r))
 	} else {
-		uuid, _, rank, _, banned, _ = readPlayerDataFromToken(token)
+		uuid, _, rank, _, accessType = readPlayerDataFromToken(token)
 	}
 
-	if banned {
-		handleError(w, r, "player is banned")
+	if accessType >= 2 {
+		if accessType == 3 {
+			handleError(w, r, "player is banned")
+		} else {
+			handleError(w, r, "player is shadowbanned")
+		}
 		return
 	}
 
@@ -603,17 +608,17 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 
 func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	var uuid string
-	var banned bool
+	var accessType AccessType
 
 	token := r.Header.Get("X-Session")
 	if token == "" {
 		handleError(w, r, "token not specified")
 		return
 	} else {
-		uuid, _, _, _, banned, _ = readPlayerDataFromToken(token)
+		uuid, _, _, _, accessType = readPlayerDataFromToken(token)
 	}
 
-	if banned {
+	if accessType.isBanned() {
 		handleError(w, r, "player is banned")
 		return
 	}
@@ -688,17 +693,17 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 
 func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 	var uuid string
-	var banned bool
+	var accessType AccessType
 
 	token := r.Header.Get("X-Session")
 	if token == "" {
 		handleError(w, r, "token not specified")
 		return
 	} else {
-		uuid, _, _, _, banned, _ = readPlayerDataFromToken(token)
+		uuid, _, _, _, accessType = readPlayerDataFromToken(token)
 	}
 
-	if banned {
+	if accessType.isBanned() {
 		handleError(w, r, "player is banned")
 		return
 	}
@@ -798,7 +803,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	var badge string
 	var badgeSlotRows int
 	var badgeSlotCols int
-	var banned bool
+	var accessType AccessType
 
 	commandParam, ok := r.URL.Query()["command"]
 	if !ok || len(commandParam) < 1 {
@@ -808,20 +813,20 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("X-Session")
 	if token == "" {
 		if commandParam[0] == "list" || commandParam[0] == "playerSlotList" {
-			uuid, rank, banned, _ = readPlayerData(getIp(r))
+			uuid, rank, accessType = readPlayerData(getIp(r))
 		} else {
 			handleError(w, r, "token not specified")
 			return
 		}
 	} else {
-		uuid, name, rank, badge, banned, _ = readPlayerDataFromToken(token)
+		uuid, name, rank, badge, accessType = readPlayerDataFromToken(token)
 	}
 
 	if strings.HasPrefix(commandParam[0], "slot") {
 		badgeSlotRows, badgeSlotCols = readPlayerBadgeSlotCounts(name)
 	}
 
-	if banned {
+	if accessType.isBanned() {
 		handleError(w, r, "player is banned")
 		return
 	}
@@ -1030,16 +1035,16 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 
 func handleRanking(w http.ResponseWriter, r *http.Request) {
 	var uuid string
-	var banned bool
+	var accessType AccessType
 
 	token := r.Header.Get("X-Session")
 	if token == "" {
-		uuid, _, banned, _ = readPlayerData(getIp(r))
+		uuid, _, accessType = readPlayerData(getIp(r))
 	} else {
-		uuid, _, _, _, banned, _ = readPlayerDataFromToken(token)
+		uuid, _, _, _, accessType = readPlayerDataFromToken(token)
 	}
 
-	if banned {
+	if accessType.isBanned() {
 		handleError(w, r, "player is banned")
 		return
 	}
@@ -1144,7 +1149,7 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response, err := json.Marshal(SyncedPicsInfo{
-		PictureNames: config.pictureNames,
+		PictureNames:    config.pictureNames,
 		PicturePrefixes: config.picturePrefixes,
 	})
 	if err != nil {
@@ -1153,7 +1158,7 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	syncedPicsResponse = response //cache response
-	
+
 	w.Write([]byte(syncedPicsResponse))
 }
 

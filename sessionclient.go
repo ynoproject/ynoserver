@@ -18,13 +18,15 @@ type SessionClient struct {
 
 	id int
 
+	online bool
+
 	account bool
 	name    string
 	uuid    string
 	rank    int
 	badge   string
 
-	muted bool
+	accessType AccessType
 
 	spriteName  string
 	spriteIndex int

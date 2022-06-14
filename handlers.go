@@ -372,7 +372,7 @@ func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
 }
 
 func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
-	if sender.session.muted {
+	if sender.session.accessType.isMuted() {
 		return nil
 	}
 
@@ -706,7 +706,7 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 }
 
 func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
-	if sender.muted {
+	if sender.accessType > 0 {
 		return nil
 	}
 
@@ -751,7 +751,7 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 }
 
 func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
-	if sender.muted {
+	if sender.accessType > 0 {
 		return nil
 	}
 
