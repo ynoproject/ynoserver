@@ -11,8 +11,8 @@ import (
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	//GET params user, password
-	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
-	if len(user) < 1 || len(user[0]) > 12 || !isOkString(user[0]) || len(password) < 1 {
+	ip, user, password := getIp(r), r.URL.Query()["user"], r.URL.Query()["password"]
+	if isVpn(ip) || len(user) < 1 || len(user[0]) > 12 || !isOkString(user[0]) || len(password) < 1 {
 		handleError(w, r, "bad response")
 		return
 	}
@@ -23,12 +23,6 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	if userExists == 1 {
 		handleError(w, r, "user exists")
 		return
-	}
-
-	ip := getIp(r)
-
-	if isVpn(ip) {
-		handleError(w, r, "bad response")
 	}
 
 	var uuid string
