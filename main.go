@@ -134,8 +134,6 @@ func main() {
 	initRankings()
 	initSession()
 
-	dbReady = true //workaround
-
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
 

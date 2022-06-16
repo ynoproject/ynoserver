@@ -13,7 +13,6 @@ import (
 
 var (
 	db *sql.DB
-	dbReady bool
 )
 
 func setDatabase() {
