@@ -1050,7 +1050,7 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 }
 
 func writeGameBadges() (err error) {
-	_, err = db.Exec("DELETE FROM badges WHERE game = ?", config.gameName)
+	_, err = db.Exec("DELETE FROM badges")
 	if err != nil {
 		return err
 	}
