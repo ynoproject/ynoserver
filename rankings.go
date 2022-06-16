@@ -151,7 +151,6 @@ func initRankings() {
 	}
 
 	s.Every(5).Minute().Do(func() {
-		db.Exec("LOCK TABLES rankingEntries WRITE, eventCompletions READ, playerEventLocations READ, eventPeriods READ")
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
 				// Use Yume 2kki server to update 'all' rankings
@@ -164,7 +163,6 @@ func initRankings() {
 				}
 			}
 		}
-		db.Exec("UNLOCK TABLES")
 	})
 
 	s.StartAsync()
