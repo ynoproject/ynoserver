@@ -1055,9 +1055,9 @@ func writeGameBadges() (err error) {
 		return err
 	}
 
-	if gameBadges, ok := badges[config.gameName]; ok {
-		for badgeId, badge := range gameBadges {
-			_, err = db.Exec("INSERT INTO badges (badgeId, game, bp, hidden) VALUES (?, ?, ?, ?)", badgeId, config.gameName, badge.Bp, badge.Hidden || badge.Dev)
+	for badgeGame := range badges {
+		for badgeId, badge := range badges[badgeGame] {
+			_, err = db.Exec("INSERT INTO badges (badgeId, game, bp, hidden) VALUES (?, ?, ?, ?)", badgeId, badgeGame, badge.Bp, badge.Hidden || badge.Dev)
 			if err != nil {
 				return err
 			}
