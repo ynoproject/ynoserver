@@ -13,6 +13,7 @@ import (
 
 var (
 	db *sql.DB
+	dbReady bool
 )
 
 func setDatabase() {
@@ -1428,6 +1429,10 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 }
 
 func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
+	if !dbReady { //workaround
+		return nil
+	}
+
 	var valueType string
 	switch categoryId {
 	case "eventLocationCompletion":
