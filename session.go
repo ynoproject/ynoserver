@@ -16,9 +16,6 @@ type Session struct {
 	// Registered clients.
 	clients map[*SessionClient]bool
 
-	// True if the id is in use
-	id map[int]bool
-
 	// Inbound messages from the clients.
 	processMsgCh chan *SessionMessage
 
@@ -53,7 +50,6 @@ func newSessionWs() *Session {
 		processMsgCh: make(chan *SessionMessage),
 		connect:      make(chan *ConnInfo),
 		unregister:   make(chan *SessionClient),
-		id:           make(map[int]bool),
 	}
 }
 
@@ -96,25 +92,12 @@ func (s *Session) run() {
 				continue //don't bother with handling their connection
 			}
 
-			var id int
-			for i := 1; i <= maxID; i++ {
-				if !s.id[i] {
-					id = i
-					break
-				}
-			}
-			if id == 0 {
-				writeErrLog(conn.Ip, "session", "room is full") //if this happens we die
-				continue
-			}
-
 			systemName, spriteName, spriteIndex := readPlayerGameData(uuid)
 
 			client := &SessionClient{
 				conn:        conn.Connect,
 				send:        make(chan []byte, 256),
 				ip:          conn.Ip,
-				id:          id,
 				account:     account,
 				name:        name,
 				uuid:        uuid,
@@ -128,9 +111,8 @@ func (s *Session) run() {
 			go client.writePump()
 			go client.readPump()
 
-			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge) //"your id is %id%" message
+			client.send <- []byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge) //"your id is %id%" message
 			//register client in the structures
-			s.id[id] = true
 			s.clients[client] = true
 			sessionClients[uuid] = client
 
@@ -166,7 +148,6 @@ func (s *Session) broadcast(data []byte) {
 
 func (s *Session) deleteClient(client *SessionClient) {
 	updatePlayerGameData(client) //update database
-	delete(s.id, client.id)
 	delete(s.clients, client)
 	delete(sessionClients, client.uuid)
 	close(client.send)

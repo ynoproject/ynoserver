@@ -16,8 +16,6 @@ type SessionClient struct {
 
 	ip string
 
-	id int
-
 	account bool
 	name    string
 	uuid    string
