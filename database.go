@@ -1429,10 +1429,6 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 }
 
 func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
-	if !dbReady { //workaround
-		return nil
-	}
-
 	var valueType string
 	switch categoryId {
 	case "eventLocationCompletion":
