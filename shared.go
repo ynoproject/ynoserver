@@ -1,6 +1,6 @@
 package main
 
-func getPlayerInfo(conn *ConnInfo) (uuid string, name string, rank int, badge string, banned bool, muted bool, account bool) {
+func getPlayerInfo(conn *ConnInfo) (uuid string, name string, rank int, banned bool, muted bool, account bool, badge string) {
 	if conn.Token != "" {
 		uuid, name, rank, badge, banned, muted = readPlayerDataFromToken(conn.Token)
 		if uuid != "" { //if we got a uuid back then we're logged in
@@ -16,5 +16,5 @@ func getPlayerInfo(conn *ConnInfo) (uuid string, name string, rank int, badge st
 		badge = "null"
 	}
 
-	return uuid, name, rank, badge, banned, muted, account
+	return uuid, name, rank, banned, muted, account, badge
 }

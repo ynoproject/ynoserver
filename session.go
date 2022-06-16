@@ -75,7 +75,7 @@ func (s *Session) run() {
 	for {
 		select {
 		case conn := <-s.connect:
-			uuid, name, rank, badge, banned, muted, account := getPlayerInfo(conn)
+			uuid, name, rank, banned, muted, account, badge := getPlayerInfo(conn)
 			if banned {
 				writeErrLog(conn.Ip, "session", "player is banned")
 				continue

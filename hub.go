@@ -104,7 +104,7 @@ func (h *Hub) run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			uuid, _, _, _, _, banned, _ := getPlayerInfo(conn)
+			uuid, _, _, banned, _, _, _ := getPlayerInfo(conn)
 			if banned {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player is banned")
 				continue
