@@ -1496,15 +1496,11 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		query += "SELECT ?, ?, RANK() OVER (ORDER BY MAX(ms.score) DESC), ms.uuid, MAX(ms.score), (SELECT MAX(ams.timestampCompleted) FROM playerMinigameScores ams WHERE ams.uuid = ms.uuid AND ams.minigameId = ms.minigameId AND ams.score = ms.score) FROM playerMinigameScores ms WHERE ms.minigameId = ? GROUP BY ms.uuid ORDER BY 5 DESC, 6"
 	}
 
-	db.Exec("LOCK TABLES rankingEntries WRITE, eventCompletions READ, playerEventLocations READ, eventPeriods READ")
-
 	if isFiltered {
 		_, err = db.Exec(query, categoryId, subCategoryId, subCategoryId)
 	} else {
 		_, err = db.Exec(query, categoryId, subCategoryId)
 	}
-
-	db.Exec("UNLOCK TABLES")
 
 	if err != nil {
 		return err
