@@ -1497,21 +1497,13 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 	}
 
 	if isFiltered {
-		result, err := db.Exec(query, categoryId, subCategoryId, subCategoryId)
-		if result == nil { //do something with result to silence warning
-			return nil
-		}
-		if err != nil {
-			return err
-		}
+		_, err = db.Exec(query, categoryId, subCategoryId, subCategoryId)
 	} else {
-		result, err := db.Exec(query, categoryId, subCategoryId)
-		if result == nil { //do something with result to silence warning
-			return nil
-		}
-		if err != nil {
-			return err
-		}
+		_, err = db.Exec(query, categoryId, subCategoryId)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	return nil
