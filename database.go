@@ -61,67 +61,67 @@ func readPlayerRank(uuid string) (rank int) {
 	return rank
 }
 
-func tryBanPlayer(senderUUID string, recipientUUID string) error { //called by api only
-	if readPlayerRank(senderUUID) <= readPlayerRank(recipientUUID) {
+func tryBanPlayer(senderUuid string, recipientUuid string) error { //called by api only
+	if readPlayerRank(senderUuid) <= readPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
 
-	if senderUUID == recipientUUID {
+	if senderUuid == recipientUuid {
 		return errors.New("attempted self-ban")
 	}
 
-	_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUUID)
+	_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUuid)
 	if err != nil {
 		return err
 	}
 
-	if client, ok := hubClients[recipientUUID]; ok { //unregister client and close connection
+	if client, ok := hubClients[recipientUuid]; ok { //unregister client and close connection
 		client.hub.unregister <- client
 	}
 
-	if client, ok := sessionClients[recipientUUID]; ok { //do the same for session
+	if client, ok := sessionClients[recipientUuid]; ok { //do the same for session
 		session.unregister <- client
 	}
 
 	return nil
 }
 
-func tryMutePlayer(senderUUID string, recipientUUID string) error { //called by api only
-	if readPlayerRank(senderUUID) <= readPlayerRank(recipientUUID) {
+func tryMutePlayer(senderUuid string, recipientUuid string) error { //called by api only
+	if readPlayerRank(senderUuid) <= readPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
 
-	if senderUUID == recipientUUID {
+	if senderUuid == recipientUuid {
 		return errors.New("attempted self-mute")
 	}
 
-	_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUUID)
+	_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUuid)
 	if err != nil {
 		return err
 	}
 
-	if client, ok := sessionClients[recipientUUID]; ok { //mute client if they're connected
+	if client, ok := sessionClients[recipientUuid]; ok { //mute client if they're connected
 		client.muted = true
 	}
 
 	return nil
 }
 
-func tryUnmutePlayer(senderUUID string, recipientUUID string) error { //called by api only
-	if readPlayerRank(senderUUID) <= readPlayerRank(recipientUUID) {
+func tryUnmutePlayer(senderUuid string, recipientUuid string) error { //called by api only
+	if readPlayerRank(senderUuid) <= readPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
 
-	if senderUUID == recipientUUID {
+	if senderUuid == recipientUuid {
 		return errors.New("attempted self-unmute")
 	}
 
-	_, err := db.Exec("UPDATE players SET muted = 0 WHERE uuid = ?", recipientUUID)
+	_, err := db.Exec("UPDATE players SET muted = 0 WHERE uuid = ?", recipientUuid)
 	if err != nil {
 		return err
 	}
 
-	if client, ok := sessionClients[recipientUUID]; ok { //unmute client if they're connected
+	if client, ok := sessionClients[recipientUuid]; ok { //unmute client if they're connected
 		client.muted = false
 	}
 
