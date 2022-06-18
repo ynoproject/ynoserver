@@ -977,22 +977,23 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			}
 
 			for _, mapId := range mapIds {
-				if clientMapId == mapId {
-					if weekEventExp >= 40 {
-						eventExp = 0
-					} else if weekEventExp+eventExp > 40 {
-						eventExp = 40 - weekEventExp
-					}
+				if clientMapId != mapId {
+					continue
+				}
+				if weekEventExp >= 40 {
+					eventExp = 0
+				} else if weekEventExp+eventExp > 40 {
+					eventExp = 40 - weekEventExp
+				}
 
-					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 0, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
-					if err != nil {
-						break
-					}
-
-					exp += eventExp
-					weekEventExp += eventExp
+				_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 0, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
+				if err != nil {
 					break
 				}
+
+				exp += eventExp
+				weekEventExp += eventExp
+				break
 			}
 		}
 
@@ -1031,15 +1032,16 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 			}
 
 			for _, mapId := range mapIds {
-				if clientMapId == mapId {
-					_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 1, ?, 0)", eventId, playerUuid, time.Now())
-					if err != nil {
-						break
-					}
-
-					success = true
+				if clientMapId != mapId {
+					continue
+				}
+				_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 1, ?, 0)", eventId, playerUuid, time.Now())
+				if err != nil {
 					break
 				}
+
+				success = true
+				break
 			}
 		}
 
