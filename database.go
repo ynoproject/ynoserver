@@ -216,6 +216,8 @@ func readPlayerBadgeSlots(playerName string, badgeSlotRows int, badgeSlotCols in
 		return badgeSlots, err
 	}
 
+	defer results.Close()
+
 	var badgeId string
 	var badgeRow int
 	var badgeCol int
@@ -253,8 +255,6 @@ func readPlayerBadgeSlots(playerName string, badgeSlotRows int, badgeSlotCols in
 		}
 		badgeSlots = append(badgeSlots, badgeSlotRow)
 	}
-
-	results.Close()
 
 	return badgeSlots, nil
 }
@@ -322,6 +322,8 @@ func readAllPartyData(simple bool) (parties []*Party, err error) { //called by a
 		return parties, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		party := &Party{}
 		err := results.Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
@@ -346,8 +348,6 @@ func readAllPartyData(simple bool) (parties []*Party, err error) { //called by a
 		}
 	}
 
-	results.Close()
-
 	return parties, nil
 }
 
@@ -358,6 +358,8 @@ func readAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*
 	if err != nil {
 		return partyMembersByParty, err
 	}
+
+	defer results.Close()
 
 	var offlinePartyMembersByParty map[int][]*PartyMember = make(map[int][]*PartyMember)
 
@@ -405,8 +407,6 @@ func readAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*
 		}
 	}
 
-	results.Close()
-
 	for partyId, offlinePartyMembers := range offlinePartyMembersByParty {
 		partyMembersByParty[partyId] = append(partyMembersByParty[partyId], offlinePartyMembers...)
 	}
@@ -437,6 +437,8 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 	if err != nil {
 		return partyMembers, err
 	}
+
+	defer results.Close()
 
 	for results.Next() {
 		var partyId int
@@ -477,8 +479,6 @@ func readPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 		}
 		partyMembers = append(partyMembers, partyMember)
 	}
-
-	results.Close()
 
 	return partyMembers, nil
 }
@@ -561,6 +561,8 @@ func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
 		return partyMemberUuids, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		var uuid string
 		err := results.Scan(&uuid)
@@ -569,8 +571,6 @@ func readPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
 		}
 		partyMemberUuids = append(partyMemberUuids, uuid)
 	}
-
-	results.Close()
 
 	return partyMemberUuids, nil
 }
@@ -725,6 +725,8 @@ func readEventPeriodData() (eventPeriods []*EventPeriod, err error) {
 		return eventPeriods, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		eventPeriod := &EventPeriod{}
 
@@ -735,8 +737,6 @@ func readEventPeriodData() (eventPeriods []*EventPeriod, err error) {
 
 		eventPeriods = append(eventPeriods, eventPeriod)
 	}
-
-	results.Close()
 
 	return eventPeriods, nil
 }
@@ -952,6 +952,8 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			return -1, err
 		}
 
+		defer results.Close()
+
 		weekEventExp, err := readPlayerWeekEventExp(periodId, playerUuid)
 		if err != nil {
 			return -1, err
@@ -994,8 +996,6 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			}
 		}
 
-		results.Close()
-
 		return exp, nil
 	}
 
@@ -1010,6 +1010,8 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 		if err != nil {
 			return false, err
 		}
+
+		defer results.Close()
 
 		var success bool
 
@@ -1041,8 +1043,6 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 			}
 		}
 
-		results.Close()
-
 		return success, nil
 	}
 
@@ -1073,6 +1073,8 @@ func readPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, e
 		return unlockedBadgeIds, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		var badgeId string
 		err := results.Scan(&badgeId)
@@ -1081,8 +1083,6 @@ func readPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, e
 		}
 		unlockedBadgeIds = append(unlockedBadgeIds, badgeId)
 	}
-
-	results.Close()
 
 	return unlockedBadgeIds, nil
 }
@@ -1124,6 +1124,8 @@ func readBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, er
 		return unlockPercentages, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		percentUnlocked := &BadgePercentUnlocked{}
 
@@ -1135,8 +1137,6 @@ func readBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, er
 		unlockPercentages = append(unlockPercentages, percentUnlocked)
 	}
 
-	results.Close()
-
 	return unlockPercentages, nil
 }
 
@@ -1146,6 +1146,8 @@ func readPlayerTags(playerUuid string) (tags []string, err error) {
 		return tags, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		var tagName string
 		err := results.Scan(&tagName)
@@ -1154,8 +1156,6 @@ func readPlayerTags(playerUuid string) (tags []string, err error) {
 		}
 		tags = append(tags, tagName)
 	}
-
-	results.Close()
 
 	return tags, nil
 }
@@ -1189,6 +1189,8 @@ func readTimeTrialMapIds() (mapIds []int, err error) {
 		return mapIds, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		var mapId int
 		err := results.Scan(&mapId)
@@ -1199,8 +1201,6 @@ func readTimeTrialMapIds() (mapIds []int, err error) {
 		mapIds = append(mapIds, mapId)
 	}
 
-	results.Close()
-
 	return mapIds, nil
 }
 
@@ -1209,6 +1209,8 @@ func readPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTria
 	if err != nil {
 		return timeTrialRecords, err
 	}
+
+	defer results.Close()
 
 	for results.Next() {
 		timeTrialRecord := &TimeTrialRecord{}
@@ -1220,8 +1222,6 @@ func readPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTria
 
 		timeTrialRecords = append(timeTrialRecords, timeTrialRecord)
 	}
-
-	results.Close()
 
 	return timeTrialRecords, nil
 }
@@ -1257,6 +1257,8 @@ func readGameMinigameIds() (minigameIds []string, err error) {
 		return minigameIds, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		var minigameId string
 		err := results.Scan(&minigameId)
@@ -1266,8 +1268,6 @@ func readGameMinigameIds() (minigameIds []string, err error) {
 
 		minigameIds = append(minigameIds, minigameId)
 	}
-
-	results.Close()
 
 	return minigameIds, nil
 }
@@ -1407,6 +1407,8 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 		return rankings, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		ranking := &Ranking{}
 
@@ -1421,8 +1423,6 @@ func readRankingsPaged(categoryId string, subCategoryId string, page int) (ranki
 
 		rankings = append(rankings, ranking)
 	}
-
-	results.Close()
 
 	return rankings, nil
 }
