@@ -986,6 +986,9 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 					eventExp = 40 - weekEventExp
 				}
 
+				for updatingRankings {
+					time.Sleep(100 * time.Millisecond) //wait until rankings are updated
+				}
 				_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 0, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
 				if err != nil {
 					break

@@ -7,6 +7,10 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
+var (
+	updatingRankings bool
+)
+
 type RankingCategory struct {
 	CategoryId    string               `json:"categoryId"`
 	Game          string               `json:"game"`
@@ -151,6 +155,7 @@ func initRankings() {
 	}
 
 	s.Every(30).Minute().Do(func() {
+		updatingRankings = true
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
 				// Use Yume 2kki server to update 'all' rankings
@@ -163,6 +168,7 @@ func initRankings() {
 				}
 			}
 		}
+		updatingRankings = false
 	})
 
 	s.StartAsync()
