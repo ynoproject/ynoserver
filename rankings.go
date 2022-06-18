@@ -150,7 +150,7 @@ func initRankings() {
 		}
 	}
 
-	s.Every(5).Minute().Do(func() {
+	s.Every(30).Minute().Do(func() {
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
 				// Use Yume 2kki server to update 'all' rankings
