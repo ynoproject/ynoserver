@@ -46,7 +46,7 @@ func main() {
 	var spriteNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
 		if k != "_dirname" {
-			spriteNames = append(spriteNames, v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))]) //add filename without extension
+			spriteNames = append(spriteNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
 	}
 
@@ -54,7 +54,7 @@ func main() {
 	var soundNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
 		if k != "_dirname" {
-			soundNames = append(soundNames, v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))]) //add filename without extension
+			soundNames = append(soundNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
 	}
 
@@ -62,7 +62,7 @@ func main() {
 	var systemNames []string
 	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
 		if k != "_dirname" {
-			systemNames = append(systemNames, v.(string)[:len(v.(string)) - len(filepath.Ext(v.(string)))]) //add filename without extension
+			systemNames = append(systemNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
 	}
 
@@ -117,6 +117,7 @@ func main() {
 	setDatabase()
 	setConditions()
 	setBadges()
+	setEventVms()
 
 	createAllHubs(mapIds, atoiArray(strings.Split(configFileData.SpRooms, ",")))
 
@@ -225,7 +226,7 @@ func getIp(r *http.Request) string { //this breaks if you're using a revproxy th
 }
 
 type IpHubResponse struct {
-	Block       int    `json:"block"`
+	Block int `json:"block"`
 }
 
 func isVpn(ip string) (vpn bool) {

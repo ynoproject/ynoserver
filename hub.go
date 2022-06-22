@@ -39,6 +39,8 @@ var (
 	conditions     map[string]map[string]*Condition
 	badges         map[string]map[string]*Badge
 	sortedBadgeIds map[string][]string
+
+	eventVms map[string][]string
 )
 
 type ConnInfo struct {

@@ -921,28 +921,6 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 	return eventLocations, nil
 }
 
-/*func readNewEventLocationsData(periodId int) (eventLocations []*EventLocation, err error) {
-	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.exp, el.endDate FROM eventLocations el WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", periodId)
-	if err != nil {
-		return eventLocations, err
-	}
-
-	for results.Next() {
-		eventLocation := &EventLocation{}
-
-		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.Exp, &eventLocation.EndDate)
-		if err != nil {
-			return eventLocations, err
-		}
-
-		eventLocations = append(eventLocations, eventLocation)
-	}
-
-	results.Close()
-
-	return eventLocations, nil
-}*/
-
 func tryCompleteEventLocation(periodId int, playerUuid string, location string) (exp int, err error) {
 	if client, ok := hubClients[playerUuid]; ok {
 		clientMapId := client.mapId
@@ -980,10 +958,10 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 				if clientMapId != mapId {
 					continue
 				}
-				if weekEventExp >= 40 {
+				if weekEventExp >= weeklyExpCap {
 					eventExp = 0
-				} else if weekEventExp+eventExp > 40 {
-					eventExp = 40 - weekEventExp
+				} else if weekEventExp+eventExp > weeklyExpCap {
+					eventExp = weeklyExpCap - weekEventExp
 				}
 
 				for updatingRankings {
@@ -1052,6 +1030,78 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 	}
 
 	return false, err
+}
+
+func readCurrentPlayerEventVmsData(periodId int, playerUuid string) (eventVms []*EventVm, err error) {
+	results, err := db.Query("SELECT ev.id, ev.exp, ev.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventVms ev LEFT JOIN eventCompletions ec ON ec.eventId = ev.id AND ec.type = 2 AND ec.uuid = ? WHERE ev.periodId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2, 1", playerUuid, periodId)
+	if err != nil {
+		return eventVms, err
+	}
+
+	for results.Next() {
+		eventVm := &EventVm{}
+
+		var completeBin int
+
+		err := results.Scan(&eventVm.Id, &eventVm.Exp, &eventVm.EndDate, &completeBin)
+		if err != nil {
+			return eventVms, err
+		}
+
+		if completeBin == 1 {
+			eventVm.Complete = true
+		}
+
+		eventVms = append(eventVms, eventVm)
+	}
+
+	results.Close()
+
+	return eventVms, nil
+}
+
+func readEventVmInfo(id int) (mapId string, eventId string, err error) {
+	err = db.QueryRow("SELECT mapId, eventId FROM eventVms WHERE id = ?", id).Scan(&mapId, &eventId)
+	if err != nil {
+		return "", "", err
+	}
+
+	return mapId, eventId, nil
+}
+
+func writeEventVmData(periodId int, mapId string, eventId string, exp int) (err error) {
+	var days int
+	var offsetDays int
+	weekday := time.Now().UTC().Weekday()
+
+	switch weekday {
+	case time.Sunday:
+		fallthrough
+	case time.Monday:
+		days = 2
+		offsetDays = int(weekday)
+	case time.Tuesday:
+		fallthrough
+	case time.Wednesday:
+		fallthrough
+	case time.Thursday:
+		days = 3
+		offsetDays = int(weekday) - int(time.Tuesday)
+	case time.Friday:
+		fallthrough
+	case time.Saturday:
+		days = 2
+		offsetDays = int(weekday) - int(time.Friday)
+	}
+
+	days -= offsetDays
+
+	_, err = db.Exec("INSERT INTO eventVms (periodId, mapId, eventId, exp, startDate, endDate) VALUES (?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY))", periodId, mapId, eventId, exp, offsetDays, days)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func writeGameBadges() (err error) {

@@ -21,8 +21,8 @@ type PlayerInfo struct {
 }
 
 type SyncedPicsInfo struct {
-	PictureNames []string `json:"pictureNames"`
-	PicturePrefixes []string `json:"picturePrefixes"` 
+	PictureNames    []string `json:"pictureNames"`
+	PicturePrefixes []string `json:"picturePrefixes"`
 }
 
 var (
@@ -33,7 +33,7 @@ func initApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/saveSync", handleSaveSync)
-	http.HandleFunc("/api/eventLocations", handleEventLocations)
+	http.HandleFunc("/api/events", handleEvents)
 	http.HandleFunc("/api/badge", handleBadge)
 	http.HandleFunc("/api/ranking", handleRanking)
 	http.HandleFunc("/api/syncedPics", handleSyncedPics)
@@ -686,7 +686,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func handleEventLocations(w http.ResponseWriter, r *http.Request) {
+func handleEvents(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 	var banned bool
 
@@ -779,13 +779,41 @@ func handleEventLocations(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			if !hasIncompleteEvent && config.gameName == "2kki" {
-				add2kkiEventLocationsWithExp(-1, 1, 0, uuid)
+				addPlayer2kkiEventLocation(-1, 2, 0, 0, uuid)
 			}
 		} else {
 			handleError(w, r, "unexpected state")
 			return
 		}
 		w.Write([]byte(strconv.Itoa(ret)))
+	case "vm":
+		idParam, ok := r.URL.Query()["id"]
+		if !ok || len(idParam) < 1 {
+			handleError(w, r, "id not specified")
+			return
+		}
+
+		eventVmId, err := strconv.Atoi(idParam[0])
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		mapId, eventId, err := readEventVmInfo(eventVmId)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		fileBytes, err := ioutil.ReadFile("vms/Map" + mapId + "_EV" + eventId + ".png")
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Write(fileBytes)
 	default:
 		handleError(w, r, "unknown command")
 	}
@@ -1144,7 +1172,7 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response, err := json.Marshal(SyncedPicsInfo{
-		PictureNames: config.pictureNames,
+		PictureNames:    config.pictureNames,
 		PicturePrefixes: config.picturePrefixes,
 	})
 	if err != nil {
@@ -1153,7 +1181,7 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	syncedPicsResponse = response //cache response
-	
+
 	w.Write([]byte(syncedPicsResponse))
 }
 
