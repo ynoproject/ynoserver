@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -1060,16 +1061,16 @@ func readCurrentPlayerEventVmsData(periodId int, playerUuid string) (eventVms []
 	return eventVms, nil
 }
 
-func readEventVmInfo(id int) (mapId string, eventId string, err error) {
+func readEventVmInfo(id int) (mapId int, eventId int, err error) {
 	err = db.QueryRow("SELECT mapId, eventId FROM eventVms WHERE id = ?", id).Scan(&mapId, &eventId)
 	if err != nil {
-		return "", "", err
+		return 0, 0, err
 	}
 
 	return mapId, eventId, nil
 }
 
-func writeEventVmData(periodId int, mapId string, eventId string, exp int) (err error) {
+func writeEventVmData(periodId int, mapId int, eventId int, exp int) (err error) {
 	var days int
 	var offsetDays int
 	weekday := time.Now().UTC().Weekday()
@@ -1102,6 +1103,60 @@ func writeEventVmData(periodId int, mapId string, eventId string, exp int) (err 
 	}
 
 	return nil
+}
+
+func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int) (exp int, err error) {
+	if client, ok := hubClients[playerUuid]; ok {
+		clientMapId := client.mapId
+
+		results, err := db.Query("SELECT ev.id, ev.exp FROM eventVms ev WHERE ev.periodId = ? AND ev.mapId = ? AND ev.eventId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", periodId, mapId, eventId)
+		if err != nil {
+			return -1, err
+		}
+
+		defer results.Close()
+
+		weekEventExp, err := readPlayerWeekEventExp(periodId, playerUuid)
+		if err != nil {
+			return -1, err
+		}
+
+		for results.Next() {
+			var eventId int
+			var eventMapId int
+			var eventEvId int
+			var eventExp int
+
+			err := results.Scan(&eventId, &eventMapId, &eventEvId, &eventExp)
+			if err != nil {
+				return exp, err
+			}
+
+			if clientMapId != fmt.Sprintf("%04d", eventMapId) {
+				continue
+			}
+			if weekEventExp >= weeklyExpCap {
+				eventExp = 0
+			} else if weekEventExp+eventExp > weeklyExpCap {
+				eventExp = weeklyExpCap - weekEventExp
+			}
+
+			for updatingRankings {
+				time.Sleep(100 * time.Millisecond) //wait until rankings are updated
+			}
+			_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 2, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
+			if err != nil {
+				break
+			}
+
+			exp += eventExp
+			weekEventExp += eventExp
+		}
+
+		return exp, nil
+	}
+
+	return -1, err
 }
 
 func writeGameBadges() (err error) {

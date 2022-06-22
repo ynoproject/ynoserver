@@ -334,6 +334,31 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 						writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
 						continue
 					}
+
+					valueInt, err := strconv.Atoi(value)
+					if err != nil {
+						writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
+						continue
+					}
+
+					if h.roomId == currentEventVmMapId {
+						if eventIds, hasVms := eventVms[h.roomId]; hasVms {
+							var skipEvSync bool
+							for _, eventId := range eventIds {
+								if eventId != currentEventVmEventId {
+									continue
+								}
+								if valueInt == eventId {
+									skipEvSync = true
+									break
+								}
+							}
+							if skipEvSync {
+								continue
+							}
+						}
+					}
+
 					var eventTriggerType int
 					if c.Trigger == "eventAction" {
 						eventTriggerType = 1

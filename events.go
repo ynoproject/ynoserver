@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"math/rand"
@@ -76,8 +77,10 @@ const (
 )
 
 var (
-	currentEventPeriodId int = -1
-	eventsCount          int
+	currentEventPeriodId  int = -1
+	currentEventVmMapId   int
+	currentEventVmEventId int
+	eventsCount           int
 )
 
 func initEvents() {
@@ -135,9 +138,9 @@ func initEvents() {
 				lastVmWeekday = time.Friday
 			}
 
-			db.QueryRow("SELECT COUNT(ev.id) FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(lastVmWeekday)).Scan(&count)
+			err = db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
 
-			if count < 1 {
+			if err == sql.ErrNoRows {
 				add2kkiEventVm()
 			}
 		}
@@ -257,7 +260,7 @@ func add2kkiEventVm() {
 		return
 	}
 
-	mapIds := make([]string, 0, len(eventVms))
+	mapIds := make([]int, 0, len(eventVms))
 	for k := range eventVms {
 		mapIds = append(mapIds, k)
 	}
@@ -266,7 +269,10 @@ func add2kkiEventVm() {
 	eventId := eventVms[mapId][rand.Intn(len(eventVms[mapId]))]
 
 	err = writeEventVmData(periodId, mapId, eventId, eventVmExp)
-	if err != nil {
+	if err == nil {
+		currentEventVmMapId = mapId
+		currentEventVmEventId = eventId
+	} else {
 		writeErrLog("SERVER", "VM", err.Error())
 	}
 }
@@ -280,7 +286,11 @@ func handleEventError(eventType int, payload string) {
 }
 
 func setEventVms() {
-	eventVmConfig := make(map[string][]string)
+	eventVms := make(map[int][]int)
+
+	if config.gameName != "2kki" {
+		return
+	}
 
 	vmsDir, err := ioutil.ReadDir("vms/")
 	if err != nil {
@@ -291,8 +301,16 @@ func setEventVms() {
 		mapId := vmFile.Name()[3:7]
 		eventId := vmFile.Name()[10:14]
 
-		eventVmConfig[mapId] = append(eventVmConfig[mapId], eventId)
-	}
+		mapIdInt, err := strconv.Atoi(mapId)
+		if err != nil {
+			return
+		}
 
-	eventVms = eventVmConfig
+		eventIdInt, err := strconv.Atoi(eventId)
+		if err != nil {
+			return
+		}
+
+		eventVms[mapIdInt] = append(eventVms[mapIdInt], eventIdInt)
+	}
 }

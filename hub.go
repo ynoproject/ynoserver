@@ -40,7 +40,7 @@ var (
 	badges         map[string]map[string]*Badge
 	sortedBadgeIds map[string][]string
 
-	eventVms map[string][]string
+	eventVms map[int][]int
 )
 
 type ConnInfo struct {
@@ -441,5 +441,16 @@ func (h *Hub) handleValidClient(client *Client) {
 			varSyncType = 2
 		}
 		client.send <- []byte("sv" + delim + strconv.Itoa(minigame.VarId) + delim + strconv.Itoa(varSyncType))
+	}
+
+	if h.roomId == currentEventVmMapId {
+		if eventIds, hasVms := eventVms[h.roomId]; hasVms {
+			for eventId := range eventIds {
+				if eventId != currentEventVmEventId {
+					continue
+				}
+				client.send <- []byte("sev" + delim + strconv.Itoa(eventId) + delim + "1")
+			}
+		}
 	}
 }

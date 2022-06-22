@@ -648,6 +648,17 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 	}
 	checkHubConditions(h, sender, triggerType, msg[1])
 
+	if sender.hub.roomId == currentEventVmMapId {
+		eventIdInt, err := strconv.Atoi(msg[1])
+		if err != nil {
+			return err
+		}
+
+		if currentEventVmEventId == eventIdInt {
+			tryCompleteEventVm(currentEventPeriodId, sender.session.uuid, currentEventVmMapId, currentEventVmEventId)
+		}
+	}
+
 	return nil
 }
 

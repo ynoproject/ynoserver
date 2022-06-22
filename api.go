@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -805,7 +806,7 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fileBytes, err := ioutil.ReadFile("vms/Map" + mapId + "_EV" + eventId + ".png")
+		fileBytes, err := ioutil.ReadFile("vms/Map" + fmt.Sprintf("%04d", mapId) + "_EV" + fmt.Sprintf("%04d", eventId) + ".png")
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
