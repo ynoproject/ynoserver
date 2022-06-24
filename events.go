@@ -89,6 +89,46 @@ func initEvents() {
 
 		db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&eventsCount)
 
+		s.Every(1).Day().At("00:00").Do(func() {
+			add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
+			add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
+			eventsCount += 2
+			sendEventsUpdate()
+		})
+
+		s.Every(1).Sunday().At("00:00").Do(func() {
+			add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
+			add2kkiEventVm()
+			eventsCount += 2
+			sendEventsUpdate()
+		})
+
+		s.Every(1).Tuesday().At("00:00").Do(func() {
+			add2kkiEventVm()
+			eventsCount++
+			sendEventsUpdate()
+		})
+
+		s.Every(1).Friday().At("00:00").Do(func() {
+			add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
+			add2kkiEventVm()
+			eventsCount += 2
+			sendEventsUpdate()
+		})
+
+		s.Every(5).Minutes().Do(func() {
+			var newEventLocationsCount int
+			db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&newEventLocationsCount)
+			if newEventLocationsCount != eventsCount {
+				eventsCount = newEventLocationsCount
+				sendEventsUpdate()
+			}
+		})
+
+		s.StartAsync()
+
+		time.Sleep(10000 * time.Millisecond)
+
 		periodId, err := readCurrentEventPeriodId()
 		if err == nil {
 			var count int
@@ -144,44 +184,6 @@ func initEvents() {
 				add2kkiEventVm()
 			}
 		}
-
-		s.Every(1).Day().At("00:00").Do(func() {
-			add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
-			add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
-			eventsCount += 2
-			sendEventsUpdate()
-		})
-
-		s.Every(1).Sunday().At("00:00").Do(func() {
-			add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
-			add2kkiEventVm()
-			eventsCount += 2
-			sendEventsUpdate()
-		})
-
-		s.Every(1).Tuesday().At("00:00").Do(func() {
-			add2kkiEventVm()
-			eventsCount++
-			sendEventsUpdate()
-		})
-
-		s.Every(1).Friday().At("00:00").Do(func() {
-			add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
-			add2kkiEventVm()
-			eventsCount += 2
-			sendEventsUpdate()
-		})
-
-		s.Every(5).Minutes().Do(func() {
-			var newEventLocationsCount int
-			db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&newEventLocationsCount)
-			if newEventLocationsCount != eventsCount {
-				eventsCount = newEventLocationsCount
-				sendEventsUpdate()
-			}
-		})
-
-		s.StartAsync()
 	}
 }
 
@@ -264,6 +266,10 @@ func add2kkiEventVm() {
 	for k := range eventVms {
 		mapIds = append(mapIds, k)
 	}
+	if len(mapIds) == 0 {
+		return
+	}
+
 	rand.Seed(time.Now().Unix())
 	mapId := mapIds[rand.Intn(len(mapIds))]
 	eventId := eventVms[mapId][rand.Intn(len(eventVms[mapId]))]
