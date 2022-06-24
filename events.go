@@ -127,8 +127,6 @@ func initEvents() {
 
 		s.StartAsync()
 
-		time.Sleep(10000 * time.Millisecond)
-
 		periodId, err := readCurrentEventPeriodId()
 		if err == nil {
 			var count int
@@ -292,7 +290,7 @@ func handleEventError(eventType int, payload string) {
 }
 
 func setEventVms() {
-	eventVms := make(map[int][]int)
+	eventVms = make(map[int][]int)
 
 	if config.gameName != "2kki" {
 		return
