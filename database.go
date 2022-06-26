@@ -8,6 +8,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/klauspost/compress/zstd"
 	"github.com/thanhpk/randstr"
 )
 
@@ -673,17 +674,28 @@ func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) {
 	return timestamp, nil
 }
 
-func readSaveData(playerUuid string) (saveData string, err error) { //called by api only
-	err = db.QueryRow("SELECT data FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName).Scan(&saveData)
+func readSaveData(playerUuid string) (saveData []byte, err error) { //called by api only
+	var data string
+
+	err = db.QueryRow("SELECT data FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName).Scan(&data)
 	if err != nil {
-		return saveData, err
+		return nil, err
+	}
+
+	decoder, _ := zstd.NewReader(nil, zstd.WithDecoderConcurrency(0))
+	saveData, err = decoder.DecodeAll([]byte(data), nil)
+	if err != nil {
+		return nil, err
 	}
 
 	return saveData, nil
 }
 
-func createGameSaveData(playerUuid string, timestamp time.Time, data string) (err error) { //called by api only
-	_, err = db.Exec("INSERT INTO gameSaves (uuid, game, timestamp, data) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, timestamp, data, timestamp, data)
+func createGameSaveData(playerUuid string, timestamp time.Time, data []byte) (err error) { //called by api only
+	encoder, _ := zstd.NewWriter(nil)
+	saveData := string(encoder.EncodeAll(data, nil))
+
+	_, err = db.Exec("INSERT INTO gameSaves (uuid, game, timestamp, data) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, timestamp, saveData, timestamp, saveData)
 	if err != nil {
 		return err
 	}
