@@ -30,6 +30,9 @@ var (
 )
 
 func initApi() {
+	http.HandleFunc("/api/players", handlePlayers)
+	http.HandleFunc("/api/info", handleInfo)
+	
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/saveSync", handleSaveSync)
@@ -43,99 +46,41 @@ func initApi() {
 	http.HandleFunc("/api/logout", handleLogout)
 	http.HandleFunc("/api/changepw", handleChangePw)
 
-	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
-		if config.gameName != "2kki" {
-			handleError(w, r, "endpoint not supported")
-			return
-		}
+	http.HandleFunc("/api/2kki", handle2kki)
+}
 
-		actionParam, ok := r.URL.Query()["action"]
-		if !ok || len(actionParam) < 1 {
-			handleError(w, r, "action not specified")
-			return
-		}
+func handlePlayers(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(strconv.Itoa(len(sessionClients))))
+}
 
-		query := r.URL.Query()
-		query.Del("action")
+func handleInfo(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+	var name string
+	var rank int
+	var badge string
+	var badgeSlotRows int
+	var badgeSlotCols int
 
-		queryString := query.Encode()
-
-		var response string
-
-		err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString).Scan(&response)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				url := "https://2kki.app/" + actionParam[0]
-				if len(queryString) > 0 {
-					url += "?" + queryString
-				}
-
-				resp, err := http.Get(url)
-				if err != nil {
-					handleInternalError(w, r, err)
-					return
-				}
-
-				defer resp.Body.Close()
-
-				body, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					handleInternalError(w, r, err)
-					return
-				}
-
-				if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
-					writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
-				} else {
-					_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)", actionParam[0], queryString, string(body), string(body))
-					if err != nil {
-						writeErrLog(getIp(r), r.URL.Path, err.Error())
-					}
-				}
-
-				w.Write(body)
-				return
-			} else {
-				handleInternalError(w, r, err)
-				return
-			}
-		}
-
-		w.Write([]byte(response))
-	})
-
-	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) { //deprecated
-		var uuid string
-		var name string
-		var rank int
-		var badge string
-		var badgeSlotRows int
-		var badgeSlotCols int
-
-		token := r.Header.Get("X-Session")
-		if token == "" {
-			uuid, name, rank = readPlayerInfo(getIp(r))
-		} else {
-			uuid, name, rank, badge, badgeSlotRows, badgeSlotCols = readPlayerInfoFromToken(token)
-		}
-		playerInfo := PlayerInfo{
-			Uuid:          uuid,
-			Name:          name,
-			Rank:          rank,
-			Badge:         badge,
-			BadgeSlotRows: badgeSlotRows,
-			BadgeSlotCols: badgeSlotCols,
-		}
-		playerInfoJson, err := json.Marshal(playerInfo)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write([]byte(playerInfoJson))
-	})
-	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(strconv.Itoa(len(sessionClients))))
-	})
+	token := r.Header.Get("X-Session")
+	if token == "" {
+		uuid, name, rank = readPlayerInfo(getIp(r))
+	} else {
+		uuid, name, rank, badge, badgeSlotRows, badgeSlotCols = readPlayerInfoFromToken(token)
+	}
+	playerInfo := PlayerInfo{
+		Uuid:          uuid,
+		Name:          name,
+		Rank:          rank,
+		Badge:         badge,
+		BadgeSlotRows: badgeSlotRows,
+		BadgeSlotCols: badgeSlotCols,
+	}
+	playerInfoJson, err := json.Marshal(playerInfo)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+	w.Write([]byte(playerInfoJson))
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
@@ -1155,6 +1100,67 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 	syncedPicsResponse = response //cache response
 	
 	w.Write([]byte(syncedPicsResponse))
+}
+
+func handle2kki(w http.ResponseWriter, r *http.Request) {
+	if config.gameName != "2kki" {
+		handleError(w, r, "endpoint not supported")
+		return
+	}
+
+	actionParam, ok := r.URL.Query()["action"]
+	if !ok || len(actionParam) < 1 {
+		handleError(w, r, "action not specified")
+		return
+	}
+
+	query := r.URL.Query()
+	query.Del("action")
+
+	queryString := query.Encode()
+
+	var response string
+
+	err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString).Scan(&response)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			url := "https://2kki.app/" + actionParam[0]
+			if len(queryString) > 0 {
+				url += "?" + queryString
+			}
+
+			resp, err := http.Get(url)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			defer resp.Body.Close()
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
+				writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
+			} else {
+				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)", actionParam[0], queryString, string(body), string(body))
+				if err != nil {
+					writeErrLog(getIp(r), r.URL.Path, err.Error())
+				}
+			}
+
+			w.Write(body)
+			return
+		} else {
+			handleInternalError(w, r, err)
+			return
+		}
+	}
+
+	w.Write([]byte(response))
 }
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {
