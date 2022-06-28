@@ -14,16 +14,6 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func contains(s []int, num int) bool {
-	for _, v := range s {
-		if v == num {
-			return true
-		}
-	}
-
-	return false
-}
-
 func main() {
 	config_file := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
@@ -135,6 +125,16 @@ func main() {
 	initSession()
 
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
+}
+
+func contains(s []int, num int) bool {
+	for _, v := range s {
+		if v == num {
+			return true
+		}
+	}
+
+	return false
 }
 
 func writeLog(ip string, location string, payload string, errorcode int) {
