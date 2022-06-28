@@ -1109,7 +1109,7 @@ func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int)
 	if client, ok := hubClients[playerUuid]; ok {
 		clientMapId := client.mapId
 
-		results, err := db.Query("SELECT ev.id, ev.exp FROM eventVms ev WHERE ev.periodId = ? AND ev.mapId = ? AND ev.eventId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", periodId, mapId, eventId)
+		results, err := db.Query("SELECT ev.id, ev.mapId, ev.eventId, ev.exp FROM eventVms ev WHERE ev.periodId = ? AND ev.mapId = ? AND ev.eventId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", periodId, mapId, eventId)
 		if err != nil {
 			return -1, err
 		}
