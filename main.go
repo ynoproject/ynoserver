@@ -15,10 +15,10 @@ import (
 )
 
 func main() {
-	config_file := flag.String("config", "config.yml", "Path to the configuration file")
+	configFile := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
-	configFileData := parseConfig(*config_file)
+	configFileData := parseConfig(*configFile)
 
 	resIndexData, err := ioutil.ReadFile(configFileData.IndexPath)
 	if err != nil {
