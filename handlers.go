@@ -655,7 +655,13 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 		}
 
 		if currentEventVmEventId == eventIdInt {
-			tryCompleteEventVm(currentEventPeriodId, sender.session.uuid, currentEventVmMapId, currentEventVmEventId)
+			exp, err := tryCompleteEventVm(currentEventPeriodId, sender.session.uuid, currentEventVmMapId, currentEventVmEventId)
+			if err != nil {
+				return err
+			}
+			if exp > -1 {
+				sender.send <- []byte("vm" + delim + strconv.Itoa(exp))
+			}
 		}
 	}
 
