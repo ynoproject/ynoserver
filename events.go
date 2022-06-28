@@ -16,6 +16,7 @@ import (
 type EventPeriod struct {
 	PeriodOrdinal int       `json:"periodOrdinal"`
 	EndDate       time.Time `json:"endDate"`
+	EnableVms     bool      `json:"enableVms"`
 }
 
 type EventExp struct {

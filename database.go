@@ -721,7 +721,7 @@ func readCurrentEventPeriodId() (periodId int, err error) {
 }
 
 func readEventPeriodData() (eventPeriods []*EventPeriod, err error) {
-	results, err := db.Query("SELECT periodOrdinal, endDate FROM eventPeriods WHERE game = ? AND periodOrdinal > 0", config.gameName)
+	results, err := db.Query("SELECT periodOrdinal, endDate, enableVms FROM eventPeriods WHERE game = ? AND periodOrdinal > 0", config.gameName)
 	if err != nil {
 		return eventPeriods, err
 	}
@@ -731,7 +731,7 @@ func readEventPeriodData() (eventPeriods []*EventPeriod, err error) {
 	for results.Next() {
 		eventPeriod := &EventPeriod{}
 
-		err := results.Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate)
+		err := results.Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
 		if err != nil {
 			return eventPeriods, err
 		}
@@ -743,7 +743,7 @@ func readEventPeriodData() (eventPeriods []*EventPeriod, err error) {
 }
 
 func readCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
-	err = db.QueryRow("SELECT periodOrdinal, endDate FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate)
+	err = db.QueryRow("SELECT periodOrdinal, endDate, enableVms FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", config.gameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
 	if err != nil {
 		eventPeriod.PeriodOrdinal = -1
 		if err == sql.ErrNoRows {
@@ -781,7 +781,7 @@ func readPlayerEventExpData(periodId int, playerUuid string) (eventExp EventExp,
 }
 
 func readPlayerTotalEventExp(playerUuid string) (totalEventExp int, err error) {
-	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid).Scan(&totalEventExp)
+	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type <> 1 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.game = ? AND ec.uuid = ?", config.gameName, playerUuid).Scan(&totalEventExp)
 	if err != nil {
 		return totalEventExp, err
 	}
@@ -790,7 +790,7 @@ func readPlayerTotalEventExp(playerUuid string) (totalEventExp int, err error) {
 }
 
 func readPlayerPeriodEventExp(periodId int, playerUuid string) (periodEventExp int, err error) {
-	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid).Scan(&periodEventExp)
+	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type <> 1 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ?", periodId, playerUuid).Scan(&periodEventExp)
 	if err != nil {
 		return periodEventExp, err
 	}
@@ -801,7 +801,7 @@ func readPlayerPeriodEventExp(periodId int, playerUuid string) (periodEventExp i
 func readPlayerWeekEventExp(periodId int, playerUuid string) (weekEventExp int, err error) {
 	weekdayIndex := int(time.Now().UTC().Weekday())
 
-	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex).Scan(&weekEventExp)
+	err = db.QueryRow("SELECT COALESCE(SUM(ec.exp), 0) FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type <> 1 JOIN eventPeriods ep ON ep.id = el.periodId WHERE ep.id = ? AND ec.uuid = ? AND DATE_SUB(UTC_DATE(), INTERVAL ? DAY) <= el.startDate AND DATE_ADD(UTC_DATE(), INTERVAL ? DAY) >= el.endDate", periodId, playerUuid, weekdayIndex, 7-weekdayIndex).Scan(&weekEventExp)
 	if err != nil {
 		return weekEventExp, err
 	}
@@ -1116,6 +1116,11 @@ func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int)
 
 		defer results.Close()
 
+		currentEventVmsData, err := readCurrentPlayerEventVmsData(periodId, playerUuid)
+		if err != nil {
+			return -1, err
+		}
+
 		weekEventExp, err := readPlayerWeekEventExp(periodId, playerUuid)
 		if err != nil {
 			return -1, err
@@ -1130,6 +1135,15 @@ func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int)
 			err := results.Scan(&eventId, &eventMapId, &eventEvId, &eventExp)
 			if err != nil {
 				return exp, err
+			}
+
+			for _, eventVm := range currentEventVmsData {
+				if eventVm.Id == eventId {
+					if eventVm.Complete {
+						return -1, nil
+					}
+					break
+				}
 			}
 
 			if clientMapId != fmt.Sprintf("%04d", eventMapId) {
@@ -1600,6 +1614,12 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 			query += " JOIN eventPeriods ep ON ep.id = COALESCE(el.periodId, pel.periodId) AND ep.periodOrdinal = ?"
 		}
 		query += " GROUP BY a.user ORDER BY 5 DESC, 6"
+	case "eventVmCount":
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec "
+		if isFiltered {
+			query += "JOIN eventVms ev ON ev.id = ec.eventId JOIN eventPeriods ep ON ep.id = ev.periodId AND ep.periodOrdinal = ? "
+		}
+		query += "WHERE ec.type = 2 GROUP BY ec.uuid ORDER BY 5 DESC, 6"
 	case "timeTrial":
 		query += "SELECT ?, ?, RANK() OVER (ORDER BY MIN(tt.seconds)), tt.uuid, MIN(tt.seconds), (SELECT MAX(att.timestampCompleted) FROM playerTimeTrials att WHERE att.uuid = tt.uuid AND att.mapId = tt.mapId AND att.seconds = tt.seconds) FROM playerTimeTrials tt WHERE tt.mapId = ? GROUP BY tt.uuid ORDER BY 5, 6"
 	case "minigame":

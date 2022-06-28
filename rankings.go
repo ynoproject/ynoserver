@@ -112,6 +112,19 @@ func initRankings() {
 		for _, eventPeriod := range eventPeriods {
 			eventLocationCompletionCategory.SubCategories = append(eventLocationCompletionCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: config.gameName})
 		}
+
+		eventVmCountCategory := &RankingCategory{CategoryId: "eventVmCount", Game: config.gameName}
+		rankingCategories = append(rankingCategories, eventVmCountCategory)
+
+		for _, eventPeriod := range eventPeriods {
+			if eventPeriod.EnableVms {
+				eventVmCountCategory.SubCategories = append(eventVmCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: config.gameName})
+			}
+		}
+
+		if len(eventVmCountCategory.SubCategories) > 1 {
+			eventVmCountCategory.SubCategories = append([]RankingSubCategory{{SubCategoryId: "all", Game: config.gameName}}, eventVmCountCategory.SubCategories...)
+		}
 	}
 
 	if config.gameName == "2kki" {
