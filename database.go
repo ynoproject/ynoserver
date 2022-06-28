@@ -1038,6 +1038,10 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 				if clientMapId != mapId {
 					continue
 				}
+
+				for updatingRankings {
+					time.Sleep(100 * time.Millisecond) //wait until rankings are updated
+				}
 				_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 1, ?, 0)", eventId, playerUuid, time.Now())
 				if err != nil {
 					break
