@@ -660,7 +660,7 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 				return err
 			}
 			if exp > -1 {
-				sender.send <- []byte("vm" + delim + strconv.Itoa(exp))
+				sender.session.send <- []byte("vm" + delim + strconv.Itoa(exp))
 			}
 		}
 	}
