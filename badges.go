@@ -327,14 +327,14 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 					values = c.Values
 				}
 				for _, value := range values {
-					_, err := strconv.Atoi(value)
-					if err != nil {
-						writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
-						continue
-					}
 					if c.Trigger == "picture" {
 						client.send <- []byte("sp" + delim + value)
 					} else {
+						_, err := strconv.Atoi(value)
+						if err != nil {
+							writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
+							continue
+						}
 						var eventTriggerType int
 						if c.Trigger == "eventAction" {
 							eventTriggerType = 1
