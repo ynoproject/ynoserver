@@ -107,14 +107,9 @@ func main() {
 
 		signKey:  configFileData.SignKey,
 		ipHubKey: configFileData.IPHubKey,
-
-		dbUser: configFileData.Database.User,
-		dbPass: configFileData.Database.Pass,
-		dbHost: configFileData.Database.Host,
-		dbName: configFileData.Database.Name,
 	}
 
-	setDatabase()
+	setDatabase(configFileData.Database.User, configFileData.Database.Pass, configFileData.Database.Host, configFileData.Database.Name)
 	setConditions()
 	setBadges()
 

@@ -83,9 +83,4 @@ type Config struct {
 
 	signKey  string
 	ipHubKey string
-
-	dbUser string
-	dbPass string
-	dbHost string
-	dbName string
 }
