@@ -445,7 +445,7 @@ func (h *Hub) handleValidClient(client *Client) {
 
 	if h.roomId == currentEventVmMapId {
 		if eventIds, hasVms := eventVms[h.roomId]; hasVms {
-			for eventId := range eventIds {
+			for _, eventId := range eventIds {
 				if eventId != currentEventVmEventId {
 					continue
 				}
