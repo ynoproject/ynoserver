@@ -31,6 +31,7 @@ type EventLocation struct {
 	Title    string    `json:"title"`
 	TitleJP  string    `json:"titleJP"`
 	Depth    int       `json:"depth"`
+	MinDepth int       `json:"minDepth,omitempty"`
 	Exp      int       `json:"exp"`
 	EndDate  time.Time `json:"endDate"`
 	Complete bool      `json:"complete"`
@@ -49,10 +50,11 @@ type EventsData struct {
 }
 
 type EventLocationData struct {
-	Title   string   `json:"title"`
-	TitleJP string   `json:"titleJP"`
-	Depth   int      `json:"depth"`
-	MapIds  []string `json:"mapIds"`
+	Title    string   `json:"title"`
+	TitleJP  string   `json:"titleJP"`
+	Depth    int      `json:"depth"`
+	MinDepth int      `json:"minDepth"`
+	MapIds   []string `json:"mapIds"`
 }
 
 const (
@@ -243,10 +245,23 @@ func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp i
 		if adjustedDepth > 10 {
 			adjustedDepth = 10
 		}
-		if playerUuid == "" {
-			err = writeEventLocationData(periodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, exp, eventLocation.MapIds)
+
+		var adjustedMinDepth int
+		if eventLocation.MinDepth == eventLocation.Depth {
+			adjustedMinDepth = adjustedDepth
 		} else {
-			err = writePlayerEventLocationData(periodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, eventLocation.MapIds)
+			adjustedMinDepth := (eventLocation.MinDepth / 3) * 2
+			if eventLocation.MinDepth%3 == 2 {
+				adjustedMinDepth += 1
+			}
+			if adjustedMinDepth > 10 {
+				adjustedMinDepth = 10
+			}
+		}
+		if playerUuid == "" {
+			err = writeEventLocationData(periodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
+		} else {
+			err = writePlayerEventLocationData(periodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, eventLocation.MapIds)
 		}
 		if err != nil {
 			handleInternalEventError(eventType, err)

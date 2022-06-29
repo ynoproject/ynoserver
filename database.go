@@ -827,7 +827,7 @@ func readPlayerEventLocationCompletion(playerUuid string) (eventLocationCompleti
 	return eventLocationCompletion, nil
 }
 
-func writeEventLocationData(periodId int, eventType int, title string, titleJP string, depth int, exp int, mapIds []string) (err error) {
+func writeEventLocationData(periodId int, eventType int, title string, titleJP string, depth int, minDepth int, exp int, mapIds []string) (err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
 		return err
@@ -852,7 +852,7 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 
 	days -= offsetDays
 
-	_, err = db.Exec("INSERT INTO eventLocations (periodId, type, title, titleJP, depth, exp, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, title, titleJP, depth, exp, offsetDays, days, mapIdsJson)
+	_, err = db.Exec("INSERT INTO eventLocations (periodId, type, title, titleJP, depth, minDepth, exp, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", periodId, eventType, title, titleJP, depth, minDepth, exp, offsetDays, days, mapIdsJson)
 	if err != nil {
 		return err
 	}
@@ -860,13 +860,13 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 	return nil
 }
 
-func writePlayerEventLocationData(periodId int, playerUuid string, title string, titleJP string, depth int, mapIds []string) (err error) {
+func writePlayerEventLocationData(periodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO playerEventLocations (periodId, uuid, title, titleJP, depth, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL 1 DAY), ?)", periodId, playerUuid, title, titleJP, depth, mapIdsJson)
+	_, err = db.Exec("INSERT INTO playerEventLocations (periodId, uuid, title, titleJP, depth, minDepth, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL 1 DAY), ?)", periodId, playerUuid, title, titleJP, depth, minDepth, mapIdsJson)
 	if err != nil {
 		return err
 	}
@@ -875,7 +875,7 @@ func writePlayerEventLocationData(periodId int, playerUuid string, title string,
 }
 
 func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventLocations []*EventLocation, err error) {
-	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.type = 0 AND ec.uuid = ? WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, periodId)
+	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.minDepth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.type = 0 AND ec.uuid = ? WHERE el.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, periodId)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -885,9 +885,13 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 
 		var completeBin int
 
-		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.Exp, &eventLocation.EndDate, &completeBin)
+		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.Exp, &eventLocation.EndDate, &completeBin)
 		if err != nil {
 			return eventLocations, err
+		}
+
+		if eventLocation.MinDepth == eventLocation.Depth {
+			eventLocation.MinDepth = 0
 		}
 
 		if completeBin == 1 {
@@ -899,7 +903,7 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 
 	results.Close()
 
-	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.endDate FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId)
+	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.minDepth, pel.endDate FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -907,12 +911,16 @@ func readCurrentPlayerEventLocationsData(periodId int, playerUuid string) (event
 	for results.Next() {
 		eventLocation := &EventLocation{}
 
-		err := results.Scan(&eventLocation.Id, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.EndDate)
+		err := results.Scan(&eventLocation.Id, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.EndDate)
 		if err != nil {
 			return eventLocations, err
 		}
 
 		eventLocation.Type = -1
+
+		if eventLocation.MinDepth == eventLocation.Depth {
+			eventLocation.MinDepth = 0
+		}
 
 		eventLocations = append(eventLocations, eventLocation)
 	}
