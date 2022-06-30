@@ -34,10 +34,11 @@ type EventLocation struct {
 }
 
 type EventLocationData struct {
-	Title   string   `json:"title"`
-	TitleJP string   `json:"titleJP"`
-	Depth   int      `json:"depth"`
-	MapIds  []string `json:"mapIds"`
+	Title    string   `json:"title"`
+	TitleJP  string   `json:"titleJP"`
+	Depth    int      `json:"depth"`
+	MinDepth int      `json:"minDepth"`
+	MapIds   []string `json:"mapIds"`
 }
 
 var (
