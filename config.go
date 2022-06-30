@@ -7,7 +7,21 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type ServerConfig struct {
+type Config struct {
+	spriteNames       []string
+	systemNames       []string
+	soundNames        []string
+	ignoredSoundNames []string
+	pictureNames      []string
+	picturePrefixes   []string
+
+	gameName string
+
+	signKey  string
+	ipHubKey string
+}
+
+type ConfigFile struct {
 	IP              string `yaml:"ip"`
 	Port            int    `yaml:"port"`
 	IndexPath       string `yaml:"index_path"`
@@ -32,13 +46,13 @@ type ServerConfig struct {
 	} `yaml:"logging"`
 }
 
-func parseConfig(file string) ServerConfig {
+func parseConfig(file string) ConfigFile {
 	yamlFile, err := ioutil.ReadFile(file)
 	if err != nil {
 		panic(err)
 	}
 
-	var config ServerConfig
+	var config ConfigFile
 	err = yaml.Unmarshal(yamlFile, &config)
 	if err != nil {
 		panic(err)
@@ -69,23 +83,4 @@ func parseConfig(file string) ServerConfig {
 	fmt.Printf("%+v\n", config)
 
 	return config
-}
-
-type Config struct {
-	spriteNames       []string
-	systemNames       []string
-	soundNames        []string
-	ignoredSoundNames []string
-	pictureNames      []string
-	picturePrefixes   []string
-
-	gameName string
-
-	signKey  string
-	ipHubKey string
-
-	dbUser string
-	dbPass string
-	dbHost string
-	dbName string
 }

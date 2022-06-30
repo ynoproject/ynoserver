@@ -319,9 +319,7 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 				}
 			}
 		} else if trigger == "" {
-			if c.Trigger == "picture" {
-				client.send <- []byte("sp" + delim + c.Value)
-			} else if c.Trigger == "event" || c.Trigger == "eventAction" {
+			if c.Trigger == "event" || c.Trigger == "eventAction" || c.Trigger == "picture" {
 				var values []string
 				if len(c.Values) == 0 {
 					values = append(values, c.Value)
@@ -329,41 +327,40 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 					values = c.Values
 				}
 				for _, value := range values {
-					_, err := strconv.Atoi(value)
-					if err != nil {
-						writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
-						continue
-					}
-
-					valueInt, err := strconv.Atoi(value)
-					if err != nil {
-						writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
-						continue
-					}
-
-					if h.roomId == currentEventVmMapId {
-						if eventIds, hasVms := eventVms[h.roomId]; hasVms {
-							var skipEvSync bool
-							for _, eventId := range eventIds {
-								if eventId != currentEventVmEventId {
-									continue
-								}
-								if valueInt == eventId {
-									skipEvSync = true
-									break
-								}
-							}
-							if skipEvSync {
-								continue
-							}
+					if c.Trigger == "picture" {
+						client.send <- []byte("sp" + delim + value)
+					} else {
+						valueInt, err := strconv.Atoi(value)
+						if err != nil {
+							writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
+							continue
 						}
-					}
 
-					var eventTriggerType int
-					if c.Trigger == "eventAction" {
-						eventTriggerType = 1
+						var eventTriggerType int
+						if c.Trigger == "eventAction" {
+							if h.roomId == currentEventVmMapId {
+								if eventIds, hasVms := eventVms[h.roomId]; hasVms {
+									var skipEvSync bool
+									for _, eventId := range eventIds {
+										if eventId != currentEventVmEventId {
+											continue
+										}
+										if valueInt == eventId {
+											skipEvSync = true
+											break
+										}
+									}
+									if skipEvSync {
+										continue
+									}
+								}
+							}
+
+							eventTriggerType = 1
+						}
+
+						client.send <- []byte("sev" + delim + value + delim + strconv.Itoa(eventTriggerType))
 					}
-					client.send <- []byte("sev" + delim + value + delim + strconv.Itoa(eventTriggerType))
 				}
 			} else if c.Trigger == "coords" {
 				client.syncCoords = true

@@ -14,37 +14,27 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func contains(s []int, num int) bool {
-	for _, v := range s {
-		if v == num {
-			return true
-		}
-	}
-
-	return false
-}
-
 func main() {
-	config_file := flag.String("config", "config.yml", "Path to the configuration file")
+	configFile := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
-	configFileData := parseConfig(*config_file)
+	configFileData := parseConfig(*configFile)
 
-	res_index_data, err := ioutil.ReadFile(configFileData.IndexPath)
+	resIndexData, err := ioutil.ReadFile(configFileData.IndexPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var res_index interface{}
+	var resIndex interface{}
 
-	err = json.Unmarshal(res_index_data, &res_index)
+	err = json.Unmarshal(resIndexData, &resIndex)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//list of game character sprite names
 	var spriteNames []string
-	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
+	for k, v := range resIndex.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
 		if k != "_dirname" {
 			spriteNames = append(spriteNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
@@ -52,7 +42,7 @@ func main() {
 
 	//list of game sound names
 	var soundNames []string
-	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
+	for k, v := range resIndex.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
 		if k != "_dirname" {
 			soundNames = append(soundNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
@@ -60,7 +50,7 @@ func main() {
 
 	//list of game system names
 	var systemNames []string
-	for k, v := range res_index.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
+	for k, v := range resIndex.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
 		if k != "_dirname" {
 			systemNames = append(systemNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
 		}
@@ -68,7 +58,7 @@ func main() {
 
 	//list of game map ids
 	var mapIds []int
-	for k := range res_index.(map[string]interface{})["cache"].(map[string]interface{}) {
+	for k := range resIndex.(map[string]interface{})["cache"].(map[string]interface{}) {
 		if str := k; len(str) == 11 { //map filenames are always 11 characters long
 			if str[7:] == ".lmu" { //check if extension is .lmu
 				if num, err := strconv.Atoi(str[3:7]); err == nil { //MapXXXX.lmu, remove "Map" and ".lmu"
@@ -107,14 +97,9 @@ func main() {
 
 		signKey:  configFileData.SignKey,
 		ipHubKey: configFileData.IPHubKey,
-
-		dbUser: configFileData.Database.User,
-		dbPass: configFileData.Database.Pass,
-		dbHost: configFileData.Database.Host,
-		dbName: configFileData.Database.Name,
 	}
 
-	setDatabase()
+	setDatabase(configFileData.Database.User, configFileData.Database.Pass, configFileData.Database.Host, configFileData.Database.Name)
 	setConditions()
 	setBadges()
 	setEventVms()
@@ -136,6 +121,16 @@ func main() {
 	initSession()
 
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
+}
+
+func contains(s []int, num int) bool {
+	for _, v := range s {
+		if v == num {
+			return true
+		}
+	}
+
+	return false
 }
 
 func writeLog(ip string, location string, payload string, errorcode int) {

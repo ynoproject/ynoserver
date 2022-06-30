@@ -16,8 +16,8 @@ var (
 	db *sql.DB
 )
 
-func setDatabase() {
-	conn, err := sql.Open("mysql", config.dbUser+":"+config.dbPass+"@tcp("+config.dbHost+")/"+config.dbName+"?parseTime=true")
+func setDatabase(user string, pass string, host string, name string) {
+	conn, err := sql.Open("mysql", user+":"+pass+"@tcp("+host+")/"+name+"?parseTime=true")
 	if err != nil {
 		return
 	}
@@ -1024,6 +1024,10 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 			for _, mapId := range mapIds {
 				if clientMapId != mapId {
 					continue
+				}
+
+				for updatingRankings {
+					time.Sleep(100 * time.Millisecond) //wait until rankings are updated
 				}
 				_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 1, ?, 0)", eventId, playerUuid, time.Now())
 				if err != nil {
