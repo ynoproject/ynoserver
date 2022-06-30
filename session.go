@@ -212,8 +212,8 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 		}
 	case "ep": //event period
 		err = s.handleEp(msgFields, sender)
-	case "el": //event location list
-		err = s.handleEl(msgFields, sender)
+	case "e": //event list
+		err = s.handleE(msgFields, sender)
 	default:
 		return err
 	}

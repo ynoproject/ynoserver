@@ -648,6 +648,23 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 	}
 	checkHubConditions(h, sender, triggerType, msg[1])
 
+	if sender.hub.roomId == currentEventVmMapId {
+		eventIdInt, err := strconv.Atoi(msg[1])
+		if err != nil {
+			return err
+		}
+
+		if currentEventVmEventId == eventIdInt {
+			exp, err := tryCompleteEventVm(currentEventPeriodId, sender.session.uuid, currentEventVmMapId, currentEventVmEventId)
+			if err != nil {
+				return err
+			}
+			if exp > -1 {
+				sender.session.send <- []byte("vm" + delim + strconv.Itoa(exp))
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -823,7 +840,7 @@ func (s *Session) handleEp(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handleEl(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handleE(msg []string, sender *SessionClient) (err error) {
 	periodId, err := readCurrentEventPeriodId()
 	if err != nil {
 		return err
@@ -840,17 +857,28 @@ func (s *Session) handleEl(msg []string, sender *SessionClient) (err error) {
 		}
 	}
 	if !hasIncompleteEvent && config.gameName == "2kki" {
-		add2kkiEventLocationsWithExp(-1, 1, 0, sender.uuid)
+		addPlayer2kkiEventLocation(-1, 2, 0, 0, sender.uuid)
 		currentEventLocationsData, err = readCurrentPlayerEventLocationsData(periodId, sender.uuid)
 		if err != nil {
 			return err
 		}
 	}
-	currentEventLocationsDataJson, err := json.Marshal(currentEventLocationsData)
+
+	currentEventVmsData, err := readCurrentPlayerEventVmsData(periodId, sender.uuid)
 	if err != nil {
 		return err
 	}
-	sender.send <- []byte("el" + delim + string(currentEventLocationsDataJson))
+
+	eventsData := &EventsData{
+		Locations: currentEventLocationsData,
+		Vms:       currentEventVmsData,
+	}
+
+	eventsDataJson, err := json.Marshal(eventsData)
+	if err != nil {
+		return err
+	}
+	sender.send <- []byte("e" + delim + string(eventsDataJson))
 
 	return nil
 }

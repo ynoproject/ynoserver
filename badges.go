@@ -228,6 +228,17 @@ func updateActiveBadgesAndConditions() {
 	}
 }
 
+func getGlobalConditions() (globalConditions []*Condition) {
+	if gameConditions, ok := conditions[config.gameName]; ok {
+		for _, condition := range gameConditions {
+			if condition.Map == 0 {
+				globalConditions = append(globalConditions, condition)
+			}
+		}
+	}
+	return globalConditions
+}
+
 func getHubConditions(roomId int) (hubConditions []*Condition) {
 	if gameConditions, ok := conditions[config.gameName]; ok {
 		for _, condition := range gameConditions {
@@ -244,107 +255,135 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 		return
 	}
 
-	for _, c := range h.conditions {
-		if c.Disabled && client.session.rank < 2 {
-			continue
-		}
+	for _, c := range globalConditions {
+		checkCondition(c, 0, nil, client, trigger, value)
+	}
 
-		valueMatched := trigger == ""
-		if c.Trigger == trigger && !valueMatched {
-			if len(c.Values) == 0 {
-				valueMatched = value == c.Value
-			} else {
-				for _, val := range c.Values {
-					if value == val {
-						valueMatched = true
+	for _, c := range h.conditions {
+		checkCondition(c, h.roomId, h.minigameConfigs, client, trigger, value)
+	}
+}
+
+func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig, client *Client, trigger string, value string) {
+	if c.Disabled && client.session.rank < 2 {
+		return
+	}
+
+	valueMatched := trigger == ""
+	if c.Trigger == trigger && !valueMatched {
+		if len(c.Values) == 0 {
+			valueMatched = value == c.Value
+		} else {
+			for _, val := range c.Values {
+				if value == val {
+					valueMatched = true
+					break
+				}
+			}
+		}
+	}
+
+	if c.Trigger == trigger && valueMatched {
+		if (c.SwitchId > 0 || len(c.SwitchIds) > 0) && !c.VarTrigger {
+			switchId := c.SwitchId
+			if len(c.SwitchIds) > 0 {
+				switchId = c.SwitchIds[0]
+			}
+			var switchSyncType int
+			if trigger == "" {
+				switchSyncType = 2
+				if c.SwitchDelay {
+					switchSyncType = 1
+				}
+			}
+			client.send <- []byte("ss" + delim + strconv.Itoa(switchId) + delim + strconv.Itoa(switchSyncType))
+		} else if c.VarId > 0 || len(c.VarIds) > 0 {
+			varId := c.VarId
+			if len(c.VarIds) > 0 {
+				varId = c.VarIds[0]
+			}
+
+			if minigameConfigs != nil && len(minigameConfigs) > 0 {
+				var skipVarSync bool
+				for _, minigame := range minigameConfigs {
+					if minigame.VarId == varId {
+						skipVarSync = true
 						break
 					}
 				}
+				if skipVarSync {
+					return
+				}
+			}
+
+			var varSyncType int
+			if trigger == "" {
+				varSyncType = 2
+				if c.VarDelay {
+					varSyncType = 1
+				}
+			}
+			client.send <- []byte("sv" + delim + strconv.Itoa(varId) + delim + strconv.Itoa(varSyncType))
+		} else if checkConditionCoords(c, client) {
+			timeTrial := c.TimeTrial && config.gameName == "2kki"
+			if !timeTrial {
+				success, err := tryWritePlayerTag(client.session.uuid, c.ConditionId)
+				if err != nil {
+					writeErrLog(client.session.ip, strconv.Itoa(roomId), err.Error())
+				}
+				if success {
+					client.send <- []byte("b")
+				}
+			} else {
+				client.send <- []byte("ss" + delim + "1430" + delim + "0")
 			}
 		}
-
-		if c.Trigger == trigger && valueMatched {
-			if (c.SwitchId > 0 || len(c.SwitchIds) > 0) && !c.VarTrigger {
-				switchId := c.SwitchId
-				if len(c.SwitchIds) > 0 {
-					switchId = c.SwitchIds[0]
-				}
-				var switchSyncType int
-				if trigger == "" {
-					switchSyncType = 2
-					if c.SwitchDelay {
-						switchSyncType = 1
-					}
-				}
-				client.send <- []byte("ss" + delim + strconv.Itoa(switchId) + delim + strconv.Itoa(switchSyncType))
-			} else if c.VarId > 0 || len(c.VarIds) > 0 {
-				varId := c.VarId
-				if len(c.VarIds) > 0 {
-					varId = c.VarIds[0]
-				}
-
-				if len(h.minigameConfigs) > 0 {
-					var skipVarSync bool
-					for _, minigame := range h.minigameConfigs {
-						if minigame.VarId == varId {
-							skipVarSync = true
-							break
-						}
-					}
-					if skipVarSync {
+	} else if trigger == "" {
+		if c.Trigger == "event" || c.Trigger == "eventAction" || c.Trigger == "picture" {
+			var values []string
+			if len(c.Values) == 0 {
+				values = append(values, c.Value)
+			} else {
+				values = c.Values
+			}
+			for _, value := range values {
+				if c.Trigger == "picture" {
+					client.send <- []byte("sp" + delim + value)
+				} else {
+					valueInt, err := strconv.Atoi(value)
+					if err != nil {
+						writeErrLog(client.session.ip, strconv.Itoa(roomId), err.Error())
 						continue
 					}
-				}
 
-				var varSyncType int
-				if trigger == "" {
-					varSyncType = 2
-					if c.VarDelay {
-						varSyncType = 1
+					var eventTriggerType int
+					if c.Trigger == "eventAction" {
+						if roomId > 0 && roomId == currentEventVmMapId {
+							if eventIds, hasVms := eventVms[roomId]; hasVms {
+								var skipEvSync bool
+								for _, eventId := range eventIds {
+									if eventId != currentEventVmEventId {
+										continue
+									}
+									if valueInt == eventId {
+										skipEvSync = true
+										break
+									}
+								}
+								if skipEvSync {
+									continue
+								}
+							}
+						}
+
+						eventTriggerType = 1
 					}
-				}
-				client.send <- []byte("sv" + delim + strconv.Itoa(varId) + delim + strconv.Itoa(varSyncType))
-			} else if checkConditionCoords(c, client) {
-				timeTrial := c.TimeTrial && config.gameName == "2kki"
-				if !timeTrial {
-					success, err := tryWritePlayerTag(client.session.uuid, c.ConditionId)
-					if err != nil {
-						writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
-					}
-					if success {
-						client.send <- []byte("b")
-					}
-				} else {
-					client.send <- []byte("ss" + delim + "1430" + delim + "0")
+
+					client.send <- []byte("sev" + delim + value + delim + strconv.Itoa(eventTriggerType))
 				}
 			}
-		} else if trigger == "" {
-			if c.Trigger == "event" || c.Trigger == "eventAction" || c.Trigger == "picture" {
-				var values []string
-				if len(c.Values) == 0 {
-					values = append(values, c.Value)
-				} else {
-					values = c.Values
-				}
-				for _, value := range values {
-					if c.Trigger == "picture" {
-						client.send <- []byte("sp" + delim + value)
-					} else {
-						_, err := strconv.Atoi(value)
-						if err != nil {
-							writeErrLog(client.session.ip, strconv.Itoa(h.roomId), err.Error())
-							continue
-						}
-						var eventTriggerType int
-						if c.Trigger == "eventAction" {
-							eventTriggerType = 1
-						}
-						client.send <- []byte("sev" + delim + value + delim + strconv.Itoa(eventTriggerType))
-					}
-				}
-			} else if c.Trigger == "coords" {
-				client.syncCoords = true
-			}
+		} else if c.Trigger == "coords" {
+			client.syncCoords = true
 		}
 	}
 }
