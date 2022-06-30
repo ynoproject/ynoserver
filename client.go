@@ -64,8 +64,8 @@ type Client struct {
 
 	id int
 
-	key     string
-	counter int
+	key     uint32
+	counter uint16
 
 	valid bool
 

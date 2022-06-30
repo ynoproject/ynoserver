@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -13,7 +11,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
-	"github.com/thanhpk/randstr"
 )
 
 const (
@@ -141,7 +138,7 @@ func (h *Hub) run() {
 				continue
 			}
 
-			key := randstr.String(8)
+			key := generateKey()
 
 			//sprite index < 0 means none
 			client := &Client{
@@ -166,7 +163,7 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + key + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
+			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + strconv.Itoa(int(key)) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
 
 			//register client in the structures
 			h.id[id] = true
@@ -257,34 +254,13 @@ func (h *Hub) processMsgs(msg *Message) []error {
 		return errs
 	}
 
-	//signature validation
-	byteKey := []byte(msg.sender.key)
-	byteSecret := []byte(config.signKey)
-
-	hashStr := sha1.New()
-	hashStr.Write(byteKey)
-	hashStr.Write(byteSecret)
-	hashStr.Write(msg.data[8:])
-
-	hashDigestStr := hex.EncodeToString(hashStr.Sum(nil)[:4])
-
-	if string(msg.data[:8]) != hashDigestStr {
-		//errs = append(errs, errors.New("bad signature"))
-		errs = append(errs, errors.New("SIGNATURE FAIL: "+string(msg.data[:8])+" compared to "+hashDigestStr+" CONTENTS: "+string(msg.data[8:])))
+	if !verifySignature(msg.sender.key, msg.data) {
+		errs = append(errs, errors.New("bad signature"))
 		return errs
 	}
 
-	//counter validation
-	playerMsgIndex, errconv := strconv.Atoi(string(msg.data[8:14]))
-	if errconv != nil {
-		errs = append(errs, errors.New("counter not numerical"))
-		return errs
-	}
-
-	if msg.sender.counter < playerMsgIndex { //counter in messages should be higher than what we have stored
-		msg.sender.counter = playerMsgIndex
-	} else {
-		errs = append(errs, errors.New("COUNTER FAIL: "+string(msg.data[8:14])+" compared to "+strconv.Itoa(msg.sender.counter)+" CONTENTS: "+string(msg.data[14:])))
+	if !verifyCounter(&msg.sender.counter, msg.data) {
+		errs = append(errs, errors.New("bad counter"))
 		return errs
 	}
 
