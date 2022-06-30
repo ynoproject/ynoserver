@@ -104,6 +104,7 @@ func main() {
 	setBadges()
 	setEventVms()
 
+	globalConditions = getGlobalConditions()
 	createAllHubs(mapIds, atoiArray(strings.Split(configFileData.SpRooms, ",")))
 
 	log.SetOutput(&lumberjack.Logger{

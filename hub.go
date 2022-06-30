@@ -40,6 +40,8 @@ var (
 	badges         map[string]map[string]*Badge
 	sortedBadgeIds map[string][]string
 
+	globalConditions []*Condition
+
 	eventVms map[int][]int
 )
 
