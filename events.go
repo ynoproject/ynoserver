@@ -240,7 +240,7 @@ func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp i
 	for _, eventLocation := range eventLocations {
 		adjustedDepth := (eventLocation.Depth / 3) * 2
 		if eventLocation.Depth%3 == 2 {
-			adjustedDepth += 1
+			adjustedDepth++
 		}
 		if adjustedDepth > 10 {
 			adjustedDepth = 10
@@ -250,9 +250,9 @@ func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp i
 		if eventLocation.MinDepth == eventLocation.Depth {
 			adjustedMinDepth = adjustedDepth
 		} else {
-			adjustedMinDepth := (eventLocation.MinDepth / 3) * 2
+			adjustedMinDepth = (eventLocation.MinDepth / 3) * 2
 			if eventLocation.MinDepth%3 == 2 {
-				adjustedMinDepth += 1
+				adjustedMinDepth++
 			}
 			if adjustedMinDepth > 10 {
 				adjustedMinDepth = 10
