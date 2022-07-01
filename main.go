@@ -95,7 +95,7 @@ func main() {
 		picturePrefixes:   picturePrefixes,
 		gameName:          configFileData.GameName,
 
-		signKey:  []byte(configFileData.SignKey),
+		signKey:  configFileData.SignKey,
 		ipHubKey: configFileData.IPHubKey,
 	}
 

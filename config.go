@@ -17,7 +17,7 @@ type Config struct {
 
 	gameName string
 
-	signKey  []byte
+	signKey  string
 	ipHubKey string
 }
 
