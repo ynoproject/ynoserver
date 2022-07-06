@@ -810,7 +810,7 @@ func readPlayerWeekEventExp(periodId int, playerUuid string) (weekEventExp int, 
 }
 
 func readPlayerEventLocationCount(playerUuid string) (eventLocationCount int, err error) {
-	err = db.QueryRow("SELECT COUNT(eventId) FROM eventCompletions WHERE uuid = ?", playerUuid).Scan(&eventLocationCount)
+	err = db.QueryRow("SELECT COUNT(eventId) FROM eventCompletions WHERE uuid = ? AND type < 2", playerUuid).Scan(&eventLocationCount)
 	if err != nil {
 		return eventLocationCount, err
 	}
@@ -1043,6 +1043,15 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 	}
 
 	return false, err
+}
+
+func readPlayerEventVmCount(playerUuid string) (eventVmCount int, err error) {
+	err = db.QueryRow("SELECT COUNT(eventId) FROM eventCompletions WHERE uuid = ? AND type = 2", playerUuid).Scan(&eventVmCount)
+	if err != nil {
+		return eventVmCount, err
+	}
+
+	return eventVmCount, nil
 }
 
 func readCurrentPlayerEventVmsData(periodId int, playerUuid string) (eventVms []*EventVm, err error) {

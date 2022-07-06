@@ -399,6 +399,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	var playerExp int
 	var playerEventLocationCount int
 	var playerEventLocationCompletion int
+	var playerEventVmCount int
 	var playerBadgeCount int
 	var timeTrialRecords []*TimeTrialRecord
 
@@ -412,6 +413,10 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 			return playerBadges, err
 		}
 		playerEventLocationCompletion, err = readPlayerEventLocationCompletion(playerUuid)
+		if err != nil {
+			return playerBadges, err
+		}
+		playerEventVmCount, err = readPlayerEventVmCount(playerUuid)
 		if err != nil {
 			return playerBadges, err
 		}
@@ -495,6 +500,9 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 					playerBadge.GoalsTotal = gameBadge.ReqInt
 				case "expCompletion":
 					playerBadge.Goals = playerEventLocationCompletion
+					playerBadge.GoalsTotal = gameBadge.ReqInt
+				case "vmCount":
+					playerBadge.Goals = playerEventVmCount
 					playerBadge.GoalsTotal = gameBadge.ReqInt
 				case "badgeCount":
 					badgeCountPlayerBadges = append(badgeCountPlayerBadges, playerBadge)
