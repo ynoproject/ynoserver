@@ -12,6 +12,16 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
+var (
+	sessionClients = make(map[string]*SessionClient)
+	session        = &Session{
+		clients:      make(map[*SessionClient]bool),
+		processMsgCh: make(chan *SessionMessage),
+		connect:      make(chan *ConnInfo),
+		unregister:   make(chan *SessionClient),
+	}
+)
+
 type Session struct {
 	// Registered clients.
 	clients map[*SessionClient]bool
@@ -25,16 +35,6 @@ type Session struct {
 	// Unregister requests from clients.
 	unregister chan *SessionClient
 }
-
-var (
-	session        = &Session{
-		clients:      make(map[*SessionClient]bool),
-		processMsgCh: make(chan *SessionMessage),
-		connect:      make(chan *ConnInfo),
-		unregister:   make(chan *SessionClient),
-	}
-	sessionClients = make(map[string]*SessionClient)
-)
 
 func initSession() {
 	go session.run()
