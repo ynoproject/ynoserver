@@ -32,10 +32,10 @@ type PartyMember struct {
 	Online        bool   `json:"online"`
 }
 
-func sendPartyUpdate() error {
+func sendPartyUpdate() {
 	parties, err := readAllPartyData(false)
 	if err != nil {
-		return err //unused
+		return
 	}
 
 	for _, party := range parties { //for every party
@@ -52,7 +52,7 @@ func sendPartyUpdate() error {
 		for _, member := range party.Members { //for every member
 			if member.Online {
 				if client, ok := sessionClients[member.Uuid]; ok {
-					var jsonData string
+					var jsonData string //wasteful, find way to store as []byte
 					if member.Uuid == party.OwnerUuid {
 						// Expose password only for party owner
 						party.Pass = partyPass
@@ -70,6 +70,4 @@ func sendPartyUpdate() error {
 			}
 		}
 	}
-
-	return nil
 }
