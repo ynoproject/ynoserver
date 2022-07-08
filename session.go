@@ -130,6 +130,7 @@ func (s *Session) run() {
 			go client.readPump()
 
 			client.send <- []byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge) //"your id is %id%" message
+
 			//register client in the structures
 			s.clients[client] = true
 			sessionClients[uuid] = client
