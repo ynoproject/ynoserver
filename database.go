@@ -138,13 +138,13 @@ func createPlayerData(ip string, uuid string, rank int, banned bool) error {
 	return nil
 }
 
-func readPlayerGameData(uuid string) (systemName string, spriteName string, spriteIndex int) {
-	err := db.QueryRow("SELECT pgd.systemName, pgd.spriteName, pgd.spriteIndex FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&systemName, &spriteName, &spriteIndex)
+func readPlayerGameData(uuid string) (spriteName string, spriteIndex int, systemName string) {
+	err := db.QueryRow("SELECT pgd.spriteName, pgd.spriteIndex, pgd.systemName FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&spriteName, &spriteIndex, &systemName)
 	if err != nil {
-		return "", "", 0
+		return "", 0, ""
 	}
 
-	return systemName, spriteName, spriteIndex
+	return spriteName, spriteIndex, systemName
 }
 
 func updatePlayerGameData(client *SessionClient) error {

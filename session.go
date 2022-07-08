@@ -110,7 +110,7 @@ func (s *Session) run() {
 				continue //don't bother with handling their connection
 			}
 
-			systemName, spriteName, spriteIndex := readPlayerGameData(uuid)
+			spriteName, spriteIndex, systemName := readPlayerGameData(uuid)
 
 			client := &SessionClient{
 				conn:        conn.Connect,
