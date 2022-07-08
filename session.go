@@ -27,7 +27,12 @@ type Session struct {
 }
 
 var (
-	session        = newSessionWs()
+	session        = &Session{
+		clients:      make(map[*SessionClient]bool),
+		processMsgCh: make(chan *SessionMessage),
+		connect:      make(chan *ConnInfo),
+		unregister:   make(chan *SessionClient),
+	}
 	sessionClients = make(map[string]*SessionClient)
 )
 
@@ -42,15 +47,6 @@ func initSession() {
 	})
 
 	s.StartAsync()
-}
-
-func newSessionWs() *Session {
-	return &Session{
-		clients:      make(map[*SessionClient]bool),
-		processMsgCh: make(chan *SessionMessage),
-		connect:      make(chan *ConnInfo),
-		unregister:   make(chan *SessionClient),
-	}
 }
 
 func (s *Session) serve(w http.ResponseWriter, r *http.Request) {
