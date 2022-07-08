@@ -104,7 +104,7 @@ func newHub(roomId int, singleplayer bool) *Hub {
 }
 
 func (h *Hub) run() {
-	http.HandleFunc("/"+strconv.Itoa(h.roomId), h.serveWs)
+	http.HandleFunc("/"+strconv.Itoa(h.roomId), h.serve)
 	for {
 		select {
 		case conn := <-h.connect:
@@ -216,8 +216,8 @@ func (h *Hub) run() {
 	}
 }
 
-// serveWs handles websocket requests from the peer.
-func (hub *Hub) serveWs(w http.ResponseWriter, r *http.Request) {
+// serve handles websocket requests from the peer.
+func (hub *Hub) serve(w http.ResponseWriter, r *http.Request) {
 	protocols := r.Header.Get("Sec-Websocket-Protocol")
 	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {protocols}})
 	if err != nil {
