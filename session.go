@@ -217,7 +217,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 		err = s.handleI(msgFields, sender)
 	case "name": //nick set
 		err = s.handleName(msgFields, sender)
-	case "ploc":
+	case "ploc": //previous location
 		err = s.handlePloc(msgFields, sender)
 	case "gsay": //global say
 		err = s.handleGSay(msgFields, sender)
