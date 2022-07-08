@@ -303,7 +303,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 				varId = c.VarIds[0]
 			}
 
-			if minigameConfigs != nil && len(minigameConfigs) > 0 {
+			if len(minigameConfigs) > 0 {
 				var skipVarSync bool
 				for _, minigame := range minigameConfigs {
 					if minigame.VarId == varId {
