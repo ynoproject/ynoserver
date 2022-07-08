@@ -233,7 +233,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	case "e": //event list
 		err = s.handleE(msgFields, sender)
 	default:
-		return err
+		err = errors.New("unknown message type")
 	}
 
 	if err != nil {

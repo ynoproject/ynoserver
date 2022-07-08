@@ -381,7 +381,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		case "sev":
 			err = h.handleSev(msgFields, sender)
 		default:
-			return false, err
+			err = errors.New("unknown message type")
 		}
 	}
 
