@@ -75,7 +75,29 @@ func (s *Session) run() {
 	for {
 		select {
 		case conn := <-s.connect:
-			uuid, name, rank, banned, muted, account, badge := getPlayerInfo(conn)
+			var uuid string
+			var name string
+			var rank int
+			var badge string
+			var banned bool
+			var muted bool
+			var account bool
+
+			if conn.Token != "" {
+				uuid, name, rank, badge, banned, muted = readPlayerDataFromToken(conn.Token)
+				if uuid != "" { //if we got a uuid back then we're logged in
+					account = true
+				}
+			}
+		
+			if !account {
+				uuid, rank, banned, muted = readPlayerData(conn.Ip)
+			}
+		
+			if badge == "" {
+				badge = "null"
+			}
+
 			if banned {
 				writeErrLog(conn.Ip, "session", "player is banned")
 				continue
