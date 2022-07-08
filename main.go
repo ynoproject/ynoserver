@@ -20,7 +20,7 @@ func main() {
 
 	configFileData := parseConfig(*configFile)
 
-	spriteNames, soundNames, systemNames, mapIds := parseIndex(configFileData.IndexPath)
+	spriteNames, soundNames, systemNames, mapIds := parseResIndex(configFileData.IndexPath)
 
 	//list of sound names to ignore
 	var ignoredSoundNames []string
@@ -78,8 +78,8 @@ func main() {
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
 
-func parseIndex(indexFileName string) (spriteNames []string, soundNames []string, systemNames []string, mapIds []int) {
-	resIndexData, err := ioutil.ReadFile(indexFileName)
+func parseResIndex(resIndexPath string) (spriteNames []string, soundNames []string, systemNames []string, mapIds []int) {
+	resIndexData, err := ioutil.ReadFile(resIndexPath)
 	if err != nil {
 		log.Fatal(err)
 	}
