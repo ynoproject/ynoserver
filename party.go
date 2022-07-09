@@ -50,23 +50,24 @@ func sendPartyUpdate() {
 		}
 
 		for _, member := range party.Members { //for every member
-			if member.Online {
-				if client, ok := sessionClients[member.Uuid]; ok {
-					var jsonData string //wasteful, find way to store as []byte
-					if member.Uuid == party.OwnerUuid {
-						// Expose password only for party owner
-						party.Pass = partyPass
-						ownerPartyDataJson, err := json.Marshal(party)
-						party.Pass = ""
-						if err != nil {
-							continue
-						}
-						jsonData = string(ownerPartyDataJson)
-					} else {
-						jsonData = string(partyDataJson)
+			if !member.Online {
+				continue
+			}
+			if client, ok := sessionClients[member.Uuid]; ok {
+				var jsonData string //wasteful, find way to store as []byte
+				if member.Uuid == party.OwnerUuid {
+					// Expose password only for party owner
+					party.Pass = partyPass
+					ownerPartyDataJson, err := json.Marshal(party)
+					party.Pass = ""
+					if err != nil {
+						continue
 					}
-					client.send <- []byte("pt" + delim + jsonData) //send JSON to client
+					jsonData = string(ownerPartyDataJson)
+				} else {
+					jsonData = string(partyDataJson)
 				}
+				client.send <- []byte("pt" + delim + jsonData) //send JSON to client
 			}
 		}
 	}
