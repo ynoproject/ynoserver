@@ -405,9 +405,9 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 		value = true
 	}
 	sender.switchCache[switchId] = value
-	if switchId == 1430 && config.gameName == "2kki" {
+	if switchId == 1430 && config.gameName == "2kki" { //time trial mode
 		if value {
-			sender.send <- []byte("sv" + delim + "88" + delim + "0")
+			sender.send <- []byte("sv" + delim + "88" + delim + "0") //time elapsed
 		}
 	} else {
 		if len(sender.hub.minigameConfigs) > 0 {
