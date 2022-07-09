@@ -418,7 +418,15 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 			}
 		}
 
+		var conditions []*Condition
+		for _, c := range globalConditions {
+			conditions = append(conditions, c)
+		}
 		for _, c := range h.conditions {
+			conditions = append(conditions, c)
+		}
+
+		for _, c := range conditions {
 			validVars := !c.VarTrigger
 			if c.VarTrigger {
 				if c.VarId > 0 {
@@ -519,8 +527,17 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.varCache[varId] = value
+
+	var conditions []*Condition
+	for _, c := range globalConditions {
+		conditions = append(conditions, c)
+	}
+	for _, c := range h.conditions {
+		conditions = append(conditions, c)
+	}
+
 	if varId == 88 && config.gameName == "2kki" {
-		for _, c := range h.conditions {
+		for _, c := range conditions {
 			if c.TimeTrial && value < 3600 {
 				if checkConditionCoords(c, sender) {
 					success, err := tryWritePlayerTimeTrial(sender.session.uuid, h.roomId, value)
@@ -546,7 +563,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 			}
 		}
 
-		for _, c := range h.conditions {
+		for _, c := range conditions {
 			validSwitches := c.VarTrigger
 			if !c.VarTrigger {
 				if c.SwitchId > 0 {
