@@ -49,7 +49,7 @@ func main() {
 		picturePrefixes:   picturePrefixes,
 		gameName:          configFileData.GameName,
 
-		signKey:  configFileData.SignKey,
+		signKey:  []byte(configFileData.SignKey),
 		ipHubKey: configFileData.IPHubKey,
 	}
 
