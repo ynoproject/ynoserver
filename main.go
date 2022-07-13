@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -273,6 +274,10 @@ func isVpn(ip string) (vpn bool) {
 	}
 
 	return vpn
+}
+
+func isOkString(str string) bool {
+	return regexp.MustCompile("^[A-Za-z0-9]+$").MatchString(str)
 }
 
 func writeLog(ip string, location string, payload string, errorcode int) {

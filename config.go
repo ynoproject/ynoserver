@@ -7,6 +7,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var (
+	config Config
+)
+
 type Config struct {
 	spriteNames       []string
 	systemNames       []string

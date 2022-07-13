@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -28,18 +27,8 @@ var (
 			return true
 		},
 	}
-	isOkString = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
 
 	hubs []*Hub
-
-	config         Config
-	conditions     map[string]map[string]*Condition
-	badges         map[string]map[string]*Badge
-	sortedBadgeIds map[string][]string
-
-	globalConditions []*Condition
-
-	eventVms map[int][]int
 )
 
 type ConnInfo struct {

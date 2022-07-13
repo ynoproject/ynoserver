@@ -12,6 +12,14 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
+var (
+	conditions     map[string]map[string]*Condition
+	badges         map[string]map[string]*Badge
+	sortedBadgeIds map[string][]string
+
+	globalConditions []*Condition
+)
+
 type Condition struct {
 	ConditionId  string   `json:"conditionId"`
 	Map          int      `json:"map"`

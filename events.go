@@ -13,6 +13,10 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
+var (
+	eventVms map[int][]int
+)
+
 type EventPeriod struct {
 	PeriodOrdinal int       `json:"periodOrdinal"`
 	EndDate       time.Time `json:"endDate"`
