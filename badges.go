@@ -13,11 +13,11 @@ import (
 )
 
 var (
+	globalConditions []*Condition
+
 	conditions     map[string]map[string]*Condition
 	badges         map[string]map[string]*Badge
 	sortedBadgeIds map[string][]string
-
-	globalConditions []*Condition
 )
 
 type Condition struct {
