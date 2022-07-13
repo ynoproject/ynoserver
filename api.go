@@ -1201,7 +1201,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	var userExists int
 	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user[0]).Scan(&userExists)
 
-	if userExists == 1 {
+	if userExists > 0 {
 		handleError(w, r, "user exists")
 		return
 	}
