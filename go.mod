@@ -1,4 +1,4 @@
-module ynoserver
+module github.com/ynoproject/ynoserver
 
 go 1.16
 
