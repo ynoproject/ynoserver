@@ -80,7 +80,7 @@ const (
 
 	eventVmExp = 4
 
-	weeklyExpCap int = 50
+	weeklyExpCap = 50
 )
 
 var (
