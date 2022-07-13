@@ -1308,7 +1308,7 @@ func setRandomPw(uuid string) (newPassword string, err error) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return "", err
+		return "", errors.New("bcrypt error")
 	}
 
 	db.Exec("UPDATE accounts SET password = ? WHERE uuid = ?", hashedPassword, uuid)
