@@ -418,13 +418,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 			}
 		}
 
-		var conditions []*Condition
-		for _, c := range globalConditions {
-			conditions = append(conditions, c)
-		}
-		for _, c := range h.conditions {
-			conditions = append(conditions, c)
-		}
+		conditions := append(globalConditions, h.conditions...)
 
 		for _, c := range conditions {
 			validVars := !c.VarTrigger
@@ -528,13 +522,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 	}
 	sender.varCache[varId] = value
 
-	var conditions []*Condition
-	for _, c := range globalConditions {
-		conditions = append(conditions, c)
-	}
-	for _, c := range h.conditions {
-		conditions = append(conditions, c)
-	}
+	conditions := append(globalConditions, h.conditions...)
 
 	if varId == 88 && config.gameName == "2kki" {
 		for _, c := range conditions {
