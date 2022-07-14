@@ -22,8 +22,6 @@ func main() {
 
 	configFileData := parseConfig(*configFile)
 
-	spriteNames, soundNames, systemNames, mapIds := getCharSetList(), getSoundList(), getSystemList(), getMapList()
-
 	//list of sound names to ignore
 	var ignoredSoundNames []string
 	if configFileData.BadSounds != "" {
@@ -43,9 +41,6 @@ func main() {
 	}
 
 	config = Config{
-		spriteNames:       spriteNames,
-		systemNames:       systemNames,
-		soundNames:        soundNames,
 		ignoredSoundNames: ignoredSoundNames,
 		pictureNames:      pictureNames,
 		picturePrefixes:   picturePrefixes,
@@ -55,13 +50,17 @@ func main() {
 		ipHubKey: configFileData.IPHubKey,
 	}
 
+	config.spriteNames = getCharSetList()
+	config.soundNames = getSoundList()
+	config.systemNames = getSystemList()
+
 	setDatabase(configFileData.Database.User, configFileData.Database.Pass, configFileData.Database.Host, configFileData.Database.Name)
 	setConditions()
 	setBadges()
 	setEventVms()
 
 	globalConditions = getGlobalConditions()
-	createAllHubs(mapIds, atoiArray(strings.Split(configFileData.SpRooms, ",")))
+	createAllHubs(getMapList(), atoiArray(strings.Split(configFileData.SpRooms, ",")))
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,
