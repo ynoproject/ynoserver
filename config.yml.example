@@ -4,9 +4,6 @@
 ## Port to listen on
 #port: 8080
 
-## Path to index.json
-#index_path: "games/default/index.json"
-
 ## Maps to exclude from multiplayer
 #sp_rooms: ""
 

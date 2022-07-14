@@ -28,7 +28,6 @@ type Config struct {
 type ConfigFile struct {
 	IP              string `yaml:"ip"`
 	Port            int    `yaml:"port"`
-	IndexPath       string `yaml:"index_path"`
 	SpRooms         string `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
 	PictureNames    string `yaml:"picture_names"`
@@ -62,9 +61,6 @@ func parseConfig(file string) ConfigFile {
 		panic(err)
 	}
 
-	if config.IndexPath == "" {
-		config.IndexPath = "games/default/index.json"
-	}
 	if config.IP == "" {
 		config.IP = "127.0.0.1"
 	}

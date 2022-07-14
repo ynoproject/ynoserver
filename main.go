@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -21,7 +22,7 @@ func main() {
 
 	configFileData := parseConfig(*configFile)
 
-	spriteNames, soundNames, systemNames, mapIds := parseResIndex(configFileData.IndexPath)
+	spriteNames, soundNames, systemNames, mapIds := getCharSetList(), getSoundList(), getSystemList(), getMapList()
 
 	//list of sound names to ignore
 	var ignoredSoundNames []string
@@ -79,52 +80,67 @@ func main() {
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
 
-func parseResIndex(resIndexPath string) (spriteNames []string, soundNames []string, systemNames []string, mapIds []int) {
-	resIndexData, err := ioutil.ReadFile(resIndexPath)
+func getCharSetList() []string {
+	files, err := os.ReadDir(config.gameName + "/CharSet")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	var resIndex interface{}
+	var charsets []string
+	for _, file := range files {
+		charsets = append(charsets, file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))])
+	}
 
-	err = json.Unmarshal(resIndexData, &resIndex)
+	return charsets
+}
+
+func getSoundList() []string {
+	files, err := os.ReadDir(config.gameName + "/Sound")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	//list of game character sprite names
-	for k, v := range resIndex.(map[string]interface{})["cache"].(map[string]interface{})["charset"].(map[string]interface{}) {
-		if k != "_dirname" {
-			spriteNames = append(spriteNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
-		}
+	var sounds []string
+	for _, file := range files {
+		sounds = append(sounds, file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))])
 	}
 
-	//list of game sound names
-	for k, v := range resIndex.(map[string]interface{})["cache"].(map[string]interface{})["sound"].(map[string]interface{}) {
-		if k != "_dirname" {
-			soundNames = append(soundNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
-		}
+	return sounds
+}
+
+func getSystemList() []string {
+	files, err := os.ReadDir(config.gameName + "/System")
+	if err != nil {
+		panic(err)
 	}
 
-	//list of game system names
-	for k, v := range resIndex.(map[string]interface{})["cache"].(map[string]interface{})["system"].(map[string]interface{}) {
-		if k != "_dirname" {
-			systemNames = append(systemNames, v.(string)[:len(v.(string))-len(filepath.Ext(v.(string)))]) //add filename without extension
-		}
+	var systems []string
+	for _, file := range files {
+		systems = append(systems, file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))])
 	}
 
-	//list of game map ids
-	for k := range resIndex.(map[string]interface{})["cache"].(map[string]interface{}) {
-		if str := k; len(str) == 11 { //map filenames are always 11 characters long
-			if str[7:] == ".lmu" { //check if extension is .lmu
-				if num, err := strconv.Atoi(str[3:7]); err == nil { //MapXXXX.lmu, remove "Map" and ".lmu"
-					mapIds = append(mapIds, num)
-				}
+	return systems
+}
+
+func getMapList() []int {
+	files, err := os.ReadDir(config.gameName + "/")
+	if err != nil {
+		panic(err)
+	}
+
+	var maps []int
+	for _, file := range files {
+		if len(file.Name()) == 11 && file.Name()[7:] == ".lmu" {
+			id, err := strconv.Atoi(file.Name()[3:7])
+			if err != nil {
+				panic(err)
 			}
+
+			maps = append(maps, id)
 		}
 	}
 
-	return spriteNames, soundNames, systemNames, mapIds
+	return maps
 }
 
 func atoiArray(strArray []string) (intArray []int) {
