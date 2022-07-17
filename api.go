@@ -667,7 +667,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		}
 		data, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
-		if err != nil {
+		if err != nil || len(data) > 1024 * 1024 {
 			handleError(w, r, "invalid data")
 			return
 		}
