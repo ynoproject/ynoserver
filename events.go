@@ -3,9 +3,10 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -223,7 +224,7 @@ func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp i
 		return
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		handleInternalEventError(eventType, err)
 		return
@@ -316,7 +317,7 @@ func setEventVms() {
 		return
 	}
 
-	vmsDir, err := ioutil.ReadDir("vms/")
+	vmsDir, err := os.ReadDir("vms/")
 	if err != nil {
 		return
 	}

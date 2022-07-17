@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -666,7 +666,7 @@ func readPlayerNewUnlockedBadgeIds(playerUuid string, playerRank int, playerTags
 func setConditions() {
 	conditionConfig := make(map[string]map[string]*Condition)
 
-	gameConditionDirs, err := ioutil.ReadDir("badges/conditions/")
+	gameConditionDirs, err := os.ReadDir("badges/conditions/")
 	if err != nil {
 		return
 	}
@@ -676,7 +676,7 @@ func setConditions() {
 			gameId := gameConditionsDir.Name()
 			conditionConfig[gameId] = make(map[string]*Condition)
 			configPath := "badges/conditions/" + gameId + "/"
-			conditionConfigs, err := ioutil.ReadDir(configPath)
+			conditionConfigs, err := os.ReadDir(configPath)
 			if err != nil {
 				continue
 			}
@@ -684,7 +684,7 @@ func setConditions() {
 			for _, conditionConfigFile := range conditionConfigs {
 				condition := &Condition{}
 
-				data, err := ioutil.ReadFile(configPath + conditionConfigFile.Name())
+				data, err := os.ReadFile(configPath + conditionConfigFile.Name())
 				if err != nil {
 					continue
 				}
@@ -719,7 +719,7 @@ func setBadges() {
 	badgeConfig := make(map[string]map[string]*Badge)
 	sortedBadgeIds = make(map[string][]string)
 
-	gameBadgeDirs, err := ioutil.ReadDir("badges/data/")
+	gameBadgeDirs, err := os.ReadDir("badges/data/")
 	if err != nil {
 		return
 	}
@@ -730,7 +730,7 @@ func setBadges() {
 			badgeConfig[gameId] = make(map[string]*Badge)
 			var badgeIds []string
 			configPath := "badges/data/" + gameId + "/"
-			badgeConfigs, err := ioutil.ReadDir(configPath)
+			badgeConfigs, err := os.ReadDir(configPath)
 			if err != nil {
 				continue
 			}
@@ -738,7 +738,7 @@ func setBadges() {
 			for _, badgeConfigFile := range badgeConfigs {
 				badge := &Badge{}
 
-				data, err := ioutil.ReadFile(configPath + badgeConfigFile.Name())
+				data, err := os.ReadFile(configPath + badgeConfigFile.Name())
 				if err != nil {
 					continue
 				}

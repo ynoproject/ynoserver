@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -83,7 +83,7 @@ func initApi() {
 
 				defer resp.Body.Close()
 
-				body, err := ioutil.ReadAll(resp.Body)
+				body, err := io.ReadAll(resp.Body)
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
@@ -665,7 +665,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid timestamp value")
 			return
 		}
-		data, err := ioutil.ReadAll(r.Body)
+		data, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil || len(data) > 1024 * 1024 {
 			handleError(w, r, "invalid data")
@@ -810,7 +810,7 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fileBytes, err := ioutil.ReadFile("vms/Map" + fmt.Sprintf("%04d", mapId) + "_EV" + fmt.Sprintf("%04d", eventId) + ".png")
+		fileBytes, err := os.ReadFile("vms/Map" + fmt.Sprintf("%04d", mapId) + "_EV" + fmt.Sprintf("%04d", eventId) + ".png")
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
