@@ -1289,7 +1289,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 
 func setRandomPw(uuid string) (newPassword string, err error) {
 	var userCount int
-	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", uuid).Scan(&userCount)
+	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE uuid = ?", uuid).Scan(&userCount)
 
 	if userCount == 0 {
 		return "", errors.New("user not found")
