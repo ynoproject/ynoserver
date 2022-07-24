@@ -1059,6 +1059,8 @@ func readCurrentPlayerEventVmsData(periodId int, playerUuid string) (eventVms []
 		return eventVms, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		eventVm := &EventVm{}
 
@@ -1075,8 +1077,6 @@ func readCurrentPlayerEventVmsData(periodId int, playerUuid string) (eventVms []
 
 		eventVms = append(eventVms, eventVm)
 	}
-
-	results.Close()
 
 	return eventVms, nil
 }
