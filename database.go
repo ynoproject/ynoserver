@@ -634,8 +634,7 @@ func setPartyOwner(partyId int, playerUuid string) error {
 }
 
 func checkDeleteOrphanedParty(partyId int) (deleted bool, err error) {
-	var partyMemberCount int
-	partyMemberCount, err = readPartyMemberCount(partyId)
+	partyMemberCount, err := readPartyMemberCount(partyId)
 	if err != nil {
 		return false, err
 	}
