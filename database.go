@@ -28,13 +28,13 @@ func setDatabase(user string, pass string, host string, name string) {
 func readPlayerData(ip string) (uuid string, rank int, banned bool, muted bool) {
 	err := db.QueryRow("SELECT uuid, rank, banned, muted FROM players WHERE ip = ?", ip).Scan(&uuid, &rank, &banned, &muted)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			uuid = randstr.String(16)
-			banned = isVpn(ip)
-			createPlayerData(ip, uuid, 0, banned)
-		} else {
+		if err != sql.ErrNoRows {
 			return "", 0, false, false
 		}
+	
+		uuid = randstr.String(16)
+		banned = isVpn(ip)
+		createPlayerData(ip, uuid, 0, banned)
 	}
 
 	return uuid, rank, banned, muted
