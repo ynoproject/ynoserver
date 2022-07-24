@@ -843,7 +843,7 @@ func writeEventLocationData(periodId int, eventType int, title string, titleJP s
 	} else {
 		if weekday == time.Friday || weekday == time.Saturday {
 			days = 2
-			offsetDays = int(weekday) - int(time.Friday)
+			offsetDays = int(weekday - time.Friday)
 		} else {
 			return nil
 		}
@@ -1107,12 +1107,12 @@ func writeEventVmData(periodId int, mapId int, eventId int, exp int) (err error)
 		fallthrough
 	case time.Thursday:
 		days = 3
-		offsetDays = int(weekday) - int(time.Tuesday)
+		offsetDays = int(weekday - time.Tuesday)
 	case time.Friday:
 		fallthrough
 	case time.Saturday:
 		days = 2
-		offsetDays = int(weekday) - int(time.Friday)
+		offsetDays = int(weekday - time.Friday)
 	}
 
 	days -= offsetDays
