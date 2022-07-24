@@ -1171,21 +1171,18 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
-	if syncedPicsResponse != nil {
-		w.Write(syncedPicsResponse) //use cached response
-		return
+	if syncedPicsResponse == nil {
+		response, err := json.Marshal(SyncedPicsInfo{
+			PictureNames:    config.pictureNames,
+			PicturePrefixes: config.picturePrefixes,
+		})
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+	
+		syncedPicsResponse = response //cache response
 	}
-
-	response, err := json.Marshal(SyncedPicsInfo{
-		PictureNames:    config.pictureNames,
-		PicturePrefixes: config.picturePrefixes,
-	})
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
-	syncedPicsResponse = response //cache response
 
 	w.Write([]byte(syncedPicsResponse))
 }
