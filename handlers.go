@@ -418,9 +418,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 			}
 		}
 
-		conditions := append(globalConditions, h.conditions...)
-
-		for _, c := range conditions {
+		for _, c := range append(globalConditions, h.conditions...) {
 			validVars := !c.VarTrigger
 			if c.VarTrigger {
 				if c.VarId > 0 {
