@@ -1282,7 +1282,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.Exec("UPDATE accounts SET password = ? WHERE user = ?", hashedPassword, user[0])
+	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, user[0])
 
 	w.Write([]byte("ok"))
 }
@@ -1302,7 +1302,7 @@ func setRandomPw(user string) (newPassword string, err error) {
 		return "", errors.New("bcrypt error")
 	}
 
-	db.Exec("UPDATE accounts SET password = ? WHERE user = ?", hashedPassword, user)
+	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, user)
 
 	return newPassword, nil
 }
