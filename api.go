@@ -109,7 +109,7 @@ func initApi() {
 		w.Write([]byte(response))
 	})
 
-	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) { //deprecated
+	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
 		var uuid string
 		var name string
 		var rank int
