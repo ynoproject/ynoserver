@@ -245,7 +245,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-	case "randompw":
+	case "resetpw":
 		if readPlayerRank(uuid) < 2 {
 			handleError(w, r, "access denied")
 			return
@@ -257,7 +257,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		newPw, err := setRandomPw(playerParam[0])
+		newPw, err := handleResetPw(playerParam[0])
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -1287,7 +1287,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func setRandomPw(user string) (newPassword string, err error) {
+func handleResetPw(user string) (newPassword string, err error) {
 	var userCount int
 	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user).Scan(&userCount)
 
