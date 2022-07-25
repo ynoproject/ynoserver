@@ -1287,9 +1287,9 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func setRandomPw(uuid string) (newPassword string, err error) {
+func setRandomPw(user string) (newPassword string, err error) {
 	var userCount int
-	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE uuid = ?", uuid).Scan(&userCount)
+	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user).Scan(&userCount)
 
 	if userCount == 0 {
 		return "", errors.New("user not found")
@@ -1302,7 +1302,7 @@ func setRandomPw(uuid string) (newPassword string, err error) {
 		return "", errors.New("bcrypt error")
 	}
 
-	db.Exec("UPDATE accounts SET password = ? WHERE uuid = ?", hashedPassword, uuid)
+	db.Exec("UPDATE accounts SET password = ? WHERE user = ?", hashedPassword, user)
 
 	return newPassword, nil
 }
