@@ -117,7 +117,7 @@ func initApi() {
 		var badgeSlotRows int
 		var badgeSlotCols int
 
-		token := r.Header.Get("X-Session")
+		token := r.Header.Get("Authorization")
 		if token == "" {
 			uuid, name, rank = readPlayerInfo(getIp(r))
 		} else {
@@ -147,7 +147,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 	var rank int
 
-	token := r.Header.Get("X-Session")
+	token := r.Header.Get("Authorization")
 	if token == "" {
 		uuid, rank, _, _ = readPlayerData(getIp(r))
 	} else {
@@ -287,7 +287,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 	var rank int
 	var banned bool
 
-	token := r.Header.Get("X-Session")
+	token := r.Header.Get("Authorization")
 	if token == "" {
 		uuid, rank, banned, _ = readPlayerData(getIp(r))
 	} else {
@@ -604,7 +604,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 	var banned bool
 
-	token := r.Header.Get("X-Session")
+	token := r.Header.Get("Authorization")
 	if token == "" {
 		handleError(w, r, "token not specified")
 		return
@@ -689,7 +689,7 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 	var banned bool
 
-	token := r.Header.Get("X-Session")
+	token := r.Header.Get("Authorization")
 	if token == "" {
 		handleError(w, r, "token not specified")
 		return
@@ -832,7 +832,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "command not specified")
 		return
 	}
-	token := r.Header.Get("X-Session")
+	token := r.Header.Get("Authorization")
 	if token == "" {
 		if commandParam[0] == "list" || commandParam[0] == "playerSlotList" {
 			uuid, rank, banned, _ = readPlayerData(getIp(r))
@@ -1059,7 +1059,7 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 	var banned bool
 
-	token := r.Header.Get("X-Session")
+	token := r.Header.Get("Authorization")
 	if token == "" {
 		uuid, _, banned, _ = readPlayerData(getIp(r))
 	} else {
@@ -1241,7 +1241,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("X-Session")
+	token := r.Header.Get("Authorization")
 
 	if token == "" {
 		handleError(w, r, "token not specified")
