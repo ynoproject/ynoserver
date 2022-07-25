@@ -323,15 +323,12 @@ func setEventVms() {
 	}
 
 	for _, vmFile := range vmsDir {
-		mapId := vmFile.Name()[3:7]
-		eventId := vmFile.Name()[10:14]
-
-		mapIdInt, err := strconv.Atoi(mapId)
+		mapIdInt, err := strconv.Atoi(vmFile.Name()[3:7])
 		if err != nil {
 			return
 		}
 
-		eventIdInt, err := strconv.Atoi(eventId)
+		eventIdInt, err := strconv.Atoi(vmFile.Name()[10:14])
 		if err != nil {
 			return
 		}
