@@ -54,7 +54,7 @@ func sendPartyUpdate() {
 				continue
 			}
 			if client, ok := sessionClients[member.Uuid]; ok {
-				var jsonData string //wasteful, find way to store as []byte
+				var jsonData []byte
 				if member.Uuid == party.OwnerUuid {
 					// Expose password only for party owner
 					party.Pass = partyPass
@@ -63,11 +63,11 @@ func sendPartyUpdate() {
 					if err != nil {
 						continue
 					}
-					jsonData = string(ownerPartyDataJson)
+					jsonData = ownerPartyDataJson
 				} else {
-					jsonData = string(partyDataJson)
+					jsonData = partyDataJson
 				}
-				client.send <- []byte("pt" + delim + jsonData) //send JSON to client
+				client.send <- append([]byte("pt" + delim), jsonData...) //send JSON to client
 			}
 		}
 	}
