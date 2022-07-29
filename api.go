@@ -123,6 +123,13 @@ func initApi() {
 		} else {
 			uuid, name, rank, badge, badgeSlotRows, badgeSlotCols = readPlayerInfoFromToken(token)
 		}
+
+		// guest accounts with no playerGameData records will return nothing
+		// if uuid is empty it breaks fetchAndUpdatePlayerInfo in forest-orb
+		if uuid == "" {
+			uuid = "null"
+		}
+
 		playerInfo := PlayerInfo{
 			Uuid:          uuid,
 			Name:          name,
