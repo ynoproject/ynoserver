@@ -175,7 +175,7 @@ func initEvents() {
 			case time.Friday:
 				fallthrough
 			case time.Saturday:
-				db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(time.Friday)).Scan(&count)
+				db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-time.Friday)).Scan(&count)
 
 				if count < 1 {
 					add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
@@ -184,7 +184,7 @@ func initEvents() {
 				lastVmWeekday = time.Friday
 			}
 
-			err = db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)-int(lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
+			err = db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
 
 			if err == sql.ErrNoRows {
 				add2kkiEventVm()
