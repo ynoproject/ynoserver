@@ -162,19 +162,11 @@ func initEvents() {
 			var lastVmWeekday time.Weekday
 
 			switch weekday {
-			case time.Sunday:
-				fallthrough
-			case time.Monday:
+			case time.Sunday, time.Monday:
 				lastVmWeekday = time.Sunday
-			case time.Tuesday:
-				fallthrough
-			case time.Wednesday:
-				fallthrough
-			case time.Thursday:
+			case time.Tuesday, time.Wednesday, time.Thursday:
 				lastVmWeekday = time.Tuesday
-			case time.Friday:
-				fallthrough
-			case time.Saturday:
+			case time.Friday, time.Saturday:
 				db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-time.Friday)).Scan(&count)
 
 				if count < 1 {
