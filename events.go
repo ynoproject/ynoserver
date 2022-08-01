@@ -303,16 +303,16 @@ func handleEventError(eventType int, payload string) {
 }
 
 func setEventVms() {
-	eventVms = make(map[int][]int)
-
 	if config.gameName != "2kki" {
 		return
 	}
-
+	
 	vmsDir, err := os.ReadDir("vms/")
 	if err != nil {
 		return
 	}
+	
+	eventVms = make(map[int][]int)
 
 	for _, vmFile := range vmsDir {
 		mapIdInt, err := strconv.Atoi(vmFile.Name()[3:7])
