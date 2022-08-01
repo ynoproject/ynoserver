@@ -101,26 +101,21 @@ func initEvents() {
 			add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
 			add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
 			eventsCount += 2
-			sendEventsUpdate()
-		})
 
-		s.Every(1).Sunday().At("00:00").Do(func() {
-			add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
-			add2kkiEventVm()
-			eventsCount += 2
-			sendEventsUpdate()
-		})
+			switch time.Now().Weekday() {
+			case time.Sunday:
+				add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
+				add2kkiEventVm()
+				eventsCount += 2
+			case time.Tuesday:
+				add2kkiEventVm()
+				eventsCount++
+			case time.Friday:
+				add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
+				add2kkiEventVm()
+				eventsCount += 2
+			}
 
-		s.Every(1).Tuesday().At("00:00").Do(func() {
-			add2kkiEventVm()
-			eventsCount++
-			sendEventsUpdate()
-		})
-
-		s.Every(1).Friday().At("00:00").Do(func() {
-			add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
-			add2kkiEventVm()
-			eventsCount += 2
 			sendEventsUpdate()
 		})
 
