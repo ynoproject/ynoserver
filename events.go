@@ -136,14 +136,12 @@ func initEvents() {
 
 			// daily easy expedition
 			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 1", periodId).Scan(&count)
-
 			if count < 1 {
 				add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
 			}
 
 			// daily hard expedition
 			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 3", periodId).Scan(&count)
-
 			if count < 1 {
 				add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
 			}
@@ -152,7 +150,6 @@ func initEvents() {
 			
 			// weekly expedition
 			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)).Scan(&count)
-
 			if count < 1 {
 				add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
 			}
@@ -167,7 +164,6 @@ func initEvents() {
 			case time.Friday, time.Saturday:
 				// weekend expedition
 				db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-time.Friday)).Scan(&count)
-
 				if count < 1 {
 					add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
 				}
@@ -177,7 +173,6 @@ func initEvents() {
 
 			// vending machine expedition
 			err = db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
-
 			if err == sql.ErrNoRows {
 				add2kkiEventVm()
 			}
