@@ -102,7 +102,7 @@ func initEvents() {
 			add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
 			eventsCount += 2
 
-			switch time.Now().Weekday() {
+			switch time.Now().UTC().Weekday() {
 			case time.Sunday:
 				add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
 				add2kkiEventVm()
