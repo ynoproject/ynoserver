@@ -139,12 +139,14 @@ func initEvents() {
 		if err == nil {
 			var count int
 
+			// daily easy expedition
 			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 1", periodId).Scan(&count)
 
 			if count < 1 {
 				add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
 			}
 
+			// daily hard expedition
 			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 3", periodId).Scan(&count)
 
 			if count < 1 {
@@ -152,7 +154,8 @@ func initEvents() {
 			}
 
 			weekday := time.Now().UTC().Weekday()
-
+			
+			// weekly expedition
 			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)).Scan(&count)
 
 			if count < 1 {
@@ -167,6 +170,7 @@ func initEvents() {
 			case time.Tuesday, time.Wednesday, time.Thursday:
 				lastVmWeekday = time.Tuesday
 			case time.Friday, time.Saturday:
+				// weekend expedition
 				db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-time.Friday)).Scan(&count)
 
 				if count < 1 {
@@ -176,6 +180,7 @@ func initEvents() {
 				lastVmWeekday = time.Friday
 			}
 
+			// vending machine expedition
 			err = db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
 
 			if err == sql.ErrNoRows {
@@ -198,6 +203,7 @@ func add2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int) {
 	addPlayer2kkiEventLocation(eventType, minDepth, maxDepth, exp, "")
 }
 
+// eventType: 0 - daily, 1 - weekly, 2 - weekend, 3 - manual
 func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int, playerUuid string) {
 	periodId, err := readCurrentEventPeriodId()
 	if err != nil {
