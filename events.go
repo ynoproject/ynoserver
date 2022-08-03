@@ -153,13 +153,13 @@ func initEvents() {
 				add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
 			}
 
-			//var lastVmWeekday time.Weekday
+			var lastVmWeekday time.Weekday
 
 			switch weekday {
-			//case time.Sunday, time.Monday:
-				//lastVmWeekday = time.Sunday
-			//case time.Tuesday, time.Wednesday, time.Thursday:
-				//lastVmWeekday = time.Tuesday
+			case time.Sunday, time.Monday:
+				lastVmWeekday = time.Sunday
+			case time.Tuesday, time.Wednesday, time.Thursday:
+				lastVmWeekday = time.Tuesday
 			case time.Friday, time.Saturday:
 				// weekend expedition
 				db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-time.Friday)).Scan(&count)
@@ -167,14 +167,14 @@ func initEvents() {
 					add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
 				}
 
-				//lastVmWeekday = time.Friday
+				lastVmWeekday = time.Friday
 			}
 
 			// vending machine expedition
-			/*err = db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
-			if err == sql.ErrNoRows {
-				add2kkiEventVm()
-			}*/
+			db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
+			//if err == sql.ErrNoRows {
+				//add2kkiEventVm()
+			//}
 		}
 	}
 }
