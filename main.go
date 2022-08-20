@@ -76,7 +76,7 @@ func main() {
 	initRankings()
 	initSession()
 
-	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(":"+strconv.Itoa(configFileData.Port), nil), 500)
+	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(configFileData.IP+":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
 
 func getCharSetList() []string {
