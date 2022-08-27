@@ -1191,9 +1191,13 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	//GET params user, password
 	ip, user, password := getIp(r), r.URL.Query()["user"], r.URL.Query()["password"]
-	if isVpn(ip) || len(user) < 1 || len(user[0]) > 12 || !isOkString(user[0]) || len(password) < 1 || len(password[0]) > 72 {
+	if len(user) < 1 || len(user[0]) > 12 || !isOkString(user[0]) || len(password) < 1 || len(password[0]) > 72 {
 		handleError(w, r, "bad response")
 		return
+	}
+
+	if isVpn(ip) {
+		handleError(w, r, "vpn not permitted")
 	}
 
 	var userExists int
