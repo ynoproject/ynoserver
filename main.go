@@ -55,6 +55,9 @@ func main() {
 	config.systemNames = getSystemList()
 
 	setDatabase(configFileData.Database.User, configFileData.Database.Pass, configFileData.Database.Host, configFileData.Database.Name)
+
+	handleMigrations()
+
 	setConditions()
 	setBadges()
 	setEventVms()

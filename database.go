@@ -665,7 +665,7 @@ func deletePartyAndMembers(partyId int) (err error) {
 }
 
 func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) { //called by api only
-	err = db.QueryRow("SELECT timestamp FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName).Scan(&timestamp)
+	err = db.QueryRow("SELECT timestamp FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName).Scan(&timestamp)
 	if err != nil {
 		return timestamp, err
 	}
@@ -674,7 +674,7 @@ func readSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) {
 }
 
 func readSaveData(playerUuid string) (saveData string, err error) { //called by api only
-	err = db.QueryRow("SELECT data FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName).Scan(&saveData)
+	err = db.QueryRow("SELECT data FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName).Scan(&saveData)
 	if err != nil {
 		return saveData, err
 	}
@@ -683,7 +683,7 @@ func readSaveData(playerUuid string) (saveData string, err error) { //called by 
 }
 
 func createGameSaveData(playerUuid string, timestamp time.Time, data string) (err error) { //called by api only
-	_, err = db.Exec("INSERT INTO gameSaves (uuid, game, timestamp, data) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, timestamp, data, timestamp, data)
+	_, err = db.Exec("INSERT INTO playerGameSaves (uuid, game, timestamp, data) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, timestamp, data, timestamp, data)
 	if err != nil {
 		return err
 	}
@@ -692,7 +692,7 @@ func createGameSaveData(playerUuid string, timestamp time.Time, data string) (er
 }
 
 func clearGameSaveData(playerUuid string) (err error) { //called by api only
-	_, err = db.Exec("DELETE FROM gameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
+	_, err = db.Exec("DELETE FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 	if err != nil {
 		return err
 	}
