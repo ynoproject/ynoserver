@@ -431,14 +431,18 @@ func (h *Hub) handleValidClient(client *Client) {
 		client.send <- []byte("sv" + delim + strconv.Itoa(minigame.VarId) + delim + strconv.Itoa(varSyncType))
 	}
 
-	if h.roomId == currentEventVmMapId {
-		if eventIds, hasVms := eventVms[h.roomId]; hasVms {
-			for _, eventId := range eventIds {
-				if eventId != currentEventVmEventId {
-					continue
-				}
-				client.send <- []byte("sev" + delim + strconv.Itoa(eventId) + delim + "1")
+	// send variable sync request for vending machine expeditions
+	if h.roomId != currentEventVmMapId {
+		return 
+	}
+
+	if eventIds, hasVms := eventVms[h.roomId]; hasVms {
+		for _, eventId := range eventIds {
+			if eventId != currentEventVmEventId {
+				continue
 			}
+			client.send <- []byte("sev" + delim + strconv.Itoa(eventId) + delim + "1")
 		}
 	}
 }
+
