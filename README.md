@@ -17,7 +17,6 @@ go get gopkg.in/natefinch/lumberjack.v2
 go get gopkg.in/yaml.v2
 go get golang.org/x/text/unicode/norm
 go get github.com/go-sql-driver/mysql
-go get github.com/thanhpk/randstr
 go build
 ```
 

@@ -6,7 +6,6 @@ require (
 	github.com/go-co-op/gocron v1.16.2
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/thanhpk/randstr v1.0.4
 	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0

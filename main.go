@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -302,4 +303,16 @@ func writeLog(ip string, location string, payload string, errorcode int) {
 
 func writeErrLog(ip string, location string, payload string) {
 	writeLog(ip, location, payload, 400)
+}
+
+func randString(length int) string {
+	const runes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+	const lenRunes = len(runes)
+
+	b := make([]byte, length)
+    for i := range b {
+        b[i] = runes[rand.Intn(lenRunes)]
+    }
+
+    return string(b)
 }

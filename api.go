@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thanhpk/randstr"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -1234,7 +1233,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := randstr.String(32)
+	token := randString(32)
 	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", token, user[0])
 	db.Exec("UPDATE accounts SET timestampLoggedIn = CURRENT_TIMESTAMP() WHERE user = ?", user[0])
 
@@ -1296,7 +1295,7 @@ func handleResetPw(user string) (newPassword string, err error) {
 		return "", errors.New("user not found")
 	}
 
-	newPassword = randstr.String(8)
+	newPassword = randString(8)
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {

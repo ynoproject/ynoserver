@@ -9,7 +9,6 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/thanhpk/randstr"
 )
 
 var (
@@ -38,7 +37,7 @@ func readOrCreatePlayerData(ip string) (uuid string, rank int, banned bool, mute
 			return "", 0, true, false
 		}
 
-		uuid = randstr.String(16)
+		uuid = randString(16)
 		banned = isVpn(ip)
 		createPlayerData(ip, uuid, 0, banned)
 	}
