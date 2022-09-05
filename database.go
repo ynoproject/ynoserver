@@ -1777,3 +1777,18 @@ func readNameFromUuid(uuid string) (name string) {
 	// couldn't find a name
 	return ""
 }
+
+func isIpBanned(ip string) bool {
+	var banned int
+
+	// check if account is banned
+	db.QueryRow("SELECT banned FROM players WHERE uuid IN (SELECT uuid FROM accounts WHERE ip = ?)", ip).Scan(&banned)
+	if banned == 1 {
+		return true
+	}
+
+	// check if guest account is banned
+	db.QueryRow("SELECT banned FROM players WHERE ip = ?", ip).Scan(&banned)
+
+	return banned == 1
+}

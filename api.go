@@ -1186,6 +1186,11 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "vpn not permitted")
 	}
 
+	if isIpBanned(ip) {
+		handleError(w, r, "banned users cannot create accounts")
+		return
+	}
+
 	var userExists int
 	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user[0]).Scan(&userExists)
 
@@ -1194,15 +1199,8 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var banned int
 	var uuid string
-	db.QueryRow("SELECT banned, uuid FROM players WHERE ip = ?", ip).Scan(&banned, &uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
-
-	if banned == 1 {
-		handleError(w, r, "banned users cannot create accounts")
-		return
-	}
-
+	db.QueryRow("SELECT uuid FROM players WHERE ip = ?", ip).Scan(&uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
 	if uuid != "" {
 		db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip)
 	} else {
