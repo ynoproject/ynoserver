@@ -24,11 +24,11 @@ func setDatabase(user string, pass string, host string, name string) {
 	db = conn
 }
 
-func readOrCreatePlayerData(ip string) (uuid string, rank int, banned bool, muted bool) {
-	err := db.QueryRow("SELECT uuid, rank, banned, muted FROM players WHERE ip = ?", ip).Scan(&uuid, &rank, &banned, &muted)
+func readOrCreatePlayerData(ip string) (uuid string, banned bool, muted bool) {
+	err := db.QueryRow("SELECT uuid, banned, muted FROM players WHERE ip = ?", ip).Scan(&uuid, &banned, &muted)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return "", 0, false, false
+			return "", false, false
 		}
 
 		// create new guest account
@@ -37,7 +37,7 @@ func readOrCreatePlayerData(ip string) (uuid string, rank int, banned bool, mute
 		createPlayerData(ip, uuid, 0, banned)
 	}
 
-	return uuid, rank, banned, muted
+	return uuid, banned, muted
 }
 
 func readPlayerDataFromToken(token string) (uuid string, name string, rank int, badge string, banned bool, muted bool) {

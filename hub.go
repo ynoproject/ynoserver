@@ -108,7 +108,7 @@ func (h *Hub) run() {
 			}
 		
 			if !account {
-				uuid, _, banned, _ = readOrCreatePlayerData(conn.Ip)
+				uuid, banned, _ = readOrCreatePlayerData(conn.Ip)
 			}
 		
 			if banned || isIpBanned(conn.Ip) {
