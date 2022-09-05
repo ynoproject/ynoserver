@@ -37,7 +37,6 @@ var (
 func initApi() {
 	http.HandleFunc("/admin/getplayers", adminGetOnlinePlayers)
 	http.HandleFunc("/admin/getbans", adminGetBans)
-	http.HandleFunc("/admin/getbans", adminGetBans)
 	http.HandleFunc("/admin/getmutes", adminGetMutes)
 	http.HandleFunc("/admin/ban", adminBan)
 	http.HandleFunc("/admin/mute", adminMute)
