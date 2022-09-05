@@ -116,7 +116,7 @@ func (h *Hub) run() {
 				badge = "null"
 			}
 
-			if banned {
+			if banned || isIpBanned(conn.Ip) {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player is banned")
 				continue
 			}

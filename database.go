@@ -32,11 +32,6 @@ func readOrCreatePlayerData(ip string) (uuid string, rank int, banned bool, mute
 		}
 
 		// create new guest account
-
-		if isIpBanned(ip) {
-			return "", 0, true, false
-		}
-
 		uuid = randString(16)
 		banned = isVpn(ip)
 		createPlayerData(ip, uuid, 0, banned)

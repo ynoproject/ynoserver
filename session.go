@@ -94,7 +94,7 @@ func (s *Session) run() {
 				badge = "null"
 			}
 
-			if banned {
+			if banned || isIpBanned(conn.Ip) {
 				writeErrLog(conn.Ip, "session", "player is banned")
 				continue
 			}
