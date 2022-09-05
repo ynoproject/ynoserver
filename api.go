@@ -35,6 +35,15 @@ var (
 )
 
 func initApi() {
+	http.HandleFunc("/admin/getplayers", adminGetOnlinePlayers)
+	http.HandleFunc("/admin/getbans", adminGetBans)
+	http.HandleFunc("/admin/getbans", adminGetBans)
+	http.HandleFunc("/admin/getmutes", adminGetMutes)
+	http.HandleFunc("/admin/ban", adminBan)
+	http.HandleFunc("/admin/mute", adminMute)
+	http.HandleFunc("/admin/unban", adminUnban)
+	http.HandleFunc("/admin/unmute", adminUnmute)
+
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/saveSync", handleSaveSync)
