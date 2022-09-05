@@ -123,21 +123,17 @@ func (h *Hub) run() {
 
 			var session *SessionClient
 			if s, ok := sessionClients[uuid]; ok {
+				if s.bound {
+					writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "session in use")
+					continue
+				}
+
+				s.bound = true
+
 				session = s
 			} else {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player has no session")
 				continue
-			}
-
-			var same_ip int
-			for otherClient := range h.clients {
-				if otherClient.session.ip == conn.Ip {
-					same_ip++
-				}
-			}
-			if same_ip >= 3 {
-				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "too many connections")
-				continue //don't bother with handling their connection
 			}
 
 			var id int
@@ -187,6 +183,8 @@ func (h *Hub) run() {
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
+				client.session.bound = false
+
 				h.deleteClient(client)
 				writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 				continue
