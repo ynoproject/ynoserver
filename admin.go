@@ -9,14 +9,9 @@ type AdminPlayersResponse struct {
 	Players []PlayerInfo `json:"player"`
 }
 
-func tokenIsRank(token string, rank int) bool {
-	_, _, playerRank, _, _, _ := readPlayerDataFromToken(token)
-
-	return playerRank >= rank
-}
-
 func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
-	if tokenIsRank(r.Header.Get("Authorization"), 1) {
+	_, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -42,7 +37,8 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminGetBans(w http.ResponseWriter, r *http.Request) {
-	if tokenIsRank(r.Header.Get("Authorization"), 1) {
+	_, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -56,7 +52,8 @@ func adminGetBans(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminGetMutes(w http.ResponseWriter, r *http.Request) {
-	if tokenIsRank(r.Header.Get("Authorization"), 1) {
+	_, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
