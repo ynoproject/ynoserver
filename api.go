@@ -1238,7 +1238,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	//GET params user, password
 	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
-	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 /*|| len (password[0]) > 72*/ {
+	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len (password[0]) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}
@@ -1281,7 +1281,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	//GET params user, old password, new password
 	user, password, newPassword := r.URL.Query()["user"], r.URL.Query()["password"], r.URL.Query()["newPassword"]
-	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 /*|| len(password[0]) > 72*/ || len(newPassword) < 1 || len(newPassword[0]) > 72 {
+	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len(password[0]) > 72 || len(newPassword) < 1 || len(newPassword[0]) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}
