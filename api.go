@@ -164,7 +164,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		uuid, rank, _, _ = readPlayerData(getIp(r))
+		uuid, rank, _, _ = readOrCreatePlayerData(getIp(r))
 	} else {
 		uuid, _, rank, _, _, _ = readPlayerDataFromToken(token)
 	}
@@ -280,7 +280,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		uuid, rank, banned, _ = readPlayerData(getIp(r))
+		uuid, rank, banned, _ = readOrCreatePlayerData(getIp(r))
 	} else {
 		uuid, _, rank, _, banned, _ = readPlayerDataFromToken(token)
 	}
@@ -826,7 +826,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
 		if commandParam[0] == "list" || commandParam[0] == "playerSlotList" {
-			uuid, rank, banned, _ = readPlayerData(getIp(r))
+			uuid, rank, banned, _ = readOrCreatePlayerData(getIp(r))
 		} else {
 			handleError(w, r, "token not specified")
 			return
@@ -1052,7 +1052,7 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		uuid, _, banned, _ = readPlayerData(getIp(r))
+		uuid, _, banned, _ = readOrCreatePlayerData(getIp(r))
 	} else {
 		uuid, _, _, _, banned, _ = readPlayerDataFromToken(token)
 	}
@@ -1204,7 +1204,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	if uuid != "" {
 		db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip)
 	} else {
-		uuid, _, _, _ = readPlayerData(ip)
+		uuid, _, _, _ = readOrCreatePlayerData(ip)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)

@@ -87,7 +87,7 @@ func (s *Session) run() {
 			}
 		
 			if !account {
-				uuid, rank, banned, muted = readPlayerData(conn.Ip)
+				uuid, rank, banned, muted = readOrCreatePlayerData(conn.Ip)
 			}
 		
 			if badge == "" {

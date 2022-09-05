@@ -109,7 +109,7 @@ func (h *Hub) run() {
 			}
 		
 			if !account {
-				uuid, _, banned, _ = readPlayerData(conn.Ip)
+				uuid, _, banned, _ = readOrCreatePlayerData(conn.Ip)
 			}
 		
 			if badge == "" {

@@ -25,7 +25,7 @@ func setDatabase(user string, pass string, host string, name string) {
 	db = conn
 }
 
-func readPlayerData(ip string) (uuid string, rank int, banned bool, muted bool) {
+func readOrCreatePlayerData(ip string) (uuid string, rank int, banned bool, muted bool) {
 	err := db.QueryRow("SELECT uuid, rank, banned, muted FROM players WHERE ip = ?", ip).Scan(&uuid, &rank, &banned, &muted)
 	if err != nil {
 		if err != sql.ErrNoRows {
