@@ -58,33 +58,89 @@ func adminGetMutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBan(w http.ResponseWriter, r *http.Request) {
-	if tokenIsRank(r.Header.Get("Authorization"), 1) {
+	uuid, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
 
+	playerParam, ok := r.URL.Query()["player"]
+	if !ok || len(playerParam) < 1 {
+		handleError(w, r, "player not specified")
+		return
+	}
+
+	err := tryBanPlayer(uuid, playerParam[0])
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
 }
 
 func adminMute(w http.ResponseWriter, r *http.Request) {
-	if tokenIsRank(r.Header.Get("Authorization"), 1) {
+	uuid, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
 
+	playerParam, ok := r.URL.Query()["player"]
+	if !ok || len(playerParam) < 1 {
+		handleError(w, r, "player not specified")
+		return
+	}
+
+	err := tryMutePlayer(uuid, playerParam[0])
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
 }
 
 func adminUnban(w http.ResponseWriter, r *http.Request) {
-	if tokenIsRank(r.Header.Get("Authorization"), 1) {
+	uuid, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
 
+	playerParam, ok := r.URL.Query()["player"]
+	if !ok || len(playerParam) < 1 {
+		handleError(w, r, "player not specified")
+		return
+	}
+
+	err := tryUnbanPlayer(uuid, playerParam[0])
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
 }
 
 func adminUnmute(w http.ResponseWriter, r *http.Request) {
-	if tokenIsRank(r.Header.Get("Authorization"), 1) {
+	uuid, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
 
+	playerParam, ok := r.URL.Query()["player"]
+	if !ok || len(playerParam) < 1 {
+		handleError(w, r, "player not specified")
+		return
+	}
+
+	err := tryUnmutePlayer(uuid, playerParam[0])
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
 }

@@ -187,6 +187,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "mute":
+		// deprecated
 		playerParam, ok := r.URL.Query()["player"]
 		if !ok || len(playerParam) < 1 {
 			handleError(w, r, "player not specified")
@@ -199,6 +200,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "unmute":
+		// deprecated
 		playerParam, ok := r.URL.Query()["player"]
 		if !ok || len(playerParam) < 1 {
 			handleError(w, r, "player not specified")

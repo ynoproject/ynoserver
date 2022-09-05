@@ -87,6 +87,23 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { //called by a
 	return nil
 }
 
+func tryUnbanPlayer(senderUuid string, recipientUuid string) error { //called by api only
+	if readPlayerRank(senderUuid) <= readPlayerRank(recipientUuid) {
+		return errors.New("insufficient rank")
+	}
+
+	if senderUuid == recipientUuid {
+		return errors.New("attempted self-unban")
+	}
+
+	_, err := db.Exec("UPDATE players SET banned = 0 WHERE uuid = ?", recipientUuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func tryMutePlayer(senderUuid string, recipientUuid string) error { //called by api only
 	if readPlayerRank(senderUuid) <= readPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
