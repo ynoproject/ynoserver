@@ -1190,11 +1190,13 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	//GET params user, password
-	ip, user, password := getIp(r), r.URL.Query()["user"], r.URL.Query()["password"]
+	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
 	if len(user) < 1 || len(user[0]) > 12 || !isOkString(user[0]) || len(password) < 1 || len(password[0]) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}
+
+	ip := getIp(r)
 
 	if isVpn(ip) {
 		handleError(w, r, "vpn not permitted")
@@ -1208,8 +1210,8 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var uuid string
 	var banned int
+	var uuid string
 	db.QueryRow("SELECT banned, uuid FROM players WHERE ip = ?", ip).Scan(&uuid, &banned) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
 
 	if banned == 1 {
