@@ -1196,7 +1196,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	var banned int
 	var uuid string
-	db.QueryRow("SELECT banned, uuid FROM players WHERE ip = ?", ip).Scan(&uuid, &banned) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
+	db.QueryRow("SELECT banned, uuid FROM players WHERE ip = ?", ip).Scan(&banned, &uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
 
 	if banned == 1 {
 		handleError(w, r, "banned users cannot create accounts")
