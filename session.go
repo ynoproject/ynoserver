@@ -99,15 +99,20 @@ func (s *Session) run() {
 				continue
 			}
 
-			var same_ip int
+			var sameIp int
 			for otherClient := range s.clients {
+				if otherClient.uuid == uuid {
+					writeErrLog(conn.Ip, "session", "session already exists for uuid")
+					continue
+				}
+
 				if otherClient.ip == conn.Ip {
-					same_ip++
+					sameIp++
 				}
 			}
-			if same_ip >= 3 {
-				writeErrLog(conn.Ip, "session", "too many connections")
-				continue //don't bother with handling their connection
+			if sameIp >= 3 {
+				writeErrLog(conn.Ip, "session", "too many connections from ip")
+				continue
 			}
 
 			spriteName, spriteIndex, systemName := readPlayerGameData(uuid)
