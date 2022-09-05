@@ -1216,6 +1216,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	if banned == 1 {
 		handleError(w, r, "banned users cannot create accounts")
+		return
 	}
 
 	if uuid != "" {
