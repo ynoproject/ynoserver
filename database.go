@@ -1684,3 +1684,96 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 
 	return nil
 }
+
+func readBannedPlayers() (players []PlayerInfo) {
+	results, err := db.Query("SELECT uuid, rank FROM players WHERE banned = 1")
+	if err != nil {
+		return players
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var uuid string
+		var rank int
+
+		err := results.Scan(&uuid, &rank)
+		if err != nil {
+			return players
+		}
+
+		players = append(players, PlayerInfo{
+			Uuid: uuid,
+			Name: readNameFromUuid(uuid),
+			Rank: rank,
+		})
+	}
+
+	return players
+}
+
+// basically just a copy of readBannedPlayers but i want to get this done
+func readMutedPlayers() (players []PlayerInfo) {
+	results, err := db.Query("SELECT uuid, rank FROM players WHERE muted = 1")
+	if err != nil {
+		return players
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var uuid string
+		var rank int
+
+		err := results.Scan(&uuid, &rank)
+		if err != nil {
+			return players
+		}
+
+		players = append(players, PlayerInfo{
+			Uuid: uuid,
+			Name: readNameFromUuid(uuid),
+			Rank: rank,
+		})
+	}
+
+	return players
+}
+
+func readNameFromUuid(uuid string) (name string) {
+	// get name from sessionClients if they're connected
+	if client, ok := sessionClients[uuid]; ok {
+		return client.name
+	}
+
+	// otherwise check accounts
+	err := db.QueryRow("SELECT user FROM accounts WHERE uuid = ?", uuid).Scan(&name)
+	if err != nil {
+		return ""
+	}
+
+	// if we got a name then return it
+	if name != "" {
+		return name
+	}
+
+	// otherwise check playergamedata
+	results, err := db.Query("SELECT name FROM playerGameData WHERE uuid = ?")
+	if err != nil {
+		return ""
+	}
+
+	for results.Next() {
+		err := results.Scan(&name)
+		if err != nil {
+			return ""
+		}
+
+		if name != "" {
+			return name
+		}
+	}
+	
+	// couldn't find a name
+	return ""
+}
