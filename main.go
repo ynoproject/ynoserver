@@ -56,8 +56,6 @@ func main() {
 
 	setDatabase(configFileData.Database.User, configFileData.Database.Pass, configFileData.Database.Host, configFileData.Database.Name)
 
-	handleMigrations()
-
 	setConditions()
 	setBadges()
 	setEventVms()
