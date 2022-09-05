@@ -1209,7 +1209,12 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var uuid string
-	db.QueryRow("SELECT uuid FROM players WHERE ip = ?", ip).Scan(&uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
+	var banned int
+	db.QueryRow("SELECT banned, uuid FROM players WHERE ip = ?", ip).Scan(&uuid, &banned) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
+
+	if banned == 1 {
+		handleError(w, r, "banned users cannot create accounts")
+	}
 
 	if uuid != "" {
 		db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip)
