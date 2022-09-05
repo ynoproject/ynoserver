@@ -97,12 +97,11 @@ func (h *Hub) run() {
 		select {
 		case conn := <-h.connect:
 			var uuid string
-			var badge string
 			var banned bool
 			var account bool
 
 			if conn.Token != "" {
-				uuid, _, _, badge, banned, _ = readPlayerDataFromToken(conn.Token)
+				uuid, _, _, _, banned, _ = readPlayerDataFromToken(conn.Token)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					account = true
 				}
@@ -112,10 +111,6 @@ func (h *Hub) run() {
 				uuid, _, banned, _ = readOrCreatePlayerData(conn.Ip)
 			}
 		
-			if badge == "" {
-				badge = "null"
-			}
-
 			if banned || isIpBanned(conn.Ip) {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player is banned")
 				continue
