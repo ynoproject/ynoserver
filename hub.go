@@ -100,7 +100,7 @@ func (h *Hub) run() {
 			var account bool
 
 			if conn.Token != "" {
-				readUuidFromToken(conn.Token)
+				uuid, _, _, _, _, _ = readPlayerDataFromToken(conn.Token)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					account = true
 				}

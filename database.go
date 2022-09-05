@@ -1793,8 +1793,8 @@ func isIpBanned(ip string) bool {
 	return banned == 1
 }
 
-func readUuidFromToken(token string) (uuid string) {
-	db.QueryRow("SELECT uuid FROM playerSessions WHERE sessionId = ?", token).Scan(&uuid)
-
-	return uuid
-}
+//func readUuidFromToken(token string) (uuid string) {
+//	db.QueryRow("SELECT uuid FROM playerSessions WHERE sessionId = ?", token).Scan(&uuid)
+//
+//	return uuid
+//}
