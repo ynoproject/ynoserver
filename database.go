@@ -28,10 +28,11 @@ func setDatabase(user string, pass string, host string, name string) {
 func readPlayerData(ip string) (uuid string, rank int, banned bool, muted bool) {
 	err := db.QueryRow("SELECT uuid, rank, banned, muted FROM players WHERE ip = ?", ip).Scan(&uuid, &rank, &banned, &muted)
 	if err != nil {
-		// create new guest account
 		if err != sql.ErrNoRows {
 			return "", 0, false, false
 		}
+
+		// create new guest account
 
 		if isIpBanned(ip) {
 			return "", 0, true, false
