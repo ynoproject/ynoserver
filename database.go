@@ -1782,19 +1782,26 @@ func isIpBanned(ip string) bool {
 	var banned int
 
 	// check if account is banned
-	db.QueryRow("SELECT banned FROM players WHERE uuid IN (SELECT uuid FROM accounts WHERE ip = ?)", ip).Scan(&banned)
+	err := db.QueryRow("SELECT banned FROM players WHERE uuid IN (SELECT uuid FROM accounts WHERE ip = ?)", ip).Scan(&banned)
+	if err != nil {
+		return false
+	}
+
 	if banned == 1 {
 		return true
 	}
 
 	// check if guest account is banned
-	db.QueryRow("SELECT banned FROM players WHERE ip = ?", ip).Scan(&banned)
+	err = db.QueryRow("SELECT banned FROM players WHERE ip = ?", ip).Scan(&banned)
+	if err != nil {
+		return false
+	}
 
 	return banned == 1
 }
 
-//func readUuidFromToken(token string) (uuid string) {
-//	db.QueryRow("SELECT uuid FROM playerSessions WHERE sessionId = ?", token).Scan(&uuid)
-//
-//	return uuid
-//}
+func readUuidFromToken(token string) (uuid string) {
+	db.QueryRow("SELECT uuid FROM playerSessions WHERE sessionId = ? AND NOW() < expiration", token).Scan(&uuid)
+
+	return uuid
+}
