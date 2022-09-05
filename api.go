@@ -192,32 +192,6 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-	case "mute":
-		// deprecated
-		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) < 1 {
-			handleError(w, r, "player not specified")
-			return
-		}
-
-		err := tryMutePlayer(uuid, playerParam[0])
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-	case "unmute":
-		// deprecated
-		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) < 1 {
-			handleError(w, r, "player not specified")
-			return
-		}
-
-		err := tryUnmutePlayer(uuid, playerParam[0])
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
 	case "grantbadge":
 		fallthrough
 	case "revokebadge":
