@@ -9,6 +9,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/ynoproject/ynoserver/security"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -150,7 +152,7 @@ func (h *Hub) run() {
 				continue
 			}
 
-			key := generateKey()
+			key := security.GenerateKey()
 
 			//sprite index < 0 means none
 			client := &Client{
@@ -254,12 +256,12 @@ func (h *Hub) processMsgs(msg *Message) []error {
 		return errs
 	}
 
-	if !verifySignature(msg.sender.key, msg.data) {
+	if !security.VerifySignature(msg.sender.key, config.signKey, msg.data) {
 		errs = append(errs, errors.New("bad signature"))
 		return errs
 	}
 
-	if !verifyCounter(&msg.sender.counter, msg.data) {
+	if !security.VerifyCounter(&msg.sender.counter, msg.data) {
 		errs = append(errs, errors.New("bad counter"))
 		return errs
 	}
