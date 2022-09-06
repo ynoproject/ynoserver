@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	maxID  = 512
 	delim  = "\uffff"
 	mdelim = "\ufffe"
 )
@@ -126,15 +125,12 @@ func (h *Hub) run() {
 			}
 
 			var id int
-			for i := 1; i <= maxID; i++ {
-				if !h.id[i] {
-					id = i
+			for {
+				if !h.id[id] {
 					break
 				}
-			}
-			if id == 0 {
-				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "room is full")
-				continue
+
+				id++
 			}
 
 			key := security.GenerateKey()
