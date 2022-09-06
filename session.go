@@ -99,13 +99,13 @@ func (s *Session) run() {
 				badge = "null"
 			}
 
+			if _, ok := sessionClients[uuid]; ok {
+				writeErrLog(conn.Ip, "session", "session already exists for uuid")
+				continue
+			}
+
 			var sameIp int
 			for otherClient := range s.clients {
-				if otherClient.uuid == uuid {
-					writeErrLog(conn.Ip, "session", "session already exists for uuid")
-					continue
-				}
-
 				if otherClient.ip == conn.Ip {
 					sameIp++
 				}
