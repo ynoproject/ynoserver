@@ -149,8 +149,7 @@ func (s *Session) run() {
 
 			writeErrLog(client.ip, "session", "attempted to unregister nil client")
 		case message := <-s.processMsgCh:
-			errs := s.processMsgs(message)
-			if len(errs) > 0 {
+			if errs := s.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {
 					writeErrLog(message.sender.ip, "session", err.Error())
 				}

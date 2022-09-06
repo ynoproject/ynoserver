@@ -177,8 +177,7 @@ func (h *Hub) run() {
 
 			writeErrLog(client.session.ip, strconv.Itoa(h.roomId), "attempted to unregister nil client")
 		case message := <-h.processMsgCh:
-			errs := h.processMsgs(message)
-			if len(errs) > 0 {
+			if errs := h.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {
 					writeErrLog(message.sender.session.ip, strconv.Itoa(h.roomId), err.Error())
 				}
