@@ -174,18 +174,6 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch commandParam[0] {
-	case "ban":
-		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) < 1 {
-			handleError(w, r, "player not specified")
-			return
-		}
-
-		err := tryBanPlayer(uuid, playerParam[0])
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
 	case "grantbadge":
 		fallthrough
 	case "revokebadge":
