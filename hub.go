@@ -151,8 +151,7 @@ func (h *Hub) run() {
 			go client.writePump()
 			go client.readPump()
 
-			tags, err := readPlayerTags(uuid)
-			if err != nil {
+			if tags, err := readPlayerTags(uuid); err != nil {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "failed to read player tags")
 			} else {
 				client.tags = tags
@@ -195,8 +194,7 @@ func (hub *Hub) serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var playerToken string
-	token, ok := r.URL.Query()["token"]
-	if ok && len(token[0]) == 32 {
+	if token, ok := r.URL.Query()["token"]; ok && len(token[0]) == 32 {
 		playerToken = token[0]
 	}
 
