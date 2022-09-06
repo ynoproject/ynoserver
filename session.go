@@ -95,10 +95,6 @@ func (s *Session) run() {
 				continue
 			}
 
-			if badge == "" {
-				badge = "null"
-			}
-
 			if _, ok := sessionClients[uuid]; ok {
 				writeErrLog(conn.Ip, "session", "session already exists for uuid")
 				continue
@@ -113,6 +109,10 @@ func (s *Session) run() {
 			if sameIp >= 3 {
 				writeErrLog(conn.Ip, "session", "too many connections from ip")
 				continue
+			}
+
+			if badge == "" {
+				badge = "null"
 			}
 
 			spriteName, spriteIndex, systemName := readPlayerGameData(uuid)
