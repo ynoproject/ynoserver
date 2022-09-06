@@ -189,8 +189,7 @@ func (h *Hub) run() {
 
 // serve handles websocket requests from the peer.
 func (hub *Hub) serve(w http.ResponseWriter, r *http.Request) {
-	protocols := r.Header.Get("Sec-Websocket-Protocol")
-	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {protocols}})
+	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
 	if err != nil {
 		log.Println(err)
 		return
