@@ -167,8 +167,6 @@ func (h *Hub) run() {
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
-				client.session.bound = false
-
 				h.deleteClient(client)
 				writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 				continue
@@ -220,6 +218,8 @@ func (h *Hub) broadcast(data []byte) {
 }
 
 func (h *Hub) deleteClient(client *Client) {
+	client.session.bound = false
+
 	delete(h.id, client.id)
 	delete(h.clients, client)
 	delete(hubClients, client.session.uuid)
