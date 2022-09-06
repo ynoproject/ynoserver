@@ -142,9 +142,13 @@ func (s *Session) run() {
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			s.deleteClient(client)
-			writeLog(client.ip, "session", "disconnect", 200)
-			continue
+			if _, ok := s.clients[client]; ok {
+				s.deleteClient(client)
+				writeLog(client.ip, "session", "disconnect", 200)
+				continue
+			}
+
+			writeErrLog(client.ip, "session", "attempted to unregister nil client")
 		case message := <-s.processMsgCh:
 			errs := s.processMsgs(message)
 			if len(errs) > 0 {
