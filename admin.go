@@ -5,10 +5,6 @@ import (
 	"net/http"
 )
 
-type AdminPlayersResponse struct {
-	Players []PlayerInfo `json:"player"`
-}
-
 func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 	_, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank < 1 {
@@ -16,7 +12,7 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var response AdminPlayersResponse
+	var response []PlayerInfo
 
 	for _, client := range sessionClients {
 		player := PlayerInfo{
@@ -25,7 +21,7 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 			Rank: client.rank,
 		}
 
-		response.Players = append(response.Players, player)
+		response = append(response, player)
 	}
 	
 	responseJson, err := json.Marshal(response)
@@ -43,7 +39,7 @@ func adminGetBans(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseJson, err := json.Marshal(AdminPlayersResponse{Players: readBannedPlayers()})
+	responseJson, err := json.Marshal(readBannedPlayers())
 	if err != nil {
 		handleError(w, r, "error while marshaling")
 	}
@@ -58,7 +54,7 @@ func adminGetMutes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseJson, err := json.Marshal(AdminPlayersResponse{Players: readMutedPlayers()})
+	responseJson, err := json.Marshal(readMutedPlayers())
 	if err != nil {
 		handleError(w, r, "error while marshaling")
 	}
