@@ -89,12 +89,12 @@ func getCharSetList() map[string]bool {
 		panic(err)
 	}
 
-	charsets := make(map[string]bool)
+	charSets := make(map[string]bool)
 	for _, file := range files {
-		charsets[file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))]] = true
+		charSets[file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))]] = true
 	}
 
-	return charsets
+	return charSets
 }
 
 func getSoundList() map[string]bool {
