@@ -1139,8 +1139,13 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 
 func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 	if syncedPicsResponse == nil {
+		var pictureNames []string
+		for name := range config.pictureNames {
+			pictureNames = append(pictureNames, name)
+		}
+
 		response, err := json.Marshal(SyncedPicsInfo{
-			PictureNames:    config.pictureNames,
+			PictureNames:    pictureNames,
 			PicturePrefixes: config.picturePrefixes,
 		})
 		if err != nil {

@@ -12,11 +12,11 @@ var (
 )
 
 type Config struct {
-	spriteNames       []string
-	systemNames       []string
-	soundNames        []string
+	spriteNames       map[string]bool
+	systemNames       map[string]bool
+	soundNames        map[string]bool
 	ignoredSoundNames []string
-	pictureNames      []string
+	pictureNames      map[string]bool
 	picturePrefixes   []string
 
 	gameName string

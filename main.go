@@ -30,9 +30,11 @@ func main() {
 	}
 
 	//list of picture names to allow
-	var pictureNames []string
+	pictureNames := make(map[string]bool)
 	if configFileData.PictureNames != "" {
-		pictureNames = strings.Split(configFileData.PictureNames, ",")
+		for _, name := range strings.Split(configFileData.PictureNames, ",") {
+			pictureNames[name] = true
+		}
 	}
 
 	// list of picture prefixes to allow
@@ -81,43 +83,43 @@ func main() {
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(configFileData.IP+":"+strconv.Itoa(configFileData.Port), nil), 500)
 }
 
-func getCharSetList() []string {
+func getCharSetList() map[string]bool {
 	files, err := os.ReadDir(config.gameName + "/CharSet")
 	if err != nil {
 		panic(err)
 	}
 
-	var charsets []string
+	charsets := make(map[string]bool)
 	for _, file := range files {
-		charsets = append(charsets, file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))])
+		charsets[file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))]] = true
 	}
 
 	return charsets
 }
 
-func getSoundList() []string {
+func getSoundList() map[string]bool {
 	files, err := os.ReadDir(config.gameName + "/Sound")
 	if err != nil {
 		panic(err)
 	}
 
-	var sounds []string
+	sounds := make(map[string]bool)
 	for _, file := range files {
-		sounds = append(sounds, file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))])
+		sounds[file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))]] = true
 	}
 
 	return sounds
 }
 
-func getSystemList() []string {
+func getSystemList() map[string]bool {
 	files, err := os.ReadDir(config.gameName + "/System")
 	if err != nil {
 		panic(err)
 	}
 
-	var systems []string
+	systems := make(map[string]bool)
 	for _, file := range files {
-		systems = append(systems, file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))])
+		systems[file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))]] = true
 	}
 
 	return systems
@@ -183,27 +185,15 @@ func isValidSprite(name string) bool {
 		return false
 	}
 
-	for _, otherName := range config.spriteNames {
-		if otherName == name {
-			return true
-		}
-	}
-	return false
+	return config.spriteNames[name]
 }
 
 func isValidSystem(name string, ignoreSingleQuotes bool) bool {
 	if ignoreSingleQuotes {
 		name = strings.ReplaceAll(name, "'", "")
 	}
-	for _, otherName := range config.systemNames {
-		if ignoreSingleQuotes {
-			otherName = strings.ReplaceAll(otherName, "'", "")
-		}
-		if otherName == name {
-			return true
-		}
-	}
-	return false
+
+	return config.systemNames[name]
 }
 
 func isValidSound(name string) bool {
@@ -211,17 +201,7 @@ func isValidSound(name string) bool {
 		return false
 	}
 
-	for _, otherName := range config.soundNames {
-		if otherName == name {
-			for _, ignoredName := range config.ignoredSoundNames {
-				if ignoredName == name {
-					return false
-				}
-			}
-			return true
-		}
-	}
-	return false
+	return config.soundNames[name]
 }
 
 func isValidPicName(name string) bool {
@@ -229,10 +209,8 @@ func isValidPicName(name string) bool {
 		return false
 	}
 
-	for _, otherName := range config.pictureNames {
-		if otherName == name {
-			return true
-		}
+	if config.pictureNames[name] {
+		return true
 	}
 
 	nameLower := strings.ToLower(name)
