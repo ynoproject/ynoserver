@@ -213,9 +213,8 @@ func isValidPicName(name string) bool {
 		return true
 	}
 
-	nameLower := strings.ToLower(name)
 	for _, prefix := range config.picturePrefixes {
-		if strings.HasPrefix(nameLower, prefix) {
+		if strings.HasPrefix(strings.ToLower(name), prefix) {
 			return true
 		}
 	}
