@@ -224,8 +224,8 @@ func isValidPicName(name string) bool {
 
 func getIp(r *http.Request) string { //this breaks if you're using a revproxy that isn't on 127.0.0.1
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	if ip == "127.0.0.1" && r.Header.Get("x-forwarded-for") != "" {
-		ip = r.Header.Get("x-forwarded-for")
+	if forwardedIp := r.Header.Get("x-forwarded-for"); ip == "127.0.0.1" && forwardedIp != "" {
+		return forwardedIp
 	}
 
 	return ip
