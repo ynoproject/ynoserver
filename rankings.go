@@ -167,7 +167,7 @@ func initRankings() {
 		}
 	}
 
-	s.Every(30).Minute().Do(func() {
+	s.Every(15).Minute().Do(func() {
 		updatingRankings = true
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
