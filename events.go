@@ -130,7 +130,7 @@ func initEvents() {
 
 		s.StartAsync()
 
-		periodId, err := readCurrentEventPeriodId()
+		periodId, err := getCurrentEventPeriodId()
 		if err == nil {
 			var count int
 
@@ -195,7 +195,7 @@ func add2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int) {
 
 // eventType: 0 - daily, 1 - weekly, 2 - weekend, 3 - manual
 func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int, playerUuid string) {
-	periodId, err := readCurrentEventPeriodId()
+	periodId, err := getCurrentEventPeriodId()
 	if err != nil {
 		handleInternalEventError(eventType, err)
 		return
@@ -263,7 +263,7 @@ func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp i
 }
 
 func add2kkiEventVm() {
-	periodId, err := readCurrentEventPeriodId()
+	periodId, err := getCurrentEventPeriodId()
 	if err != nil {
 		writeErrLog("SERVER", "VM", err.Error())
 		return

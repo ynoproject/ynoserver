@@ -403,7 +403,7 @@ func checkConditionCoords(condition *Condition, client *Client) bool {
 			((condition.MapY1 == -1 || condition.MapY1 <= client.y) && (condition.MapY2 == -1 || condition.MapY2 >= client.y)))
 }
 
-func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, account bool, simple bool) (playerBadges []*PlayerBadge, err error) {
+func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, account bool, simple bool) (playerBadges []*PlayerBadge, err error) {
 	var playerExp int
 	var playerEventLocationCount int
 	var playerEventLocationCompletion int
@@ -412,23 +412,23 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	var timeTrialRecords []*TimeTrialRecord
 
 	if account {
-		playerExp, err = readPlayerTotalEventExp(playerUuid)
+		playerExp, err = getPlayerTotalEventExp(playerUuid)
 		if err != nil {
 			return playerBadges, err
 		}
-		playerEventLocationCount, err = readPlayerEventLocationCount(playerUuid)
+		playerEventLocationCount, err = getPlayerEventLocationCount(playerUuid)
 		if err != nil {
 			return playerBadges, err
 		}
-		playerEventLocationCompletion, err = readPlayerEventLocationCompletion(playerUuid)
+		playerEventLocationCompletion, err = getPlayerEventLocationCompletion(playerUuid)
 		if err != nil {
 			return playerBadges, err
 		}
-		playerEventVmCount, err = readPlayerEventVmCount(playerUuid)
+		playerEventVmCount, err = getPlayerEventVmCount(playerUuid)
 		if err != nil {
 			return playerBadges, err
 		}
-		timeTrialRecords, err = readPlayerTimeTrialRecords(playerUuid)
+		timeTrialRecords, err = getPlayerTimeTrialRecords(playerUuid)
 		if err != nil {
 			return playerBadges, err
 		}
@@ -440,7 +440,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	var playerUnlockedBadgeIds []string
 
 	if account {
-		playerUnlockedBadgeIds, err = readPlayerUnlockedBadgeIds(playerUuid)
+		playerUnlockedBadgeIds, err = getPlayerUnlockedBadgeIds(playerUuid)
 		if err != nil {
 			return playerBadges, err
 		}
@@ -567,7 +567,7 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	var unlockPercentages []*BadgePercentUnlocked
 
 	if !simple {
-		unlockPercentages, err = readBadgeUnlockPercentages()
+		unlockPercentages, err = getBadgeUnlockPercentages()
 		if err != nil {
 			return playerBadges, err
 		}
@@ -634,8 +634,8 @@ func readPlayerBadgeData(playerUuid string, playerRank int, playerTags []string,
 	return playerBadges, nil
 }
 
-func readSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []string, account bool) (playerBadges []*SimplePlayerBadge, err error) {
-	badgeData, err := readPlayerBadgeData(playerUuid, playerRank, playerTags, account, true)
+func getSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []string, account bool) (playerBadges []*SimplePlayerBadge, err error) {
+	badgeData, err := getPlayerBadgeData(playerUuid, playerRank, playerTags, account, true)
 	if err != nil {
 		return playerBadges, err
 	}
@@ -648,8 +648,8 @@ func readSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []s
 	return playerBadges, nil
 }
 
-func readPlayerNewUnlockedBadgeIds(playerUuid string, playerRank int, playerTags []string) (badgeIds []string, err error) {
-	badgeData, err := readPlayerBadgeData(playerUuid, playerRank, playerTags, true, true)
+func getPlayerNewUnlockedBadgeIds(playerUuid string, playerRank int, playerTags []string) (badgeIds []string, err error) {
+	badgeData, err := getPlayerBadgeData(playerUuid, playerRank, playerTags, true, true)
 	if err != nil {
 		return badgeIds, err
 	}

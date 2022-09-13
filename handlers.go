@@ -674,7 +674,7 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 //SESSION
 
 func (s *Session) handleI(msg []string, sender *SessionClient) (err error) {
-	badgeSlotRows, badgeSlotCols := readPlayerBadgeSlotCounts(sender.name)
+	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(sender.name)
 	playerInfo := PlayerInfo{
 		Uuid:          sender.uuid,
 		Name:          sender.name,
@@ -785,14 +785,14 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 		return errors.New("invalid message")
 	}
 
-	partyId, err := readPlayerPartyId(sender.uuid)
+	partyId, err := getPlayerPartyId(sender.uuid)
 	if err != nil {
 		return err
 	}
 	if partyId == 0 {
 		return errors.New("player not in a party")
 	}
-	partyMemberUuids, err := readPartyMemberUuids(partyId)
+	partyMemberUuids, err := getPartyMemberUuids(partyId)
 	if err != nil {
 		return err
 	}
@@ -806,14 +806,14 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 }
 
 func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
-	partyId, err := readPlayerPartyId(sender.uuid)
+	partyId, err := getPlayerPartyId(sender.uuid)
 	if err != nil {
 		return err
 	}
 	if partyId == 0 {
 		return errors.New("player not in a party")
 	}
-	partyData, err := readPartyData(sender.uuid)
+	partyData, err := getPartyData(sender.uuid)
 	if err != nil {
 		return err
 	}
@@ -830,7 +830,7 @@ func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
 }
 
 func (s *Session) handleEp(msg []string, sender *SessionClient) (err error) {
-	period, err := readCurrentEventPeriodData()
+	period, err := getCurrentEventPeriodData()
 	if err != nil {
 		return err
 	}
@@ -844,11 +844,11 @@ func (s *Session) handleEp(msg []string, sender *SessionClient) (err error) {
 }
 
 func (s *Session) handleE(msg []string, sender *SessionClient) (err error) {
-	periodId, err := readCurrentEventPeriodId()
+	periodId, err := getCurrentEventPeriodId()
 	if err != nil {
 		return err
 	}
-	currentEventLocationsData, err := readCurrentPlayerEventLocationsData(periodId, sender.uuid)
+	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, sender.uuid)
 	if err != nil {
 		return err
 	}
@@ -861,13 +861,13 @@ func (s *Session) handleE(msg []string, sender *SessionClient) (err error) {
 	}
 	if !hasIncompleteEvent && config.gameName == "2kki" {
 		addPlayer2kkiEventLocation(-1, 2, 0, 0, sender.uuid)
-		currentEventLocationsData, err = readCurrentPlayerEventLocationsData(periodId, sender.uuid)
+		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(periodId, sender.uuid)
 		if err != nil {
 			return err
 		}
 	}
 
-	currentEventVmsData, err := readCurrentPlayerEventVmsData(periodId, sender.uuid)
+	currentEventVmsData, err := getCurrentPlayerEventVmsData(periodId, sender.uuid)
 	if err != nil {
 		return err
 	}

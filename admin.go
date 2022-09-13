@@ -6,7 +6,7 @@ import (
 )
 
 func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
@@ -33,13 +33,13 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminGetBans(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
 
-	responseJson, err := json.Marshal(readBannedPlayers())
+	responseJson, err := json.Marshal(getBannedPlayers())
 	if err != nil {
 		handleError(w, r, "error while marshaling")
 	}
@@ -48,13 +48,13 @@ func adminGetBans(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminGetMutes(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
 
-	responseJson, err := json.Marshal(readMutedPlayers())
+	responseJson, err := json.Marshal(getMutedPlayers())
 	if err != nil {
 		handleError(w, r, "error while marshaling")
 	}
@@ -63,7 +63,7 @@ func adminGetMutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBan(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
@@ -85,7 +85,7 @@ func adminBan(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminMute(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
@@ -107,7 +107,7 @@ func adminMute(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminUnban(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank < 1 {
 		handleError(w, r, "access denied")
 		return
@@ -129,7 +129,7 @@ func adminUnban(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminUnmute(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := readPlayerDataFromToken(r.Header.Get("Authorization"))
+	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank < 1 {
 		handleError(w, r, "access denied")
 		return

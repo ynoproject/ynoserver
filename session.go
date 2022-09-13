@@ -79,14 +79,14 @@ func (s *Session) run() {
 			var account bool
 
 			if conn.Token != "" {
-				uuid, name, rank, badge, banned, muted = readPlayerDataFromToken(conn.Token)
+				uuid, name, rank, badge, banned, muted = getPlayerDataFromToken(conn.Token)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					account = true
 				}
 			}
 
 			if !account {
-				uuid, banned, muted = readOrCreatePlayerData(conn.Ip)
+				uuid, banned, muted = getOrCreatePlayerData(conn.Ip)
 			}
 
 			if banned || isIpBanned(conn.Ip) {
@@ -114,7 +114,7 @@ func (s *Session) run() {
 				badge = "null"
 			}
 
-			spriteName, spriteIndex, systemName := readPlayerGameData(uuid)
+			spriteName, spriteIndex, systemName := getPlayerGameData(uuid)
 
 			client := &SessionClient{
 				conn:        conn.Connect,

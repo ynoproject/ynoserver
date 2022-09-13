@@ -69,7 +69,7 @@ func initRankings() {
 		}
 	}
 
-	eventPeriods, err := readEventPeriodData()
+	eventPeriods, err := getEventPeriodData()
 	if err != nil {
 		writeErrLog("SERVER", "exp", err.Error())
 	} else if len(eventPeriods) > 0 {
@@ -128,7 +128,7 @@ func initRankings() {
 	}
 
 	if config.gameName == "2kki" {
-		timeTrialMapIds, err := readTimeTrialMapIds()
+		timeTrialMapIds, err := getTimeTrialMapIds()
 		if err != nil {
 			writeErrLog("SERVER", "timeTrial", err.Error())
 		} else if len(timeTrialMapIds) > 0 {
@@ -141,7 +141,7 @@ func initRankings() {
 		}
 	}
 
-	gameMinigameIds, err := readGameMinigameIds()
+	gameMinigameIds, err := getGameMinigameIds()
 	if err != nil {
 		writeErrLog("SERVER", "minigame", err.Error())
 	} else {

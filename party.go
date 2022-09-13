@@ -33,7 +33,7 @@ type PartyMember struct {
 }
 
 func sendPartyUpdate() {
-	parties, err := readAllPartyData(false)
+	parties, err := getAllPartyData(false)
 	if err != nil {
 		return
 	}

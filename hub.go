@@ -97,14 +97,14 @@ func (h *Hub) run() {
 			var account bool
 
 			if conn.Token != "" {
-				uuid = readUuidFromToken(conn.Token)
+				uuid = getUuidFromToken(conn.Token)
 				if uuid != "" { //if we got a uuid back then we're logged in
 					account = true
 				}
 			}
 
 			if !account {
-				uuid, _, _ = readOrCreatePlayerData(conn.Ip)
+				uuid, _, _ = getOrCreatePlayerData(conn.Ip)
 			}
 
 			var session *SessionClient
@@ -149,7 +149,7 @@ func (h *Hub) run() {
 			go client.writePump()
 			go client.readPump()
 
-			if tags, err := readPlayerTags(uuid); err != nil {
+			if tags, err := getPlayerTags(uuid); err != nil {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "failed to read player tags")
 			} else {
 				client.tags = tags
@@ -398,7 +398,7 @@ func (h *Hub) handleValidClient(client *Client) {
 	checkHubConditions(h, client, "", "")
 
 	for _, minigame := range h.minigameConfigs {
-		score, err := readPlayerMinigameScore(client.session.uuid, minigame.MinigameId)
+		score, err := getPlayerMinigameScore(client.session.uuid, minigame.MinigameId)
 		if err != nil {
 			writeErrLog(client.session.ip, strconv.Itoa(h.roomId), "failed to read player minigame score for "+minigame.MinigameId)
 		}
