@@ -131,8 +131,6 @@ func (h *Hub) run() {
 				id++
 			}
 
-			key := generateKey()
-
 			//sprite index < 0 means none
 			client := &Client{
 				hub:         h,
@@ -140,7 +138,7 @@ func (h *Hub) run() {
 				send:        make(chan []byte, 256),
 				session:     session,
 				id:          id,
-				key:         key,
+				key:         generateKey(),
 				pictures:    make(map[int]*Picture),
 				mapId:       fmt.Sprintf("%04d", h.roomId),
 				switchCache: make(map[int]bool),
@@ -155,7 +153,7 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + strconv.Itoa(int(key)) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
+			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
 
 			//register client in the structures
 			h.id[id] = true
