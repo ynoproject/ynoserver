@@ -207,7 +207,7 @@ func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
-		msgLength = msgLength + 2
+		msgLength = 20
 	}
 	if len(msg) != msgLength {
 		return err
