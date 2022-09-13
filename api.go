@@ -601,7 +601,6 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		timestamp, err := readSaveDataTimestamp(uuid)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				w.Write([]byte(""))
 				return
 			}
 			handleInternalError(w, r, err)
