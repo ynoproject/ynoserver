@@ -76,41 +76,41 @@ func initApi() {
 
 		err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString).Scan(&response)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				url := "https://2kki.app/" + actionParam[0]
-				if len(queryString) > 0 {
-					url += "?" + queryString
-				}
-
-				resp, err := http.Get(url)
-				if err != nil {
-					handleInternalError(w, r, err)
-					return
-				}
-
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					handleInternalError(w, r, err)
-					return
-				}
-
-				if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
-					writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
-				} else {
-					_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)", actionParam[0], queryString, string(body), string(body))
-					if err != nil {
-						writeErrLog(getIp(r), r.URL.Path, err.Error())
-					}
-				}
-
-				w.Write(body)
-				return
-			} else {
+			if err != sql.ErrNoRows {
 				handleInternalError(w, r, err)
 				return
 			}
+
+			url := "https://2kki.app/" + actionParam[0]
+			if len(queryString) > 0 {
+				url += "?" + queryString
+			}
+
+			resp, err := http.Get(url)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			defer resp.Body.Close()
+
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
+				writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
+			} else {
+				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)", actionParam[0], queryString, string(body), string(body))
+				if err != nil {
+					writeErrLog(getIp(r), r.URL.Path, err.Error())
+				}
+			}
+
+			w.Write(body)
+			return
 		}
 
 		w.Write([]byte(response))
