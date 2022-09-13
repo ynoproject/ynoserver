@@ -590,10 +590,10 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	case "timestamp":
 		timestamp, err := getSaveDataTimestamp(uuid)
 		if err != nil {
-			if err != sql.ErrNoRows {
-				handleInternalError(w, r, err)
+			if err == sql.ErrNoRows {
 				return
 			}
+			handleInternalError(w, r, err)
 			return
 		}
 		w.Write([]byte(timestamp.Format(time.RFC3339)))
@@ -601,11 +601,11 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	case "get":
 		saveData, err := getSaveData(uuid)
 		if err != nil {
-			if err != sql.ErrNoRows {
-				handleInternalError(w, r, err)
+			if err == sql.ErrNoRows {
+				w.Write([]byte("{}"))
 				return
 			}
-			w.Write([]byte("{}"))
+			handleInternalError(w, r, err)
 			return
 		}
 		w.Write([]byte(saveData))
