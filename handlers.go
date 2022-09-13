@@ -688,7 +688,7 @@ func (s *Session) handleI(msg []string, sender *SessionClient) (err error) {
 		return err
 	}
 
-	sender.send <- append([]byte("i" + delim), playerInfoJson...)
+	sender.send <- append([]byte("i"+delim), playerInfoJson...)
 
 	return nil
 }
@@ -824,7 +824,7 @@ func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	sender.send <- append([]byte("pt" + delim), partyDataJson...)
+	sender.send <- append([]byte("pt"+delim), partyDataJson...)
 
 	return nil
 }
@@ -838,7 +838,7 @@ func (s *Session) handleEp(msg []string, sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	sender.send <- append([]byte("ep" + delim), periodJson...)
+	sender.send <- append([]byte("ep"+delim), periodJson...)
 
 	return nil
 }
@@ -881,7 +881,7 @@ func (s *Session) handleE(msg []string, sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	sender.send <- append([]byte("e" + delim), eventsDataJson...)
+	sender.send <- append([]byte("e"+delim), eventsDataJson...)
 
 	return nil
 }

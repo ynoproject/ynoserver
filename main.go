@@ -287,9 +287,9 @@ func randString(length int) string {
 	const lenRunes = len(runes)
 
 	b := make([]byte, length)
-    for i := range b {
-        b[i] = runes[rand.Intn(lenRunes)]
-    }
+	for i := range b {
+		b[i] = runes[rand.Intn(lenRunes)]
+	}
 
-    return string(b)
+	return string(b)
 }

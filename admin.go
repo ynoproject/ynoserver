@@ -23,7 +23,7 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 
 		response = append(response, player)
 	}
-	
+
 	responseJson, err := json.Marshal(response)
 	if err != nil {
 		handleError(w, r, "error while marshaling")

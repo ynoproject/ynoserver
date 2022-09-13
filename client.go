@@ -105,7 +105,7 @@ type SessionClient struct {
 	uuid    string
 	rank    int
 	badge   string
-	
+
 	bound bool
 
 	muted bool

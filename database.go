@@ -1773,7 +1773,7 @@ func readNameFromUuid(uuid string) (name string) {
 			return name
 		}
 	}
-	
+
 	// couldn't find a name
 	return ""
 }

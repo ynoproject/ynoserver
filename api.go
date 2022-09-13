@@ -634,7 +634,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		}
 		data, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
-		if err != nil || len(data) > 1024 * 1024 * 4 {
+		if err != nil || len(data) > 1024*1024*4 {
 			handleError(w, r, "invalid data")
 			return
 		}
@@ -1152,7 +1152,7 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-	
+
 		syncedPicsResponse = response //cache response
 	}
 
@@ -1208,7 +1208,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	//GET params user, password
 	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
-	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len (password[0]) > 72 {
+	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len(password[0]) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}

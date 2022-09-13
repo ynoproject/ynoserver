@@ -147,7 +147,7 @@ func initEvents() {
 			}
 
 			weekday := time.Now().UTC().Weekday()
-			
+
 			// weekly expedition
 			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)).Scan(&count)
 			if count < 1 {
@@ -302,12 +302,12 @@ func setEventVms() {
 	if config.gameName != "2kki" {
 		return
 	}
-	
+
 	vmsDir, err := os.ReadDir("vms/")
 	if err != nil {
 		return
 	}
-	
+
 	eventVms = make(map[int][]int)
 
 	for _, vmFile := range vmsDir {

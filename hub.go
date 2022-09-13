@@ -104,11 +104,11 @@ func (h *Hub) run() {
 					account = true
 				}
 			}
-		
+
 			if !account {
 				uuid, _, _ = readOrCreatePlayerData(conn.Ip)
 			}
-		
+
 			var session *SessionClient
 			if s, ok := sessionClients[uuid]; ok {
 				if s.bound {
@@ -414,7 +414,7 @@ func (h *Hub) handleValidClient(client *Client) {
 
 	// send variable sync request for vending machine expeditions
 	if h.roomId != currentEventVmMapId {
-		return 
+		return
 	}
 
 	if eventIds, hasVms := eventVms[h.roomId]; hasVms {
@@ -426,4 +426,3 @@ func (h *Hub) handleValidClient(client *Client) {
 		}
 	}
 }
-

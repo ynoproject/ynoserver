@@ -67,7 +67,7 @@ func sendPartyUpdate() {
 				} else {
 					jsonData = partyDataJson
 				}
-				client.send <- append([]byte("pt" + delim), jsonData...) //send JSON to client
+				client.send <- append([]byte("pt"+delim), jsonData...) //send JSON to client
 			}
 		}
 	}
