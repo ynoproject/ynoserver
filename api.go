@@ -150,7 +150,7 @@ func initApi() {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(playerInfoJson))
+		w.Write(playerInfoJson)
 	})
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte(strconv.Itoa(len(sessionClients))))
@@ -288,7 +288,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(partyListDataJson))
+		w.Write(partyListDataJson)
 		return
 	case "description":
 		partyIdParam, ok := r.URL.Query()["partyId"]
@@ -687,7 +687,7 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(playerEventExpDataJson))
+		w.Write(playerEventExpDataJson)
 	case "claim":
 		locationParam, ok := r.URL.Query()["location"]
 		if !ok || len(locationParam) < 1 {
@@ -927,7 +927,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				handleInternalError(w, r, err)
 				return
 			}
-			w.Write([]byte(simpleBadgeDataJson))
+			w.Write(simpleBadgeDataJson)
 		} else {
 			if token == "" {
 				handleError(w, r, "cannot retrieve player badge data for guest player")
@@ -943,7 +943,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				handleInternalError(w, r, err)
 				return
 			}
-			w.Write([]byte(badgeDataJson))
+			w.Write(badgeDataJson)
 		}
 		return
 	case "new":
@@ -973,7 +973,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(newUnlockedBadgeIdsJson))
+		w.Write(newUnlockedBadgeIdsJson)
 		return
 	case "slotList":
 		badgeSlots, err := getPlayerBadgeSlots(name, badgeSlotRows, badgeSlotCols)
@@ -986,7 +986,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(badgeSlotsJson))
+		w.Write(badgeSlotsJson)
 		return
 	case "playerSlotList":
 		playerParam, ok := r.URL.Query()["player"]
@@ -1007,7 +1007,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(badgeSlotsJson))
+		w.Write(badgeSlotsJson)
 		return
 	default:
 		handleError(w, r, "unknown command")
@@ -1053,7 +1053,7 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Write([]byte(rankingCategoriesJson))
+		w.Write(rankingCategoriesJson)
 		return
 	case "page":
 		categoryParam, ok := r.URL.Query()["category"]
@@ -1118,7 +1118,7 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Write([]byte(rankingsJson))
+		w.Write(rankingsJson)
 		return
 	default:
 		handleError(w, r, "unknown command")
@@ -1145,7 +1145,7 @@ func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 		syncedPicsResponse = response //cache response
 	}
 
-	w.Write([]byte(syncedPicsResponse))
+	w.Write(syncedPicsResponse)
 }
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
