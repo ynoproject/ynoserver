@@ -989,13 +989,13 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 					eventExp = weeklyExpCap - weekEventExp
 				}
 
-				for updatingRankings {
-					time.Sleep(100 * time.Millisecond) //wait until rankings are updated
-				}
+				rankingsMtx.Lock()
 				_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 0, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
 				if err != nil {
+					rankingsMtx.Unlock()
 					break
 				}
+				rankingsMtx.Unlock()
 
 				exp += eventExp
 				weekEventExp += eventExp
@@ -1042,13 +1042,13 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 					continue
 				}
 
-				for updatingRankings {
-					time.Sleep(100 * time.Millisecond) //wait until rankings are updated
-				}
+				rankingsMtx.Lock()
 				_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 1, ?, 0)", eventId, playerUuid, time.Now())
 				if err != nil {
+					rankingsMtx.Unlock()
 					break
 				}
+				rankingsMtx.Unlock()
 
 				success = true
 				break
@@ -1192,13 +1192,13 @@ func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int)
 				eventExp = weeklyExpCap - weekEventExp
 			}
 
-			for updatingRankings {
-				time.Sleep(100 * time.Millisecond) //wait until rankings are updated
-			}
+			rankingsMtx.Lock()
 			_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 2, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
 			if err != nil {
+				rankingsMtx.Unlock()
 				break
 			}
+			rankingsMtx.Unlock()
 
 			exp += eventExp
 			weekEventExp += eventExp

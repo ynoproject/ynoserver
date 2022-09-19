@@ -2,13 +2,14 @@ package main
 
 import (
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-co-op/gocron"
 )
 
 var (
-	updatingRankings bool
+	rankingsMtx sync.RWMutex
 )
 
 type RankingCategory struct {
@@ -168,7 +169,10 @@ func initRankings() {
 	}
 
 	s.Every(15).Minute().Do(func() {
-		updatingRankings = true
+		defer rankingsMtx.Unlock()
+
+		rankingsMtx.Lock()
+
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
 				// Use Yume 2kki server to update 'all' rankings
@@ -181,7 +185,6 @@ func initRankings() {
 				}
 			}
 		}
-		updatingRankings = false
 	})
 
 	s.StartAsync()
