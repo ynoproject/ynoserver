@@ -702,7 +702,9 @@ func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 		return err
 	}
 	sender.name = msg[1]
-	if client, ok := getHubClient(sender.uuid); ok {
+	if client, ok := hubClients.Load(sender.uuid); ok {
+		client := client.(*Client)
+
 		client.hub.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + sender.name)) //broadcast name change to hub if client is in one
 	}
 
@@ -718,7 +720,9 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 		return errors.New("invalid prev map ID")
 	}
 
-	if client, ok := getHubClient(sender.uuid); ok {
+	if client, ok := hubClients.Load(sender.uuid); ok {
+		client := client.(*Client)
+
 		client.prevMapId = msg[1]
 		client.prevLocations = msg[2]
 		checkHubConditions(client.hub, client, "prevMap", client.prevMapId)
@@ -755,7 +759,9 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 	x := -1
 	y := -1
 
-	if client, ok := getHubClient(sender.uuid); ok && enableLocBin == 1 {
+	if client, ok := hubClients.Load(sender.uuid); ok && enableLocBin == 1 {
+		client := client.(*Client)
+
 		mapId = client.mapId
 		prevMapId = client.prevMapId
 		prevLocations = client.prevLocations
@@ -801,7 +807,9 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 		return err
 	}
 	for _, uuid := range partyMemberUuids {
-		if client, ok := getSessionClient(uuid); ok {
+		if client, ok := sessionClients.Load(uuid); ok {
+			client := client.(*Client)
+
 			client.send <- []byte("psay" + delim + sender.uuid + delim + msgContents)
 		}
 	}

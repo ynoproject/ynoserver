@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	hubClients = make(map[string]*Client)
+	hubClients sync.Map
 	upgrader   = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -41,10 +41,10 @@ type ConnInfo struct {
 // clients.
 type Hub struct {
 	// Registered clients.
-	clients map[*Client]bool
+	clients sync.Map
 
 	// True if the id is in use
-	id map[int]bool
+	id sync.Map
 
 	// Inbound messages from the clients.
 	processMsgCh chan *Message
@@ -61,9 +61,6 @@ type Hub struct {
 	conditions []*Condition
 
 	minigameConfigs []*MinigameConfig
-
-	clientsMtx sync.RWMutex
-	idMtx      sync.RWMutex
 }
 
 func createAllHubs(roomIds []int, spRooms []int) {
@@ -83,8 +80,6 @@ func newHub(roomId int, singleplayer bool) *Hub {
 		processMsgCh:    make(chan *Message),
 		connect:         make(chan *ConnInfo),
 		unregister:      make(chan *Client),
-		clients:         make(map[*Client]bool),
-		id:              make(map[int]bool),
 		roomId:          roomId,
 		singleplayer:    singleplayer,
 		conditions:      getHubConditions(roomId),
@@ -112,7 +107,9 @@ func (h *Hub) run() {
 			}
 
 			var session *SessionClient
-			if s, ok := getSessionClient(uuid); ok {
+			if s, ok := sessionClients.Load(uuid); ok {
+				s := s.(*SessionClient)
+
 				if s.bound {
 					writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "session in use")
 					continue
@@ -126,13 +123,22 @@ func (h *Hub) run() {
 				continue
 			}
 
+			var id int
+			for {
+				if _, ok := h.id.Load(id); !ok {
+					break
+				}
+
+				id++
+			}
+
 			//sprite index < 0 means none
 			client := &Client{
 				hub:         h,
 				conn:        conn.Connect,
 				send:        make(chan []byte, 256),
 				session:     session,
-				id:          h.getId(),
+				id:          id,
 				key:         generateKey(),
 				pictures:    make(map[int]*Picture),
 				mapId:       fmt.Sprintf("%04d", h.roomId),
@@ -148,15 +154,16 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + delim + strconv.Itoa(client.id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
+			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
 
 			//register client in the structures
-			h.writeClient(client)
-			writeHubClient(uuid, client)
+			h.id.Store(id, nil)
+			h.clients.Store(client, nil)
+			hubClients.Store(uuid, client)
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
-			if h.getClient(client) {
+			if _, ok := h.clients.Load(client); ok {
 				h.disconnectClient(client)
 				writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 				continue
@@ -194,9 +201,11 @@ func (h *Hub) broadcast(data []byte) {
 		return
 	}
 
-	for _, client := range h.getClients() {
-		if !client.valid {
-			continue
+	h.clients.Range(func(key, _ any) bool {
+		client := key.(*Client)
+
+		if client.valid {
+			return true
 		}
 
 		select {
@@ -204,15 +213,17 @@ func (h *Hub) broadcast(data []byte) {
 		default:
 			h.disconnectClient(client)
 		}
-	}
+
+		return false
+	})
 }
 
 func (h *Hub) disconnectClient(client *Client) {
 	client.session.bound = false
 
-	h.deleteId(client.id)
-	h.deleteClient(client)
-	deleteHubClient(client.session.uuid)
+	h.id.Delete(client.id)
+	h.clients.Delete(client)
+	hubClients.Delete(client.session.uuid)
 	close(client.send)
 	h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) //user %id% has disconnected message
 }
@@ -343,9 +354,11 @@ func (h *Hub) handleValidClient(client *Client) {
 		}
 
 		//send the new client info about the game state
-		for _, otherClient := range h.getClients() {
+		h.clients.Range(func(key, _ any) bool {
+			otherClient := key.(*Client)
+
 			if !otherClient.valid {
-				continue
+				return true
 			}
 
 			var accountBin int
@@ -384,7 +397,9 @@ func (h *Hub) handleValidClient(client *Client) {
 				}
 				client.send <- []byte("ap" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(picId) + delim + strconv.Itoa(pic.positionX) + delim + strconv.Itoa(pic.positionY) + delim + strconv.Itoa(pic.mapX) + delim + strconv.Itoa(pic.mapY) + delim + strconv.Itoa(pic.panX) + delim + strconv.Itoa(pic.panY) + delim + strconv.Itoa(pic.magnify) + delim + strconv.Itoa(pic.topTrans) + delim + strconv.Itoa(pic.bottomTrans) + delim + strconv.Itoa(pic.red) + delim + strconv.Itoa(pic.blue) + delim + strconv.Itoa(pic.green) + delim + strconv.Itoa(pic.saturation) + delim + strconv.Itoa(pic.effectMode) + delim + strconv.Itoa(pic.effectPower) + delim + pic.name + delim + strconv.Itoa(useTransparentColorBin) + delim + strconv.Itoa(fixedToMapBin))
 			}
-		}
+
+			return false
+		})
 	}
 
 	checkHubConditions(h, client, "", "")
@@ -416,4 +431,3 @@ func (h *Hub) handleValidClient(client *Client) {
 		}
 	}
 }
-

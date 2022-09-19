@@ -50,7 +50,9 @@ func getPlayerDataFromToken(token string) (uuid string, name string, rank int, b
 }
 
 func getPlayerRank(uuid string) (rank int) {
-	if client, ok := getSessionClient(uuid); ok {
+	if client, ok := sessionClients.Load(uuid); ok {
+		client := client.(*SessionClient)
+
 		return client.rank //return rank from session if client is connected
 	}
 
@@ -76,11 +78,15 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { //called by a
 		return err
 	}
 
-	if client, ok := getHubClient(recipientUuid); ok { //unregister client and close connection
+	if client, ok := hubClients.Load(recipientUuid); ok { //unregister client and close connection
+		client := client.(*Client)
+
 		client.hub.unregister <- client
 	}
 
-	if client, ok := getSessionClient(recipientUuid); ok { //do the same for session
+	if client, ok := sessionClients.Load(recipientUuid); ok { //do the same for session
+		client := client.(*SessionClient)
+
 		session.unregister <- client
 	}
 
@@ -118,7 +124,9 @@ func tryMutePlayer(senderUuid string, recipientUuid string) error { //called by 
 		return err
 	}
 
-	if client, ok := getSessionClient(recipientUuid); ok { //mute client if they're connected
+	if client, ok := sessionClients.Load(recipientUuid); ok { //mute client if they're connected
+		client := client.(*SessionClient)
+
 		client.muted = true
 	}
 
@@ -139,7 +147,9 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { //called b
 		return err
 	}
 
-	if client, ok := getSessionClient(recipientUuid); ok { //unmute client if they're connected
+	if client, ok := sessionClients.Load(recipientUuid); ok { //unmute client if they're connected
+		client := client.(*SessionClient)
+
 		client.muted = false
 	}
 
@@ -216,7 +226,9 @@ func updatePlayerBadgeSlotCounts(uuid string) (err error) {
 }
 
 func setPlayerBadge(uuid string, badge string) (err error) {
-	if client, ok := getSessionClient(uuid); ok {
+	if client, ok := sessionClients.Load(uuid); ok {
+		client := client.(*SessionClient)
+
 		client.badge = badge
 	}
 
@@ -391,7 +403,9 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 		}
 		partyMember.Account = accountBin == 1
 
-		if client, ok := getSessionClient(partyMember.Uuid); ok {
+		if client, ok := sessionClients.Load(partyMember.Uuid); ok {
+			client := client.(*SessionClient)
+
 			if client.name != "" {
 				partyMember.Name = client.name
 			}
@@ -405,7 +419,9 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 				partyMember.SpriteIndex = client.spriteIndex
 			}
 			if !simple {
-				if hubClient, ok := getHubClient(partyMember.Uuid); ok {
+				if hubClient, ok := hubClients.Load(partyMember.Uuid); ok {
+					hubClient := hubClient.(*Client)
+
 					partyMember.MapId = hubClient.mapId
 					partyMember.PrevMapId = hubClient.prevMapId
 					partyMember.PrevLocations = hubClient.prevLocations
@@ -467,7 +483,9 @@ func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			return partyMembers, err
 		}
 		partyMember.Account = accountBin == 1
-		if client, ok := getSessionClient(partyMember.Uuid); ok {
+		if client, ok := sessionClients.Load(partyMember.Uuid); ok {
+			client := client.(*SessionClient)
+
 			if client.name != "" {
 				partyMember.Name = client.name
 			}
@@ -480,7 +498,9 @@ func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			if client.spriteIndex > -1 {
 				partyMember.SpriteIndex = client.spriteIndex
 			}
-			if hubClient, ok := getHubClient(partyMember.Uuid); ok {
+			if hubClient, ok := hubClients.Load(partyMember.Uuid); ok {
+				hubClient := hubClient.(*Client)
+
 				partyMember.MapId = hubClient.mapId
 				partyMember.PrevMapId = hubClient.prevMapId
 				partyMember.PrevLocations = hubClient.prevLocations
@@ -620,7 +640,7 @@ func assumeNextPartyOwner(partyId int) error {
 	var nextOnlinePlayerUuid string
 
 	for _, uuid := range partyMemberUuids {
-		if _, ok := getHubClient(uuid); ok {
+		if _, ok := hubClients.Load(uuid); ok {
 			nextOnlinePlayerUuid = uuid
 			break
 		}
@@ -947,7 +967,9 @@ func getCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventL
 }
 
 func tryCompleteEventLocation(periodId int, playerUuid string, location string) (exp int, err error) {
-	if client, ok := getHubClient(playerUuid); ok {
+	if client, ok := hubClients.Load(playerUuid); ok {
+		client := client.(*Client)
+
 		clientMapId := client.mapId
 
 		results, err := db.Query("SELECT el.id, el.type, el.exp, el.mapIds FROM eventLocations el WHERE el.periodId = ? AND el.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", periodId, location)
@@ -1010,7 +1032,9 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 }
 
 func tryCompletePlayerEventLocation(periodId int, playerUuid string, location string) (complete bool, err error) {
-	if client, ok := getHubClient(playerUuid); ok {
+	if client, ok := hubClients.Load(playerUuid); ok {
+		client := client.(*Client)
+
 		clientMapId := client.mapId
 
 		results, err := db.Query("SELECT pel.id, pel.mapIds FROM playerEventLocations pel WHERE pel.periodId = ? AND pel.title = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", periodId, location, playerUuid)
@@ -1143,7 +1167,9 @@ func writeEventVmData(periodId int, mapId int, eventId int, exp int) (err error)
 }
 
 func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int) (exp int, err error) {
-	if client, ok := getHubClient(playerUuid); ok {
+	if client, ok := hubClients.Load(playerUuid); ok {
+		client := client.(*Client)
+
 		clientMapId := client.mapId
 
 		results, err := db.Query("SELECT ev.id, ev.mapId, ev.eventId, ev.exp FROM eventVms ev WHERE ev.periodId = ? AND ev.mapId = ? AND ev.eventId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", periodId, mapId, eventId)
@@ -1322,7 +1348,9 @@ func getPlayerTags(playerUuid string) (tags []string, err error) {
 }
 
 func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
-	if client, ok := getHubClient(playerUuid); ok { // Player must be online to add a tag
+	if client, ok := hubClients.Load(playerUuid); ok { // Player must be online to add a tag
+		client := client.(*Client)
+
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
 		var tagExists bool
 		for _, tag := range client.tags {
@@ -1742,7 +1770,9 @@ func getMutedPlayers() (players []PlayerInfo) {
 
 func getNameFromUuid(uuid string) (name string) {
 	// get name from sessionClients if they're connected
-	if client, ok := getSessionClient(uuid); ok {
+	if client, ok := sessionClients.Load(uuid); ok {
+		client := client.(*SessionClient)
+
 		return client.name
 	}
 

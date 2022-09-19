@@ -14,7 +14,9 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 
 	var response []PlayerInfo
 
-	for _, client := range getSessionClients() {
+	sessionClients.Range(func(_, value any) bool {
+		client := value.(*SessionClient)
+
 		player := PlayerInfo{
 			Uuid: client.uuid,
 			Name: client.name,
@@ -22,7 +24,9 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 		}
 
 		response = append(response, player)
-	}
+
+		return true
+	})
 
 	responseJson, err := json.Marshal(response)
 	if err != nil {

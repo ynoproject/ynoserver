@@ -14,9 +14,8 @@ import (
 )
 
 var (
-	sessionClients = make(map[string]*SessionClient)
+	sessionClients sync.Map
 	session        = &Session{
-		clients:      make(map[*SessionClient]bool),
 		processMsgCh: make(chan *SessionMessage),
 		connect:      make(chan *ConnInfo),
 		unregister:   make(chan *SessionClient),
@@ -25,7 +24,7 @@ var (
 
 type Session struct {
 	// Registered clients.
-	clients map[*SessionClient]bool
+	clients sync.Map
 
 	// Inbound messages from the clients.
 	processMsgCh chan *SessionMessage
@@ -35,8 +34,6 @@ type Session struct {
 
 	// Unregister requests from clients.
 	unregister chan *SessionClient
-
-	clientsMtx sync.RWMutex
 }
 
 func initSession() {
@@ -97,17 +94,21 @@ func (s *Session) run() {
 				continue
 			}
 
-			if _, ok := getSessionClient(uuid); ok {
+			if _, ok := sessionClients.Load(uuid); ok {
 				writeErrLog(conn.Ip, "session", "session already exists for uuid")
 				continue
 			}
 
 			var sameIp int
-			for _, otherClient := range s.getClients() {
+			s.clients.Range(func(key, _ any) bool {
+				otherClient := key.(*SessionClient)
+
 				if otherClient.ip == conn.Ip {
 					sameIp++
 				}
-			}
+
+				return true
+			})
 			if sameIp >= 3 {
 				writeErrLog(conn.Ip, "session", "too many connections from ip")
 				continue
@@ -139,12 +140,12 @@ func (s *Session) run() {
 			client.send <- []byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge)
 
 			//register client in the structures
-			s.writeClient(client)
-			writeSessionClient(uuid, client)
+			s.clients.Store(client, nil)
+			sessionClients.Store(uuid, client)
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			if s.getClient(client) {
+			if _, ok := s.clients.Load(client); ok {
 				s.disconnectClient(client)
 				writeLog(client.ip, "session", "disconnect", 200)
 				continue
@@ -162,19 +163,23 @@ func (s *Session) run() {
 }
 
 func (s *Session) broadcast(data []byte) {
-	for _, client := range s.getClients() {
+	s.clients.Range(func(key, _ any) bool {
+		client := key.(*SessionClient)
+
 		select {
 		case client.send <- data:
 		default:
 			s.disconnectClient(client)
 		}
-	}
+
+		return true
+	})
 }
 
 func (s *Session) disconnectClient(client *SessionClient) {
 	updatePlayerGameData(client) //update database
-	s.deleteClient(client)
-	deleteSessionClient(client.uuid)
+	s.clients.Delete(client)
+	sessionClients.Delete(client.uuid)
 	close(client.send)
 }
 
@@ -250,4 +255,16 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	writeLog(sender.ip, "session", msgStr, 200)
 
 	return nil
+}
+
+func getSessionClientsLen() int {
+	var len int
+
+	sessionClients.Range(func(_, _ any) bool {
+		len++
+
+		return true
+	})
+
+	return len
 }

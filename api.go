@@ -705,7 +705,7 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		ret := -1
-		if _, found := getHubClient(uuid); found {
+		if _, found := hubClients.Load(uuid); found {
 			if !free {
 				exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
 				if err != nil {

@@ -182,11 +182,15 @@ func initEvents() {
 
 func sendEventsUpdate() {
 	var emptyMsg []string
-	for _, sessionClient := range getSessionClients() {
+	sessionClients.Range(func(_, value any) bool {
+		sessionClient := value.(*SessionClient)
+
 		if sessionClient.account {
 			session.handleE(emptyMsg, sessionClient)
 		}
-	}
+
+		return true
+	})
 }
 
 func add2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int) {
