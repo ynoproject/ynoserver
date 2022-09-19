@@ -14,7 +14,7 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 
 	var response []PlayerInfo
 
-	for _, client := range sessionClients {
+	for _, client := range getSessionClients() {
 		player := PlayerInfo{
 			Uuid: client.uuid,
 			Name: client.name,

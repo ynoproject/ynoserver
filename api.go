@@ -153,7 +153,7 @@ func initApi() {
 		w.Write(playerInfoJson)
 	})
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(strconv.Itoa(len(sessionClients))))
+		w.Write([]byte(strconv.Itoa(getSessionClientsLen())))
 	})
 }
 
@@ -705,7 +705,7 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		ret := -1
-		if _, found := hubClients[uuid]; found {
+		if _, found := getHubClient(uuid); found {
 			if !free {
 				exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
 				if err != nil {

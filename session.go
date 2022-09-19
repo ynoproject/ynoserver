@@ -42,7 +42,7 @@ func initSession() {
 	s := gocron.NewScheduler(time.UTC)
 
 	s.Every(5).Seconds().Do(func() {
-		session.broadcast([]byte("pc" + delim + strconv.Itoa(len(sessionClients))))
+		session.broadcast([]byte("pc" + delim + strconv.Itoa(getSessionClientsLen())))
 		sendPartyUpdate()
 	})
 
@@ -94,7 +94,7 @@ func (s *Session) run() {
 				continue
 			}
 
-			if _, ok := sessionClients[uuid]; ok {
+			if _, ok := getSessionClient(uuid); ok {
 				writeErrLog(conn.Ip, "session", "session already exists for uuid")
 				continue
 			}
@@ -137,7 +137,7 @@ func (s *Session) run() {
 
 			//register client in the structures
 			s.clients[client] = true
-			sessionClients[uuid] = client
+			writeSessionClient(uuid, client)
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
@@ -171,7 +171,7 @@ func (s *Session) broadcast(data []byte) {
 func (s *Session) deleteClient(client *SessionClient) {
 	updatePlayerGameData(client) //update database
 	delete(s.clients, client)
-	delete(sessionClients, client.uuid)
+	deleteSessionClient(client.uuid)
 	close(client.send)
 }
 

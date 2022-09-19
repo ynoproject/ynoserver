@@ -53,7 +53,7 @@ func sendPartyUpdate() {
 			if !member.Online {
 				continue
 			}
-			if client, ok := sessionClients[member.Uuid]; ok {
+			if client, ok := getSessionClient(member.Uuid); ok {
 				var jsonData []byte
 				if member.Uuid == party.OwnerUuid {
 					// Expose password only for party owner

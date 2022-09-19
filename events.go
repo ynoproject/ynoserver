@@ -182,7 +182,7 @@ func initEvents() {
 
 func sendEventsUpdate() {
 	var emptyMsg []string
-	for _, sessionClient := range sessionClients {
+	for _, sessionClient := range getSessionClients() {
 		if sessionClient.account {
 			session.handleE(emptyMsg, sessionClient)
 		}

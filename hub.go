@@ -108,7 +108,7 @@ func (h *Hub) run() {
 			}
 
 			var session *SessionClient
-			if s, ok := sessionClients[uuid]; ok {
+			if s, ok := getSessionClient(uuid); ok {
 				if s.bound {
 					writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "session in use")
 					continue
@@ -158,7 +158,7 @@ func (h *Hub) run() {
 			//register client in the structures
 			h.id[id] = true
 			h.clients[client] = true
-			hubClients[uuid] = client
+			writeHubClient(uuid, client)
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
@@ -218,7 +218,7 @@ func (h *Hub) deleteClient(client *Client) {
 
 	delete(h.id, client.id)
 	delete(h.clients, client)
-	delete(hubClients, client.session.uuid)
+	deleteHubClient(client.session.uuid)
 	close(client.send)
 	h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) //user %id% has disconnected message
 }
