@@ -204,7 +204,7 @@ func (h *Hub) broadcast(data []byte) {
 	h.clients.Range(func(key, _ any) bool {
 		client := key.(*Client)
 
-		if client.valid {
+		if !client.valid {
 			return true
 		}
 
