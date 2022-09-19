@@ -75,3 +75,36 @@ func deleteHubClient(uuid string) {
 
 	delete(hubClients, uuid)
 }
+
+func (h *Hub) getId() int {
+	defer h.idMtx.Unlock()
+
+	// Find free id
+	h.idMtx.RLock()
+	
+	var id int
+	for {
+		if !h.id[id] {
+			break
+		}
+
+		id++
+	}
+
+	h.idMtx.RUnlock()
+
+	// Mark id as used
+	h.idMtx.Lock()
+
+	h.id[id] = true
+
+	return id
+}
+
+func (h *Hub) deleteId(id int) {
+	defer h.idMtx.Unlock()
+
+	h.idMtx.Lock()
+
+	delete(h.id, id)
+}

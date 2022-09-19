@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
@@ -60,6 +61,8 @@ type Hub struct {
 	conditions []*Condition
 
 	minigameConfigs []*MinigameConfig
+
+	idMtx sync.RWMutex
 }
 
 func createAllHubs(roomIds []int, spRooms []int) {
@@ -122,22 +125,13 @@ func (h *Hub) run() {
 				continue
 			}
 
-			var id int
-			for {
-				if !h.id[id] {
-					break
-				}
-
-				id++
-			}
-
 			//sprite index < 0 means none
 			client := &Client{
 				hub:         h,
 				conn:        conn.Connect,
 				send:        make(chan []byte, 256),
 				session:     session,
-				id:          id,
+				id:          h.getId(),
 				key:         generateKey(),
 				pictures:    make(map[int]*Picture),
 				mapId:       fmt.Sprintf("%04d", h.roomId),
@@ -153,10 +147,9 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
+			client.send <- []byte("s" + delim + strconv.Itoa(client.id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
 
 			//register client in the structures
-			h.id[id] = true
 			h.clients[client] = true
 			writeHubClient(uuid, client)
 
@@ -216,7 +209,7 @@ func (h *Hub) broadcast(data []byte) {
 func (h *Hub) deleteClient(client *Client) {
 	client.session.bound = false
 
-	delete(h.id, client.id)
+	h.deleteId(client.id)
 	delete(h.clients, client)
 	deleteHubClient(client.session.uuid)
 	close(client.send)
@@ -422,3 +415,4 @@ func (h *Hub) handleValidClient(client *Client) {
 		}
 	}
 }
+
