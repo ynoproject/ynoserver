@@ -100,8 +100,8 @@ func (s *Session) run() {
 			}
 
 			var sameIp int
-			s.clients.Range(func(key, _ any) bool {
-				otherClient := key.(*SessionClient)
+			s.clients.Range(func(k, _ any) bool {
+				otherClient := k.(*SessionClient)
 
 				if otherClient.ip == conn.Ip {
 					sameIp++
@@ -163,8 +163,8 @@ func (s *Session) run() {
 }
 
 func (s *Session) broadcast(data []byte) {
-	s.clients.Range(func(key, _ any) bool {
-		client := key.(*SessionClient)
+	s.clients.Range(func(k, _ any) bool {
+		client := k.(*SessionClient)
 
 		select {
 		case client.send <- data:

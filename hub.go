@@ -201,8 +201,8 @@ func (h *Hub) broadcast(data []byte) {
 		return
 	}
 
-	h.clients.Range(func(key, _ any) bool {
-		client := key.(*Client)
+	h.clients.Range(func(k, _ any) bool {
+		client := k.(*Client)
 
 		if !client.valid {
 			return true
@@ -354,8 +354,8 @@ func (h *Hub) handleValidClient(client *Client) {
 		}
 
 		//send the new client info about the game state
-		h.clients.Range(func(key, _ any) bool {
-			otherClient := key.(*Client)
+		h.clients.Range(func(k, _ any) bool {
+			otherClient := k.(*Client)
 
 			if !otherClient.valid {
 				return true
