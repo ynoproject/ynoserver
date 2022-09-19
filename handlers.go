@@ -808,7 +808,7 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 	}
 	for _, uuid := range partyMemberUuids {
 		if client, ok := sessionClients.Load(uuid); ok {
-			client := client.(*Client)
+			client := client.(*SessionClient)
 
 			client.send <- []byte("psay" + delim + sender.uuid + delim + msgContents)
 		}
