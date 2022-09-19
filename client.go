@@ -251,10 +251,6 @@ func (c *Client) disconnect() {
 
 	close(c.send)
 
-	if c.hub == nil {
-		return
-	}
-
 	c.hub.id.Delete(c.id)
 	c.hub.clients.Delete(c)
 	hubClients.Delete(c.session.uuid)
