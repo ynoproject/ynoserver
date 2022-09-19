@@ -1,6 +1,19 @@
-// Copyright 2013 The Gorilla WebSocket Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+/*
+	Copyright (C) 2021-2022  The YNOproject Developers
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU Affero General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Affero General Public License for more details.
+
+	You should have received a copy of the GNU Affero General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package main
 
@@ -127,6 +140,9 @@ type SessionMessage struct {
 	data   []byte
 	sender *SessionClient //who sent the message
 }
+
+// The readPump and writePump functions are based on functions from
+// https://github.com/gorilla/websocket/blob/master/examples/chat/client.go
 
 // readPump pumps messages from the websocket connection to the hub.
 //
