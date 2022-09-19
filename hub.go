@@ -62,7 +62,8 @@ type Hub struct {
 
 	minigameConfigs []*MinigameConfig
 
-	idMtx sync.RWMutex
+	clientsMtx sync.RWMutex
+	idMtx      sync.RWMutex
 }
 
 func createAllHubs(roomIds []int, spRooms []int) {
@@ -150,13 +151,13 @@ func (h *Hub) run() {
 			client.send <- []byte("s" + delim + strconv.Itoa(client.id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
 
 			//register client in the structures
-			h.clients[client] = true
+			h.writeClient(client)
 			writeHubClient(uuid, client)
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				h.deleteClient(client)
+			if h.getClient(client) {
+				h.disconnectClient(client)
 				writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 				continue
 			}
@@ -193,7 +194,7 @@ func (h *Hub) broadcast(data []byte) {
 		return
 	}
 
-	for client := range h.clients {
+	for _, client := range h.getClients() {
 		if !client.valid {
 			continue
 		}
@@ -201,16 +202,16 @@ func (h *Hub) broadcast(data []byte) {
 		select {
 		case client.send <- data:
 		default:
-			h.deleteClient(client)
+			h.disconnectClient(client)
 		}
 	}
 }
 
-func (h *Hub) deleteClient(client *Client) {
+func (h *Hub) disconnectClient(client *Client) {
 	client.session.bound = false
 
 	h.deleteId(client.id)
-	delete(h.clients, client)
+	h.deleteClient(client)
 	deleteHubClient(client.session.uuid)
 	close(client.send)
 	h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) //user %id% has disconnected message
@@ -342,7 +343,7 @@ func (h *Hub) handleValidClient(client *Client) {
 		}
 
 		//send the new client info about the game state
-		for otherClient := range h.clients {
+		for _, otherClient := range h.getClients() {
 			if !otherClient.valid {
 				continue
 			}

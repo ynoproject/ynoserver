@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -34,6 +35,8 @@ type Session struct {
 
 	// Unregister requests from clients.
 	unregister chan *SessionClient
+
+	clientsMtx sync.RWMutex
 }
 
 func initSession() {
@@ -100,7 +103,7 @@ func (s *Session) run() {
 			}
 
 			var sameIp int
-			for otherClient := range s.clients {
+			for _, otherClient := range s.getClients() {
 				if otherClient.ip == conn.Ip {
 					sameIp++
 				}
@@ -136,13 +139,13 @@ func (s *Session) run() {
 			client.send <- []byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge)
 
 			//register client in the structures
-			s.clients[client] = true
+			s.writeClient(client)
 			writeSessionClient(uuid, client)
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			if _, ok := s.clients[client]; ok {
-				s.deleteClient(client)
+			if s.getClient(client) {
+				s.disconnectClient(client)
 				writeLog(client.ip, "session", "disconnect", 200)
 				continue
 			}
@@ -159,18 +162,18 @@ func (s *Session) run() {
 }
 
 func (s *Session) broadcast(data []byte) {
-	for client := range s.clients {
+	for _, client := range s.getClients() {
 		select {
 		case client.send <- data:
 		default:
-			s.deleteClient(client)
+			s.disconnectClient(client)
 		}
 	}
 }
 
-func (s *Session) deleteClient(client *SessionClient) {
+func (s *Session) disconnectClient(client *SessionClient) {
 	updatePlayerGameData(client) //update database
-	delete(s.clients, client)
+	s.deleteClient(client)
 	deleteSessionClient(client.uuid)
 	close(client.send)
 }
