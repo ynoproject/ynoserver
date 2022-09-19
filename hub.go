@@ -154,7 +154,7 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
+			client.sendPacket([]byte("s" + delim + strconv.Itoa(id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge)) //"your id is %id%" message
 
 			//register client in the structures
 			h.id.Store(id, nil)
@@ -164,7 +164,7 @@ func (h *Hub) run() {
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
 			if _, ok := h.clients.Load(client); ok {
-				h.disconnectClient(client)
+				client.disconnect()
 				writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 				continue
 			}
@@ -208,24 +208,10 @@ func (h *Hub) broadcast(data []byte) {
 			return true
 		}
 
-		select {
-		case client.send <- data:
-		default:
-			h.disconnectClient(client)
-		}
+		client.sendPacket(data)
 
 		return true
 	})
-}
-
-func (h *Hub) disconnectClient(client *Client) {
-	client.session.bound = false
-
-	h.id.Delete(client.id)
-	h.clients.Delete(client)
-	hubClients.Delete(client.session.uuid)
-	close(client.send)
-	h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) //user %id% has disconnected message
 }
 
 func (h *Hub) processMsgs(msg *Message) []error {
@@ -365,26 +351,26 @@ func (h *Hub) handleValidClient(client *Client) {
 			if otherClient.session.account {
 				accountBin = 1
 			}
-			client.send <- []byte("c" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.uuid + delim + strconv.Itoa(otherClient.session.rank) + delim + strconv.Itoa(accountBin) + delim + otherClient.session.badge)
-			client.send <- []byte("m" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.x) + delim + strconv.Itoa(otherClient.y))
+			client.sendPacket([]byte("c" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.uuid + delim + strconv.Itoa(otherClient.session.rank) + delim + strconv.Itoa(accountBin) + delim + otherClient.session.badge))
+			client.sendPacket([]byte("m" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.x) + delim + strconv.Itoa(otherClient.y)))
 			if otherClient.facing > 0 {
-				client.send <- []byte("f" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.facing))
+				client.sendPacket([]byte("f" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.facing)))
 			}
-			client.send <- []byte("spd" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.spd))
+			client.sendPacket([]byte("spd" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.spd)))
 			if otherClient.session.name != "" {
-				client.send <- []byte("name" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.name)
+				client.sendPacket([]byte("name" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.name))
 			}
 			if otherClient.session.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
-				client.send <- []byte("spr" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.spriteName + delim + strconv.Itoa(otherClient.session.spriteIndex))
+				client.sendPacket([]byte("spr" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.spriteName + delim + strconv.Itoa(otherClient.session.spriteIndex)))
 			}
 			if otherClient.repeatingFlash {
-				client.send <- []byte("rfl" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.flash[0]) + delim + strconv.Itoa(otherClient.flash[1]) + delim + strconv.Itoa(otherClient.flash[2]) + delim + strconv.Itoa(otherClient.flash[3]) + delim + strconv.Itoa(otherClient.flash[4]))
+				client.sendPacket([]byte("rfl" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.flash[0]) + delim + strconv.Itoa(otherClient.flash[1]) + delim + strconv.Itoa(otherClient.flash[2]) + delim + strconv.Itoa(otherClient.flash[3]) + delim + strconv.Itoa(otherClient.flash[4])))
 			}
 			if otherClient.hidden {
-				client.send <- []byte("h" + delim + strconv.Itoa(otherClient.id) + delim + "1")
+				client.sendPacket([]byte("h" + delim + strconv.Itoa(otherClient.id) + delim + "1"))
 			}
 			if otherClient.session.systemName != "" {
-				client.send <- []byte("sys" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.systemName)
+				client.sendPacket([]byte("sys" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.systemName))
 			}
 			for picId, pic := range otherClient.pictures {
 				var useTransparentColorBin int
@@ -395,7 +381,7 @@ func (h *Hub) handleValidClient(client *Client) {
 				if pic.fixedToMap {
 					fixedToMapBin = 1
 				}
-				client.send <- []byte("ap" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(picId) + delim + strconv.Itoa(pic.positionX) + delim + strconv.Itoa(pic.positionY) + delim + strconv.Itoa(pic.mapX) + delim + strconv.Itoa(pic.mapY) + delim + strconv.Itoa(pic.panX) + delim + strconv.Itoa(pic.panY) + delim + strconv.Itoa(pic.magnify) + delim + strconv.Itoa(pic.topTrans) + delim + strconv.Itoa(pic.bottomTrans) + delim + strconv.Itoa(pic.red) + delim + strconv.Itoa(pic.blue) + delim + strconv.Itoa(pic.green) + delim + strconv.Itoa(pic.saturation) + delim + strconv.Itoa(pic.effectMode) + delim + strconv.Itoa(pic.effectPower) + delim + pic.name + delim + strconv.Itoa(useTransparentColorBin) + delim + strconv.Itoa(fixedToMapBin))
+				client.sendPacket([]byte("ap" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(picId) + delim + strconv.Itoa(pic.positionX) + delim + strconv.Itoa(pic.positionY) + delim + strconv.Itoa(pic.mapX) + delim + strconv.Itoa(pic.mapY) + delim + strconv.Itoa(pic.panX) + delim + strconv.Itoa(pic.panY) + delim + strconv.Itoa(pic.magnify) + delim + strconv.Itoa(pic.topTrans) + delim + strconv.Itoa(pic.bottomTrans) + delim + strconv.Itoa(pic.red) + delim + strconv.Itoa(pic.blue) + delim + strconv.Itoa(pic.green) + delim + strconv.Itoa(pic.saturation) + delim + strconv.Itoa(pic.effectMode) + delim + strconv.Itoa(pic.effectPower) + delim + pic.name + delim + strconv.Itoa(useTransparentColorBin) + delim + strconv.Itoa(fixedToMapBin)))
 			}
 
 			return true
@@ -414,7 +400,7 @@ func (h *Hub) handleValidClient(client *Client) {
 		if minigame.InitialVarSync {
 			varSyncType = 2
 		}
-		client.send <- []byte("sv" + delim + strconv.Itoa(minigame.VarId) + delim + strconv.Itoa(varSyncType))
+		client.sendPacket([]byte("sv" + delim + strconv.Itoa(minigame.VarId) + delim + strconv.Itoa(varSyncType)))
 	}
 
 	// send variable sync request for vending machine expeditions
@@ -427,7 +413,7 @@ func (h *Hub) handleValidClient(client *Client) {
 			if eventId != currentEventVmEventId {
 				continue
 			}
-			client.send <- []byte("sev" + delim + strconv.Itoa(eventId) + delim + "1")
+			client.sendPacket([]byte("sev" + delim + strconv.Itoa(eventId) + delim + "1"))
 		}
 	}
 }

@@ -95,6 +95,8 @@ type Client struct {
 }
 
 type SessionClient struct {
+	session *Session
+
 	conn *websocket.Conn
 	send chan []byte
 
@@ -241,5 +243,45 @@ func (c *SessionClient) writePump() {
 				return
 			}
 		}
+	}
+}
+
+func (c *Client) disconnect() {
+	c.session.bound = false
+
+	close(c.send)
+
+	if c.hub == nil {
+		return
+	}
+
+	c.hub.id.Delete(c.id)
+	c.hub.clients.Delete(c)
+	hubClients.Delete(c.session.uuid)
+	c.hub.broadcast([]byte("d" + delim + strconv.Itoa(c.id))) //user %id% has disconnected message
+}
+
+func (s *SessionClient) disconnect() {
+	close(s.send)
+
+	updatePlayerGameData(s) //update database
+
+	s.session.clients.Delete(s)
+	sessionClients.Delete(s.uuid)
+}
+
+func (c *Client) sendPacket(data []byte) {
+	select {
+	case c.send <- data:
+	default:
+		c.disconnect()
+	}
+}
+
+func (s *SessionClient) sendPacket(data []byte) {
+	select {
+	case s.send <- data:
+	default:
+		s.disconnect()
 	}
 }

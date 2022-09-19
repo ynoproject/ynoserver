@@ -304,7 +304,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 					switchSyncType = 1
 				}
 			}
-			client.send <- []byte("ss" + delim + strconv.Itoa(switchId) + delim + strconv.Itoa(switchSyncType))
+			client.sendPacket([]byte("ss" + delim + strconv.Itoa(switchId) + delim + strconv.Itoa(switchSyncType)))
 		} else if c.VarId > 0 || len(c.VarIds) > 0 {
 			varId := c.VarId
 			if len(c.VarIds) > 0 {
@@ -331,7 +331,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 					varSyncType = 1
 				}
 			}
-			client.send <- []byte("sv" + delim + strconv.Itoa(varId) + delim + strconv.Itoa(varSyncType))
+			client.sendPacket([]byte("sv" + delim + strconv.Itoa(varId) + delim + strconv.Itoa(varSyncType)))
 		} else if checkConditionCoords(c, client) {
 			timeTrial := c.TimeTrial && config.gameName == "2kki"
 			if !timeTrial {
@@ -340,10 +340,10 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 					writeErrLog(client.session.ip, strconv.Itoa(roomId), err.Error())
 				}
 				if success {
-					client.send <- []byte("b")
+					client.sendPacket([]byte("b"))
 				}
 			} else {
-				client.send <- []byte("ss" + delim + "1430" + delim + "0")
+				client.sendPacket([]byte("ss" + delim + "1430" + delim + "0"))
 			}
 		}
 	} else if trigger == "" {
@@ -356,7 +356,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 			}
 			for _, value := range values {
 				if c.Trigger == "picture" {
-					client.send <- []byte("sp" + delim + value)
+					client.sendPacket([]byte("sp" + delim + value))
 				} else {
 					valueInt, err := strconv.Atoi(value)
 					if err != nil {
@@ -387,7 +387,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 						eventTriggerType = 1
 					}
 
-					client.send <- []byte("sev" + delim + value + delim + strconv.Itoa(eventTriggerType))
+					client.sendPacket([]byte("sev" + delim + value + delim + strconv.Itoa(eventTriggerType)))
 				}
 			}
 		} else if c.Trigger == "coords" {

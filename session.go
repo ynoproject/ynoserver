@@ -121,6 +121,7 @@ func (s *Session) run() {
 			spriteName, spriteIndex, systemName := getPlayerGameData(uuid)
 
 			client := &SessionClient{
+				session:     s,
 				conn:        conn.Connect,
 				send:        make(chan []byte, 256),
 				ip:          conn.Ip,
@@ -137,7 +138,7 @@ func (s *Session) run() {
 			go client.writePump()
 			go client.readPump()
 
-			client.send <- []byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge)
+			client.sendPacket([]byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge))
 
 			//register client in the structures
 			s.clients.Store(client, nil)
@@ -146,7 +147,7 @@ func (s *Session) run() {
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
 			if _, ok := s.clients.Load(client); ok {
-				s.disconnectClient(client)
+				client.disconnect()
 				writeLog(client.ip, "session", "disconnect", 200)
 				continue
 			}
@@ -166,21 +167,10 @@ func (s *Session) broadcast(data []byte) {
 	s.clients.Range(func(k, _ any) bool {
 		client := k.(*SessionClient)
 
-		select {
-		case client.send <- data:
-		default:
-			s.disconnectClient(client)
-		}
+		client.sendPacket(data)
 
 		return true
 	})
-}
-
-func (s *Session) disconnectClient(client *SessionClient) {
-	updatePlayerGameData(client) //update database
-	s.clients.Delete(client)
-	sessionClients.Delete(client.uuid)
-	close(client.send)
 }
 
 func (s *Session) processMsgs(msg *SessionMessage) []error {
@@ -238,7 +228,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	case "pt": //party update
 		err = s.handlePt(msgFields, sender)
 		if err != nil {
-			sender.send <- ([]byte("pt" + delim + "null"))
+			sender.sendPacket(([]byte("pt" + delim + "null")))
 		}
 	case "ep": //event period
 		err = s.handleEp(msgFields, sender)
