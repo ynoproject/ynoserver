@@ -283,6 +283,8 @@ func (s *SessionClient) disconnect() {
 }
 
 func (c *Client) sendPacket(data []byte) {
+	defer recover()
+
 	select {
 	case c.send <- data:
 	default:
@@ -291,6 +293,8 @@ func (c *Client) sendPacket(data []byte) {
 }
 
 func (s *SessionClient) sendPacket(data []byte) {
+	defer recover()
+
 	select {
 	case s.send <- data:
 	default:
