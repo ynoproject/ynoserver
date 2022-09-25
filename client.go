@@ -111,6 +111,7 @@ type SessionClient struct {
 	session *Session
 
 	conn *websocket.Conn
+
 	send chan []byte
 
 	ip string
