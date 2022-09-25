@@ -18,6 +18,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -284,7 +285,11 @@ func (s *SessionClient) disconnect() {
 }
 
 func (c *Client) sendPacket(data []byte) {
-	defer recover()
+	defer func () {
+		if err := recover(); err != nil {
+			fmt.Println("RECOVERED FROM:", err)
+		}
+	}()
 
 	select {
 	case c.send <- data:
@@ -294,7 +299,11 @@ func (c *Client) sendPacket(data []byte) {
 }
 
 func (s *SessionClient) sendPacket(data []byte) {
-	defer recover()
+	defer func () {
+		if err := recover(); err != nil {
+			fmt.Println("RECOVERED FROM:", err)
+		}
+	}()
 
 	select {
 	case s.send <- data:
