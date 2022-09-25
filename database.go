@@ -174,7 +174,7 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { //called b
 }
 
 func createPlayerData(ip string, uuid string, rank int, banned bool) error {
-	_, err := db.Exec("INSERT INTO players (ip, uuid, rank, banned) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE uuid = ?, rank = ?, banned = ?", ip, uuid, rank, banned, uuid, rank, banned)
+	_, err := db.Exec("INSERT INTO players (ip, uuid, rank, banned) VALUES (?, ?, ?, ?)", ip, uuid, rank, banned)
 	if err != nil {
 		return err
 	}
