@@ -140,6 +140,7 @@ func (s *Session) run() {
 			client := &SessionClient{
 				session:     s,
 				conn:        conn.Connect,
+				terminate:   make(chan bool),
 				send:        make(chan []byte, 256),
 				ip:          conn.Ip,
 				account:     account,

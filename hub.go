@@ -153,6 +153,7 @@ func (h *Hub) run() {
 			client := &Client{
 				hub:         h,
 				conn:        conn.Connect,
+				terminate:   make(chan bool),
 				send:        make(chan []byte, 256),
 				session:     session,
 				id:          id,

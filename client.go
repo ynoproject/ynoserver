@@ -18,7 +18,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -70,10 +69,10 @@ type Client struct {
 	session *SessionClient
 	hub     *Hub
 
-	// The websocket connection.
 	conn *websocket.Conn
 
-	// Buffered channel of outbound messages.
+	terminate chan bool
+
 	send chan []byte
 
 	id int
@@ -112,6 +111,8 @@ type SessionClient struct {
 	session *Session
 
 	conn *websocket.Conn
+
+	terminate chan bool
 
 	send chan []byte
 
@@ -213,13 +214,13 @@ func (c *Client) writePump() {
 
 	for {
 		select {
-		case message, ok := <-c.send:
+		case <-c.terminate:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				// The hub closed the channel.
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
+
+			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			return
+		case message := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
@@ -248,13 +249,13 @@ func (c *SessionClient) writePump() {
 
 	for {
 		select {
-		case message, ok := <-c.send:
+		case <-c.terminate:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				// The hub closed the channel.
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
+
+			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			return
+		case message := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
@@ -277,7 +278,7 @@ func (c *SessionClient) writePump() {
 func (c *Client) disconnect() {
 	c.session.bound = false
 
-	close(c.send)
+	c.terminate <- true
 
 	c.hub.id.Delete(c.id)
 	c.hub.clients.Delete(c)
@@ -295,29 +296,9 @@ func (s *SessionClient) disconnect() {
 }
 
 func (c *Client) sendPacket(data []byte) {
-	defer func () {
-		if err := recover(); err != nil {
-			fmt.Println("RECOVERED FROM:", err)
-		}
-	}()
-
-	select {
-	case c.send <- data:
-	default:
-		c.disconnect()
-	}
+	c.send <- data
 }
 
 func (s *SessionClient) sendPacket(data []byte) {
-	defer func () {
-		if err := recover(); err != nil {
-			fmt.Println("RECOVERED FROM:", err)
-		}
-	}()
-
-	select {
-	case s.send <- data:
-	default:
-		s.disconnect()
-	}
+	s.send <- data
 }
