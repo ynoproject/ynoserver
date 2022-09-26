@@ -266,13 +266,13 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 }
 
 func getSessionClientsLen() int {
-	var len int
+	var length int
 
 	sessionClients.Range(func(_, _ any) bool {
-		len++
+		length++
 
 		return true
 	})
 
-	return len
+	return length
 }
