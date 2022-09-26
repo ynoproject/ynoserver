@@ -176,27 +176,27 @@ func (c *Client) readPump() {
 	}
 }
 
-func (c *SessionClient) readPump() {
+func (s *SessionClient) readPump() {
 	defer func() {
-		session.unregister <- c
-		c.conn.Close()
+		session.unregister <- s
+		s.conn.Close()
 	}()
 
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	s.conn.SetReadLimit(maxMessageSize)
+	s.conn.SetReadDeadline(time.Now().Add(pongWait))
+	s.conn.SetPongHandler(func(string) error { s.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	for {
-		_, message, err := c.conn.ReadMessage()
+		_, message, err := s.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				writeLog(c.ip, "session", err.Error(), 500)
+				writeLog(s.ip, "session", err.Error(), 500)
 			}
 
 			break
 		}
 
-		session.processMsgCh <- &SessionMessage{data: message, sender: c}
+		session.processMsgCh <- &SessionMessage{data: message, sender: s}
 	}
 }
 
@@ -236,31 +236,31 @@ func (c *Client) writePump() {
 	}
 }
 
-func (c *SessionClient) writePump() {
+func (s *SessionClient) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		s.conn.Close()
 	}()
 
 	for {
 		select {
-		case <-c.terminate:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+		case <-s.terminate:
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			s.conn.WriteMessage(websocket.CloseMessage, []byte{})
 			return
-		case message := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+		case message := <-s.send:
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
