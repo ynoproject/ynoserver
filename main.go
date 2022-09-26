@@ -257,7 +257,7 @@ func isVpn(ip string) (vpn bool) {
 		return false //VPN checking is not available
 	}
 
-	req, err := http.NewRequest("GET", "http://v2.api.iphub.info/ip/"+ip, nil)
+	req, err := http.NewRequest("GET", "https://v2.api.iphub.info/ip/"+ip, nil)
 	if err != nil {
 		return false
 	}
