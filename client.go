@@ -275,7 +275,7 @@ func (c *Client) disconnect() {
 }
 
 func (s *SessionClient) disconnect() {
-	close(s.send)
+	s.terminate <- true
 
 	updatePlayerGameData(s) //update database
 
