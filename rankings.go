@@ -41,23 +41,14 @@ type RankingSubCategory struct {
 	PageCount     int    `json:"pageCount"`
 }
 
-type RankingEntryBase struct {
+type Ranking struct {
 	Position   int     `json:"position"`
+	Name       string  `json:"name"`
+	Rank       int     `json:"rank"`
+	Badge      string  `json:"badge"`
+	SystemName string  `json:"systemName"`
 	ValueInt   int     `json:"valueInt"`
 	ValueFloat float32 `json:"valueFloat"`
-}
-
-type RankingEntry struct {
-	RankingEntryBase
-	Uuid string `json:"uuid"`
-}
-
-type Ranking struct {
-	RankingEntryBase
-	Name       string `json:"name"`
-	Rank       int    `json:"rank"`
-	Badge      string `json:"badge"`
-	SystemName string `json:"systemName"`
 }
 
 func initRankings() {
