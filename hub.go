@@ -199,7 +199,7 @@ func (h *Hub) run() {
 }
 
 // serve handles websocket requests from the peer.
-func (hub *Hub) serve(w http.ResponseWriter, r *http.Request) {
+func (h *Hub) serve(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
 	if err != nil {
 		log.Println(err)
@@ -211,7 +211,7 @@ func (hub *Hub) serve(w http.ResponseWriter, r *http.Request) {
 		playerToken = token[0]
 	}
 
-	hub.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
+	h.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
 }
 
 func (h *Hub) broadcast(data []byte) {
