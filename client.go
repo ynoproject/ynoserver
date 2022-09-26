@@ -207,6 +207,7 @@ func (c *SessionClient) readPump() {
 // executing all writes from this goroutine.
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
+
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
@@ -237,6 +238,7 @@ func (c *Client) writePump() {
 
 func (c *SessionClient) writePump() {
 	ticker := time.NewTicker(pingPeriod)
+
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
