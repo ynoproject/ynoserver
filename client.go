@@ -270,7 +270,7 @@ func (c *SessionClient) writePump() {
 func (c *Client) disconnect() {
 	c.session.bound = false
 
-	c.terminate <- true
+	close(c.terminate)
 
 	c.hub.id.Delete(c.id)
 	c.hub.clients.Delete(c)
@@ -279,7 +279,7 @@ func (c *Client) disconnect() {
 }
 
 func (s *SessionClient) disconnect() {
-	s.terminate <- true
+	close(s.terminate)
 
 	updatePlayerGameData(s) //update database
 
