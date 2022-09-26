@@ -286,11 +286,3 @@ func (s *SessionClient) disconnect() {
 	s.session.clients.Delete(s)
 	sessionClients.Delete(s.uuid)
 }
-
-func (c *Client) sendPacket(data []byte) {
-	c.send <- data
-}
-
-func (s *SessionClient) sendPacket(data []byte) {
-	s.send <- data
-}

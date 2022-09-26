@@ -156,7 +156,7 @@ func (s *Session) run() {
 			go client.writePump()
 			go client.readPump()
 
-			client.sendPacket([]byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge))
+			client.send <- []byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge)
 
 			//register client in the structures
 			s.clients.Store(client, nil)
@@ -185,7 +185,7 @@ func (s *Session) broadcast(data []byte) {
 	s.clients.Range(func(k, _ any) bool {
 		client := k.(*SessionClient)
 
-		client.sendPacket(data)
+		client.send <- data
 
 		return true
 	})
@@ -246,7 +246,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	case "pt": //party update
 		err = s.handlePt(msgFields, sender)
 		if err != nil {
-			sender.sendPacket(([]byte("pt" + delim + "null")))
+			sender.send <- []byte("pt" + delim + "null")
 		}
 	case "ep": //event period
 		err = s.handleEp(msgFields, sender)
