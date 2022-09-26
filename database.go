@@ -408,7 +408,7 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 
 	defer results.Close()
 
-	var offlinePartyMembersByParty map[int][]*PartyMember = make(map[int][]*PartyMember)
+	offlinePartyMembersByParty := make(map[int][]*PartyMember)
 
 	for results.Next() {
 		var partyId int
