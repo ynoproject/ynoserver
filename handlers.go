@@ -159,7 +159,7 @@ func (h *Hub) handleFl(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-func (h *Hub) handleRrfl(msg []string, sender *Client) (err error) {
+func (h *Hub) handleRrfl(sender *Client) (err error) {
 	sender.repeatingFlash = false
 	for i := 0; i < 5; i++ {
 		sender.flash[i] = 0
@@ -694,7 +694,7 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 
 //SESSION
 
-func (s *Session) handleI(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handleI(sender *SessionClient) (err error) {
 	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(sender.name)
 	playerInfo := PlayerInfo{
 		Uuid:          sender.uuid,
@@ -834,7 +834,7 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handlePt(sender *SessionClient) (err error) {
 	partyId, err := getPlayerPartyId(sender.uuid)
 	if err != nil {
 		return err
@@ -858,7 +858,7 @@ func (s *Session) handlePt(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handleEp(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handleEp(sender *SessionClient) (err error) {
 	period, err := getCurrentEventPeriodData()
 	if err != nil {
 		return err
@@ -872,7 +872,7 @@ func (s *Session) handleEp(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handleE(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handleE(sender *SessionClient) (err error) {
 	periodId, err := getCurrentEventPeriodId()
 	if err != nil {
 		return err

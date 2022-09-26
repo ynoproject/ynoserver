@@ -234,7 +234,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 
 	switch msgFields[0] {
 	case "i": //player info
-		err = s.handleI(msgFields, sender)
+		err = s.handleI(sender)
 	case "name": //nick set
 		err = s.handleName(msgFields, sender)
 	case "ploc": //previous location
@@ -244,14 +244,14 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	case "psay": //party say
 		err = s.handlePSay(msgFields, sender)
 	case "pt": //party update
-		err = s.handlePt(msgFields, sender)
+		err = s.handlePt(sender)
 		if err != nil {
 			sender.send <- []byte("pt" + delim + "null")
 		}
 	case "ep": //event period
-		err = s.handleEp(msgFields, sender)
+		err = s.handleEp(sender)
 	case "e": //event list
-		err = s.handleE(msgFields, sender)
+		err = s.handleE(sender)
 	default:
 		err = errors.New("unknown message type")
 	}

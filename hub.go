@@ -311,7 +311,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 		case "rfl": //repeating player flash
 			err = h.handleFl(msgFields, sender)
 		case "rrfl": //remove repeating player flash
-			err = h.handleRrfl(msgFields, sender)
+			err = h.handleRrfl(sender)
 		case "h": //change sprite visibility
 			err = h.handleH(msgFields, sender)
 		case "sys": //change my system graphic
