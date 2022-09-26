@@ -222,13 +222,7 @@ func (c *Client) writePump() {
 		case message := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
-
-			if err := w.Close(); err != nil {
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		case <-ticker.C:
@@ -257,13 +251,7 @@ func (c *SessionClient) writePump() {
 		case message := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
-
-			if err := w.Close(); err != nil {
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		case <-ticker.C:
