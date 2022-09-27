@@ -266,23 +266,3 @@ func (s *SessionClient) writePump() {
 		}
 	}
 }
-
-func (c *Client) disconnect() {
-	c.session.bound = false
-
-	close(c.terminate)
-
-	c.hub.id.Delete(c.id)
-	c.hub.clients.Delete(c)
-	hubClients.Delete(c.session.uuid)
-	c.hub.broadcast([]byte("d" + delim + strconv.Itoa(c.id))) //user %id% has disconnected message
-}
-
-func (s *SessionClient) disconnect() {
-	close(s.terminate)
-
-	updatePlayerGameData(s) //update database
-
-	s.session.clients.Delete(s)
-	sessionClients.Delete(s.uuid)
-}

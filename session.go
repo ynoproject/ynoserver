@@ -164,13 +164,15 @@ func (s *Session) run() {
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			if _, ok := s.clients.Load(client); ok {
-				client.disconnect()
-				writeLog(client.ip, "session", "disconnect", 200)
-				continue
-			}
+			client.terminate <- true
 
-			writeErrLog(client.ip, "session", "attempted to unregister nil client")
+			sessionClients.Delete(client.uuid)
+
+			s.clients.Delete(client)
+
+			updatePlayerGameData(client)
+
+			writeLog(client.ip, "session", "disconnect", 200)
 		case message := <-s.processMsgCh:
 			if errs := s.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {
