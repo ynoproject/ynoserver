@@ -102,7 +102,7 @@ const (
 )
 
 var (
-	currentEventPeriodId  int
+	currentEventPeriodId  int = -1
 	currentEventVmMapId   int
 	currentEventVmEventId int
 	eventsCount           int
