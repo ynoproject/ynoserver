@@ -215,7 +215,11 @@ func (c *Client) writePump() {
 
 	for {
 		select {
-		case <-c.terminate:
+		case terminate := <-c.terminate:
+			if !terminate {
+				return
+			}
+
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
 			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -246,7 +250,11 @@ func (s *SessionClient) writePump() {
 
 	for {
 		select {
-		case <-s.terminate:
+		case terminate, ok := <-s.terminate:
+			if !ok || !terminate {
+				return
+			}
+
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
 			s.conn.WriteMessage(websocket.CloseMessage, []byte{})
