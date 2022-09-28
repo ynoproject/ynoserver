@@ -786,12 +786,7 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 		y = client.y
 	}
 
-	var accountBin int
-	if sender.account {
-		accountBin = 1
-	}
-
-	session.broadcast([]byte("p" + delim + sender.uuid + delim + sender.name + delim + sender.systemName + delim + strconv.Itoa(sender.rank) + delim + strconv.Itoa(accountBin) + delim + sender.badge))
+	session.broadcast([]byte("p" + delim + sender.uuid + delim + sender.name + delim + sender.systemName + delim + strconv.Itoa(sender.rank) + delim + btoa(sender.account) + delim + sender.badge))
 	session.broadcast([]byte("gsay" + delim + sender.uuid + delim + mapId + delim + prevMapId + delim + prevLocations + delim + strconv.Itoa(x) + delim + strconv.Itoa(y) + delim + msgContents))
 
 	return nil

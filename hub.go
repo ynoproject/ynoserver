@@ -361,11 +361,7 @@ func (h *Hub) handleValidClient(client *Client) {
 				return true
 			}
 
-			var accountBin int
-			if otherClient.session.account {
-				accountBin = 1
-			}
-			client.send <- []byte("c" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.uuid + delim + strconv.Itoa(otherClient.session.rank) + delim + strconv.Itoa(accountBin) + delim + otherClient.session.badge)
+			client.send <- []byte("c" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.uuid + delim + strconv.Itoa(otherClient.session.rank) + delim + btoa(otherClient.session.account) + delim + otherClient.session.badge)
 			client.send <- []byte("m" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.x) + delim + strconv.Itoa(otherClient.y))
 			if otherClient.facing > 0 {
 				client.send <- []byte("f" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.facing))
@@ -387,15 +383,7 @@ func (h *Hub) handleValidClient(client *Client) {
 				client.send <- []byte("sys" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.systemName)
 			}
 			for picId, pic := range otherClient.pictures {
-				var useTransparentColorBin int
-				if pic.useTransparentColor {
-					useTransparentColorBin = 1
-				}
-				var fixedToMapBin int
-				if pic.fixedToMap {
-					fixedToMapBin = 1
-				}
-				client.send <- []byte("ap" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(picId) + delim + strconv.Itoa(pic.positionX) + delim + strconv.Itoa(pic.positionY) + delim + strconv.Itoa(pic.mapX) + delim + strconv.Itoa(pic.mapY) + delim + strconv.Itoa(pic.panX) + delim + strconv.Itoa(pic.panY) + delim + strconv.Itoa(pic.magnify) + delim + strconv.Itoa(pic.topTrans) + delim + strconv.Itoa(pic.bottomTrans) + delim + strconv.Itoa(pic.red) + delim + strconv.Itoa(pic.blue) + delim + strconv.Itoa(pic.green) + delim + strconv.Itoa(pic.saturation) + delim + strconv.Itoa(pic.effectMode) + delim + strconv.Itoa(pic.effectPower) + delim + pic.name + delim + strconv.Itoa(useTransparentColorBin) + delim + strconv.Itoa(fixedToMapBin))
+				client.send <- []byte("ap" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(picId) + delim + strconv.Itoa(pic.positionX) + delim + strconv.Itoa(pic.positionY) + delim + strconv.Itoa(pic.mapX) + delim + strconv.Itoa(pic.mapY) + delim + strconv.Itoa(pic.panX) + delim + strconv.Itoa(pic.panY) + delim + strconv.Itoa(pic.magnify) + delim + strconv.Itoa(pic.topTrans) + delim + strconv.Itoa(pic.bottomTrans) + delim + strconv.Itoa(pic.red) + delim + strconv.Itoa(pic.blue) + delim + strconv.Itoa(pic.green) + delim + strconv.Itoa(pic.saturation) + delim + strconv.Itoa(pic.effectMode) + delim + strconv.Itoa(pic.effectPower) + delim + pic.name + delim + btoa(pic.useTransparentColor) + delim + btoa(pic.fixedToMap))
 			}
 
 			return true
