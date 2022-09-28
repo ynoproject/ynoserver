@@ -248,10 +248,6 @@ func getIp(r *http.Request) string { //this breaks if you're using a revproxy th
 	return ip
 }
 
-type IpHubResponse struct {
-	Block int `json:"block"`
-}
-
 func isVpn(ip string) (vpn bool) {
 	if config.ipHubKey == "" {
 		return false //VPN checking is not available
@@ -275,12 +271,12 @@ func isVpn(ip string) (vpn bool) {
 		return false
 	}
 
-	var response IpHubResponse
+	var response interface{}
 	if err := json.Unmarshal(body, &response); err != nil {
 		return false
 	}
 
-	if response.Block != 0 {
+	if response.(map[string]interface{})["block"].(float64) != 0 {
 		vpn = true
 	}
 
