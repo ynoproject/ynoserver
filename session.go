@@ -140,7 +140,7 @@ func (s *Session) run() {
 			client := &SessionClient{
 				session:     s,
 				conn:        conn.Connect,
-				terminate:   make(chan bool),
+				terminate:   make(chan bool, 1),
 				send:        make(chan []byte, 256),
 				ip:          conn.Ip,
 				account:     account,
@@ -164,7 +164,7 @@ func (s *Session) run() {
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			client.terminate <- true
+			close(client.terminate)
 
 			sessionClients.Delete(client.uuid)
 
