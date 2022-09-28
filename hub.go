@@ -240,18 +240,15 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	var errs []error
 
 	if len(msg.data) < 8 || len(msg.data) > 4096 {
-		errs = append(errs, errors.New("bad request size"))
-		return errs
+		return append(errs, errors.New("bad request size"))
 	}
 
 	if !verifySignature(msg.sender.key, msg.data) {
-		errs = append(errs, errors.New("bad signature"))
-		return errs
+		return append(errs, errors.New("bad signature"))
 	}
 
 	if !verifyCounter(&msg.sender.counter, msg.data) {
-		errs = append(errs, errors.New("bad counter"))
-		return errs
+		return append(errs, errors.New("bad counter"))
 	}
 
 	msg.data = msg.data[8:]

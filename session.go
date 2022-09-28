@@ -197,28 +197,24 @@ func (s *Session) processMsgs(msg *SessionMessage) []error {
 	var errs []error
 
 	if len(msg.data) > 4096 {
-		errs = append(errs, errors.New("bad request size"))
-		return errs
+		return append(errs, errors.New("bad request size"))
 	}
 
 	for _, v := range msg.data {
 		if v < 32 {
-			errs = append(errs, errors.New("bad byte sequence"))
-			return errs
+			return append(errs, errors.New("bad byte sequence"))
 		}
 	}
 
 	if !utf8.Valid(msg.data) {
-		errs = append(errs, errors.New("invalid UTF-8"))
-		return errs
+		return append(errs, errors.New("invalid UTF-8"))
 	}
 
 	//message processing
 	msgs := strings.Split(string(msg.data), mdelim)
 
 	for _, msgStr := range msgs {
-		err := s.processMsg(msgStr, msg.sender)
-		if err != nil {
+		if err := s.processMsg(msgStr, msg.sender); err != nil {
 			errs = append(errs, err)
 		}
 	}
