@@ -60,7 +60,7 @@ func adminGetBans(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseJson, err := json.Marshal(getBannedPlayers())
+	responseJson, err := json.Marshal(getModeratedPlayers(0))
 	if err != nil {
 		handleError(w, r, "error while marshaling")
 	}
@@ -75,7 +75,7 @@ func adminGetMutes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseJson, err := json.Marshal(getMutedPlayers())
+	responseJson, err := json.Marshal(getModeratedPlayers(1))
 	if err != nil {
 		handleError(w, r, "error while marshaling")
 	}

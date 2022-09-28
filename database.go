@@ -1731,36 +1731,16 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 	return nil
 }
 
-func getBannedPlayers() (players []PlayerInfo) {
-	results, err := db.Query("SELECT uuid, rank FROM players WHERE banned = 1")
-	if err != nil {
-		return players
+func getModeratedPlayers(action int) (players []PlayerInfo) {
+	var actionStr string
+
+	if action == 0 {
+		actionStr = "banned"
+	} else {
+		actionStr = "muted"
 	}
 
-	defer results.Close()
-
-	for results.Next() {
-		var uuid string
-		var rank int
-
-		err := results.Scan(&uuid, &rank)
-		if err != nil {
-			return players
-		}
-
-		players = append(players, PlayerInfo{
-			Uuid: uuid,
-			Name: getNameFromUuid(uuid),
-			Rank: rank,
-		})
-	}
-
-	return players
-}
-
-// basically just a copy of readBannedPlayers but i want to get this done
-func getMutedPlayers() (players []PlayerInfo) {
-	results, err := db.Query("SELECT uuid, rank FROM players WHERE muted = 1")
+	results, err := db.Query("SELECT uuid, rank FROM players WHERE ? = 1", actionStr)
 	if err != nil {
 		return players
 	}
