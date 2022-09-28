@@ -149,7 +149,6 @@ func (h *Hub) run() {
 				id++
 			}
 
-			//sprite index < 0 means none
 			client := &Client{
 				hub:         h,
 				conn:        conn.Connect,
