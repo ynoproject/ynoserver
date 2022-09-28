@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	rankingsMtx sync.RWMutex
+	rankingsMtx sync.Mutex
 )
 
 type RankingCategory struct {
