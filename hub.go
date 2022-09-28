@@ -254,14 +254,12 @@ func (h *Hub) processMsgs(msg *Message) []error {
 
 	for _, v := range msg.data {
 		if v < 32 {
-			errs = append(errs, errors.New("bad byte sequence"))
-			return errs
+			return append(errs, errors.New("bad byte sequence"))
 		}
 	}
 
 	if !utf8.Valid(msg.data) {
-		errs = append(errs, errors.New("invalid UTF-8"))
-		return errs
+		return append(errs, errors.New("invalid UTF-8"))
 	}
 
 	//message processing
