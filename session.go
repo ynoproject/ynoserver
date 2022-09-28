@@ -211,9 +211,7 @@ func (s *Session) processMsgs(msg *SessionMessage) []error {
 	}
 
 	//message processing
-	msgs := strings.Split(string(msg.data), mdelim)
-
-	for _, msgStr := range msgs {
+	for _, msgStr := range strings.Split(string(msg.data), mdelim) {
 		if err := s.processMsg(msgStr, msg.sender); err != nil {
 			errs = append(errs, err)
 		}

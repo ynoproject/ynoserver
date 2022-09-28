@@ -266,9 +266,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	}
 
 	//message processing
-	msgs := strings.Split(string(msg.data), mdelim)
-
-	for _, msgStr := range msgs {
+	for _, msgStr := range strings.Split(string(msg.data), mdelim) {
 		terminate, err := h.processMsg(msgStr, msg.sender)
 		if err != nil {
 			errs = append(errs, err)
