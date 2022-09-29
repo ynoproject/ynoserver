@@ -33,9 +33,9 @@ import (
 var (
 	sessionClients sync.Map
 	session        = &Session{
-		processMsgCh: make(chan *SessionMessage),
-		connect:      make(chan *ConnInfo),
-		unregister:   make(chan *SessionClient),
+		processMsgCh: make(chan *SessionMessage, 16),
+		connect:      make(chan *ConnInfo, 4),
+		unregister:   make(chan *SessionClient, 4),
 	}
 )
 
@@ -141,7 +141,7 @@ func (s *Session) run() {
 				session:     s,
 				conn:        conn.Connect,
 				terminate:   make(chan bool, 1),
-				send:        make(chan []byte, 256),
+				send:        make(chan []byte, 16),
 				ip:          conn.Ip,
 				account:     account,
 				name:        name,

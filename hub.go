@@ -94,9 +94,9 @@ func addHub(roomId int, singleplayer bool) {
 
 func newHub(roomId int, singleplayer bool) *Hub {
 	return &Hub{
-		processMsgCh:    make(chan *Message),
-		connect:         make(chan *ConnInfo),
-		unregister:      make(chan *Client),
+		processMsgCh:    make(chan *Message, 16),
+		connect:         make(chan *ConnInfo, 4),
+		unregister:      make(chan *Client, 4),
 		roomId:          roomId,
 		singleplayer:    singleplayer,
 		conditions:      getHubConditions(roomId),
@@ -153,7 +153,7 @@ func (h *Hub) run() {
 				hub:         h,
 				conn:        conn.Connect,
 				terminate:   make(chan bool, 1),
-				send:        make(chan []byte, 256),
+				send:        make(chan []byte, 16),
 				session:     session,
 				id:          id,
 				key:         generateKey(),
