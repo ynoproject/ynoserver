@@ -1194,11 +1194,11 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	var uuid string
 	db.QueryRow("SELECT uuid FROM players WHERE ip = ?", ip).Scan(&uuid) //no row causes a non-fatal error, uuid is still unset so it doesn't matter
-	if uuid != "" {
-		db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip)
-	} else {
+	if uuid == "" {
 		uuid, _, _ = getOrCreatePlayerData(ip)
 	}
+
+	db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip) // set ip to null to disable ip-based login
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
 	if err != nil {
