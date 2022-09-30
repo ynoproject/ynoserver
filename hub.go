@@ -123,7 +123,7 @@ func (h *Hub) run() {
 				uuid = getUuidFromToken(conn.Token)
 			}
 
-			if uuid != "" {
+			if uuid == "" {
 				uuid, _, _ = getOrCreatePlayerData(conn.Ip)
 			}
 

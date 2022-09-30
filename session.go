@@ -98,9 +98,9 @@ func (s *Session) run() {
 			}
 
 			if client.uuid != "" {
-				client.uuid, banned, client.muted = getOrCreatePlayerData(conn.Ip)
-			} else {
 				client.account = true
+			} else {
+				client.uuid, banned, client.muted = getOrCreatePlayerData(conn.Ip)
 			}
 
 			if banned || isIpBanned(conn.Ip) {
