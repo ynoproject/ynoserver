@@ -60,9 +60,6 @@ type Hub struct {
 	// Registered clients.
 	clients sync.Map
 
-	// True if the id is in use
-	id sync.Map
-
 	// Inbound messages from the clients.
 	processMsgCh chan *Message
 
@@ -142,7 +139,7 @@ func (h *Hub) run() {
 
 			var id int
 			for {
-				if _, ok := h.id.Load(id); !ok {
+				if _, ok := h.clients.Load(id); !ok {
 					break
 				}
 
@@ -174,8 +171,7 @@ func (h *Hub) run() {
 			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
 
 			//register client in the structures
-			h.id.Store(id, nil)
-			h.clients.Store(client, nil)
+			h.clients.Store(id, client)
 			hubClients.Store(uuid, client)
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
@@ -184,8 +180,7 @@ func (h *Hub) run() {
 
 			client.session.bound = false
 
-			h.id.Delete(client.id)
-			h.clients.Delete(client)
+			h.clients.Delete(client.id)
 			hubClients.Delete(client.session.uuid)
 
 			h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) //user %id% has disconnected message
@@ -224,8 +219,8 @@ func (h *Hub) broadcast(data []byte) {
 		return
 	}
 
-	h.clients.Range(func(k, _ any) bool {
-		client := k.(*Client)
+	h.clients.Range(func(_, v any) bool {
+		client := v.(*Client)
 
 		if !client.valid {
 			return true
@@ -356,8 +351,8 @@ func (h *Hub) handleValidClient(client *Client) {
 		}
 
 		//send the new client info about the game state
-		h.clients.Range(func(k, _ any) bool {
-			otherClient := k.(*Client)
+		h.clients.Range(func(_, v any) bool {
+			otherClient := v.(*Client)
 
 			if !otherClient.valid {
 				return true
