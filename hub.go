@@ -179,7 +179,7 @@ func (h *Hub) run() {
 
 			writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 
-			client = nil // probably dangerous but we need the client struct to be garbage collected
+			client.valid = false // TODO: Find a better way of doing this. Prevent a Hub deadlock while trying to send to a full send channel.
 		case message := <-h.processMsgCh:
 			if errs := h.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {
