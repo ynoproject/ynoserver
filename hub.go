@@ -184,13 +184,15 @@ func (h *Hub) run() {
 
 			client.session.bound = false
 
-			hubClients.Delete(client.session.uuid)
-
 			h.id.Delete(client.id)
 			h.clients.Delete(client)
+			hubClients.Delete(client.session.uuid)
+
 			h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) //user %id% has disconnected message
 
 			writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
+
+			client = nil // probably dangerous but we need the client struct to be garbage collected
 		case message := <-h.processMsgCh:
 			if errs := h.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {

@@ -166,9 +166,8 @@ func (s *Session) run() {
 		case client := <-s.unregister:
 			close(client.terminate)
 
-			sessionClients.Delete(client.uuid)
-
 			s.clients.Delete(client)
+			sessionClients.Delete(client.uuid)
 
 			updatePlayerGameData(client)
 
