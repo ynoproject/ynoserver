@@ -111,13 +111,12 @@ type SessionClient struct {
 	session *Session
 
 	conn *websocket.Conn
+	ip   string
 
 	terminate chan bool
 
 	send chan []byte
-
-	ip string
-
+	
 	account bool
 	name    string
 	uuid    string

@@ -84,23 +84,23 @@ func (s *Session) run() {
 	for {
 		select {
 		case conn := <-s.connect:
-			var uuid string
-			var name string
-			var rank int
-			var badge string
-			var banned bool
-			var muted bool
-			var account bool
-
-			if conn.Token != "" {
-				uuid, name, rank, badge, banned, muted = getPlayerDataFromToken(conn.Token)
-				if uuid != "" { //if we got a uuid back then we're logged in
-					account = true
-				}
+			client := &SessionClient{
+				session:   s,
+				conn:      conn.Connect,
+				ip:        conn.Ip,
+				terminate: make(chan bool, 1),
+				send:      make(chan []byte, 16),
 			}
 
-			if !account {
-				uuid, banned, muted = getOrCreatePlayerData(conn.Ip)
+			var banned bool
+			if conn.Token != "" {
+				client.uuid, client.name, client.rank, client.badge, banned, client.muted = getPlayerDataFromToken(conn.Token)
+			}
+
+			if client.uuid != "" {
+				client.uuid, banned, client.muted = getOrCreatePlayerData(conn.Ip)
+			} else {
+				client.account = true
 			}
 
 			if banned || isIpBanned(conn.Ip) {
@@ -108,7 +108,7 @@ func (s *Session) run() {
 				continue
 			}
 
-			if _, ok := sessionClients.Load(uuid); ok {
+			if _, ok := sessionClients.Load(client.uuid); ok {
 				writeErrLog(conn.Ip, "session", "session already exists for uuid")
 				continue
 			}
@@ -128,35 +128,19 @@ func (s *Session) run() {
 				continue
 			}
 
-			if badge == "" {
-				badge = "null"
+			if client.badge == "" {
+				client.badge = "null"
 			}
 
-			spriteName, spriteIndex, systemName := getPlayerGameData(uuid)
+			client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
 
-			client := &SessionClient{
-				session:     s,
-				conn:        conn.Connect,
-				terminate:   make(chan bool, 1),
-				send:        make(chan []byte, 16),
-				ip:          conn.Ip,
-				account:     account,
-				name:        name,
-				uuid:        uuid,
-				rank:        rank,
-				badge:       badge,
-				muted:       muted,
-				spriteName:  spriteName,
-				spriteIndex: spriteIndex,
-				systemName:  systemName,
-			}
 			go client.writePump()
 			go client.readPump()
 
-			client.send <- []byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge)
+			client.send <- []byte("s" + delim + client.uuid + delim + strconv.Itoa(client.rank) + delim + btoa(client.account) + delim + client.badge)
 
 			//register client in the structures
-			sessionClients.Store(uuid, client)
+			sessionClients.Store(client.uuid, client)
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:

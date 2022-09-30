@@ -106,61 +106,50 @@ func (h *Hub) run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			var uuid string
-			var account bool
-
-			if conn.Token != "" {
-				uuid = getUuidFromToken(conn.Token)
-				if uuid != "" { //if we got a uuid back then we're logged in
-					account = true
-				}
-			}
-
-			if !account {
-				uuid, _, _ = getOrCreatePlayerData(conn.Ip)
-			}
-
-			var session *SessionClient
-			if s, ok := sessionClients.Load(uuid); ok {
-				s := s.(*SessionClient)
-
-				if s.bound {
-					writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "session in use")
-					continue
-				}
-
-				s.bound = true
-
-				session = s
-			} else {
-				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player has no session")
-				continue
-			}
-
-			var id int
-			for {
-				if _, ok := h.clients.Load(id); !ok {
-					break
-				}
-
-				id++
-			}
-
 			client := &Client{
 				hub:         h,
 				conn:        conn.Connect,
 				terminate:   make(chan bool, 1),
 				send:        make(chan []byte, 16),
-				session:     session,
-				id:          id,
 				key:         generateKey(),
 				pictures:    make(map[int]*Picture),
 				mapId:       fmt.Sprintf("%04d", h.roomId),
 				switchCache: make(map[int]bool),
 				varCache:    make(map[int]int),
 			}
-			go client.writePump()
-			go client.readPump()
+
+			var uuid string
+			if conn.Token != "" {
+				uuid = getUuidFromToken(conn.Token)
+			}
+
+			if uuid != "" {
+				uuid, _, _ = getOrCreatePlayerData(conn.Ip)
+			}
+
+			if s, ok := sessionClients.Load(uuid); ok {
+				session := s.(*SessionClient)
+
+				if session.bound {
+					writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "session in use")
+					continue
+				}
+
+				session.bound = true
+
+				client.session = session
+			} else {
+				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player has no session")
+				continue
+			}
+
+			for {
+				client.id++
+
+				if _, ok := h.clients.Load(client.id); !ok {
+					break
+				}
+			}
 
 			if tags, err := getPlayerTags(uuid); err != nil {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "failed to read player tags")
@@ -168,10 +157,13 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			client.send <- []byte("s" + delim + strconv.Itoa(id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(session.rank) + delim + btoa(session.account) + delim + session.badge) //"your id is %id%" message
+			go client.writePump()
+			go client.readPump()
+
+			client.send <- []byte("s" + delim + strconv.Itoa(client.id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge) //"your id is %id%" message
 
 			//register client in the structures
-			h.clients.Store(id, client)
+			h.clients.Store(client.id, client)
 			hubClients.Store(uuid, client)
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
