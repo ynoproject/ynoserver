@@ -330,7 +330,7 @@ func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 		}
 
 		if _, found := sender.pictures[picId]; found {
-			_, rpErr := h.processMsg("rp"+delim+msg[1], sender)
+			rpErr := h.processMsg("rp"+delim+msg[1], sender)
 			if rpErr != nil {
 				return rpErr
 			}

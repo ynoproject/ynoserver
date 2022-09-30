@@ -253,27 +253,22 @@ func (h *Hub) processMsgs(msg *Message) []error {
 
 	//message processing
 	for _, msgStr := range strings.Split(string(msg.data), mdelim) {
-		terminate, err := h.processMsg(msgStr, msg.sender)
+		err := h.processMsg(msgStr, msg.sender)
 		if err != nil {
 			errs = append(errs, err)
-		}
-		if terminate {
-			break
 		}
 	}
 
 	return errs
 }
 
-func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
+func (h *Hub) processMsg(msgStr string, sender *Client) error {
 	err := errors.New(msgStr)
 	msgFields := strings.Split(msgStr, delim)
 
 	if len(msgFields) == 0 {
-		return false, err
+		return err
 	}
-
-	var terminate bool
 
 	if !sender.valid {
 		if msgFields[0] == "ident" {
@@ -311,7 +306,6 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 			err = h.handleRp(msgFields, sender)
 		case "say":
 			err = h.handleSay(msgFields, sender)
-			terminate = true
 		case "ss": // sync switch
 			err = h.handleSs(msgFields, sender)
 		case "sv": // sync variable
@@ -324,12 +318,12 @@ func (h *Hub) processMsg(msgStr string, sender *Client) (bool, error) {
 	}
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	writeLog(sender.session.ip, strconv.Itoa(h.roomId), msgStr, 200)
 
-	return terminate, nil
+	return nil
 }
 
 func (h *Hub) handleValidClient(client *Client) {
