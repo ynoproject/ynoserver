@@ -40,9 +40,6 @@ var (
 )
 
 type Session struct {
-	// Registered clients.
-	clients sync.Map
-
 	// Inbound messages from the clients.
 	processMsgCh chan *SessionMessage
 
@@ -117,8 +114,8 @@ func (s *Session) run() {
 			}
 
 			var sameIp int
-			s.clients.Range(func(k, _ any) bool {
-				otherClient := k.(*SessionClient)
+			sessionClients.Range(func(_, v any) bool {
+				otherClient := v.(*SessionClient)
 
 				if otherClient.ip == conn.Ip {
 					sameIp++
@@ -159,14 +156,12 @@ func (s *Session) run() {
 			client.send <- []byte("s" + delim + uuid + delim + strconv.Itoa(rank) + delim + btoa(account) + delim + badge)
 
 			//register client in the structures
-			s.clients.Store(client, nil)
 			sessionClients.Store(uuid, client)
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
 			close(client.terminate)
 
-			s.clients.Delete(client)
 			sessionClients.Delete(client.uuid)
 
 			updatePlayerGameData(client)
@@ -183,8 +178,8 @@ func (s *Session) run() {
 }
 
 func (s *Session) broadcast(data []byte) {
-	s.clients.Range(func(k, _ any) bool {
-		client := k.(*SessionClient)
+	sessionClients.Range(func(_, v any) bool {
+		client := v.(*SessionClient)
 
 		client.send <- data
 
