@@ -988,8 +988,6 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 	if client, ok := hubClients.Load(playerUuid); ok {
 		client := client.(*Client)
 
-		clientMapId := client.mapId
-
 		results, err := db.Query("SELECT el.id, el.type, el.exp, el.mapIds FROM eventLocations el WHERE el.periodId = ? AND el.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", periodId, location)
 		if err != nil {
 			return -1, err
@@ -1020,7 +1018,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			}
 
 			for _, mapId := range mapIds {
-				if clientMapId != mapId {
+				if client.mapId != mapId {
 					continue
 				}
 				if weekEventExp >= weeklyExpCap {
@@ -1053,8 +1051,6 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 	if client, ok := hubClients.Load(playerUuid); ok {
 		client := client.(*Client)
 
-		clientMapId := client.mapId
-
 		results, err := db.Query("SELECT pel.id, pel.mapIds FROM playerEventLocations pel WHERE pel.periodId = ? AND pel.title = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", periodId, location, playerUuid)
 		if err != nil {
 			return false, err
@@ -1080,7 +1076,7 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 			}
 
 			for _, mapId := range mapIds {
-				if clientMapId != mapId {
+				if client.mapId != mapId {
 					continue
 				}
 
@@ -1188,8 +1184,6 @@ func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int)
 	if client, ok := hubClients.Load(playerUuid); ok {
 		client := client.(*Client)
 
-		clientMapId := client.mapId
-
 		results, err := db.Query("SELECT ev.id, ev.mapId, ev.eventId, ev.exp FROM eventVms ev WHERE ev.periodId = ? AND ev.mapId = ? AND ev.eventId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", periodId, mapId, eventId)
 		if err != nil {
 			return -1, err
@@ -1227,7 +1221,7 @@ func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int)
 				}
 			}
 
-			if clientMapId != fmt.Sprintf("%04d", eventMapId) {
+			if client.mapId != fmt.Sprintf("%04d", eventMapId) {
 				continue
 			}
 			if weekEventExp >= weeklyExpCap {
