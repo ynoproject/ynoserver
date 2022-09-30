@@ -276,9 +276,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) error {
 		}
 	} else {
 		switch msgFields[0] {
-		case "m": //moved to x y
-			fallthrough
-		case "tp": //teleported to x y
+		case "m", "tp": //moved / teleported to x y
 			err = h.handleM(msgFields, sender)
 		case "f": //change facing direction
 			err = h.handleF(msgFields, sender)
@@ -286,9 +284,7 @@ func (h *Hub) processMsg(msgStr string, sender *Client) error {
 			err = h.handleSpd(msgFields, sender)
 		case "spr": //change my sprite
 			err = h.handleSpr(msgFields, sender)
-		case "fl": //player flash
-			fallthrough
-		case "rfl": //repeating player flash
+		case "fl", "rfl": //player flash / repeating player flash
 			err = h.handleFl(msgFields, sender)
 		case "rrfl": //remove repeating player flash
 			err = h.handleRrfl(sender)
@@ -298,11 +294,9 @@ func (h *Hub) processMsg(msgStr string, sender *Client) error {
 			err = h.handleSys(msgFields, sender)
 		case "se": //play sound effect
 			err = h.handleSe(msgFields, sender)
-		case "ap": // picture shown
-			fallthrough
-		case "mp": // picture moved
+		case "ap", "mp": //add picture i/ move picture
 			err = h.handleP(msgFields, sender)
-		case "rp": // picture erased
+		case "rp": // remove picture
 			err = h.handleRp(msgFields, sender)
 		case "say":
 			err = h.handleSay(msgFields, sender)

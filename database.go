@@ -1151,21 +1151,13 @@ func writeEventVmData(periodId int, mapId int, eventId int, exp int) (err error)
 	weekday := time.Now().UTC().Weekday()
 
 	switch weekday {
-	case time.Sunday:
-		fallthrough
-	case time.Monday:
+	case time.Sunday, time.Monday:
 		days = 2
 		offsetDays = int(weekday)
-	case time.Tuesday:
-		fallthrough
-	case time.Wednesday:
-		fallthrough
-	case time.Thursday:
+	case time.Tuesday, time.Wednesday, time.Thursday:
 		days = 3
 		offsetDays = int(weekday - time.Tuesday)
-	case time.Friday:
-		fallthrough
-	case time.Saturday:
+	case time.Friday, time.Saturday:
 		days = 2
 		offsetDays = int(weekday - time.Friday)
 	}
@@ -1670,9 +1662,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		}
 		query += ")) ec GROUP BY ec.uuid ORDER BY 5 DESC, 6"
 		isUnion = true
-	case "eventLocationCount":
-		fallthrough
-	case "freeEventLocationCount":
+	case "eventLocationCount", "freeEventLocationCount":
 		isFree := categoryId == "freeEventLocationCount"
 		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec "
 		if isFiltered {

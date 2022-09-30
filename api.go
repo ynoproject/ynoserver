@@ -191,9 +191,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch commandParam[0] {
-	case "grantbadge":
-		fallthrough
-	case "revokebadge":
+	case "grantbadge", "revokebadge":
 		playerParam, ok := r.URL.Query()["player"]
 		if !ok || len(playerParam) < 1 {
 			handleError(w, r, "player not specified")
@@ -325,9 +323,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write([]byte(description))
 		return
-	case "create":
-		fallthrough
-	case "update":
+	case "create", "update":
 		partyId, err := getPlayerPartyId(uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
@@ -474,9 +470,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-	case "kick":
-		fallthrough
-	case "transfer":
+	case "kick", "transfer":
 		kick := commandParam[0] == "kick"
 		partyId, err := getPlayerPartyId(uuid)
 		if err != nil {
@@ -833,9 +827,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch commandParam[0] {
-	case "set":
-		fallthrough
-	case "slotSet":
+	case "set", "slotSet":
 		idParam, ok := r.URL.Query()["id"]
 		if !ok || len(idParam) < 1 {
 			handleError(w, r, "id not specified")
