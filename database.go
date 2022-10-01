@@ -1724,7 +1724,7 @@ func getModeratedPlayers(action int) (players []PlayerInfo) {
 		actionStr = "muted"
 	}
 
-	results, err := db.Query("SELECT uuid, rank FROM players WHERE ? = 1", actionStr)
+	results, err := db.Query("SELECT uuid, rank FROM players WHERE " + actionStr + " = 1")
 	if err != nil {
 		return players
 	}
