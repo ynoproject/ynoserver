@@ -160,9 +160,9 @@ func (h *Hub) run() {
 			go client.writePump()
 			go client.readPump()
 
-			client.send <- []byte("s" + delim + strconv.Itoa(client.id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge) //"your id is %id%" message
+			client.send <- []byte("s" + delim + strconv.Itoa(client.id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge) // "your id is %id%" message
 
-			//register client in the structures
+			// register client in the structures
 			h.clients.Store(client.id, client)
 			hubClients.Store(uuid, client)
 
@@ -175,7 +175,7 @@ func (h *Hub) run() {
 			h.clients.Delete(client.id)
 			hubClients.Delete(client.session.uuid)
 
-			h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) //user %id% has disconnected message
+			h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) // user %id% has disconnected message
 
 			writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 		case message := <-h.processMsgCh:
@@ -249,7 +249,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 		return append(errs, errors.New("invalid UTF-8"))
 	}
 
-	//message processing
+	// message processing
 	for _, msgStr := range strings.Split(string(msg.data), mdelim) {
 		err := h.processMsg(msgStr, msg.sender)
 		if err != nil {
@@ -274,25 +274,25 @@ func (h *Hub) processMsg(msgStr string, sender *Client) error {
 		}
 	} else {
 		switch msgFields[0] {
-		case "m", "tp": //moved / teleported to x y
+		case "m", "tp": // moved / teleported to x y
 			err = h.handleM(msgFields, sender)
-		case "f": //change facing direction
+		case "f": // change facing direction
 			err = h.handleF(msgFields, sender)
-		case "spd": //change my speed to spd
+		case "spd": // change my speed to spd
 			err = h.handleSpd(msgFields, sender)
-		case "spr": //change my sprite
+		case "spr": // change my sprite
 			err = h.handleSpr(msgFields, sender)
-		case "fl", "rfl": //player flash / repeating player flash
+		case "fl", "rfl": // player flash / repeating player flash
 			err = h.handleFl(msgFields, sender)
-		case "rrfl": //remove repeating player flash
+		case "rrfl": // remove repeating player flash
 			err = h.handleRrfl(sender)
-		case "h": //change sprite visibility
+		case "h": // change sprite visibility
 			err = h.handleH(msgFields, sender)
-		case "sys": //change my system graphic
+		case "sys": // change my system graphic
 			err = h.handleSys(msgFields, sender)
-		case "se": //play sound effect
+		case "se": // play sound effect
 			err = h.handleSe(msgFields, sender)
-		case "ap", "mp": //add picture i/ move picture
+		case "ap", "mp": // add picture i/ move picture
 			err = h.handleP(msgFields, sender)
 		case "rp": // remove picture
 			err = h.handleRp(msgFields, sender)
@@ -320,15 +320,15 @@ func (h *Hub) processMsg(msgStr string, sender *Client) error {
 
 func (h *Hub) handleValidClient(client *Client) {
 	if !h.singleplayer {
-		//tell everyone that a new client has connected
-		h.broadcast([]byte("c" + delim + strconv.Itoa(client.id) + delim + client.session.uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) //user %id% has connected message
+		// tell everyone that a new client has connected
+		h.broadcast([]byte("c" + delim + strconv.Itoa(client.id) + delim + client.session.uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) // user %id% has connected message
 
-		//send name of client
+		// send name of client
 		if client.session.name != "" {
 			h.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + client.session.name))
 		}
 
-		//send the new client info about the game state
+		// send the new client info about the game state
 		h.clients.Range(func(_, v any) bool {
 			otherClient := v.(*Client)
 
@@ -345,7 +345,7 @@ func (h *Hub) handleValidClient(client *Client) {
 			if otherClient.session.name != "" {
 				client.send <- []byte("name" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.name)
 			}
-			if otherClient.session.spriteIndex >= 0 { //if the other client sent us valid sprite and index before
+			if otherClient.session.spriteIndex >= 0 { // if the other client sent us valid sprite and index before
 				client.send <- []byte("spr" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.spriteName + delim + strconv.Itoa(otherClient.session.spriteIndex))
 			}
 			if otherClient.repeatingFlash {

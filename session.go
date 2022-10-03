@@ -139,7 +139,7 @@ func (s *Session) run() {
 
 			client.send <- []byte("s" + delim + client.uuid + delim + strconv.Itoa(client.rank) + delim + btoa(client.account) + delim + client.badge)
 
-			//register client in the structures
+			// register client in the structures
 			sessionClients.Store(client.uuid, client)
 
 			writeLog(conn.Ip, "session", "connect", 200)
@@ -188,7 +188,7 @@ func (s *Session) processMsgs(msg *SessionMessage) []error {
 		return append(errs, errors.New("invalid UTF-8"))
 	}
 
-	//message processing
+	// message processing
 	for _, msgStr := range strings.Split(string(msg.data), mdelim) {
 		if err := s.processMsg(msgStr, msg.sender); err != nil {
 			errs = append(errs, err)
@@ -207,24 +207,24 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	}
 
 	switch msgFields[0] {
-	case "i": //player info
+	case "i": // player info
 		err = s.handleI(sender)
-	case "name": //nick set
+	case "name": // nick set
 		err = s.handleName(msgFields, sender)
-	case "ploc": //previous location
+	case "ploc": // previous location
 		err = s.handlePloc(msgFields, sender)
-	case "gsay": //global say
+	case "gsay": // global say
 		err = s.handleGSay(msgFields, sender)
-	case "psay": //party say
+	case "psay": // party say
 		err = s.handlePSay(msgFields, sender)
-	case "pt": //party update
+	case "pt": // party update
 		err = s.handlePt(sender)
 		if err != nil {
 			sender.send <- []byte("pt" + delim + "null")
 		}
-	case "ep": //event period
+	case "ep": // event period
 		err = s.handleEp(sender)
-	case "e": //event list
+	case "e": // event list
 		err = s.handleE(sender)
 	default:
 		err = errors.New("unknown message type")

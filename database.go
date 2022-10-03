@@ -70,7 +70,7 @@ func getPlayerRank(uuid string) (rank int) {
 	if client, ok := sessionClients.Load(uuid); ok {
 		client := client.(*SessionClient)
 
-		return client.rank //return rank from session if client is connected
+		return client.rank // return rank from session if client is connected
 	}
 
 	err := db.QueryRow("SELECT rank FROM players WHERE uuid = ?", uuid).Scan(&rank)
@@ -81,7 +81,7 @@ func getPlayerRank(uuid string) (rank int) {
 	return rank
 }
 
-func tryBanPlayer(senderUuid string, recipientUuid string) error { //called by api only
+func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
@@ -95,13 +95,13 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { //called by a
 		return err
 	}
 
-	if client, ok := hubClients.Load(recipientUuid); ok { //unregister client and close connection
+	if client, ok := hubClients.Load(recipientUuid); ok { // unregister client and close connection
 		client := client.(*Client)
 
 		client.hub.unregister <- client
 	}
 
-	if client, ok := sessionClients.Load(recipientUuid); ok { //do the same for session
+	if client, ok := sessionClients.Load(recipientUuid); ok { // do the same for session
 		client := client.(*SessionClient)
 
 		session.unregister <- client
@@ -110,7 +110,7 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { //called by a
 	return nil
 }
 
-func tryUnbanPlayer(senderUuid string, recipientUuid string) error { //called by api only
+func tryUnbanPlayer(senderUuid string, recipientUuid string) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
@@ -127,7 +127,7 @@ func tryUnbanPlayer(senderUuid string, recipientUuid string) error { //called by
 	return nil
 }
 
-func tryMutePlayer(senderUuid string, recipientUuid string) error { //called by api only
+func tryMutePlayer(senderUuid string, recipientUuid string) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
@@ -141,7 +141,7 @@ func tryMutePlayer(senderUuid string, recipientUuid string) error { //called by 
 		return err
 	}
 
-	if client, ok := sessionClients.Load(recipientUuid); ok { //mute client if they're connected
+	if client, ok := sessionClients.Load(recipientUuid); ok { // mute client if they're connected
 		client := client.(*SessionClient)
 
 		client.muted = true
@@ -150,7 +150,7 @@ func tryMutePlayer(senderUuid string, recipientUuid string) error { //called by 
 	return nil
 }
 
-func tryUnmutePlayer(senderUuid string, recipientUuid string) error { //called by api only
+func tryUnmutePlayer(senderUuid string, recipientUuid string) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
@@ -164,7 +164,7 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { //called b
 		return err
 	}
 
-	if client, ok := sessionClients.Load(recipientUuid); ok { //unmute client if they're connected
+	if client, ok := sessionClients.Load(recipientUuid); ok { // unmute client if they're connected
 		client := client.(*SessionClient)
 
 		client.muted = false
@@ -358,7 +358,7 @@ func getPlayerPartyId(uuid string) (partyId int, err error) {
 	return partyId, nil
 }
 
-func getAllPartyData(simple bool) (parties []*Party, err error) { //called by api only
+func getAllPartyData(simple bool) (parties []*Party, err error) { // called by api only
 	partyMembersByParty, err := getAllPartyMemberDataByParty(simple)
 	if err != nil {
 		return parties, err
@@ -465,7 +465,7 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 	return partyMembersByParty, nil
 }
 
-func getPartyData(playerUuid string) (party Party, err error) { //called by api only
+func getPartyData(playerUuid string) (party Party, err error) { // called by api only
 	err = db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM parties p JOIN partyMembers pm ON pm.partyId = p.id JOIN playerGameData pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid).Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
 	if err != nil {
 		return party, err
@@ -538,7 +538,7 @@ func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 	return partyMembers, nil
 }
 
-func getPartyDescription(partyId int) (description string, err error) { //called by api only
+func getPartyDescription(partyId int) (description string, err error) { // called by api only
 	err = db.QueryRow("SELECT description FROM parties WHERE id = ?", partyId).Scan(&description)
 	if err != nil {
 		return description, err
@@ -547,7 +547,7 @@ func getPartyDescription(partyId int) (description string, err error) { //called
 	return description, nil
 }
 
-func getPartyPublic(partyId int) (public bool, err error) { //called by api only
+func getPartyPublic(partyId int) (public bool, err error) { // called by api only
 	err = db.QueryRow("SELECT public FROM parties WHERE id = ?", partyId).Scan(&public)
 	if err != nil {
 		return public, err
@@ -556,7 +556,7 @@ func getPartyPublic(partyId int) (public bool, err error) { //called by api only
 	return public, nil
 }
 
-func getPartyPass(partyId int) (pass string, err error) { //called by api only
+func getPartyPass(partyId int) (pass string, err error) { // called by api only
 	err = db.QueryRow("SELECT pass FROM parties WHERE id = ?", partyId).Scan(&pass)
 	if err != nil {
 		return pass, err
@@ -718,7 +718,7 @@ func deletePartyAndMembers(partyId int) (err error) {
 	return nil
 }
 
-func getSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) { //called by api only
+func getSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) { // called by api only
 	err = db.QueryRow("SELECT timestamp FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName).Scan(&timestamp)
 	if err != nil {
 		return timestamp, err
@@ -727,7 +727,7 @@ func getSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) { 
 	return timestamp, nil
 }
 
-func getSaveData(playerUuid string) (saveData string, err error) { //called by api only
+func getSaveData(playerUuid string) (saveData string, err error) { // called by api only
 	err = db.QueryRow("SELECT data FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName).Scan(&saveData)
 	if err != nil {
 		return saveData, err
@@ -736,7 +736,7 @@ func getSaveData(playerUuid string) (saveData string, err error) { //called by a
 	return saveData, nil
 }
 
-func createGameSaveData(playerUuid string, timestamp time.Time, data string) (err error) { //called by api only
+func createGameSaveData(playerUuid string, timestamp time.Time, data string) (err error) { // called by api only
 	_, err = db.Exec("INSERT INTO playerGameSaves (uuid, game, timestamp, data) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, config.gameName, timestamp, data, timestamp, data)
 	if err != nil {
 		return err
@@ -745,7 +745,7 @@ func createGameSaveData(playerUuid string, timestamp time.Time, data string) (er
 	return nil
 }
 
-func clearGameSaveData(playerUuid string) (err error) { //called by api only
+func clearGameSaveData(playerUuid string) (err error) { // called by api only
 	_, err = db.Exec("DELETE FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 	if err != nil {
 		return err

@@ -30,7 +30,7 @@ func (h *Hub) handleIdent(msg []string, sender *Client) (err error) {
 	}
 
 	sender.valid = true
-	sender.send <- []byte("ident") //tell client they're valid
+	sender.send <- []byte("ident") // tell client they're valid
 	h.handleValidClient(sender)
 
 	return nil
@@ -40,7 +40,7 @@ func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 	if len(msg) != 3 {
 		return err
 	}
-	//check if the coordinates are valid
+	// check if the coordinates are valid
 	x, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || x < 0 {
 		return errconv
@@ -56,7 +56,7 @@ func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 		if sender.syncCoords {
 			checkHubConditions(h, sender, "coords", "")
 		}
-		h.broadcast([]byte("m" + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2])) //user %id% moved to x y
+		h.broadcast([]byte("m" + delim + strconv.Itoa(sender.id) + delim + msg[1] + delim + msg[2])) // user %id% moved to x y
 	} else {
 		checkHubConditions(h, sender, "teleport", "")
 	}
@@ -68,13 +68,13 @@ func (h *Hub) handleF(msg []string, sender *Client) (err error) {
 	if len(msg) != 2 {
 		return err
 	}
-	//check if direction is valid
+	// check if direction is valid
 	facing, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || facing < 0 || facing > 3 {
 		return errconv
 	}
 	sender.facing = facing
-	h.broadcast([]byte("f" + delim + strconv.Itoa(sender.id) + delim + msg[1])) //user %id% facing changed to f
+	h.broadcast([]byte("f" + delim + strconv.Itoa(sender.id) + delim + msg[1])) // user %id% facing changed to f
 
 	return nil
 }
@@ -87,7 +87,7 @@ func (h *Hub) handleSpd(msg []string, sender *Client) (err error) {
 	if errconv != nil {
 		return errconv
 	}
-	if spd < 0 || spd > 10 { //something's not right
+	if spd < 0 || spd > 10 { // something's not right
 		return errconv
 	}
 	sender.spd = spd
@@ -422,9 +422,9 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 		value = true
 	}
 	sender.switchCache[switchId] = value
-	if switchId == 1430 && config.gameName == "2kki" { //time trial mode
+	if switchId == 1430 && config.gameName == "2kki" { // time trial mode
 		if value {
-			sender.send <- []byte("sv" + delim + "88" + delim + "0") //time elapsed
+			sender.send <- []byte("sv" + delim + "88" + delim + "0") // time elapsed
 		}
 	} else {
 		if len(sender.hub.minigameConfigs) > 0 {
@@ -692,7 +692,7 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-//SESSION
+// SESSION
 
 func (s *Session) handleI(sender *SessionClient) (err error) {
 	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(sender.name)
@@ -722,7 +722,7 @@ func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 	if client, ok := hubClients.Load(sender.uuid); ok {
 		client := client.(*Client)
 
-		client.hub.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + sender.name)) //broadcast name change to hub if client is in one
+		client.hub.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + sender.name)) // broadcast name change to hub if client is in one
 	}
 
 	return nil

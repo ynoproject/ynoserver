@@ -40,13 +40,13 @@ func main() {
 
 	configFileData := parseConfig(*configFile)
 
-	//list of sound names to ignore
+	// list of sound names to ignore
 	var ignoredSoundNames []string
 	if configFileData.BadSounds != "" {
 		ignoredSoundNames = strings.Split(configFileData.BadSounds, ",")
 	}
 
-	//list of picture names to allow
+	// list of picture names to allow
 	pictureNames := make(map[string]bool)
 	if configFileData.PictureNames != "" {
 		for _, name := range strings.Split(configFileData.PictureNames, ",") {
@@ -176,7 +176,7 @@ func atoiArray(strArray []string) (intArray []int) {
 	return intArray
 }
 
-func btoa(b bool) string { //bool to ascii int
+func btoa(b bool) string { // bool to ascii int
 	if b {
 		return "1"
 	}
@@ -239,7 +239,7 @@ func isValidPicName(name string) bool {
 	return false
 }
 
-func getIp(r *http.Request) string { //this breaks if you're using a revproxy that isn't on 127.0.0.1
+func getIp(r *http.Request) string { // this breaks if you're using a revproxy that isn't on 127.0.0.1
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 	if forwardedIp := r.Header.Get("x-forwarded-for"); ip == "127.0.0.1" && forwardedIp != "" {
 		return forwardedIp
@@ -250,7 +250,7 @@ func getIp(r *http.Request) string { //this breaks if you're using a revproxy th
 
 func isVpn(ip string) (vpn bool) {
 	if config.ipHubKey == "" {
-		return false //VPN checking is not available
+		return false // VPN checking is not available
 	}
 
 	req, err := http.NewRequest("GET", "https://v2.api.iphub.info/ip/"+ip, nil)

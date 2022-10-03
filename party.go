@@ -55,7 +55,7 @@ func sendPartyUpdate() {
 		return
 	}
 
-	for _, party := range parties { //for every party
+	for _, party := range parties { // for every party
 		var partyPass string
 		if party.Pass != "" {
 			partyPass = party.Pass
@@ -66,7 +66,7 @@ func sendPartyUpdate() {
 			continue
 		}
 
-		for _, member := range party.Members { //for every member
+		for _, member := range party.Members { // for every member
 			if !member.Online {
 				continue
 			}
@@ -86,7 +86,7 @@ func sendPartyUpdate() {
 				} else {
 					jsonData = partyDataJson
 				}
-				client.send <- append([]byte("pt"+delim), jsonData...) //send JSON to client
+				client.send <- append([]byte("pt"+delim), jsonData...) // send JSON to client
 			}
 		}
 	}
