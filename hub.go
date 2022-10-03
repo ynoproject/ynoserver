@@ -178,8 +178,6 @@ func (h *Hub) run() {
 			h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) //user %id% has disconnected message
 
 			writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
-
-			client.valid = false // TODO: Find a better way of doing this. Prevent a Hub deadlock while trying to send to a full send channel.
 		case message := <-h.processMsgCh:
 			if errs := h.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {
