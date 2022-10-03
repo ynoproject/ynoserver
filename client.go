@@ -116,7 +116,7 @@ type SessionClient struct {
 	terminate chan bool
 
 	send chan []byte
-	
+
 	account bool
 	name    string
 	uuid    string
@@ -135,12 +135,12 @@ type SessionClient struct {
 
 type Message struct {
 	data   []byte
-	sender *Client //who sent the message
+	sender *Client // who sent the message
 }
 
 type SessionMessage struct {
 	data   []byte
-	sender *SessionClient //who sent the message
+	sender *SessionClient // who sent the message
 }
 
 // The readPump and writePump functions are based on functions from
@@ -164,11 +164,11 @@ func (c *Client) readPump() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
 				writeLog(c.session.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 			}
 
-			break
+			return
 		}
 
 		c.hub.processMsgCh <- &Message{data: message, sender: c}
@@ -188,11 +188,11 @@ func (s *SessionClient) readPump() {
 	for {
 		_, message, err := s.conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
 				writeLog(s.ip, "session", err.Error(), 500)
 			}
 
-			break
+			return
 		}
 
 		session.processMsgCh <- &SessionMessage{data: message, sender: s}
