@@ -1234,7 +1234,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid, _, _, _, _, _ := getPlayerDataFromToken(token)
+	uuid := getUuidFromToken(token)
 
 	if uuid == "" {
 		handleError(w, r, "invalid token")
