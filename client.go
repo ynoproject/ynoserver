@@ -265,17 +265,13 @@ func (s *SessionClient) writePump() {
 }
 
 func (c *Client) sendMsg(message []byte) {
-	if c.sendClosed {
-		return
+	if !c.sendClosed {
+		c.send <- message
 	}
-
-	c.send <- message
 }
 
 func (s *SessionClient) sendMsg(message []byte) {
-	if s.sendClosed {
-		return
+	if !s.sendClosed {
+		s.send <- message
 	}
-
-	s.send <- message
 }
