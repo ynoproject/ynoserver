@@ -41,27 +41,17 @@ const (
 type Picture struct {
 	name string
 
-	positionX int
-	positionY int
-	mapX      int
-	mapY      int
-	panX      int
-	panY      int
+	positionX, positionY int
+	mapX, mapY           int
+	panX, panY           int
 
-	magnify     int
-	topTrans    int
-	bottomTrans int
+	magnify, topTrans, bottomTrans int
 
-	red        int
-	green      int
-	blue       int
-	saturation int
+	red, green, blue, saturation int
 
-	effectMode  int
-	effectPower int
+	effectMode, effectPower int
 
-	useTransparentColor bool
-	fixedToMap          bool
+	useTransparentColor, fixedToMap bool
 }
 
 // Client is a middleman between the websocket connection and the hub.
