@@ -21,7 +21,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -56,7 +55,7 @@ func initSession() {
 	s := gocron.NewScheduler(time.UTC)
 
 	s.Every(5).Seconds().Do(func() {
-		session.broadcast([]byte("pc" + delim + strconv.Itoa(getSessionClientsLen())))
+		session.broadcast("pc", getSessionClientsLen())
 		sendPartyUpdate()
 	})
 
@@ -136,7 +135,7 @@ func (s *Session) run() {
 			go client.writePump()
 			go client.readPump()
 
-			client.sendMsg([]byte("s" + delim + client.uuid + delim + strconv.Itoa(client.rank) + delim + btoa(client.account) + delim + client.badge))
+			client.sendMsg("s", client.uuid, client.rank, client.account, client.badge)
 
 			// register client in the structures
 			sessionClients.Store(client.uuid, client)
@@ -161,11 +160,11 @@ func (s *Session) run() {
 	}
 }
 
-func (s *Session) broadcast(data []byte) {
+func (s *Session) broadcast(segments ...any) {
 	sessionClients.Range(func(_, v any) bool {
 		client := v.(*SessionClient)
 
-		client.sendMsg(data)
+		client.sendMsg(segments)
 
 		return true
 	})
@@ -220,7 +219,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	case "pt": // party update
 		err = s.handlePt(sender)
 		if err != nil {
-			sender.sendMsg([]byte("pt" + delim + "null"))
+			sender.sendMsg("pt", "null")
 		}
 	case "ep": // event period
 		err = s.handleEp(sender)

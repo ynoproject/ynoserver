@@ -36,6 +36,10 @@ const (
 )
 
 var (
+	delimBytes = []byte("\uffff")
+)
+
+var (
 	hubClients sync.Map
 	upgrader   = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -159,7 +163,7 @@ func (h *Hub) run() {
 			go client.writePump()
 			go client.readPump()
 
-			client.sendMsg([]byte("s" + delim + strconv.Itoa(client.id) + delim + strconv.FormatUint(uint64(client.key), 10) + delim + uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) // "your id is %id%" message
+			client.sendMsg("s", client.id, int(client.key), uuid, client.session.rank, client.session.account, client.session.badge) // "your id is %id%" message
 
 			// register client in the structures
 			h.clients.Store(client.id, client)
@@ -175,7 +179,7 @@ func (h *Hub) run() {
 			h.clients.Delete(client.id)
 			hubClients.Delete(client.session.uuid)
 
-			h.broadcast([]byte("d" + delim + strconv.Itoa(client.id))) // user %id% has disconnected message
+			h.broadcast("d", client.id) // user %id% has disconnected message
 
 			writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 		case message := <-h.processMsgCh:
@@ -204,7 +208,7 @@ func (h *Hub) serve(w http.ResponseWriter, r *http.Request) {
 	h.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
 }
 
-func (h *Hub) broadcast(data []byte) {
+func (h *Hub) broadcast(segments ...any) {
 	if h.singleplayer {
 		return
 	}
@@ -216,7 +220,7 @@ func (h *Hub) broadcast(data []byte) {
 			return true
 		}
 
-		client.sendMsg(data)
+		client.sendMsg(segments)
 
 		return true
 	})
@@ -321,11 +325,11 @@ func (h *Hub) processMsg(msgStr string, sender *Client) error {
 func (h *Hub) handleValidClient(client *Client) {
 	if !h.singleplayer {
 		// tell everyone that a new client has connected
-		h.broadcast([]byte("c" + delim + strconv.Itoa(client.id) + delim + client.session.uuid + delim + strconv.Itoa(client.session.rank) + delim + btoa(client.session.account) + delim + client.session.badge)) // user %id% has connected message
+		h.broadcast("c", client.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge) // user %id% has connected message
 
 		// send name of client
 		if client.session.name != "" {
-			h.broadcast([]byte("name" + delim + strconv.Itoa(client.id) + delim + client.session.name))
+			h.broadcast("name", client.id, client.session.name)
 		}
 
 		// send the new client info about the game state
@@ -336,29 +340,29 @@ func (h *Hub) handleValidClient(client *Client) {
 				return true
 			}
 
-			client.sendMsg([]byte("c" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.uuid + delim + strconv.Itoa(otherClient.session.rank) + delim + btoa(otherClient.session.account) + delim + otherClient.session.badge))
-			client.sendMsg([]byte("m" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.x) + delim + strconv.Itoa(otherClient.y)))
+			client.sendMsg("c", otherClient.id, otherClient.session.uuid, otherClient.session.rank, otherClient.session.account, otherClient.session.badge)
+			client.sendMsg("m", otherClient.id, otherClient.x, otherClient.y)
 			if otherClient.facing > 0 {
-				client.sendMsg([]byte("f" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.facing)))
+				client.sendMsg("f", otherClient.id, otherClient.facing)
 			}
-			client.sendMsg([]byte("spd" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.spd)))
+			client.sendMsg("spd", otherClient.id, otherClient.spd)
 			if otherClient.session.name != "" {
-				client.sendMsg([]byte("name" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.name))
+				client.sendMsg("name", otherClient.id, otherClient.session.name)
 			}
 			if otherClient.session.spriteIndex >= 0 { // if the other client sent us valid sprite and index before
-				client.sendMsg([]byte("spr" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.spriteName + delim + strconv.Itoa(otherClient.session.spriteIndex)))
+				client.sendMsg("spr", otherClient.id, otherClient.session.spriteName, otherClient.session.spriteIndex)
 			}
 			if otherClient.repeatingFlash {
-				client.sendMsg([]byte("rfl" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(otherClient.flash[0]) + delim + strconv.Itoa(otherClient.flash[1]) + delim + strconv.Itoa(otherClient.flash[2]) + delim + strconv.Itoa(otherClient.flash[3]) + delim + strconv.Itoa(otherClient.flash[4])))
+				client.sendMsg("rfl", otherClient.id, otherClient.flash[0], otherClient.flash[1], otherClient.flash[2], otherClient.flash[3], otherClient.flash[4])
 			}
 			if otherClient.hidden {
-				client.sendMsg([]byte("h" + delim + strconv.Itoa(otherClient.id) + delim + "1"))
+				client.sendMsg("h", otherClient.id, "1")
 			}
 			if otherClient.session.systemName != "" {
-				client.sendMsg([]byte("sys" + delim + strconv.Itoa(otherClient.id) + delim + otherClient.session.systemName))
+				client.sendMsg("sys", otherClient.id, otherClient.session.systemName)
 			}
 			for picId, pic := range otherClient.pictures {
-				client.sendMsg([]byte("ap" + delim + strconv.Itoa(otherClient.id) + delim + strconv.Itoa(picId) + delim + strconv.Itoa(pic.positionX) + delim + strconv.Itoa(pic.positionY) + delim + strconv.Itoa(pic.mapX) + delim + strconv.Itoa(pic.mapY) + delim + strconv.Itoa(pic.panX) + delim + strconv.Itoa(pic.panY) + delim + strconv.Itoa(pic.magnify) + delim + strconv.Itoa(pic.topTrans) + delim + strconv.Itoa(pic.bottomTrans) + delim + strconv.Itoa(pic.red) + delim + strconv.Itoa(pic.blue) + delim + strconv.Itoa(pic.green) + delim + strconv.Itoa(pic.saturation) + delim + strconv.Itoa(pic.effectMode) + delim + strconv.Itoa(pic.effectPower) + delim + pic.name + delim + btoa(pic.useTransparentColor) + delim + btoa(pic.fixedToMap)))
+				client.sendMsg("ap", otherClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 			}
 
 			return true
@@ -377,7 +381,7 @@ func (h *Hub) handleValidClient(client *Client) {
 		if minigame.InitialVarSync {
 			varSyncType = 2
 		}
-		client.sendMsg([]byte("sv" + delim + strconv.Itoa(minigame.VarId) + delim + strconv.Itoa(varSyncType)))
+		client.sendMsg("sv", minigame.VarId, varSyncType)
 	}
 
 	// send variable sync request for vending machine expeditions
@@ -390,7 +394,7 @@ func (h *Hub) handleValidClient(client *Client) {
 			if eventId != currentEventVmEventId {
 				continue
 			}
-			client.sendMsg([]byte("sev" + delim + strconv.Itoa(eventId) + delim + "1"))
+			client.sendMsg("sev", eventId, "1")
 		}
 	}
 }

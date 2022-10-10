@@ -176,14 +176,6 @@ func atoiArray(strArray []string) (intArray []int) {
 	return intArray
 }
 
-func btoa(b bool) string { // bool to ascii int
-	if b {
-		return "1"
-	}
-
-	return "0"
-}
-
 func contains(s []int, num int) bool {
 	for _, v := range s {
 		if v == num {
@@ -305,4 +297,36 @@ func randString(length int) string {
 	}
 
 	return string(b)
+}
+
+func buildMsg(segments ...any) []byte {
+	var message []byte
+
+	for idx, segment := range segments {
+		switch segment := segment.(type) {
+		case byte:
+			message = append(message, segment)
+		case []byte:
+			message = append(message, segment...)
+		case string:
+			message = append(message, []byte(segment)...)
+		case int:
+			message = append(message, []byte(strconv.Itoa(segment))...)
+		case bool:
+			boolStr := "0"
+			if segment {
+				boolStr = "1"
+			}
+
+			message = append(message, []byte(boolStr)[0])
+		default:
+			continue
+		}
+
+		if idx != len(segments) {
+			message = append(message, delimBytes...)
+		}
+	}
+
+	return message
 }

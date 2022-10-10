@@ -86,7 +86,7 @@ func sendPartyUpdate() {
 				} else {
 					jsonData = partyDataJson
 				}
-				client.sendMsg(append([]byte("pt"+delim), jsonData...)) // send JSON to client
+				client.sendMsg("pt", jsonData) // send JSON to client
 			}
 		}
 	}

@@ -264,14 +264,14 @@ func (s *SessionClient) writePump() {
 	}
 }
 
-func (c *Client) sendMsg(message []byte) {
+func (c *Client) sendMsg(segments ...any) {
 	if !c.sendClosed {
-		c.send <- message
+		c.send <- buildMsg(segments)
 	}
 }
 
-func (s *SessionClient) sendMsg(message []byte) {
+func (s *SessionClient) sendMsg(segments ...any) {
 	if !s.sendClosed {
-		s.send <- message
+		s.send <- buildMsg(segments)
 	}
 }
