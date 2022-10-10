@@ -85,11 +85,10 @@ func (s *Session) run() {
 		select {
 		case conn := <-s.connect:
 			client := &SessionClient{
-				session:   s,
-				conn:      conn.Connect,
-				ip:        conn.Ip,
-				terminate: make(chan bool, 1),
-				send:      make(chan []byte, 16),
+				session: s,
+				conn:    conn.Connect,
+				ip:      conn.Ip,
+				send:    make(chan []byte, 16),
 			}
 
 			var banned bool
@@ -144,7 +143,7 @@ func (s *Session) run() {
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			close(client.terminate)
+			client.send <- terminateMsg
 
 			sessionClients.Delete(client.uuid)
 

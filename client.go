@@ -18,10 +18,15 @@
 package main
 
 import (
+	"bytes"
 	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
+)
+
+var (
+	terminateMsg = []byte("!TERMINATE")
 )
 
 const (
@@ -71,8 +76,6 @@ type Client struct {
 
 	conn *websocket.Conn
 
-	terminate chan bool
-
 	send chan []byte
 
 	id int
@@ -112,8 +115,6 @@ type SessionClient struct {
 
 	conn *websocket.Conn
 	ip   string
-
-	terminate chan bool
 
 	send chan []byte
 
@@ -214,13 +215,13 @@ func (c *Client) writePump() {
 
 	for {
 		select {
-		case <-c.terminate:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
-			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			return
 		case message := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
+			if bytes.Equal(message, terminateMsg) {
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
 
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
@@ -245,13 +246,13 @@ func (s *SessionClient) writePump() {
 
 	for {
 		select {
-		case <-s.terminate:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
-			s.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			return
 		case message := <-s.send:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
+			if bytes.Equal(message, terminateMsg) {
+				s.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
 
 			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return

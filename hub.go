@@ -109,7 +109,6 @@ func (h *Hub) run() {
 			client := &Client{
 				hub:         h,
 				conn:        conn.Connect,
-				terminate:   make(chan bool, 1),
 				send:        make(chan []byte, 16),
 				key:         generateKey(),
 				pictures:    make(map[int]*Picture),
@@ -168,7 +167,7 @@ func (h *Hub) run() {
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
-			close(client.terminate)
+			client.send <- terminateMsg
 
 			client.session.bound = false
 
