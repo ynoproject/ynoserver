@@ -256,12 +256,12 @@ func (s *SessionClient) writePump() {
 
 func (c *Client) sendMsg(segments ...any) {
 	if !c.sendClosed {
-		c.send <- buildMsg(segments)
+		c.send <- buildMsg(segments...)
 	}
 }
 
 func (s *SessionClient) sendMsg(segments ...any) {
 	if !s.sendClosed {
-		s.send <- buildMsg(segments)
+		s.send <- buildMsg(segments...)
 	}
 }

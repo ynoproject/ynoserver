@@ -220,7 +220,7 @@ func (h *Hub) broadcast(segments ...any) {
 			return true
 		}
 
-		client.sendMsg(segments)
+		client.sendMsg(segments...)
 
 		return true
 	})
