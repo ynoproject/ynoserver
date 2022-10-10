@@ -164,7 +164,7 @@ func (s *Session) broadcast(segments ...any) {
 	sessionClients.Range(func(_, v any) bool {
 		client := v.(*SessionClient)
 
-		client.sendMsg(segments)
+		client.sendMsg(segments...)
 
 		return true
 	})

@@ -299,7 +299,7 @@ func randString(length int) string {
 	return string(b)
 }
 
-func buildMsg(segments ...any) []byte {
+func buildMsg(segments []any) []byte {
 	var message []byte
 
 	for idx, segment := range segments {
