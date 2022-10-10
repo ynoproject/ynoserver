@@ -56,7 +56,7 @@ func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 		if sender.syncCoords {
 			checkHubConditions(h, sender, "coords", "")
 		}
-		h.broadcast("m", sender.id, msg[1], msg[2]) // user %id% moved to x y
+		h.broadcast("m", sender.id, msg[1:]) // user %id% moved to x y
 	} else {
 		checkHubConditions(h, sender, "teleport", "")
 	}
@@ -117,7 +117,7 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 	}
 	sender.session.spriteName = msg[1]
 	sender.session.spriteIndex = index
-	h.broadcast("spr", sender.id, msg[1], msg[2])
+	h.broadcast("spr", sender.id, msg[1:])
 
 	return nil
 }
@@ -154,7 +154,7 @@ func (h *Hub) handleFl(msg []string, sender *Client) (err error) {
 		sender.flash[4] = frames
 		sender.repeatingFlash = true
 	}
-	h.broadcast(msg[0], sender.id, msg[1], msg[2], msg[3], msg[4], msg[5])
+	h.broadcast(msg[0], sender.id, msg[1:])
 
 	return nil
 }
@@ -215,7 +215,7 @@ func (h *Hub) handleSe(msg []string, sender *Client) (err error) {
 	if errconv != nil || balance < 0 || balance > 100 {
 		return errconv
 	}
-	h.broadcast("se", sender.id, msg[1], msg[2], msg[3], msg[4])
+	h.broadcast("se", sender.id, msg[1:])
 
 	return nil
 }
@@ -364,11 +364,7 @@ func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	if !isShow {
-		h.broadcast(msg[0], sender.id, msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], msg[11], msg[12], msg[13], msg[14], msg[15], msg[16], msg[17])
-	} else {
-		h.broadcast(msg[0], sender.id, msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], msg[11], msg[12], msg[13], msg[14], msg[15], msg[16], msg[17], msg[18], msg[19])
-	}
+	h.broadcast(msg[0], sender.id, msg[1:])
 
 	sender.pictures[picId] = pic
 
