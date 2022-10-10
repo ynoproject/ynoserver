@@ -70,10 +70,10 @@ type Client struct {
 	hub     *Hub
 
 	conn *websocket.Conn
-	
-	send chan []byte
+
+	send       chan []byte
 	sendClosed bool
-	
+
 	id int
 
 	key     uint32
@@ -112,7 +112,7 @@ type SessionClient struct {
 	conn *websocket.Conn
 	ip   string
 
-	send chan []byte
+	send       chan []byte
 	sendClosed bool
 
 	account bool
@@ -214,7 +214,7 @@ func (c *Client) writePump() {
 		select {
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			
+
 			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
