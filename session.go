@@ -136,14 +136,15 @@ func (s *Session) run() {
 			go client.writePump()
 			go client.readPump()
 
-			client.send <- []byte("s" + delim + client.uuid + delim + strconv.Itoa(client.rank) + delim + btoa(client.account) + delim + client.badge)
+			client.sendMsg([]byte("s" + delim + client.uuid + delim + strconv.Itoa(client.rank) + delim + btoa(client.account) + delim + client.badge))
 
 			// register client in the structures
 			sessionClients.Store(client.uuid, client)
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			client.send <- terminateMsg
+			client.sendClosed = true
+			close(client.send)
 
 			sessionClients.Delete(client.uuid)
 
@@ -164,7 +165,7 @@ func (s *Session) broadcast(data []byte) {
 	sessionClients.Range(func(_, v any) bool {
 		client := v.(*SessionClient)
 
-		client.send <- data
+		client.sendMsg(data)
 
 		return true
 	})
@@ -219,7 +220,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	case "pt": // party update
 		err = s.handlePt(sender)
 		if err != nil {
-			sender.send <- []byte("pt" + delim + "null")
+			sender.sendMsg([]byte("pt" + delim + "null"))
 		}
 	case "ep": // event period
 		err = s.handleEp(sender)

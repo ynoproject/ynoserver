@@ -30,7 +30,7 @@ func (h *Hub) handleIdent(msg []string, sender *Client) (err error) {
 	}
 
 	sender.valid = true
-	sender.send <- []byte("ident") // tell client they're valid
+	sender.sendMsg([]byte("ident")) // tell client they're valid
 	h.handleValidClient(sender)
 
 	return nil
@@ -424,7 +424,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 	sender.switchCache[switchId] = value
 	if switchId == 1430 && config.gameName == "2kki" { // time trial mode
 		if value {
-			sender.send <- []byte("sv" + delim + "88" + delim + "0") // time elapsed
+			sender.sendMsg([]byte("sv" + delim + "88" + delim + "0")) // time elapsed
 		}
 	} else {
 		if len(sender.hub.minigameConfigs) > 0 {
@@ -473,18 +473,18 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 										return err
 									}
 									if success {
-										sender.send <- []byte("b")
+										sender.sendMsg([]byte("b"))
 									}
 								}
 							} else if config.gameName == "2kki" {
-								sender.send <- []byte("ss" + delim + "1430" + delim + "0")
+								sender.sendMsg([]byte("ss" + delim + "1430" + delim + "0"))
 							}
 						} else {
 							varId := c.VarId
 							if len(c.VarIds) > 0 {
 								varId = c.VarIds[0]
 							}
-							sender.send <- []byte("sv" + delim + strconv.Itoa(varId) + delim + "0")
+							sender.sendMsg([]byte("sv" + delim + strconv.Itoa(varId) + delim + "0"))
 						}
 					}
 				} else if len(c.SwitchIds) > 0 {
@@ -498,21 +498,21 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 											return err
 										}
 										if success {
-											sender.send <- []byte("b")
+											sender.sendMsg([]byte("b"))
 										}
 									}
 								} else if config.gameName == "2kki" {
-									sender.send <- []byte("ss" + delim + "1430" + delim + "0")
+									sender.sendMsg([]byte("ss" + delim + "1430" + delim + "0"))
 								}
 							} else {
 								varId := c.VarId
 								if len(c.VarIds) > 0 {
 									varId = c.VarIds[0]
 								}
-								sender.send <- []byte("sv" + delim + strconv.Itoa(varId) + delim + "0")
+								sender.sendMsg([]byte("sv" + delim + strconv.Itoa(varId) + delim + "0"))
 							}
 						} else {
-							sender.send <- []byte("ss" + delim + strconv.Itoa(c.SwitchIds[s+1]) + delim + "0")
+							sender.sendMsg([]byte("ss" + delim + strconv.Itoa(c.SwitchIds[s+1]) + delim + "0"))
 						}
 					}
 				}
@@ -548,7 +548,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 						return err
 					}
 					if success {
-						sender.send <- []byte("b")
+						sender.sendMsg([]byte("b"))
 					}
 				}
 			}
@@ -558,7 +558,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 			for m, minigame := range sender.hub.minigameConfigs {
 				if minigame.VarId == varId && sender.minigameScores[m] < value {
 					if minigame.SwitchId > 0 {
-						sender.send <- []byte("ss" + delim + strconv.Itoa(minigame.SwitchId) + delim + "0")
+						sender.sendMsg([]byte("ss" + delim + strconv.Itoa(minigame.SwitchId) + delim + "0"))
 					} else {
 						tryWritePlayerMinigameScore(sender.session.uuid, minigame.MinigameId, value)
 					}
@@ -604,18 +604,18 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 										return err
 									}
 									if success {
-										sender.send <- []byte("b")
+										sender.sendMsg([]byte("b"))
 									}
 								}
 							} else if config.gameName == "2kki" {
-								sender.send <- []byte("ss" + delim + "1430" + delim + "0")
+								sender.sendMsg([]byte("ss" + delim + "1430" + delim + "0"))
 							}
 						} else {
 							switchId := c.SwitchId
 							if len(c.SwitchIds) > 0 {
 								switchId = c.SwitchIds[0]
 							}
-							sender.send <- []byte("ss" + delim + strconv.Itoa(switchId) + delim + "0")
+							sender.sendMsg([]byte("ss" + delim + strconv.Itoa(switchId) + delim + "0"))
 						}
 					}
 				} else if len(c.VarIds) > 0 {
@@ -629,21 +629,21 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 											return err
 										}
 										if success {
-											sender.send <- []byte("b")
+											sender.sendMsg([]byte("b"))
 										}
 									}
 								} else if config.gameName == "2kki" {
-									sender.send <- []byte("ss" + delim + "1430" + delim + "0")
+									sender.sendMsg([]byte("ss" + delim + "1430" + delim + "0"))
 								}
 							} else {
 								switchId := c.SwitchId
 								if len(c.SwitchIds) > 0 {
 									switchId = c.SwitchIds[0]
 								}
-								sender.send <- []byte("ss" + delim + strconv.Itoa(switchId) + delim + "0")
+								sender.sendMsg([]byte("ss" + delim + strconv.Itoa(switchId) + delim + "0"))
 							}
 						} else {
-							sender.send <- []byte("sv" + delim + strconv.Itoa(c.VarIds[v+1]) + delim + "0")
+							sender.sendMsg([]byte("sv" + delim + strconv.Itoa(c.VarIds[v+1]) + delim + "0"))
 						}
 					}
 				}
@@ -686,7 +686,7 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 		return err
 	}
 	if exp > -1 {
-		sender.session.send <- []byte("vm" + delim + strconv.Itoa(exp))
+		sender.session.sendMsg([]byte("vm" + delim + strconv.Itoa(exp)))
 	}
 
 	return nil
@@ -709,7 +709,7 @@ func (s *Session) handleI(sender *SessionClient) (err error) {
 		return err
 	}
 
-	sender.send <- append([]byte("i"+delim), playerInfoJson...)
+	sender.sendMsg(append([]byte("i"+delim), playerInfoJson...))
 
 	return nil
 }
@@ -822,7 +822,7 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 		if client, ok := sessionClients.Load(uuid); ok {
 			client := client.(*SessionClient)
 
-			client.send <- []byte("psay" + delim + sender.uuid + delim + msgContents)
+			client.sendMsg([]byte("psay" + delim + sender.uuid + delim + msgContents))
 		}
 	}
 
@@ -848,7 +848,7 @@ func (s *Session) handlePt(sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	sender.send <- append([]byte("pt"+delim), partyDataJson...)
+	sender.sendMsg(append([]byte("pt"+delim), partyDataJson...))
 
 	return nil
 }
@@ -862,7 +862,7 @@ func (s *Session) handleEp(sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	sender.send <- append([]byte("ep"+delim), periodJson...)
+	sender.sendMsg(append([]byte("ep"+delim), periodJson...))
 
 	return nil
 }
@@ -905,7 +905,7 @@ func (s *Session) handleE(sender *SessionClient) (err error) {
 	if err != nil {
 		return err
 	}
-	sender.send <- append([]byte("e"+delim), eventsDataJson...)
+	sender.sendMsg(append([]byte("e"+delim), eventsDataJson...))
 
 	return nil
 }

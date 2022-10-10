@@ -18,15 +18,10 @@
 package main
 
 import (
-	"bytes"
 	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
-)
-
-var (
-	terminateMsg = []byte("!TERMINATE")
 )
 
 const (
@@ -75,9 +70,10 @@ type Client struct {
 	hub     *Hub
 
 	conn *websocket.Conn
-
+	
 	send chan []byte
-
+	sendClosed bool
+	
 	id int
 
 	key     uint32
@@ -117,6 +113,7 @@ type SessionClient struct {
 	ip   string
 
 	send chan []byte
+	sendClosed bool
 
 	account bool
 	name    string
@@ -215,10 +212,10 @@ func (c *Client) writePump() {
 
 	for {
 		select {
-		case message := <-c.send:
+		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
-			if bytes.Equal(message, terminateMsg) {
+			
+			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
@@ -246,10 +243,10 @@ func (s *SessionClient) writePump() {
 
 	for {
 		select {
-		case message := <-s.send:
+		case message, ok := <-s.send:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-			if bytes.Equal(message, terminateMsg) {
+			if !ok {
 				s.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
@@ -265,4 +262,20 @@ func (s *SessionClient) writePump() {
 			}
 		}
 	}
+}
+
+func (c *Client) sendMsg(message []byte) {
+	if c.sendClosed {
+		return
+	}
+
+	c.send <- message
+}
+
+func (s *SessionClient) sendMsg(message []byte) {
+	if s.sendClosed {
+		return
+	}
+
+	s.send <- message
 }
