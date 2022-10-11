@@ -44,6 +44,8 @@ type Session struct {
 
 	// Unregister requests from clients.
 	unregister chan *SessionClient
+
+	lastId int
 }
 
 func initSession() {
@@ -122,6 +124,8 @@ func (s *Session) run() {
 			if client.badge == "" {
 				client.badge = "null"
 			}
+
+			client.id = s.lastId; s.lastId++
 
 			client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
 

@@ -56,7 +56,7 @@ func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 		if sender.syncCoords {
 			checkHubConditions(h, sender, "coords", "")
 		}
-		h.broadcast("m", sender.id, msg[1:]) // user %id% moved to x y
+		h.broadcast("m", sender.session.id, msg[1:]) // user %id% moved to x y
 	} else {
 		checkHubConditions(h, sender, "teleport", "")
 	}
@@ -74,7 +74,7 @@ func (h *Hub) handleF(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.facing = facing
-	h.broadcast("f", sender.id, msg[1]) // user %id% facing changed to f
+	h.broadcast("f", sender.session.id, msg[1]) // user %id% facing changed to f
 
 	return nil
 }
@@ -91,7 +91,7 @@ func (h *Hub) handleSpd(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.spd = spd
-	h.broadcast("spd", sender.id, msg[1])
+	h.broadcast("spd", sender.session.id, msg[1])
 
 	return nil
 }
@@ -117,7 +117,7 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 	}
 	sender.session.spriteName = msg[1]
 	sender.session.spriteIndex = index
-	h.broadcast("spr", sender.id, msg[1:])
+	h.broadcast("spr", sender.session.id, msg[1:])
 
 	return nil
 }
@@ -154,7 +154,7 @@ func (h *Hub) handleFl(msg []string, sender *Client) (err error) {
 		sender.flash[4] = frames
 		sender.repeatingFlash = true
 	}
-	h.broadcast(msg[0], sender.id, msg[1:])
+	h.broadcast(msg[0], sender.session.id, msg[1:])
 
 	return nil
 }
@@ -164,7 +164,7 @@ func (h *Hub) handleRrfl(sender *Client) (err error) {
 	for i := 0; i < 5; i++ {
 		sender.flash[i] = 0
 	}
-	h.broadcast("rrfl", sender.id)
+	h.broadcast("rrfl", sender.session.id)
 
 	return nil
 }
@@ -178,7 +178,7 @@ func (h *Hub) handleH(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.hidden = hiddenBin == 1
-	h.broadcast(msg[0], sender.id, msg[1])
+	h.broadcast(msg[0], sender.session.id, msg[1])
 
 	return nil
 }
@@ -191,7 +191,7 @@ func (h *Hub) handleSys(msg []string, sender *Client) (err error) {
 		return err
 	}
 	sender.session.systemName = msg[1]
-	h.broadcast("sys", sender.id, msg[1])
+	h.broadcast("sys", sender.session.id, msg[1])
 
 	return nil
 }
@@ -215,7 +215,7 @@ func (h *Hub) handleSe(msg []string, sender *Client) (err error) {
 	if errconv != nil || balance < 0 || balance > 100 {
 		return errconv
 	}
-	h.broadcast("se", sender.id, msg[1:])
+	h.broadcast("se", sender.session.id, msg[1:])
 
 	return nil
 }
@@ -364,7 +364,7 @@ func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	h.broadcast(msg[0], sender.id, msg[1:])
+	h.broadcast(msg[0], sender.session.id, msg[1:])
 
 	sender.pictures[picId] = pic
 
@@ -379,7 +379,7 @@ func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
 	if errconv != nil || picId < 1 {
 		return errconv
 	}
-	h.broadcast("rp", sender.id, msg[1])
+	h.broadcast("rp", sender.session.id, msg[1])
 	delete(sender.pictures, picId)
 
 	return nil
@@ -397,7 +397,7 @@ func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
 	if sender.session.name == "" || sender.session.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 		return err
 	}
-	h.broadcast("say", sender.id, msgContents)
+	h.broadcast("say", sender.session.id, msgContents)
 
 	return nil
 }
@@ -719,7 +719,7 @@ func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 	if client, ok := hubClients.Load(sender.uuid); ok {
 		client := client.(*Client)
 
-		client.hub.broadcast("name", client.id, sender.name) // broadcast name change to hub if client is in one
+		client.hub.broadcast("name", client.session.id, sender.name) // broadcast name change to hub if client is in one
 	}
 
 	return nil

@@ -146,14 +146,6 @@ func (h *Hub) run() {
 				continue
 			}
 
-			for {
-				client.id++
-
-				if _, ok := h.clients.Load(client.id); !ok {
-					break
-				}
-			}
-
 			if tags, err := getPlayerTags(uuid); err != nil {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "failed to read player tags")
 			} else {
@@ -161,11 +153,11 @@ func (h *Hub) run() {
 			}
 
 			// register client in the structures
-			h.clients.Store(client.id, client)
+			h.clients.Store(client, nil)
 			hubClients.Store(uuid, client)
 
 			// queue s message
-			client.sendMsg("s", client.id, int(client.key), uuid, client.session.rank, client.session.account, client.session.badge) // "your id is %id%" message
+			client.sendMsg("s", client.session.id, int(client.key), uuid, client.session.rank, client.session.account, client.session.badge) // "your id is %id%" message
 
 			// start writePump and readPump
 			go client.writePump()
@@ -176,10 +168,10 @@ func (h *Hub) run() {
 			client.disconnected = true
 			client.session.bound = false
 
-			h.clients.Delete(client.id)
+			h.clients.Delete(client)
 			hubClients.Delete(client.session.uuid)
 
-			h.broadcast("d", client.id) // user %id% has disconnected message
+			h.broadcast("d", client.session.id) // user %id% has disconnected message
 
 			close(client.send)
 
@@ -215,8 +207,8 @@ func (h *Hub) broadcast(segments ...any) {
 		return
 	}
 
-	h.clients.Range(func(_, v any) bool {
-		client := v.(*Client)
+	h.clients.Range(func(k, _ any) bool {
+		client := k.(*Client)
 
 		if !client.valid {
 			return true
@@ -327,44 +319,44 @@ func (h *Hub) processMsg(msgStr string, sender *Client) error {
 func (h *Hub) handleValidClient(client *Client) {
 	if !h.singleplayer {
 		// tell everyone that a new client has connected
-		h.broadcast("c", client.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge) // user %id% has connected message
+		h.broadcast("c", client.session.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge) // user %id% has connected message
 
 		// send name of client
 		if client.session.name != "" {
-			h.broadcast("name", client.id, client.session.name)
+			h.broadcast("name", client.session.id, client.session.name)
 		}
 
 		// send the new client info about the game state
-		h.clients.Range(func(_, v any) bool {
-			otherClient := v.(*Client)
+		h.clients.Range(func(k, _ any) bool {
+			otherClient := k.(*Client)
 
 			if !otherClient.valid {
 				return true
 			}
 
-			client.sendMsg("c", otherClient.id, otherClient.session.uuid, otherClient.session.rank, otherClient.session.account, otherClient.session.badge)
-			client.sendMsg("m", otherClient.id, otherClient.x, otherClient.y)
+			client.sendMsg("c", otherClient.session.id, otherClient.session.uuid, otherClient.session.rank, otherClient.session.account, otherClient.session.badge)
+			client.sendMsg("m", otherClient.session.id, otherClient.x, otherClient.y)
 			if otherClient.facing > 0 {
-				client.sendMsg("f", otherClient.id, otherClient.facing)
+				client.sendMsg("f", otherClient.session.id, otherClient.facing)
 			}
-			client.sendMsg("spd", otherClient.id, otherClient.spd)
+			client.sendMsg("spd", otherClient.session.id, otherClient.spd)
 			if otherClient.session.name != "" {
-				client.sendMsg("name", otherClient.id, otherClient.session.name)
+				client.sendMsg("name", otherClient.session.id, otherClient.session.name)
 			}
 			if otherClient.session.spriteIndex >= 0 { // if the other client sent us valid sprite and index before
-				client.sendMsg("spr", otherClient.id, otherClient.session.spriteName, otherClient.session.spriteIndex)
+				client.sendMsg("spr", otherClient.session.id, otherClient.session.spriteName, otherClient.session.spriteIndex)
 			}
 			if otherClient.repeatingFlash {
-				client.sendMsg("rfl", otherClient.id, otherClient.flash)
+				client.sendMsg("rfl", otherClient.session.id, otherClient.flash)
 			}
 			if otherClient.hidden {
-				client.sendMsg("h", otherClient.id, "1")
+				client.sendMsg("h", otherClient.session.id, "1")
 			}
 			if otherClient.session.systemName != "" {
-				client.sendMsg("sys", otherClient.id, otherClient.session.systemName)
+				client.sendMsg("sys", otherClient.session.id, otherClient.session.systemName)
 			}
 			for picId, pic := range otherClient.pictures {
-				client.sendMsg("ap", otherClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
+				client.sendMsg("ap", otherClient.session.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 			}
 
 			return true

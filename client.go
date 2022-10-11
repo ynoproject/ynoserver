@@ -65,8 +65,6 @@ type Client struct {
 
 	send chan []byte
 
-	id int
-
 	key, counter uint32
 
 	valid bool
@@ -101,6 +99,8 @@ type SessionClient struct {
 	disconnected bool
 
 	send chan []byte
+
+	id int
 
 	account bool
 	name    string
