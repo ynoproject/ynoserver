@@ -67,14 +67,11 @@ type Client struct {
 
 	id int
 
-	key     uint32
-	counter uint32
+	key, counter uint32
 
 	valid bool
 
-	x, y   int
-	facing int
-	spd    int
+	x, y, facing, spd int
 
 	flash          [5]int
 	repeatingFlash bool
@@ -83,9 +80,7 @@ type Client struct {
 
 	pictures map[int]*Picture
 
-	mapId         string
-	prevMapId     string
-	prevLocations string
+	mapId, prevMapId, prevLocations string
 
 	tags []string
 
