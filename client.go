@@ -149,10 +149,7 @@ func (c *Client) readPump() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-				writeLog(c.session.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
-			}
-
+			writeLog(c.session.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 			break
 		}
 
@@ -178,10 +175,7 @@ func (s *SessionClient) readPump() {
 	for {
 		_, message, err := s.conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-				writeLog(s.ip, "session", err.Error(), 500)
-			}
-
+			writeLog(s.ip, "session", err.Error(), 500)
 			break
 		}
 
