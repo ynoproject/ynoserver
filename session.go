@@ -23,10 +23,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 	"unicode/utf8"
-
-	"github.com/go-co-op/gocron"
 )
 
 var (
@@ -52,14 +49,10 @@ type Session struct {
 func initSession() {
 	go session.run()
 
-	s := gocron.NewScheduler(time.UTC)
-
-	s.Every(5).Seconds().Do(func() {
+	scheduler.Every(5).Seconds().Do(func() {
 		session.broadcast("pc", getSessionClientsLen())
 		sendPartyUpdate()
 	})
-
-	s.StartAsync()
 }
 
 func (s *Session) serve(w http.ResponseWriter, r *http.Request) {

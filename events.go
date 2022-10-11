@@ -27,8 +27,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/go-co-op/gocron"
 )
 
 var (
@@ -110,11 +108,9 @@ var (
 
 func initEvents() {
 	if config.gameName == "2kki" {
-		s := gocron.NewScheduler(time.UTC)
-
 		db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&eventsCount)
 
-		s.Every(1).Day().At("00:00").Do(func() {
+		scheduler.Every(1).Day().At("00:00").Do(func() {
 			add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
 			add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
 			eventsCount += 2
@@ -136,7 +132,7 @@ func initEvents() {
 			sendEventsUpdate()
 		})
 
-		s.Every(5).Minutes().Do(func() {
+		scheduler.Every(5).Minutes().Do(func() {
 			var newEventLocationsCount int
 			db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&newEventLocationsCount)
 			if newEventLocationsCount != eventsCount {
@@ -144,8 +140,6 @@ func initEvents() {
 				sendEventsUpdate()
 			}
 		})
-
-		s.StartAsync()
 
 		periodId, err := getCurrentEventPeriodId()
 		if err == nil {

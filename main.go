@@ -30,8 +30,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/go-co-op/gocron"
 	"gopkg.in/natefinch/lumberjack.v2"
+)
+
+var (
+	scheduler = gocron.NewScheduler(time.UTC)
 )
 
 func main() {
@@ -96,6 +102,8 @@ func main() {
 	initBadges()
 	initRankings()
 	initSession()
+
+	scheduler.StartAsync()
 
 	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(configFileData.IP+":"+strconv.Itoa(configFileData.Port), nil), 500)
 }

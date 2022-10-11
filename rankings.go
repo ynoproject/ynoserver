@@ -20,9 +20,6 @@ package main
 import (
 	"strconv"
 	"sync"
-	"time"
-
-	"github.com/go-co-op/gocron"
 )
 
 var (
@@ -52,8 +49,6 @@ type Ranking struct {
 }
 
 func initRankings() {
-	s := gocron.NewScheduler(time.UTC)
-
 	var rankingCategories []*RankingCategory
 
 	if len(badges) > 0 {
@@ -176,7 +171,7 @@ func initRankings() {
 		}
 	}
 
-	s.Every(15).Minute().Do(func() {
+	scheduler.Every(15).Minute().Do(func() {
 		defer rankingsMtx.Unlock()
 
 		rankingsMtx.Lock()
@@ -194,6 +189,4 @@ func initRankings() {
 			}
 		}
 	})
-
-	s.StartAsync()
 }
