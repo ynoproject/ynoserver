@@ -132,13 +132,15 @@ func (s *Session) run() {
 
 			client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
 
-			go client.writePump()
-			go client.readPump()
-
-			client.sendMsg("s", client.uuid, client.rank, client.account, client.badge)
-
 			// register client in the structures
 			sessionClients.Store(client.uuid, client)
+
+			// queue s message
+			client.sendMsg("s", client.uuid, client.rank, client.account, client.badge)
+
+			// start writePump and readPump
+			go client.writePump()
+			go client.readPump()
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:

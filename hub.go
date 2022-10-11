@@ -160,14 +160,16 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			go client.writePump()
-			go client.readPump()
-
-			client.sendMsg("s", client.id, int(client.key), uuid, client.session.rank, client.session.account, client.session.badge) // "your id is %id%" message
-
 			// register client in the structures
 			h.clients.Store(client.id, client)
 			hubClients.Store(uuid, client)
+
+			// queue s message
+			client.sendMsg("s", client.id, int(client.key), uuid, client.session.rank, client.session.account, client.session.badge) // "your id is %id%" message
+
+			// start writePump and readPump
+			go client.writePump()
+			go client.readPump()
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
