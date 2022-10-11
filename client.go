@@ -103,8 +103,9 @@ type SessionClient struct {
 	conn *websocket.Conn
 	ip   string
 
-	send         chan []byte
 	disconnected bool
+
+	send chan []byte
 
 	account bool
 	name    string
