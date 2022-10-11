@@ -157,12 +157,12 @@ func (c *Client) readPump() {
 				writeLog(c.session.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 			}
 
-			return
+			break
 		}
 
 		// safety
 		if c.disconnected {
-			return
+			break
 		}
 
 		c.hub.processMsgCh <- &Message{data: message, sender: c}
@@ -186,12 +186,12 @@ func (s *SessionClient) readPump() {
 				writeLog(s.ip, "session", err.Error(), 500)
 			}
 
-			return
+			break
 		}
 
 		// safety
 		if s.disconnected {
-			return
+			break
 		}
 
 		session.processMsgCh <- &SessionMessage{data: message, sender: s}
