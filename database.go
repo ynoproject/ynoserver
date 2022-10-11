@@ -358,7 +358,7 @@ func getPlayerPartyId(uuid string) (partyId int, err error) {
 	return partyId, nil
 }
 
-func getAllPartyData(simple bool) (parties []*Party, err error) { // called by api only
+func getAllPartyData(simple bool) (parties []*Party, err error) {
 	partyMembersByParty, err := getAllPartyMemberDataByParty(simple)
 	if err != nil {
 		return parties, err
