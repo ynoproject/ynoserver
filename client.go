@@ -61,8 +61,9 @@ type Client struct {
 
 	conn *websocket.Conn
 
-	send       chan []byte
-	sendClosed bool
+	disconnected bool
+
+	send chan []byte
 
 	id int
 
@@ -102,8 +103,8 @@ type SessionClient struct {
 	conn *websocket.Conn
 	ip   string
 
-	send       chan []byte
-	sendClosed bool
+	send         chan []byte
+	disconnected bool
 
 	account bool
 	name    string
@@ -159,6 +160,11 @@ func (c *Client) readPump() {
 			return
 		}
 
+		// safety
+		if c.disconnected {
+			return
+		}
+
 		c.hub.processMsgCh <- &Message{data: message, sender: c}
 	}
 }
@@ -180,6 +186,11 @@ func (s *SessionClient) readPump() {
 				writeLog(s.ip, "session", err.Error(), 500)
 			}
 
+			return
+		}
+
+		// safety
+		if s.disconnected {
 			return
 		}
 
@@ -255,13 +266,13 @@ func (s *SessionClient) writePump() {
 }
 
 func (c *Client) sendMsg(segments ...any) {
-	if !c.sendClosed {
+	if !c.disconnected {
 		c.send <- buildMsg(segments)
 	}
 }
 
 func (s *SessionClient) sendMsg(segments ...any) {
-	if !s.sendClosed {
+	if !s.disconnected {
 		s.send <- buildMsg(segments)
 	}
 }

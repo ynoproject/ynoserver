@@ -142,10 +142,11 @@ func (s *Session) run() {
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			client.sendClosed = true
-			close(client.send)
+			client.disconnected = true
 
 			sessionClients.Delete(client.uuid)
+
+			close(client.send)
 
 			updatePlayerGameData(client)
 
