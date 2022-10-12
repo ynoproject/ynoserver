@@ -50,12 +50,6 @@ type ConfigFile struct {
 	GameName        string `yaml:"game_name"`
 	SignKey         string `yaml:"sign_key"`
 	IPHubKey        string `yaml:"iphub_key"`
-	Database        struct {
-		User string `yaml:"user"`
-		Pass string `yaml:"pass"`
-		Host string `yaml:"host"`
-		Name string `yaml:"name"`
-	} `yaml:"database"`
 	Logging struct {
 		File       string `yaml:"file"`
 		MaxSize    int    `yaml:"max_size"`

@@ -32,8 +32,8 @@ var (
 	db *sql.DB
 )
 
-func setDatabase(user string, pass string, host string, name string) {
-	conn, err := sql.Open("mysql", user+":"+pass+"@tcp("+host+")/"+name+"?parseTime=true")
+func setDatabase() {
+	conn, err := sql.Open("mysql", "yno@unix(/run/mysqld/mysqld.sock)/ynodb?parseTime=true")
 	if err != nil {
 		return
 	}

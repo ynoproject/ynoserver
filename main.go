@@ -80,8 +80,7 @@ func main() {
 	config.soundNames = getSoundList()
 	config.systemNames = getSystemList()
 
-	setDatabase(configFileData.Database.User, configFileData.Database.Pass, configFileData.Database.Host, configFileData.Database.Name)
-
+	setDatabase()
 	setConditions()
 	setBadges()
 	setEventVms()
