@@ -205,7 +205,6 @@ func (c *Client) writePump() {
 		select {
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
@@ -216,7 +215,6 @@ func (c *Client) writePump() {
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -236,7 +234,6 @@ func (s *SessionClient) writePump() {
 		select {
 		case message, ok := <-s.send:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if !ok {
 				s.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
@@ -247,7 +244,6 @@ func (s *SessionClient) writePump() {
 			}
 		case <-ticker.C:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
