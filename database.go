@@ -419,7 +419,6 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 
 		if client, ok := clients.Load(partyMember.Uuid); ok {
 			client := client.(*SessionClient)
-
 			if client.name != "" {
 				partyMember.Name = client.name
 			}
@@ -495,7 +494,6 @@ func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 		partyMember.Account = accountBin == 1
 		if client, ok := clients.Load(partyMember.Uuid); ok {
 			client := client.(*SessionClient)
-
 			if client.name != "" {
 				partyMember.Name = client.name
 			}
