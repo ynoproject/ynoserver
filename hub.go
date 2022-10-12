@@ -40,7 +40,6 @@ var (
 )
 
 var (
-	hubClients sync.Map
 	upgrader   = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -71,7 +70,7 @@ type Hub struct {
 	connect chan *ConnInfo
 
 	// Unregister requests from clients.
-	unregister chan *Client
+	unregister chan *HubClient
 
 	roomId       int
 	singleplayer bool
@@ -97,7 +96,7 @@ func newHub(roomId int, singleplayer bool) *Hub {
 	return &Hub{
 		processMsgCh:    make(chan *Message, 16),
 		connect:         make(chan *ConnInfo, 4),
-		unregister:      make(chan *Client, 4),
+		unregister:      make(chan *HubClient, 4),
 		roomId:          roomId,
 		singleplayer:    singleplayer,
 		conditions:      getHubConditions(roomId),
@@ -110,7 +109,7 @@ func (h *Hub) run() {
 	for {
 		select {
 		case conn := <-h.connect:
-			client := &Client{
+			client := &HubClient{
 				hub:         h,
 				conn:        conn.Connect,
 				send:        make(chan []byte, 16),
@@ -130,17 +129,15 @@ func (h *Hub) run() {
 				uuid, _, _ = getOrCreatePlayerData(conn.Ip)
 			}
 
-			if s, ok := sessionClients.Load(uuid); ok {
+			if s, ok := clients.Load(uuid); ok {
 				session := s.(*SessionClient)
-
-				if session.bound {
+				if session.hClient != nil {
 					writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "session in use")
 					continue
 				}
 
-				session.bound = true
-
-				client.session = session
+				session.hClient = client
+				client.sClient = session
 			} else {
 				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player has no session")
 				continue
@@ -152,12 +149,11 @@ func (h *Hub) run() {
 				client.tags = tags
 			}
 
-			// register client in the structures
+			// register client to the hub
 			h.clients.Store(client, nil)
-			hubClients.Store(uuid, client)
 
 			// queue s message
-			client.sendMsg("s", client.session.id, int(client.key), uuid, client.session.rank, client.session.account, client.session.badge) // "your id is %id%" message
+			client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // "your id is %id%" message
 
 			// start writePump and readPump
 			go client.writePump()
@@ -166,20 +162,19 @@ func (h *Hub) run() {
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
 			client.disconnected = true
-			client.session.bound = false
+			client.sClient.hClient = nil
 
 			h.clients.Delete(client)
-			hubClients.Delete(client.session.uuid)
 
-			h.broadcast("d", client.session.id) // user %id% has disconnected message
+			h.broadcast("d", client.sClient.id) // user %id% has disconnected message
 
 			close(client.send)
 
-			writeLog(client.session.ip, strconv.Itoa(h.roomId), "disconnect", 200)
+			writeLog(client.sClient.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 		case message := <-h.processMsgCh:
 			if errs := h.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {
-					writeErrLog(message.sender.session.ip, strconv.Itoa(h.roomId), err.Error())
+					writeErrLog(message.sender.sClient.ip, strconv.Itoa(h.roomId), err.Error())
 				}
 			}
 		}
@@ -208,8 +203,7 @@ func (h *Hub) broadcast(segments ...any) {
 	}
 
 	h.clients.Range(func(k, _ any) bool {
-		client := k.(*Client)
-
+		client := k.(*HubClient)
 		if !client.valid {
 			return true
 		}
@@ -258,7 +252,7 @@ func (h *Hub) processMsgs(msg *Message) []error {
 	return errs
 }
 
-func (h *Hub) processMsg(msgStr string, sender *Client) error {
+func (h *Hub) processMsg(msgStr string, sender *HubClient) error {
 	err := errors.New(msgStr)
 	msgFields := strings.Split(msgStr, delim)
 
@@ -311,52 +305,51 @@ func (h *Hub) processMsg(msgStr string, sender *Client) error {
 		return err
 	}
 
-	writeLog(sender.session.ip, strconv.Itoa(h.roomId), msgStr, 200)
+	writeLog(sender.sClient.ip, strconv.Itoa(h.roomId), msgStr, 200)
 
 	return nil
 }
 
-func (h *Hub) handleValidClient(client *Client) {
+func (h *Hub) handleValidClient(client *HubClient) {
 	if !h.singleplayer {
 		// tell everyone that a new client has connected
-		h.broadcast("c", client.session.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge) // user %id% has connected message
+		h.broadcast("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
 
 		// send name of client
-		if client.session.name != "" {
-			h.broadcast("name", client.session.id, client.session.name)
+		if client.sClient.name != "" {
+			h.broadcast("name", client.sClient.id, client.sClient.name)
 		}
 
 		// send the new client info about the game state
 		h.clients.Range(func(k, _ any) bool {
-			otherClient := k.(*Client)
-
+			otherClient := k.(*HubClient)
 			if !otherClient.valid {
 				return true
 			}
 
-			client.sendMsg("c", otherClient.session.id, otherClient.session.uuid, otherClient.session.rank, otherClient.session.account, otherClient.session.badge)
-			client.sendMsg("m", otherClient.session.id, otherClient.x, otherClient.y)
+			client.sendMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge)
+			client.sendMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
 			if otherClient.facing > 0 {
-				client.sendMsg("f", otherClient.session.id, otherClient.facing)
+				client.sendMsg("f", otherClient.sClient.id, otherClient.facing)
 			}
-			client.sendMsg("spd", otherClient.session.id, otherClient.spd)
-			if otherClient.session.name != "" {
-				client.sendMsg("name", otherClient.session.id, otherClient.session.name)
+			client.sendMsg("spd", otherClient.sClient.id, otherClient.spd)
+			if otherClient.sClient.name != "" {
+				client.sendMsg("name", otherClient.sClient.id, otherClient.sClient.name)
 			}
-			if otherClient.session.spriteIndex >= 0 { // if the other client sent us valid sprite and index before
-				client.sendMsg("spr", otherClient.session.id, otherClient.session.spriteName, otherClient.session.spriteIndex)
+			if otherClient.sClient.spriteIndex >= 0 { // if the other client sent us valid sprite and index before
+				client.sendMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex)
 			}
 			if otherClient.repeatingFlash {
-				client.sendMsg("rfl", otherClient.session.id, otherClient.flash)
+				client.sendMsg("rfl", otherClient.sClient.id, otherClient.flash)
 			}
 			if otherClient.hidden {
-				client.sendMsg("h", otherClient.session.id, "1")
+				client.sendMsg("h", otherClient.sClient.id, "1")
 			}
-			if otherClient.session.systemName != "" {
-				client.sendMsg("sys", otherClient.session.id, otherClient.session.systemName)
+			if otherClient.sClient.systemName != "" {
+				client.sendMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
 			}
 			for picId, pic := range otherClient.pictures {
-				client.sendMsg("ap", otherClient.session.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
+				client.sendMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 			}
 
 			return true
@@ -366,9 +359,9 @@ func (h *Hub) handleValidClient(client *Client) {
 	checkHubConditions(h, client, "", "")
 
 	for _, minigame := range h.minigameConfigs {
-		score, err := getPlayerMinigameScore(client.session.uuid, minigame.MinigameId)
+		score, err := getPlayerMinigameScore(client.sClient.uuid, minigame.MinigameId)
 		if err != nil {
-			writeErrLog(client.session.ip, strconv.Itoa(h.roomId), "failed to read player minigame score for "+minigame.MinigameId)
+			writeErrLog(client.sClient.ip, strconv.Itoa(h.roomId), "failed to read player minigame score for "+minigame.MinigameId)
 		}
 		client.minigameScores = append(client.minigameScores, score)
 		varSyncType := 1

@@ -54,10 +54,10 @@ type Picture struct {
 	useTransparentColor, fixedToMap bool
 }
 
-// Client is a middleman between the websocket connection and the hub.
-type Client struct {
-	session *SessionClient
+// HubClient is a middleman between the websocket connection and the hub.
+type HubClient struct {
 	hub     *Hub
+	sClient *SessionClient
 
 	conn *websocket.Conn
 
@@ -91,7 +91,7 @@ type Client struct {
 }
 
 type SessionClient struct {
-	session *Session
+	hClient *HubClient
 
 	conn *websocket.Conn
 	ip   string
@@ -108,8 +108,6 @@ type SessionClient struct {
 	rank    int
 	badge   string
 
-	bound bool
-
 	muted bool
 
 	spriteName  string
@@ -120,7 +118,7 @@ type SessionClient struct {
 
 type Message struct {
 	data   []byte
-	sender *Client // who sent the message
+	sender *HubClient // who sent the message
 }
 
 type SessionMessage struct {
@@ -136,7 +134,7 @@ type SessionMessage struct {
 // The application runs readPump in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
-func (c *Client) readPump() {
+func (c *HubClient) readPump() {
 	defer func() {
 		c.hub.unregister <- c
 		c.conn.Close()
@@ -149,7 +147,7 @@ func (c *Client) readPump() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			writeLog(c.session.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
+			writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 			break
 		}
 
@@ -193,7 +191,7 @@ func (s *SessionClient) readPump() {
 // A goroutine running writePump is started for each connection. The
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
-func (c *Client) writePump() {
+func (c *HubClient) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
@@ -251,7 +249,7 @@ func (s *SessionClient) writePump() {
 	}
 }
 
-func (c *Client) sendMsg(segments ...any) {
+func (c *HubClient) sendMsg(segments ...any) {
 	if !c.disconnected {
 		c.send <- buildMsg(segments)
 	}

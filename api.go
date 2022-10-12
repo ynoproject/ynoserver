@@ -716,26 +716,29 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		ret := -1
-		if _, found := hubClients.Load(uuid); found {
-			if !free {
-				exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
-				if err != nil {
-					handleInternalError(w, r, err)
-					return
-				}
-				if exp < 0 {
-					handleError(w, r, "unexpected state")
-					return
-				}
-				ret = exp
-			} else {
-				complete, err := tryCompletePlayerEventLocation(periodId, uuid, locationParam[0])
-				if err != nil {
-					handleInternalError(w, r, err)
-					return
-				}
-				if complete {
-					ret = 0
+		if client, found := clients.Load(uuid); found {
+			client := client.(*SessionClient)
+			if client.hClient != nil {
+				if !free {
+					exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
+					if err != nil {
+						handleInternalError(w, r, err)
+						return
+					}
+					if exp < 0 {
+						handleError(w, r, "unexpected state")
+						return
+					}
+					ret = exp
+				} else {
+					complete, err := tryCompletePlayerEventLocation(periodId, uuid, locationParam[0])
+					if err != nil {
+						handleInternalError(w, r, err)
+						return
+					}
+					if complete {
+						ret = 0
+					}
 				}
 			}
 			currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, uuid)

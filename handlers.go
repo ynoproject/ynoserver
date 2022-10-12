@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-func (h *Hub) handleIdent(msg []string, sender *Client) (err error) {
+func (h *Hub) handleIdent(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 1 {
 		return err
 	}
@@ -36,7 +36,7 @@ func (h *Hub) handleIdent(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-func (h *Hub) handleM(msg []string, sender *Client) (err error) {
+func (h *Hub) handleM(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
 		return err
 	}
@@ -56,7 +56,7 @@ func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 		if sender.syncCoords {
 			checkHubConditions(h, sender, "coords", "")
 		}
-		h.broadcast("m", sender.session.id, msg[1:]) // user %id% moved to x y
+		h.broadcast("m", sender.sClient.id, msg[1:]) // user %id% moved to x y
 	} else {
 		checkHubConditions(h, sender, "teleport", "")
 	}
@@ -64,7 +64,7 @@ func (h *Hub) handleM(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-func (h *Hub) handleF(msg []string, sender *Client) (err error) {
+func (h *Hub) handleF(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
 		return err
 	}
@@ -74,12 +74,12 @@ func (h *Hub) handleF(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.facing = facing
-	h.broadcast("f", sender.session.id, msg[1]) // user %id% facing changed to f
+	h.broadcast("f", sender.sClient.id, msg[1]) // user %id% facing changed to f
 
 	return nil
 }
 
-func (h *Hub) handleSpd(msg []string, sender *Client) (err error) {
+func (h *Hub) handleSpd(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
 		return err
 	}
@@ -91,12 +91,12 @@ func (h *Hub) handleSpd(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.spd = spd
-	h.broadcast("spd", sender.session.id, msg[1])
+	h.broadcast("spd", sender.sClient.id, msg[1])
 
 	return nil
 }
 
-func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
+func (h *Hub) handleSpr(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
 		return err
 	}
@@ -115,14 +115,14 @@ func (h *Hub) handleSpr(msg []string, sender *Client) (err error) {
 	if errconv != nil || index < 0 {
 		return errconv
 	}
-	sender.session.spriteName = msg[1]
-	sender.session.spriteIndex = index
-	h.broadcast("spr", sender.session.id, msg[1:])
+	sender.sClient.spriteName = msg[1]
+	sender.sClient.spriteIndex = index
+	h.broadcast("spr", sender.sClient.id, msg[1:])
 
 	return nil
 }
 
-func (h *Hub) handleFl(msg []string, sender *Client) (err error) {
+func (h *Hub) handleFl(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 6 {
 		return err
 	}
@@ -154,22 +154,22 @@ func (h *Hub) handleFl(msg []string, sender *Client) (err error) {
 		sender.flash[4] = frames
 		sender.repeatingFlash = true
 	}
-	h.broadcast(msg[0], sender.session.id, msg[1:])
+	h.broadcast(msg[0], sender.sClient.id, msg[1:])
 
 	return nil
 }
 
-func (h *Hub) handleRrfl(sender *Client) (err error) {
+func (h *Hub) handleRrfl(sender *HubClient) (err error) {
 	sender.repeatingFlash = false
 	for i := 0; i < 5; i++ {
 		sender.flash[i] = 0
 	}
-	h.broadcast("rrfl", sender.session.id)
+	h.broadcast("rrfl", sender.sClient.id)
 
 	return nil
 }
 
-func (h *Hub) handleH(msg []string, sender *Client) (err error) {
+func (h *Hub) handleH(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
 		return err
 	}
@@ -178,25 +178,25 @@ func (h *Hub) handleH(msg []string, sender *Client) (err error) {
 		return errconv
 	}
 	sender.hidden = hiddenBin == 1
-	h.broadcast(msg[0], sender.session.id, msg[1])
+	h.broadcast(msg[0], sender.sClient.id, msg[1])
 
 	return nil
 }
 
-func (h *Hub) handleSys(msg []string, sender *Client) (err error) {
+func (h *Hub) handleSys(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
 		return err
 	}
 	if !isValidSystem(msg[1], false) {
 		return err
 	}
-	sender.session.systemName = msg[1]
-	h.broadcast("sys", sender.session.id, msg[1])
+	sender.sClient.systemName = msg[1]
+	h.broadcast("sys", sender.sClient.id, msg[1])
 
 	return nil
 }
 
-func (h *Hub) handleSe(msg []string, sender *Client) (err error) {
+func (h *Hub) handleSe(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 5 || msg[1] == "" {
 		return err
 	}
@@ -215,12 +215,12 @@ func (h *Hub) handleSe(msg []string, sender *Client) (err error) {
 	if errconv != nil || balance < 0 || balance > 100 {
 		return errconv
 	}
-	h.broadcast("se", sender.session.id, msg[1:])
+	h.broadcast("se", sender.sClient.id, msg[1:])
 
 	return nil
 }
 
-func (h *Hub) handleP(msg []string, sender *Client) (err error) {
+func (h *Hub) handleP(msg []string, sender *HubClient) (err error) {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
@@ -364,14 +364,14 @@ func (h *Hub) handleP(msg []string, sender *Client) (err error) {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	h.broadcast(msg[0], sender.session.id, msg[1:])
+	h.broadcast(msg[0], sender.sClient.id, msg[1:])
 
 	sender.pictures[picId] = pic
 
 	return nil
 }
 
-func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
+func (h *Hub) handleRp(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
 		return err
 	}
@@ -379,14 +379,14 @@ func (h *Hub) handleRp(msg []string, sender *Client) (err error) {
 	if errconv != nil || picId < 1 {
 		return errconv
 	}
-	h.broadcast("rp", sender.session.id, msg[1])
+	h.broadcast("rp", sender.sClient.id, msg[1])
 	delete(sender.pictures, picId)
 
 	return nil
 }
 
-func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
-	if sender.session.muted {
+func (h *Hub) handleSay(msg []string, sender *HubClient) (err error) {
+	if sender.sClient.muted {
 		return nil
 	}
 
@@ -394,15 +394,15 @@ func (h *Hub) handleSay(msg []string, sender *Client) (err error) {
 		return err
 	}
 	msgContents := strings.TrimSpace(msg[1])
-	if sender.session.name == "" || sender.session.systemName == "" || msgContents == "" || len(msgContents) > 150 {
+	if sender.sClient.name == "" || sender.sClient.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 		return err
 	}
-	h.broadcast("say", sender.session.id, msgContents)
+	h.broadcast("say", sender.sClient.id, msgContents)
 
 	return nil
 }
 
-func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
+func (h *Hub) handleSs(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
 		return err
 	}
@@ -427,7 +427,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 		if len(sender.hub.minigameConfigs) > 0 {
 			for m, minigame := range sender.hub.minigameConfigs {
 				if minigame.SwitchId == switchId && minigame.SwitchValue == value && sender.minigameScores[m] < sender.varCache[minigame.VarId] {
-					tryWritePlayerMinigameScore(sender.session.uuid, minigame.MinigameId, sender.varCache[minigame.VarId])
+					tryWritePlayerMinigameScore(sender.sClient.uuid, minigame.MinigameId, sender.varCache[minigame.VarId])
 				}
 			}
 		}
@@ -465,7 +465,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 						if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
 							if !c.TimeTrial {
 								if checkConditionCoords(c, sender) {
-									success, err := tryWritePlayerTag(sender.session.uuid, c.ConditionId)
+									success, err := tryWritePlayerTag(sender.sClient.uuid, c.ConditionId)
 									if err != nil {
 										return err
 									}
@@ -490,7 +490,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 							if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
 								if !c.TimeTrial {
 									if checkConditionCoords(c, sender) {
-										success, err := tryWritePlayerTag(sender.session.uuid, c.ConditionId)
+										success, err := tryWritePlayerTag(sender.sClient.uuid, c.ConditionId)
 										if err != nil {
 											return err
 										}
@@ -520,7 +520,7 @@ func (h *Hub) handleSs(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
+func (h *Hub) handleSv(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
 		return err
 	}
@@ -540,7 +540,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 		for _, c := range conditions {
 			if c.TimeTrial && value < 3600 {
 				if checkConditionCoords(c, sender) {
-					success, err := tryWritePlayerTimeTrial(sender.session.uuid, h.roomId, value)
+					success, err := tryWritePlayerTimeTrial(sender.sClient.uuid, h.roomId, value)
 					if err != nil {
 						return err
 					}
@@ -557,7 +557,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 					if minigame.SwitchId > 0 {
 						sender.sendMsg("ss", minigame.SwitchId, "0")
 					} else {
-						tryWritePlayerMinigameScore(sender.session.uuid, minigame.MinigameId, value)
+						tryWritePlayerMinigameScore(sender.sClient.uuid, minigame.MinigameId, value)
 					}
 				}
 			}
@@ -596,7 +596,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 						if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
 							if !c.TimeTrial {
 								if checkConditionCoords(c, sender) {
-									success, err := tryWritePlayerTag(sender.session.uuid, c.ConditionId)
+									success, err := tryWritePlayerTag(sender.sClient.uuid, c.ConditionId)
 									if err != nil {
 										return err
 									}
@@ -621,7 +621,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 							if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
 								if !c.TimeTrial {
 									if checkConditionCoords(c, sender) {
-										success, err := tryWritePlayerTag(sender.session.uuid, c.ConditionId)
+										success, err := tryWritePlayerTag(sender.sClient.uuid, c.ConditionId)
 										if err != nil {
 											return err
 										}
@@ -651,7 +651,7 @@ func (h *Hub) handleSv(msg []string, sender *Client) (err error) {
 	return nil
 }
 
-func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
+func (h *Hub) handleSev(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
 		return err
 	}
@@ -678,12 +678,12 @@ func (h *Hub) handleSev(msg []string, sender *Client) (err error) {
 		return err
 	}
 
-	exp, err := tryCompleteEventVm(currentEventPeriodId, sender.session.uuid, currentEventVmMapId, currentEventVmEventId)
+	exp, err := tryCompleteEventVm(currentEventPeriodId, sender.sClient.uuid, currentEventVmMapId, currentEventVmEventId)
 	if err != nil {
 		return err
 	}
 	if exp > -1 {
-		sender.session.sendMsg("vm", exp)
+		sender.sClient.sendMsg("vm", exp)
 	}
 
 	return nil
@@ -716,10 +716,13 @@ func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 		return err
 	}
 	sender.name = msg[1]
-	if client, ok := hubClients.Load(sender.uuid); ok {
-		client := client.(*Client)
+	if client, ok := clients.Load(sender.uuid); ok {
+		client := client.(*SessionClient)
+		if client.hClient == nil {
+			return
+		}
 
-		client.hub.broadcast("name", client.session.id, sender.name) // broadcast name change to hub if client is in one
+		sender.hClient.hub.broadcast("name", sender.id, sender.name) // broadcast name change to hub if client is in one
 	}
 
 	return nil
@@ -734,12 +737,12 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 		return errors.New("invalid prev map ID")
 	}
 
-	if client, ok := hubClients.Load(sender.uuid); ok {
-		client := client.(*Client)
+	if client, ok := clients.Load(sender.uuid); ok {
+		client := client.(*SessionClient)
 
-		client.prevMapId = msg[1]
-		client.prevLocations = msg[2]
-		checkHubConditions(client.hub, client, "prevMap", client.prevMapId)
+		client.hClient.prevMapId = msg[1]
+		client.hClient.prevLocations = msg[2]
+		checkHubConditions(client.hClient.hub, client.hClient, "prevMap", client.hClient.prevMapId)
 	} else {
 		return errors.New("client not found")
 	}
@@ -773,14 +776,17 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 	x := -1
 	y := -1
 
-	if client, ok := hubClients.Load(sender.uuid); ok && enableLocBin == 1 {
-		client := client.(*Client)
+	if client, ok := clients.Load(sender.uuid); ok && enableLocBin == 1 {
+		client := client.(*SessionClient)
+		if client.hClient == nil {
+			return
+		}
 
-		mapId = client.mapId
-		prevMapId = client.prevMapId
-		prevLocations = client.prevLocations
-		x = client.x
-		y = client.y
+		mapId = client.hClient.mapId
+		prevMapId = client.hClient.prevMapId
+		prevLocations = client.hClient.prevLocations
+		x = client.hClient.x
+		y = client.hClient.y
 	}
 
 	session.broadcast("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge)
@@ -816,7 +822,7 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 		return err
 	}
 	for _, uuid := range partyMemberUuids {
-		if client, ok := sessionClients.Load(uuid); ok {
+		if client, ok := clients.Load(uuid); ok {
 			client := client.(*SessionClient)
 
 			client.sendMsg("psay", sender.uuid, msgContents)

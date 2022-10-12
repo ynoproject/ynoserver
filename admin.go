@@ -31,7 +31,7 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 
 	var response []PlayerInfo
 
-	sessionClients.Range(func(_, v any) bool {
+	clients.Range(func(_, v any) bool {
 		client := v.(*SessionClient)
 
 		player := PlayerInfo{

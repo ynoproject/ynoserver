@@ -70,7 +70,7 @@ func sendPartyUpdate() {
 			if !member.Online {
 				continue
 			}
-			if client, ok := sessionClients.Load(member.Uuid); ok {
+			if client, ok := clients.Load(member.Uuid); ok {
 				client := client.(*SessionClient)
 
 				var jsonData []byte

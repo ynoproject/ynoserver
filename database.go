@@ -67,7 +67,7 @@ func getPlayerDataFromToken(token string) (uuid string, name string, rank int, b
 }
 
 func getPlayerRank(uuid string) (rank int) {
-	if client, ok := sessionClients.Load(uuid); ok {
+	if client, ok := clients.Load(uuid); ok {
 		client := client.(*SessionClient)
 
 		return client.rank // return rank from session if client is connected
@@ -95,14 +95,11 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 		return err
 	}
 
-	if client, ok := hubClients.Load(recipientUuid); ok { // unregister client and close connection
-		client := client.(*Client)
-
-		client.hub.unregister <- client
-	}
-
-	if client, ok := sessionClients.Load(recipientUuid); ok { // do the same for session
+	if client, ok := clients.Load(recipientUuid); ok {
 		client := client.(*SessionClient)
+		if client.hClient != nil {
+			client.hClient.hub.unregister <- client.hClient
+		}
 
 		session.unregister <- client
 	}
@@ -141,7 +138,7 @@ func tryMutePlayer(senderUuid string, recipientUuid string) error { // called by
 		return err
 	}
 
-	if client, ok := sessionClients.Load(recipientUuid); ok { // mute client if they're connected
+	if client, ok := clients.Load(recipientUuid); ok { // mute client if they're connected
 		client := client.(*SessionClient)
 
 		client.muted = true
@@ -164,7 +161,7 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { // called 
 		return err
 	}
 
-	if client, ok := sessionClients.Load(recipientUuid); ok { // unmute client if they're connected
+	if client, ok := clients.Load(recipientUuid); ok { // unmute client if they're connected
 		client := client.(*SessionClient)
 
 		client.muted = false
@@ -243,7 +240,7 @@ func updatePlayerBadgeSlotCounts(uuid string) (err error) {
 }
 
 func setPlayerBadge(uuid string, badge string) (err error) {
-	if client, ok := sessionClients.Load(uuid); ok {
+	if client, ok := clients.Load(uuid); ok {
 		client := client.(*SessionClient)
 
 		client.badge = badge
@@ -420,7 +417,7 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 		}
 		partyMember.Account = accountBin == 1
 
-		if client, ok := sessionClients.Load(partyMember.Uuid); ok {
+		if client, ok := clients.Load(partyMember.Uuid); ok {
 			client := client.(*SessionClient)
 
 			if client.name != "" {
@@ -435,16 +432,12 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 			if client.spriteIndex > -1 {
 				partyMember.SpriteIndex = client.spriteIndex
 			}
-			if !simple {
-				if hubClient, ok := hubClients.Load(partyMember.Uuid); ok {
-					hubClient := hubClient.(*Client)
-
-					partyMember.MapId = hubClient.mapId
-					partyMember.PrevMapId = hubClient.prevMapId
-					partyMember.PrevLocations = hubClient.prevLocations
-					partyMember.X = hubClient.x
-					partyMember.Y = hubClient.y
-				}
+			if !simple && client.hClient != nil {
+				partyMember.MapId = client.hClient.mapId
+				partyMember.PrevMapId = client.hClient.prevMapId
+				partyMember.PrevLocations = client.hClient.prevLocations
+				partyMember.X = client.hClient.x
+				partyMember.Y = client.hClient.y
 			}
 			partyMember.Online = true
 
@@ -500,7 +493,7 @@ func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			return partyMembers, err
 		}
 		partyMember.Account = accountBin == 1
-		if client, ok := sessionClients.Load(partyMember.Uuid); ok {
+		if client, ok := clients.Load(partyMember.Uuid); ok {
 			client := client.(*SessionClient)
 
 			if client.name != "" {
@@ -515,14 +508,12 @@ func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			if client.spriteIndex > -1 {
 				partyMember.SpriteIndex = client.spriteIndex
 			}
-			if hubClient, ok := hubClients.Load(partyMember.Uuid); ok {
-				hubClient := hubClient.(*Client)
-
-				partyMember.MapId = hubClient.mapId
-				partyMember.PrevMapId = hubClient.prevMapId
-				partyMember.PrevLocations = hubClient.prevLocations
-				partyMember.X = hubClient.x
-				partyMember.Y = hubClient.y
+			if client.hClient != nil {
+				partyMember.MapId = client.hClient.mapId
+				partyMember.PrevMapId = client.hClient.prevMapId
+				partyMember.PrevLocations = client.hClient.prevLocations
+				partyMember.X = client.hClient.x
+				partyMember.Y = client.hClient.y
 			}
 			partyMember.Online = true
 		}
@@ -657,7 +648,12 @@ func assumeNextPartyOwner(partyId int) error {
 	var nextOnlinePlayerUuid string
 
 	for _, uuid := range partyMemberUuids {
-		if _, ok := hubClients.Load(uuid); ok {
+		if client, ok := clients.Load(uuid); ok {
+			client := client.(SessionClient)
+			if client.hClient == nil {
+				continue
+			}
+
 			nextOnlinePlayerUuid = uuid
 			break
 		}
@@ -985,8 +981,11 @@ func getCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventL
 }
 
 func tryCompleteEventLocation(periodId int, playerUuid string, location string) (exp int, err error) {
-	if client, ok := hubClients.Load(playerUuid); ok {
-		client := client.(*Client)
+	if client, ok := clients.Load(playerUuid); ok {
+		client := client.(*SessionClient)
+		if client.hClient == nil {
+			return -1, err
+		}
 
 		results, err := db.Query("SELECT el.id, el.type, el.exp, el.mapIds FROM eventLocations el WHERE el.periodId = ? AND el.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", periodId, location)
 		if err != nil {
@@ -1018,7 +1017,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			}
 
 			for _, mapId := range mapIds {
-				if client.mapId != mapId {
+				if client.hClient.mapId != mapId {
 					continue
 				}
 				if weekEventExp >= weeklyExpCap {
@@ -1048,8 +1047,11 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 }
 
 func tryCompletePlayerEventLocation(periodId int, playerUuid string, location string) (complete bool, err error) {
-	if client, ok := hubClients.Load(playerUuid); ok {
-		client := client.(*Client)
+	if client, ok := clients.Load(playerUuid); ok {
+		client := client.(*SessionClient)
+		if client.hClient == nil {
+			return false, err
+		}
 
 		results, err := db.Query("SELECT pel.id, pel.mapIds FROM playerEventLocations pel WHERE pel.periodId = ? AND pel.title = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", periodId, location, playerUuid)
 		if err != nil {
@@ -1076,7 +1078,7 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 			}
 
 			for _, mapId := range mapIds {
-				if client.mapId != mapId {
+				if client.hClient.mapId != mapId {
 					continue
 				}
 
@@ -1173,8 +1175,11 @@ func writeEventVmData(periodId int, mapId int, eventId int, exp int) (err error)
 }
 
 func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int) (exp int, err error) {
-	if client, ok := hubClients.Load(playerUuid); ok {
-		client := client.(*Client)
+	if client, ok := clients.Load(playerUuid); ok {
+		client := client.(*SessionClient)
+		if client.hClient == nil {
+			return -1, err
+		}
 
 		results, err := db.Query("SELECT ev.id, ev.mapId, ev.eventId, ev.exp FROM eventVms ev WHERE ev.periodId = ? AND ev.mapId = ? AND ev.eventId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", periodId, mapId, eventId)
 		if err != nil {
@@ -1213,7 +1218,7 @@ func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int)
 				}
 			}
 
-			if client.mapId != fmt.Sprintf("%04d", eventMapId) {
+			if client.hClient.mapId != fmt.Sprintf("%04d", eventMapId) {
 				continue
 			}
 			if weekEventExp >= weeklyExpCap {
@@ -1352,12 +1357,15 @@ func getPlayerTags(playerUuid string) (tags []string, err error) {
 }
 
 func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
-	if client, ok := hubClients.Load(playerUuid); ok { // Player must be online to add a tag
-		client := client.(*Client)
+	if client, ok := clients.Load(playerUuid); ok { // Player must be online to add a tag
+		client := client.(*SessionClient)
+		if client.hClient == nil {
+			return false, nil
+		}
 
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
 		var tagExists bool
-		for _, tag := range client.tags {
+		for _, tag := range client.hClient.tags {
 			if tag == name {
 				tagExists = true
 				break
@@ -1752,7 +1760,7 @@ func getModeratedPlayers(action int) (players []PlayerInfo) {
 
 func getNameFromUuid(uuid string) (name string) {
 	// get name from sessionClients if they're connected
-	if client, ok := sessionClients.Load(uuid); ok {
+	if client, ok := clients.Load(uuid); ok {
 		client := client.(*SessionClient)
 
 		return client.name

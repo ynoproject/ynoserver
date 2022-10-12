@@ -269,8 +269,8 @@ func getHubConditions(roomId int) (hubConditions []*Condition) {
 	return hubConditions
 }
 
-func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
-	if !client.session.account {
+func checkHubConditions(h *Hub, client *HubClient, trigger string, value string) {
+	if !client.sClient.account {
 		return
 	}
 
@@ -283,8 +283,8 @@ func checkHubConditions(h *Hub, client *Client, trigger string, value string) {
 	}
 }
 
-func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig, client *Client, trigger string, value string) {
-	if c.Disabled && client.session.rank < 2 {
+func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig, client *HubClient, trigger string, value string) {
+	if c.Disabled && client.sClient.rank < 2 {
 		return
 	}
 
@@ -346,9 +346,9 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 		} else if checkConditionCoords(c, client) {
 			timeTrial := c.TimeTrial && config.gameName == "2kki"
 			if !timeTrial {
-				success, err := tryWritePlayerTag(client.session.uuid, c.ConditionId)
+				success, err := tryWritePlayerTag(client.sClient.uuid, c.ConditionId)
 				if err != nil {
-					writeErrLog(client.session.ip, strconv.Itoa(roomId), err.Error())
+					writeErrLog(client.sClient.ip, strconv.Itoa(roomId), err.Error())
 				}
 				if success {
 					client.sendMsg("b")
@@ -371,7 +371,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 				} else {
 					valueInt, err := strconv.Atoi(value)
 					if err != nil {
-						writeErrLog(client.session.ip, strconv.Itoa(roomId), err.Error())
+						writeErrLog(client.sClient.ip, strconv.Itoa(roomId), err.Error())
 						continue
 					}
 
@@ -407,7 +407,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 	}
 }
 
-func checkConditionCoords(condition *Condition, client *Client) bool {
+func checkConditionCoords(condition *Condition, client *HubClient) bool {
 	return ((condition.MapX1 <= 0 && condition.MapX2 <= 0) ||
 		((condition.MapX1 == -1 || condition.MapX1 <= client.x) && (condition.MapX2 == -1 || condition.MapX2 >= client.x))) &&
 		((condition.MapY1 <= 0 && condition.MapY2 <= 0) ||

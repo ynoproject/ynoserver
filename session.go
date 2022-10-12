@@ -27,8 +27,8 @@ import (
 )
 
 var (
-	sessionClients sync.Map
-	session        = &Session{
+	clients sync.Map
+	session = &Session{
 		processMsgCh: make(chan *SessionMessage, 16),
 		connect:      make(chan *ConnInfo, 4),
 		unregister:   make(chan *SessionClient, 4),
@@ -79,10 +79,9 @@ func (s *Session) run() {
 		select {
 		case conn := <-s.connect:
 			client := &SessionClient{
-				session: s,
-				conn:    conn.Connect,
-				ip:      conn.Ip,
-				send:    make(chan []byte, 16),
+				conn: conn.Connect,
+				ip:   conn.Ip,
+				send: make(chan []byte, 16),
 			}
 
 			var banned bool
@@ -101,15 +100,14 @@ func (s *Session) run() {
 				continue
 			}
 
-			if _, ok := sessionClients.Load(client.uuid); ok {
+			if _, ok := clients.Load(client.uuid); ok {
 				writeErrLog(conn.Ip, "session", "session already exists for uuid")
 				continue
 			}
 
 			var sameIp int
-			sessionClients.Range(func(_, v any) bool {
+			clients.Range(func(_, v any) bool {
 				otherClient := v.(*SessionClient)
-
 				if otherClient.ip == conn.Ip {
 					sameIp++
 				}
@@ -125,12 +123,13 @@ func (s *Session) run() {
 				client.badge = "null"
 			}
 
-			client.id = s.lastId; s.lastId++
+			client.id = s.lastId
+			s.lastId++
 
 			client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
 
-			// register client in the structures
-			sessionClients.Store(client.uuid, client)
+			// register client to the clients list
+			clients.Store(client.uuid, client)
 
 			// queue s message
 			client.sendMsg("s", client.uuid, client.rank, client.account, client.badge)
@@ -143,7 +142,7 @@ func (s *Session) run() {
 		case client := <-s.unregister:
 			client.disconnected = true
 
-			sessionClients.Delete(client.uuid)
+			clients.Delete(client.uuid)
 
 			close(client.send)
 
@@ -161,7 +160,7 @@ func (s *Session) run() {
 }
 
 func (s *Session) broadcast(segments ...any) {
-	sessionClients.Range(func(_, v any) bool {
+	clients.Range(func(_, v any) bool {
 		client := v.(*SessionClient)
 
 		client.sendMsg(segments...)
@@ -241,7 +240,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 func getSessionClientsLen() int {
 	var length int
 
-	sessionClients.Range(func(_, _ any) bool {
+	clients.Range(func(_, _ any) bool {
 		length++
 
 		return true
