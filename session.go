@@ -95,7 +95,7 @@ func (s *Session) run() {
 				client.uuid, banned, client.muted = getOrCreatePlayerData(conn.Ip)
 			}
 
-			if banned || isIpBanned(conn.Ip) {
+			if banned {
 				writeErrLog(conn.Ip, "session", "player is banned")
 				continue
 			}
