@@ -24,9 +24,13 @@ import (
 	"strings"
 )
 
+var (
+	errLengthMismatch = errors.New("command length mismatch")
+)
+
 func (h *Hub) handleIdent(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 1 {
-		return err
+		return errLengthMismatch
 	}
 
 	sender.valid = true
@@ -38,7 +42,7 @@ func (h *Hub) handleIdent(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleM(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
-		return err
+		return errLengthMismatch
 	}
 	// check if the coordinates are valid
 	x, errconv := strconv.Atoi(msg[1])
@@ -66,7 +70,7 @@ func (h *Hub) handleM(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleF(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
-		return err
+		return errLengthMismatch
 	}
 	// check if direction is valid
 	facing, errconv := strconv.Atoi(msg[1])
@@ -81,7 +85,7 @@ func (h *Hub) handleF(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleSpd(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
-		return err
+		return errLengthMismatch
 	}
 	spd, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
@@ -98,7 +102,7 @@ func (h *Hub) handleSpd(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleSpr(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
-		return err
+		return errLengthMismatch
 	}
 	if !isValidSprite(msg[1]) {
 		return err
@@ -119,7 +123,7 @@ func (h *Hub) handleSpr(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleFl(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 6 {
-		return err
+		return errLengthMismatch
 	}
 	red, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || red < 0 || red > 255 {
@@ -166,7 +170,7 @@ func (h *Hub) handleRrfl(sender *HubClient) (err error) {
 
 func (h *Hub) handleH(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
-		return err
+		return errLengthMismatch
 	}
 	hiddenBin, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || hiddenBin < 0 || hiddenBin > 1 {
@@ -180,7 +184,7 @@ func (h *Hub) handleH(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleSys(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
-		return err
+		return errLengthMismatch
 	}
 	if !isValidSystem(msg[1], false) {
 		return err
@@ -192,8 +196,8 @@ func (h *Hub) handleSys(msg []string, sender *HubClient) (err error) {
 }
 
 func (h *Hub) handleSe(msg []string, sender *HubClient) (err error) {
-	if len(msg) != 5 || msg[1] == "" {
-		return err
+	if len(msg) != 5 {
+		return errLengthMismatch
 	}
 	if !isValidSound(msg[1]) {
 		return err
@@ -222,7 +226,7 @@ func (h *Hub) handleP(msg []string, sender *HubClient) (err error) {
 		msgLength = 20
 	}
 	if len(msg) != msgLength {
-		return err
+		return errLengthMismatch
 	}
 
 	if isShow {
@@ -368,7 +372,7 @@ func (h *Hub) handleP(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleRp(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 2 {
-		return err
+		return errLengthMismatch
 	}
 	picId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || picId < 1 {
@@ -386,7 +390,7 @@ func (h *Hub) handleSay(msg []string, sender *HubClient) (err error) {
 	}
 
 	if len(msg) != 2 {
-		return err
+		return errLengthMismatch
 	}
 	msgContents := strings.TrimSpace(msg[1])
 	if sender.sClient.name == "" || sender.sClient.systemName == "" || msgContents == "" || len(msgContents) > 150 {
@@ -399,7 +403,7 @@ func (h *Hub) handleSay(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleSs(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
-		return err
+		return errLengthMismatch
 	}
 	switchId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
@@ -517,7 +521,7 @@ func (h *Hub) handleSs(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleSv(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
-		return err
+		return errLengthMismatch
 	}
 	varId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
@@ -648,7 +652,7 @@ func (h *Hub) handleSv(msg []string, sender *HubClient) (err error) {
 
 func (h *Hub) handleSev(msg []string, sender *HubClient) (err error) {
 	if len(msg) != 3 {
-		return err
+		return errLengthMismatch
 	}
 	actionBin, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || actionBin < 0 || actionBin > 1 {
@@ -725,7 +729,7 @@ func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 
 func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+		return errLengthMismatch
 	}
 
 	if len(msg[1]) != 4 {
@@ -751,7 +755,7 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 	}
 
 	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+		return errLengthMismatch
 	}
 	msgContents := strings.TrimSpace(msg[1])
 	if sender.name == "" || sender.systemName == "" {
@@ -796,7 +800,7 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 	}
 
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errLengthMismatch
 	}
 	msgContents := strings.TrimSpace(msg[1])
 	if sender.name == "" || sender.systemName == "" {
