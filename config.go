@@ -43,8 +43,6 @@ type Config struct {
 }
 
 type ConfigFile struct {
-	IP              string `yaml:"ip"`
-	Port            int    `yaml:"port"`
 	SpRooms         string `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
 	PictureNames    string `yaml:"picture_names"`
@@ -78,12 +76,6 @@ func parseConfig(file string) ConfigFile {
 		panic(err)
 	}
 
-	if config.IP == "" {
-		config.IP = "127.0.0.1"
-	}
-	if config.Port == 0 {
-		config.Port = 8080
-	}
 	if config.Logging.File == "" {
 		config.Logging.File = "server.log"
 	}

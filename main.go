@@ -105,7 +105,21 @@ func main() {
 
 	scheduler.StartAsync()
 
-	log.Fatalf("%v %v \"%v\" %v", configFileData.IP, "server", http.ListenAndServe(configFileData.IP+":"+strconv.Itoa(configFileData.Port), nil), 500)
+	// remove socket file
+	os.Remove("sockets/"+configFileData.GameName+".sock")
+
+	// create unix socket at sockets/<game>.sock
+	listener, err := net.Listen("unix", "sockets/"+configFileData.GameName+".sock")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// listen for connections to socket
+	if err := os.Chmod("sockets/"+configFileData.GameName+".sock", 0666); err != nil {
+        log.Fatal(err)
+    }
+
+	http.Serve(listener, nil)
 }
 
 func getCharSetList() map[string]bool {
@@ -239,13 +253,8 @@ func isValidPicName(name string) bool {
 	return false
 }
 
-func getIp(r *http.Request) string { // this breaks if you're using a revproxy that isn't on 127.0.0.1
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	if forwardedIp := r.Header.Get("x-forwarded-for"); ip == "127.0.0.1" && forwardedIp != "" {
-		return forwardedIp
-	}
-
-	return ip
+func getIp(r *http.Request) string {
+	return r.Header.Get("x-forwarded-for")
 }
 
 func isVpn(ip string) (vpn bool) {

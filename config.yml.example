@@ -1,9 +1,3 @@
-## IP to listen on
-#ip: "127.0.0.1"
-
-## Port to listen on
-#port: 8080
-
 ## Maps to exclude from multiplayer
 #sp_rooms: ""
 
