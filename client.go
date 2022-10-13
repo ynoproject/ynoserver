@@ -209,11 +209,13 @@ func (c *HubClient) writePump() {
 			}
 
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 				return
 			}
 		}
@@ -238,11 +240,13 @@ func (s *SessionClient) writePump() {
 			}
 
 			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				writeLog(s.ip, "session", err.Error(), 500)
 				return
 			}
 		case <-ticker.C:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				writeLog(s.ip, "session", err.Error(), 500)
 				return
 			}
 		}
