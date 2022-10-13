@@ -246,11 +246,15 @@ func (s *SessionClient) writePump() {
 }
 
 func (c *HubClient) sendMsg(segments ...any) {
-	c.send <- buildMsg(segments)
+	if len(c.send) < 16 {
+		c.send <- buildMsg(segments)
+	}
 }
 
 func (s *SessionClient) sendMsg(segments ...any) {
-	s.send <- buildMsg(segments)
+	if len(s.send) < 16 {
+		s.send <- buildMsg(segments)
+	}
 }
 
 func (c *HubClient) cleanup() {
