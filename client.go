@@ -250,13 +250,13 @@ func (s *SessionClient) writePump() {
 }
 
 func (c *HubClient) sendMsg(segments ...any) {
-	if len(c.send) < 16 {
+	if !c.disconnected && len(c.send) < 16 {
 		c.send <- buildMsg(segments)
 	}
 }
 
 func (s *SessionClient) sendMsg(segments ...any) {
-	if len(s.send) < 16 {
+	if !s.disconnected && len(s.send) < 16 {
 		s.send <- buildMsg(segments)
 	}
 }
