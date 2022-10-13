@@ -79,9 +79,10 @@ func (s *Session) run() {
 		select {
 		case conn := <-s.connect:
 			client := &SessionClient{
-				conn: conn.Connect,
-				ip:   conn.Ip,
-				send: make(chan []byte, 16),
+				conn:      conn.Connect,
+				ip:        conn.Ip,
+				terminate: make(chan bool, 1),
+				send:      make(chan []byte, 16),
 			}
 
 			var banned bool
@@ -138,17 +139,13 @@ func (s *Session) run() {
 			go client.writePump()
 			go client.readPump()
 
-			go client.cleanupWorker()
-
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			client.disconnected = true
-
 			clients.Delete(client.uuid)
 
-			close(client.send)
-
 			updatePlayerGameData(client)
+
+			close(client.send) // probably redundant
 
 			writeLog(client.ip, "session", "disconnect", 200)
 		case message := <-s.processMsgCh:

@@ -96,10 +96,10 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 	if client, ok := clients.Load(recipientUuid); ok {
 		client := client.(*SessionClient)
 		if client.hClient != nil {
-			client.hClient.hub.unregister <- client.hClient
+			client.hClient.terminate <- true
 		}
 
-		session.unregister <- client
+		client.terminate <- true
 	}
 
 	return nil

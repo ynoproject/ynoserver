@@ -19,7 +19,6 @@ package main
 
 import (
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -62,7 +61,7 @@ type HubClient struct {
 
 	conn *websocket.Conn
 
-	cleanupWg sync.WaitGroup
+	terminate chan bool
 
 	disconnected bool
 
@@ -99,7 +98,7 @@ type SessionClient struct {
 	conn *websocket.Conn
 	ip   string
 
-	cleanupWg sync.WaitGroup
+	terminate chan bool
 
 	disconnected bool
 
@@ -140,9 +139,7 @@ type SessionMessage struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *HubClient) readPump() {
-	defer c.cleanupWg.Done()
-
-	c.cleanupWg.Add(1)
+	defer c.cleanup()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -165,9 +162,7 @@ func (c *HubClient) readPump() {
 }
 
 func (s *SessionClient) readPump() {
-	defer s.cleanupWg.Done()
-
-	s.cleanupWg.Add(1)
+	defer s.cleanup()
 
 	s.conn.SetReadLimit(maxMessageSize)
 	s.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -195,23 +190,22 @@ func (s *SessionClient) readPump() {
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
 func (c *HubClient) writePump() {
-	c.cleanupWg.Add(1)
-
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
 		ticker.Stop()
-		c.cleanupWg.Done()
+		c.cleanup()
 	}()
 
 	for {
 		select {
-		case message, ok := <-c.send:
+		case <-c.terminate:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
+
+			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			return
+		case message := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
@@ -219,6 +213,7 @@ func (c *HubClient) writePump() {
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 				return
@@ -228,23 +223,22 @@ func (c *HubClient) writePump() {
 }
 
 func (s *SessionClient) writePump() {
-	s.cleanupWg.Add(1)
-	
 	ticker := time.NewTicker(pingPeriod)
-	
+
 	defer func() {
 		ticker.Stop()
-		s.cleanupWg.Done()
+		s.cleanup()
 	}()
 
 	for {
 		select {
-		case message, ok := <-s.send:
+		case <-s.terminate:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				s.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
+
+			s.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			return
+		case message := <-s.send:
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
 			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				writeLog(s.ip, "session", err.Error(), 500)
@@ -252,26 +246,13 @@ func (s *SessionClient) writePump() {
 			}
 		case <-ticker.C:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
 			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				writeLog(s.ip, "session", err.Error(), 500)
 				return
 			}
 		}
 	}
-}
-
-func (c *HubClient) cleanupWorker() {
-	c.cleanupWg.Wait()
-
-	c.hub.unregister <- c
-	c.conn.Close()
-}
-
-func (s *SessionClient) cleanupWorker() {
-	s.cleanupWg.Wait()
-
-	session.unregister <- s
-	s.conn.Close()
 }
 
 func (c *HubClient) sendMsg(segments ...any) {
@@ -284,4 +265,28 @@ func (s *SessionClient) sendMsg(segments ...any) {
 	if !s.disconnected {
 		s.send <- buildMsg(segments)
 	}
+}
+
+func (c *HubClient) cleanup() {
+	if !c.disconnected {
+		c.disconnected = true
+		close(c.terminate)
+
+		return
+	}
+
+	c.hub.unregister <- c
+	c.conn.Close()
+}
+
+func (s *SessionClient) cleanup() {
+	if !s.disconnected {
+		s.disconnected = true
+		close(s.terminate)
+
+		return
+	}
+
+	session.unregister <- s
+	s.conn.Close()
 }
