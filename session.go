@@ -145,8 +145,6 @@ func (s *Session) run() {
 
 			updatePlayerGameData(client)
 
-			close(client.send) // probably redundant
-
 			writeLog(client.ip, "session", "disconnect", 200)
 		case message := <-s.processMsgCh:
 			if errs := s.processMsgs(message); len(errs) > 0 {

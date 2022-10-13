@@ -152,11 +152,6 @@ func (c *HubClient) readPump() {
 			break
 		}
 
-		// safety
-		if c.disconnected {
-			break
-		}
-
 		c.hub.processMsgCh <- &Message{data: message, sender: c}
 	}
 }
@@ -172,11 +167,6 @@ func (s *SessionClient) readPump() {
 		_, message, err := s.conn.ReadMessage()
 		if err != nil {
 			writeLog(s.ip, "session", err.Error(), 500)
-			break
-		}
-
-		// safety
-		if s.disconnected {
 			break
 		}
 
@@ -256,15 +246,11 @@ func (s *SessionClient) writePump() {
 }
 
 func (c *HubClient) sendMsg(segments ...any) {
-	if !c.disconnected {
-		c.send <- buildMsg(segments)
-	}
+	c.send <- buildMsg(segments)
 }
 
 func (s *SessionClient) sendMsg(segments ...any) {
-	if !s.disconnected {
-		s.send <- buildMsg(segments)
-	}
+	s.send <- buildMsg(segments)
 }
 
 func (c *HubClient) cleanup() {

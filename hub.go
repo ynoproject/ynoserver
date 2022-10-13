@@ -168,8 +168,6 @@ func (h *Hub) run() {
 
 			h.broadcast("d", client.sClient.id) // user %id% has disconnected message
 
-			close(client.send) // probably redundant
-
 			writeLog(client.sClient.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 		case message := <-h.processMsgCh:
 			if errs := h.processMsgs(message); len(errs) > 0 {
