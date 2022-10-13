@@ -647,7 +647,7 @@ func assumeNextPartyOwner(partyId int) error {
 
 	for _, uuid := range partyMemberUuids {
 		if client, ok := clients.Load(uuid); ok {
-			client := client.(SessionClient)
+			client := client.(*SessionClient)
 			if client.hClient == nil {
 				continue
 			}
