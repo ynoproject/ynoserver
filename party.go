@@ -71,8 +71,6 @@ func sendPartyUpdate() {
 				continue
 			}
 			if client, ok := clients.Load(member.Uuid); ok {
-				client := client.(*SessionClient)
-
 				var jsonData []byte
 				if member.Uuid == party.OwnerUuid {
 					// Expose password only for party owner
@@ -86,7 +84,7 @@ func sendPartyUpdate() {
 				} else {
 					jsonData = partyDataJson
 				}
-				client.sendMsg("pt", jsonData) // send JSON to client
+				client.(*SessionClient).sendMsg("pt", jsonData) // send JSON to client
 			}
 		}
 	}

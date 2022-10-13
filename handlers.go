@@ -711,23 +711,29 @@ func (s *Session) handleI(sender *SessionClient) (err error) {
 }
 
 func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
-	if sender.name != "" || len(msg) != 2 || !isOkString(msg[1]) || len(msg[1]) > 12 {
+	if sender.hClient == nil {
+		return err
+	}
+
+	if len(msg) != 2 {
+		return errLengthMismatch
+	}
+
+	if sender.name != "" || !isOkString(msg[1]) || len(msg[1]) > 12 {
 		return err
 	}
 	sender.name = msg[1]
-	if client, ok := clients.Load(sender.uuid); ok {
-		client := client.(*SessionClient)
-		if client.hClient == nil {
-			return
-		}
 
-		sender.hClient.hub.broadcast("name", sender.id, sender.name) // broadcast name change to hub if client is in one
-	}
+	sender.hClient.hub.broadcast("name", sender.id, sender.name) // broadcast name change to hub if client is in one
 
 	return nil
 }
 
 func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
+	if sender.hClient == nil {
+		return err
+	}
+
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -736,20 +742,18 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 		return errors.New("invalid prev map ID")
 	}
 
-	if client, ok := clients.Load(sender.uuid); ok {
-		client := client.(*SessionClient)
-
-		client.hClient.prevMapId = msg[1]
-		client.hClient.prevLocations = msg[2]
-		checkHubConditions(client.hClient.hub, client.hClient, "prevMap", client.hClient.prevMapId)
-	} else {
-		return errors.New("client not found")
-	}
+	sender.hClient.prevMapId = msg[1]
+	sender.hClient.prevLocations = msg[2]
+	checkHubConditions(sender.hClient.hub, sender.hClient, "prevMap", sender.hClient.prevMapId)
 
 	return nil
 }
 
 func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
+	if sender.hClient == nil {
+		return err
+	}
+
 	if sender.muted {
 		return nil
 	}
@@ -775,18 +779,11 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 	x := -1
 	y := -1
 
-	if client, ok := clients.Load(sender.uuid); ok && enableLocBin == 1 {
-		client := client.(*SessionClient)
-		if client.hClient == nil {
-			return
-		}
-
-		mapId = client.hClient.mapId
-		prevMapId = client.hClient.prevMapId
-		prevLocations = client.hClient.prevLocations
-		x = client.hClient.x
-		y = client.hClient.y
-	}
+	mapId = sender.hClient.mapId
+	prevMapId = sender.hClient.prevMapId
+	prevLocations = sender.hClient.prevLocations
+	x = sender.hClient.x
+	y = sender.hClient.y
 
 	session.broadcast("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge)
 	session.broadcast("gsay", sender.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
@@ -822,9 +819,7 @@ func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
 	}
 	for _, uuid := range partyMemberUuids {
 		if client, ok := clients.Load(uuid); ok {
-			client := client.(*SessionClient)
-
-			client.sendMsg("psay", sender.uuid, msgContents)
+			client.(*SessionClient).sendMsg("psay", sender.uuid, msgContents)
 		}
 	}
 
