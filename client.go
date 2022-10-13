@@ -61,8 +61,6 @@ type HubClient struct {
 
 	conn *websocket.Conn
 
-	terminate chan bool
-
 	disconnected bool
 
 	send chan []byte
@@ -97,8 +95,6 @@ type SessionClient struct {
 
 	conn *websocket.Conn
 	ip   string
-
-	terminate chan bool
 
 	disconnected bool
 
@@ -139,7 +135,10 @@ type SessionMessage struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *HubClient) readPump() {
-	defer c.cleanup()
+	defer func() {
+		c.hub.unregister <- c
+		c.conn.Close()
+	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -157,7 +156,10 @@ func (c *HubClient) readPump() {
 }
 
 func (s *SessionClient) readPump() {
-	defer s.cleanup()
+	defer func() {
+		session.unregister <- s
+		s.conn.Close()
+	}()
 
 	s.conn.SetReadLimit(maxMessageSize)
 	s.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -184,18 +186,19 @@ func (c *HubClient) writePump() {
 
 	defer func() {
 		ticker.Stop()
-		c.cleanup()
+		c.conn.Close()
 	}()
 
 	for {
 		select {
-		case <-c.terminate:
+		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			return
-		case message := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			}
 
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
@@ -217,18 +220,19 @@ func (s *SessionClient) writePump() {
 
 	defer func() {
 		ticker.Stop()
-		s.cleanup()
+		s.conn.Close()
 	}()
 
 	for {
 		select {
-		case <-s.terminate:
+		case message, ok := <-s.send:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
-			s.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			return
-		case message := <-s.send:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
+				s.conn.WriteMessage(websocket.CloseMessage, []byte{})
+			}
 
 			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				writeLog(s.ip, "session", err.Error(), 500)
@@ -255,28 +259,4 @@ func (s *SessionClient) sendMsg(segments ...any) {
 	if len(s.send) < 16 {
 		s.send <- buildMsg(segments)
 	}
-}
-
-func (c *HubClient) cleanup() {
-	if !c.disconnected {
-		c.disconnected = true
-		close(c.terminate)
-
-		return
-	}
-
-	c.hub.unregister <- c
-	c.conn.Close()
-}
-
-func (s *SessionClient) cleanup() {
-	if !s.disconnected {
-		s.disconnected = true
-		close(s.terminate)
-
-		return
-	}
-
-	session.unregister <- s
-	s.conn.Close()
 }

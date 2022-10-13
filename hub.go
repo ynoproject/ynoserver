@@ -112,7 +112,6 @@ func (h *Hub) run() {
 			client := &HubClient{
 				hub:         h,
 				conn:        conn.Connect,
-				terminate:   make(chan bool, 1),
 				send:        make(chan []byte, 16),
 				key:         generateKey(),
 				pictures:    make(map[int]*Picture),
@@ -162,11 +161,14 @@ func (h *Hub) run() {
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
+			client.disconnected = true
 			client.sClient.hClient = nil
 
 			h.clients.Delete(client)
 
 			h.broadcast("d", client.sClient.id) // user %id% has disconnected message
+
+			close(client.send)
 
 			writeLog(client.sClient.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 		case message := <-h.processMsgCh:
