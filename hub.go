@@ -159,6 +159,8 @@ func (h *Hub) run() {
 			go client.writePump()
 			go client.readPump()
 
+			go client.cleanupWorker()
+
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
 			client.disconnected = true

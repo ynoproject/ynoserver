@@ -19,6 +19,7 @@ package main
 
 import (
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -61,6 +62,8 @@ type HubClient struct {
 
 	conn *websocket.Conn
 
+	cleanupWg sync.WaitGroup
+
 	disconnected bool
 
 	send chan []byte
@@ -95,6 +98,8 @@ type SessionClient struct {
 
 	conn *websocket.Conn
 	ip   string
+
+	cleanupWg sync.WaitGroup
 
 	disconnected bool
 
@@ -135,10 +140,9 @@ type SessionMessage struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *HubClient) readPump() {
-	defer func() {
-		c.hub.unregister <- c
-		c.conn.Close()
-	}()
+	defer c.cleanupWg.Done()
+
+	c.cleanupWg.Add(1)
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -161,10 +165,9 @@ func (c *HubClient) readPump() {
 }
 
 func (s *SessionClient) readPump() {
-	defer func() {
-		session.unregister <- s
-		s.conn.Close()
-	}()
+	defer s.cleanupWg.Done()
+
+	s.cleanupWg.Add(1)
 
 	s.conn.SetReadLimit(maxMessageSize)
 	s.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -192,11 +195,13 @@ func (s *SessionClient) readPump() {
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
 func (c *HubClient) writePump() {
+	c.cleanupWg.Add(1)
+
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		c.cleanupWg.Done()
 	}()
 
 	for {
@@ -223,11 +228,13 @@ func (c *HubClient) writePump() {
 }
 
 func (s *SessionClient) writePump() {
+	s.cleanupWg.Add(1)
+	
 	ticker := time.NewTicker(pingPeriod)
-
+	
 	defer func() {
 		ticker.Stop()
-		s.conn.Close()
+		s.cleanupWg.Done()
 	}()
 
 	for {
@@ -251,6 +258,20 @@ func (s *SessionClient) writePump() {
 			}
 		}
 	}
+}
+
+func (c *HubClient) cleanupWorker() {
+	c.cleanupWg.Wait()
+
+	c.hub.unregister <- c
+	c.conn.Close()
+}
+
+func (s *SessionClient) cleanupWorker() {
+	s.cleanupWg.Wait()
+
+	session.unregister <- s
+	s.conn.Close()
 }
 
 func (c *HubClient) sendMsg(segments ...any) {

@@ -138,6 +138,8 @@ func (s *Session) run() {
 			go client.writePump()
 			go client.readPump()
 
+			go client.cleanupWorker()
+
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
 			client.disconnected = true
