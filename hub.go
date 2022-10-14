@@ -340,7 +340,7 @@ func (h *Hub) handleValidClient(client *HubClient) {
 				client.sendMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex)
 			}
 			if otherClient.repeatingFlash {
-				client.sendMsg("rfl", otherClient.sClient.id, otherClient.flash)
+				client.sendMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
 			}
 			if otherClient.hidden {
 				client.sendMsg("h", otherClient.sClient.id, "1")
