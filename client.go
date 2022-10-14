@@ -193,22 +193,17 @@ func (c *HubClient) writePump() {
 		select {
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if !ok {
-				c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
 			}
 
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
 				return
 			}
 		}
@@ -227,22 +222,17 @@ func (s *SessionClient) writePump() {
 		select {
 		case message, ok := <-s.send:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if !ok {
-				s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 				s.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
 			}
 
 			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				writeLog(s.ip, "session", err.Error(), 500)
 				return
 			}
 		case <-ticker.C:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				writeLog(s.ip, "session", err.Error(), 500)
 				return
 			}
 		}
@@ -250,13 +240,13 @@ func (s *SessionClient) writePump() {
 }
 
 func (c *HubClient) sendMsg(segments ...any) {
-	if !c.disconnected && len(c.send) < 16 {
+	if !c.disconnected {
 		c.send <- buildMsg(segments)
 	}
 }
 
 func (s *SessionClient) sendMsg(segments ...any) {
-	if !s.disconnected && len(s.send) < 16 {
+	if !s.disconnected {
 		s.send <- buildMsg(segments)
 	}
 }
