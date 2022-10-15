@@ -328,7 +328,7 @@ func (h *Hub) handleValidClient(client *HubClient) {
 		// send the new client info about the game state
 		h.clients.Range(func(k, _ any) bool {
 			otherClient := k.(*HubClient)
-			if !otherClient.valid {
+			if !otherClient.valid || otherClient == client {
 				return true
 			}
 
