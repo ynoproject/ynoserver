@@ -136,7 +136,7 @@ type SessionMessage struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *HubClient) readPump() {
-	defer func() {c.hub.unregister <- c}()
+	defer func() { c.hub.unregister <- c }()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -154,7 +154,7 @@ func (c *HubClient) readPump() {
 }
 
 func (s *SessionClient) readPump() {
-	defer func() {session.unregister <- s}()
+	defer func() { session.unregister <- s }()
 
 	s.conn.SetReadLimit(maxMessageSize)
 	s.conn.SetReadDeadline(time.Now().Add(pongWait))

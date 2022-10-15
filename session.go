@@ -142,13 +142,13 @@ func (s *Session) run() {
 		case client := <-s.unregister:
 			client.disconnect.Do(func() {
 				client.conn.Close()
-	
+
 				clients.Delete(client.uuid)
-	
+
 				updatePlayerGameData(client)
-	
+
 				close(client.send)
-	
+
 				writeLog(client.ip, "session", "disconnect", 200)
 			})
 		case message := <-s.processMsgCh:

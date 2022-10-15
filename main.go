@@ -105,7 +105,7 @@ func main() {
 	scheduler.StartAsync()
 
 	// remove socket file
-	os.Remove("sockets/"+configFileData.GameName+".sock")
+	os.Remove("sockets/" + configFileData.GameName + ".sock")
 
 	// create unix socket at sockets/<game>.sock
 	listener, err := net.Listen("unix", "sockets/"+configFileData.GameName+".sock")
@@ -115,8 +115,8 @@ func main() {
 
 	// listen for connections to socket
 	if err := os.Chmod("sockets/"+configFileData.GameName+".sock", 0666); err != nil {
-        log.Fatal(err)
-    }
+		log.Fatal(err)
+	}
 
 	http.Serve(listener, nil)
 }

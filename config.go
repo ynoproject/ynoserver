@@ -50,7 +50,7 @@ type ConfigFile struct {
 	GameName        string `yaml:"game_name"`
 	SignKey         string `yaml:"sign_key"`
 	IPHubKey        string `yaml:"iphub_key"`
-	Logging struct {
+	Logging         struct {
 		File       string `yaml:"file"`
 		MaxSize    int    `yaml:"max_size"`
 		MaxBackups int    `yaml:"max_backups"`
