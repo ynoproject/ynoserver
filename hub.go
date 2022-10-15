@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
@@ -162,7 +163,10 @@ func (h *Hub) run() {
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
 			client.disconnect.Do(func() {
-				client.closeWs()
+				client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+				client.conn.WriteMessage(websocket.CloseMessage, nil)
+
+				client.conn.Close()
 
 				client.sClient.hClient = nil
 

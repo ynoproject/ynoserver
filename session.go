@@ -23,7 +23,10 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 	"unicode/utf8"
+
+	"github.com/gorilla/websocket"
 )
 
 var (
@@ -140,7 +143,10 @@ func (s *Session) run() {
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
 			client.disconnect.Do(func() {
-				client.closeWs()
+				client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+				client.conn.WriteMessage(websocket.CloseMessage, nil)
+
+				client.conn.Close()
 
 				clients.Delete(client.uuid)
 

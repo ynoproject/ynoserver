@@ -228,20 +228,6 @@ func (s *SessionClient) writePump() {
 	}
 }
 
-func (c *HubClient) closeWs() {
-	c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-	c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-
-	c.conn.Close()
-}
-
-func (s *SessionClient) closeWs() {
-	s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-	s.conn.WriteMessage(websocket.CloseMessage, []byte{})
-
-	s.conn.Close()
-}
-
 func (c *HubClient) sendMsg(segments ...any) {
 	c.send <- buildMsg(segments)
 }
