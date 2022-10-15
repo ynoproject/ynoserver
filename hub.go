@@ -162,15 +162,13 @@ func (h *Hub) run() {
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
 			client.disconnect.Do(func() {
-				client.conn.Close()
+				client.closeWs()
 
 				client.sClient.hClient = nil
 
 				h.clients.Delete(client)
 
 				h.broadcast(client, "d", client.sClient.id) // user %id% has disconnected message
-
-				close(client.send)
 
 				writeLog(client.sClient.ip, strconv.Itoa(h.roomId), "disconnect", 200)
 			})

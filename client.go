@@ -186,18 +186,15 @@ func (c *HubClient) writePump() {
 
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
 
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -215,23 +212,34 @@ func (s *SessionClient) writePump() {
 
 	for {
 		select {
-		case message, ok := <-s.send:
+		case message := <-s.send:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				s.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
 
 			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		case <-ticker.C:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
 			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
 	}
+}
+
+func (c *HubClient) closeWs() {
+	c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+	c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+
+	c.conn.Close()
+}
+
+func (s *SessionClient) closeWs() {
+	s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+	s.conn.WriteMessage(websocket.CloseMessage, []byte{})
+
+	s.conn.Close()
 }
 
 func (c *HubClient) sendMsg(segments ...any) {
