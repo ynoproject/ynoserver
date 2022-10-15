@@ -60,7 +60,7 @@ func (h *Hub) handleM(msg []string, sender *HubClient) (err error) {
 		if sender.syncCoords {
 			checkHubConditions(h, sender, "coords", "")
 		}
-		h.broadcast(sender, sender, "m", sender.sClient.id, msg[1:]) // user %id% moved to x y
+		h.broadcast(sender, "m", sender.sClient.id, msg[1:]) // user %id% moved to x y
 	} else {
 		checkHubConditions(h, sender, "teleport", "")
 	}
