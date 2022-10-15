@@ -287,7 +287,7 @@ func (h *Hub) processMsg(msgStr string, sender *HubClient) error {
 			err = h.handleSys(msgFields, sender)
 		case "se": // play sound effect
 			err = h.handleSe(msgFields, sender)
-		case "ap", "mp": // add picture i/ move picture
+		case "ap", "mp": // add picture / move picture
 			err = h.handleP(msgFields, sender)
 		case "rp": // remove picture
 			err = h.handleRp(msgFields, sender)
