@@ -118,13 +118,13 @@ type SessionClient struct {
 }
 
 type Message struct {
+	sender *HubClient
 	data   []byte
-	sender *HubClient // who sent the message
 }
 
 type SessionMessage struct {
+	sender *SessionClient
 	data   []byte
-	sender *SessionClient // who sent the message
 }
 
 // The readPump and writePump functions are based on functions from
@@ -149,7 +149,7 @@ func (c *HubClient) readPump() {
 			break
 		}
 
-		c.hub.processMsgCh <- &Message{data: message, sender: c}
+		c.hub.processMsgCh <- &Message{sender: c, data: message}
 	}
 }
 
@@ -167,7 +167,7 @@ func (s *SessionClient) readPump() {
 			break
 		}
 
-		session.processMsgCh <- &SessionMessage{data: message, sender: s}
+		session.processMsgCh <- &SessionMessage{sender: s, data: message}
 	}
 }
 
