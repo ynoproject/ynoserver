@@ -161,16 +161,19 @@ func (h *Hub) run() {
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
 		case client := <-h.unregister:
-			client.disconnected = true
-			client.sClient.hClient = nil
+			client.disconnect.Do(func() {
+				client.conn.Close()
 
-			h.clients.Delete(client)
+				client.sClient.hClient = nil
 
-			h.broadcast("d", client.sClient.id) // user %id% has disconnected message
+				h.clients.Delete(client)
 
-			close(client.send)
+				h.broadcast("d", client.sClient.id) // user %id% has disconnected message
 
-			writeLog(client.sClient.ip, strconv.Itoa(h.roomId), "disconnect", 200)
+				close(client.send)
+
+				writeLog(client.sClient.ip, strconv.Itoa(h.roomId), "disconnect", 200)
+			})
 		case message := <-h.processMsgCh:
 			if errs := h.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {

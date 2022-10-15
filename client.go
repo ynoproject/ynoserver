@@ -19,6 +19,7 @@ package main
 
 import (
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -61,7 +62,7 @@ type HubClient struct {
 
 	conn *websocket.Conn
 
-	disconnected bool
+	disconnect sync.Once
 
 	send chan []byte
 
@@ -96,7 +97,7 @@ type SessionClient struct {
 	conn *websocket.Conn
 	ip   string
 
-	disconnected bool
+	disconnect sync.Once
 
 	send chan []byte
 
@@ -135,10 +136,7 @@ type SessionMessage struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *HubClient) readPump() {
-	defer func() {
-		c.hub.unregister <- c
-		c.conn.Close()
-	}()
+	defer func() {c.hub.unregister <- c}()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -156,10 +154,7 @@ func (c *HubClient) readPump() {
 }
 
 func (s *SessionClient) readPump() {
-	defer func() {
-		session.unregister <- s
-		s.conn.Close()
-	}()
+	defer func() {session.unregister <- s}()
 
 	s.conn.SetReadLimit(maxMessageSize)
 	s.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -186,7 +181,7 @@ func (c *HubClient) writePump() {
 
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		c.hub.unregister <- c
 	}()
 
 	for {
@@ -215,7 +210,7 @@ func (s *SessionClient) writePump() {
 
 	defer func() {
 		ticker.Stop()
-		s.conn.Close()
+		session.unregister <- s
 	}()
 
 	for {
@@ -240,13 +235,9 @@ func (s *SessionClient) writePump() {
 }
 
 func (c *HubClient) sendMsg(segments ...any) {
-	if !c.disconnected {
-		c.send <- buildMsg(segments)
-	}
+	c.send <- buildMsg(segments)
 }
 
 func (s *SessionClient) sendMsg(segments ...any) {
-	if !s.disconnected {
-		s.send <- buildMsg(segments)
-	}
+	s.send <- buildMsg(segments)
 }

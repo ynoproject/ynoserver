@@ -140,15 +140,17 @@ func (s *Session) run() {
 
 			writeLog(conn.Ip, "session", "connect", 200)
 		case client := <-s.unregister:
-			client.disconnected = true
-
-			clients.Delete(client.uuid)
-
-			updatePlayerGameData(client)
-
-			close(client.send)
-
-			writeLog(client.ip, "session", "disconnect", 200)
+			client.disconnect.Do(func() {
+				client.conn.Close()
+	
+				clients.Delete(client.uuid)
+	
+				updatePlayerGameData(client)
+	
+				close(client.send)
+	
+				writeLog(client.ip, "session", "disconnect", 200)
+			})
 		case message := <-s.processMsgCh:
 			if errs := s.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {
