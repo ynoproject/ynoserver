@@ -107,8 +107,7 @@ func (s *Session) run() {
 
 			var sameIp int
 			clients.Range(func(_, v any) bool {
-				otherClient := v.(*SessionClient)
-				if otherClient.ip == conn.Ip {
+				if v.(*SessionClient).ip == conn.Ip {
 					sameIp++
 				}
 
@@ -163,9 +162,7 @@ func (s *Session) run() {
 
 func (s *Session) broadcast(segments ...any) {
 	clients.Range(func(_, v any) bool {
-		client := v.(*SessionClient)
-
-		client.sendMsg(segments...)
+		v.(*SessionClient).sendMsg(segments...)
 
 		return true
 	})
