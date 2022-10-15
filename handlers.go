@@ -750,10 +750,6 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 }
 
 func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
-	if sender.hClient == nil {
-		return err
-	}
-
 	if sender.muted {
 		return nil
 	}
@@ -779,11 +775,13 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 	x := -1
 	y := -1
 
-	mapId = sender.hClient.mapId
-	prevMapId = sender.hClient.prevMapId
-	prevLocations = sender.hClient.prevLocations
-	x = sender.hClient.x
-	y = sender.hClient.y
+	if sender.hClient != nil {
+		mapId = sender.hClient.mapId
+		prevMapId = sender.hClient.prevMapId
+		prevLocations = sender.hClient.prevLocations
+		x = sender.hClient.x
+		y = sender.hClient.y
+	}
 
 	session.broadcast("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge)
 	session.broadcast("gsay", sender.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
