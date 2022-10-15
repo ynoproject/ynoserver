@@ -168,7 +168,7 @@ func (h *Hub) run() {
 
 				h.clients.Delete(client)
 
-				h.broadcast("d", client.sClient.id) // user %id% has disconnected message
+				h.broadcast(client, "d", client.sClient.id) // user %id% has disconnected message
 
 				close(client.send)
 
@@ -200,14 +200,14 @@ func (h *Hub) serve(w http.ResponseWriter, r *http.Request) {
 	h.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
 }
 
-func (h *Hub) broadcast(segments ...any) {
+func (h *Hub) broadcast(sender *HubClient, segments ...any) {
 	if h.singleplayer {
 		return
 	}
 
 	h.clients.Range(func(k, _ any) bool {
 		client := k.(*HubClient)
-		if !client.valid {
+		if !client.valid || (client == sender && segments[0].(string) != "say") {
 			return true
 		}
 
@@ -316,11 +316,11 @@ func (h *Hub) processMsg(msgStr string, sender *HubClient) error {
 func (h *Hub) handleValidClient(client *HubClient) {
 	if !h.singleplayer {
 		// tell everyone that a new client has connected
-		h.broadcast("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
+		h.broadcast(client, "c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
 
 		// send name of client
 		if client.sClient.name != "" {
-			h.broadcast("name", client.sClient.id, client.sClient.name)
+			h.broadcast(client, "name", client.sClient.id, client.sClient.name)
 		}
 
 		// send the new client info about the game state
