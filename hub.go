@@ -177,9 +177,7 @@ func (h *Hub) broadcast(sender *HubClient, segments ...any) {
 	})
 }
 
-func (h *Hub) processMsgs(sender *HubClient, data []byte) []error {
-	var errs []error
-
+func (h *Hub) processMsgs(sender *HubClient, data []byte) (errs []error) {
 	if len(data) < 8 || len(data) > 4096 {
 		return append(errs, errors.New("bad request size"))
 	}
@@ -215,8 +213,7 @@ func (h *Hub) processMsgs(sender *HubClient, data []byte) []error {
 	return errs
 }
 
-func (h *Hub) processMsg(msgStr string, sender *HubClient) error {
-	err := errors.New(msgStr)
+func (h *Hub) processMsg(msgStr string, sender *HubClient) (err error) {
 	msgFields := strings.Split(msgStr, delim)
 
 	if len(msgFields) == 0 {
@@ -263,7 +260,6 @@ func (h *Hub) processMsg(msgStr string, sender *HubClient) error {
 			err = errors.New("unknown message type")
 		}
 	}
-
 	if err != nil {
 		return err
 	}

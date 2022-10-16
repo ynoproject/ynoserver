@@ -131,9 +131,7 @@ func (s *Session) broadcast(segments ...any) {
 	})
 }
 
-func (s *Session) processMsgs(sender *SessionClient, data []byte) []error {
-	var errs []error
-
+func (s *Session) processMsgs(sender *SessionClient, data []byte) (errs []error) {
 	if len(data) > 4096 {
 		return append(errs, errors.New("bad request size"))
 	}
@@ -158,8 +156,7 @@ func (s *Session) processMsgs(sender *SessionClient, data []byte) []error {
 	return errs
 }
 
-func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
-	err := errors.New(msgStr)
+func (s *Session) processMsg(msgStr string, sender *SessionClient) (err error) {
 	msgFields := strings.Split(msgStr, delim)
 
 	if len(msgFields) == 0 {
@@ -189,7 +186,6 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) error {
 	default:
 		err = errors.New("unknown message type")
 	}
-
 	if err != nil {
 		return err
 	}
