@@ -167,13 +167,11 @@ func (c *HubClient) msgWriter() {
 		select {
 		case message := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -193,13 +191,11 @@ func (s *SessionClient) msgWriter() {
 		select {
 		case message := <-s.send:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		case <-ticker.C:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
