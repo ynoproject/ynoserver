@@ -51,12 +51,6 @@ var (
 	hubs = make(map[int]*Hub)
 )
 
-type ConnInfo struct {
-	Connect *websocket.Conn
-	Ip      string
-	Token   string
-}
-
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
