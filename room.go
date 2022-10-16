@@ -176,34 +176,28 @@ func (r *Room) broadcast(sender *RoomClient, segments ...any) {
 	})
 }
 
-func (r *Room) processMsgs(sender *RoomClient, data []byte) (errs []error) {
-	if len(data) < 8 || len(data) > 4096 {
+func (r *Room) processMsgs(sender *RoomClient, msg []byte) (errs []error) {
+	if len(msg) < 8 {
 		return append(errs, errors.New("bad request size"))
 	}
 
-	if !verifySignature(sender.key, data) {
+	if !verifySignature(sender.key, msg) {
 		return append(errs, errors.New("bad signature"))
 	}
 
-	if !verifyCounter(&sender.counter, data) {
+	if !verifyCounter(&sender.counter, msg) {
 		return append(errs, errors.New("bad counter"))
 	}
 
-	data = data[8:]
+	msg = msg[8:]
 
-	for _, v := range data {
-		if v < 32 {
-			return append(errs, errors.New("bad byte sequence"))
-		}
-	}
-
-	if !utf8.Valid(data) {
+	if !utf8.Valid(msg) {
 		return append(errs, errors.New("invalid UTF-8"))
 	}
 
 	// message processing
-	for _, msgStr := range strings.Split(string(data), mdelim) {
-		err := r.processMsg(msgStr, sender)
+	for _, msgStr := range strings.Split(string(msg), mdelim) {
+		err := r.processMsg(sender, msgStr)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -212,49 +206,45 @@ func (r *Room) processMsgs(sender *RoomClient, data []byte) (errs []error) {
 	return errs
 }
 
-func (r *Room) processMsg(msgStr string, sender *RoomClient) (err error) {
+func (r *Room) processMsg(sender *RoomClient, msgStr string) (err error) {
 	msgFields := strings.Split(msgStr, delim)
-
-	if len(msgFields) == 0 {
-		return err
-	}
 
 	if !sender.valid {
 		if msgFields[0] == "ident" {
-			err = r.handleIdent(msgFields, sender)
+			err = r.handleIdent(sender, msgFields)
 		}
 	} else {
 		switch msgFields[0] {
 		case "m", "tp": // moved / teleported to x y
-			err = r.handleM(msgFields, sender)
+			err = r.handleM(sender, msgFields)
 		case "f": // change facing direction
-			err = r.handleF(msgFields, sender)
+			err = r.handleF(sender, msgFields)
 		case "spd": // change my speed to spd
-			err = r.handleSpd(msgFields, sender)
+			err = r.handleSpd(sender, msgFields)
 		case "spr": // change my sprite
-			err = r.handleSpr(msgFields, sender)
+			err = r.handleSpr(sender, msgFields)
 		case "fl", "rfl": // player flash / repeating player flash
-			err = r.handleFl(msgFields, sender)
+			err = r.handleFl(sender, msgFields)
 		case "rrfl": // remove repeating player flash
 			err = r.handleRrfl(sender)
 		case "h": // change sprite visibility
-			err = r.handleH(msgFields, sender)
+			err = r.handleH(sender, msgFields)
 		case "sys": // change my system graphic
-			err = r.handleSys(msgFields, sender)
+			err = r.handleSys(sender, msgFields)
 		case "se": // play sound effect
-			err = r.handleSe(msgFields, sender)
+			err = r.handleSe(sender, msgFields)
 		case "ap", "mp": // add picture / move picture
-			err = r.handleP(msgFields, sender)
+			err = r.handleP(sender, msgFields)
 		case "rp": // remove picture
-			err = r.handleRp(msgFields, sender)
+			err = r.handleRp(sender, msgFields)
 		case "say":
-			err = r.handleSay(msgFields, sender)
+			err = r.handleSay(sender, msgFields)
 		case "ss": // sync switch
-			err = r.handleSs(msgFields, sender)
+			err = r.handleSs(sender, msgFields)
 		case "sv": // sync variable
-			err = r.handleSv(msgFields, sender)
+			err = r.handleSv(sender, msgFields)
 		case "sev":
-			err = r.handleSev(msgFields, sender)
+			err = r.handleSev(sender, msgFields)
 		default:
 			err = errors.New("unknown message type")
 		}

@@ -133,49 +133,24 @@ func (s *Session) broadcast(segments ...any) {
 	})
 }
 
-func (s *Session) processMsgs(sender *SessionClient, data []byte) (errs []error) {
-	if len(data) > 4096 {
-		return append(errs, errors.New("bad request size"))
+func (s *Session) processMsg(sender *SessionClient, msg []byte) (err error) {
+	if !utf8.Valid(msg) {
+		return errors.New("invalid UTF-8")
 	}
 
-	for _, v := range data {
-		if v < 32 {
-			return append(errs, errors.New("bad byte sequence"))
-		}
-	}
-
-	if !utf8.Valid(data) {
-		return append(errs, errors.New("invalid UTF-8"))
-	}
-
-	// message processing
-	for _, msgStr := range strings.Split(string(data), mdelim) {
-		if err := s.processMsg(msgStr, sender); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errs
-}
-
-func (s *Session) processMsg(msgStr string, sender *SessionClient) (err error) {
-	msgFields := strings.Split(msgStr, delim)
-
-	if len(msgFields) == 0 {
-		return err
-	}
+	msgFields := strings.Split(string(msg), delim)
 
 	switch msgFields[0] {
 	case "i": // player info
 		err = s.handleI(sender)
 	case "name": // nick set
-		err = s.handleName(msgFields, sender)
+		err = s.handleName(sender, msgFields)
 	case "ploc": // previous location
-		err = s.handlePloc(msgFields, sender)
+		err = s.handlePloc(sender, msgFields)
 	case "gsay": // global say
-		err = s.handleGSay(msgFields, sender)
+		err = s.handleGSay(sender, msgFields)
 	case "psay": // party say
-		err = s.handlePSay(msgFields, sender)
+		err = s.handlePSay(sender, msgFields)
 	case "pt": // party update
 		err = s.handlePt(sender)
 		if err != nil {
@@ -192,7 +167,7 @@ func (s *Session) processMsg(msgStr string, sender *SessionClient) (err error) {
 		return err
 	}
 
-	writeLog(sender.ip, "session", msgStr, 200)
+	writeLog(sender.ip, "session", string(msg), 200)
 
 	return nil
 }

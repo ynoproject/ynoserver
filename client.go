@@ -64,8 +64,8 @@ type RoomClient struct {
 
 	dcOnce sync.Once
 
-	writerEnd  chan bool
-	writerWg sync.WaitGroup
+	writerEnd chan bool
+	writerWg  sync.WaitGroup
 
 	send    chan []byte
 	receive chan []byte
@@ -103,8 +103,8 @@ type SessionClient struct {
 
 	dcOnce sync.Once
 
-	writerEnd  chan bool
-	writerWg sync.WaitGroup
+	writerEnd chan bool
+	writerWg  sync.WaitGroup
 
 	send    chan []byte
 	receive chan []byte
@@ -247,10 +247,8 @@ func (s *SessionClient) msgProcessor() {
 			return
 		}
 
-		if errs := session.processMsgs(s, message); len(errs) > 0 {
-			for _, err := range errs {
-				writeErrLog(s.ip, "session", err.Error())
-			}
+		if err := session.processMsg(s, message); err != nil {
+			writeErrLog(s.ip, "session", err.Error())
 		}
 	}
 }

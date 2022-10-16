@@ -28,7 +28,7 @@ var (
 	errLengthMismatch = errors.New("command length mismatch")
 )
 
-func (r *Room) handleIdent(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleIdent(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 1 {
 		return errLengthMismatch
 	}
@@ -40,7 +40,7 @@ func (r *Room) handleIdent(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleM(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleM(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -68,7 +68,7 @@ func (r *Room) handleM(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleF(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleF(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -83,7 +83,7 @@ func (r *Room) handleF(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleSpd(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleSpd(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -100,7 +100,7 @@ func (r *Room) handleSpd(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleSpr(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleSpr(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -121,7 +121,7 @@ func (r *Room) handleSpr(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleFl(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleFl(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 6 {
 		return errLengthMismatch
 	}
@@ -168,7 +168,7 @@ func (r *Room) handleRrfl(sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleH(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleH(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -182,7 +182,7 @@ func (r *Room) handleH(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleSys(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleSys(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -195,7 +195,7 @@ func (r *Room) handleSys(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleSe(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleSe(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 5 {
 		return errLengthMismatch
 	}
@@ -219,7 +219,7 @@ func (r *Room) handleSe(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleP(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleP(sender *RoomClient, msg []string) (err error) {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
@@ -329,7 +329,7 @@ func (r *Room) handleP(msg []string, sender *RoomClient) (err error) {
 		}
 
 		if _, found := sender.pictures[picId]; found {
-			rpErr := r.processMsg("rp"+delim+msg[1], sender)
+			rpErr := r.processMsg(sender, "rp"+delim+msg[1])
 			if rpErr != nil {
 				return rpErr
 			}
@@ -370,7 +370,7 @@ func (r *Room) handleP(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleRp(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleRp(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -384,7 +384,7 @@ func (r *Room) handleRp(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleSay(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleSay(sender *RoomClient, msg []string) (err error) {
 	if sender.sClient.muted {
 		return nil
 	}
@@ -401,7 +401,7 @@ func (r *Room) handleSay(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleSs(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleSs(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -519,7 +519,7 @@ func (r *Room) handleSs(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleSv(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleSv(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -650,7 +650,7 @@ func (r *Room) handleSv(msg []string, sender *RoomClient) (err error) {
 	return nil
 }
 
-func (r *Room) handleSev(msg []string, sender *RoomClient) (err error) {
+func (r *Room) handleSev(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -710,7 +710,7 @@ func (s *Session) handleI(sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handleName(sender *SessionClient, msg []string) (err error) {
 	if sender.hClient == nil {
 		return err
 	}
@@ -729,7 +729,7 @@ func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handlePloc(sender *SessionClient, msg []string) (err error) {
 	if sender.hClient == nil {
 		return err
 	}
@@ -749,7 +749,7 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handleGSay(sender *SessionClient, msg []string) (err error) {
 	if sender.muted {
 		return nil
 	}
@@ -789,7 +789,7 @@ func (s *Session) handleGSay(msg []string, sender *SessionClient) (err error) {
 	return nil
 }
 
-func (s *Session) handlePSay(msg []string, sender *SessionClient) (err error) {
+func (s *Session) handlePSay(sender *SessionClient, msg []string) (err error) {
 	if sender.muted {
 		return nil
 	}
