@@ -64,6 +64,7 @@ func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 		conn: conn,
 		ip:   ip,
 		send: make(chan []byte, 16),
+		receive: make(chan []byte, 16),
 	}
 
 	var banned bool
