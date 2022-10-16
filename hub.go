@@ -48,7 +48,7 @@ var (
 		},
 	}
 
-	hubs map[int]*Hub
+	hubs = make(map[int]*Hub)
 )
 
 type ConnInfo struct {
