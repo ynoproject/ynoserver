@@ -115,11 +115,10 @@ func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 	// queue s message
 	client.sendMsg("s", client.uuid, client.rank, client.account, client.badge)
 
-	go client.handleMsg()
+	go client.msgProcessor()
 
-	// start writePump and readPump
-	go client.writePump()
-	go client.readPump()
+	go client.msgWriter()
+	go client.msgReader()
 
 	writeLog(ip, "session", "connect", 200)
 }

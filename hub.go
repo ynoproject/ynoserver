@@ -158,11 +158,10 @@ func (h *Hub) addClient(conn *websocket.Conn, ip string, token string) {
 	// queue s message
 	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // "your id is %id%" message
 
-	go client.handleMsg()
+	go client.msgProcessor()
 
-	// start writePump and readPump
-	go client.writePump()
-	go client.readPump()
+	go client.msgWriter()
+	go client.msgReader()
 
 	writeLog(ip, strconv.Itoa(h.roomId), "connect", 200)
 }

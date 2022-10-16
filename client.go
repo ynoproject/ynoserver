@@ -129,15 +129,7 @@ type SessionMessage struct {
 	data   []byte
 }
 
-// The readPump and writePump functions are based on functions from
-// https://github.com/gorilla/websocket/blob/master/examples/chat/client.go
-
-// readPump pumps messages from the websocket connection to the hub.
-//
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
-func (c *HubClient) readPump() {
+func (c *HubClient) msgReader() {
 	defer c.disconnect()
 
 	c.conn.SetReadLimit(maxMessageSize)
@@ -155,7 +147,7 @@ func (c *HubClient) readPump() {
 	}
 }
 
-func (s *SessionClient) readPump() {
+func (s *SessionClient) msgReader() {
 	defer s.disconnect()
 
 	s.conn.SetReadLimit(maxMessageSize)
@@ -173,12 +165,7 @@ func (s *SessionClient) readPump() {
 	}
 }
 
-// writePump pumps messages from the hub to the websocket connection.
-//
-// A goroutine running writePump is started for each connection. The
-// application ensures that there is at most one writer to a connection by
-// executing all writes from this goroutine.
-func (c *HubClient) writePump() {
+func (c *HubClient) msgWriter() {
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
@@ -204,7 +191,7 @@ func (c *HubClient) writePump() {
 	}
 }
 
-func (s *SessionClient) writePump() {
+func (s *SessionClient) msgWriter() {
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
@@ -230,7 +217,7 @@ func (s *SessionClient) writePump() {
 	}
 }
 
-func (c *HubClient) handleMsg() {
+func (c *HubClient) msgProcessor() {
 	for {
 		message, ok := <-c.receive
 		if !ok {
@@ -245,7 +232,7 @@ func (c *HubClient) handleMsg() {
 	}
 }
 
-func (s *SessionClient) handleMsg() {
+func (s *SessionClient) msgProcessor() {
 	for {
 		message, ok := <-s.receive
 		if !ok {
