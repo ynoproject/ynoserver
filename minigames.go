@@ -25,7 +25,7 @@ type MinigameConfig struct {
 	SwitchValue    bool   `json:"switchValue"`
 }
 
-func getHubMinigameConfigs(roomId int) (minigameConfigs []*MinigameConfig) {
+func getRoomMinigameConfigs(roomId int) (minigameConfigs []*MinigameConfig) {
 	switch config.gameName {
 	case "yume":
 		if roomId == 155 {

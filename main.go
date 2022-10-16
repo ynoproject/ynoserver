@@ -86,7 +86,7 @@ func main() {
 	setEventVms()
 
 	globalConditions = getGlobalConditions()
-	createHubs(getMapList(), atoiArray(strings.Split(configFileData.SpRooms, ",")))
+	createRooms(getMapList(), atoiArray(strings.Split(configFileData.SpRooms, ",")))
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,

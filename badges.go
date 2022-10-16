@@ -258,18 +258,18 @@ func getGlobalConditions() (globalConditions []*Condition) {
 	return globalConditions
 }
 
-func getHubConditions(roomId int) (hubConditions []*Condition) {
+func getRoomConditions(roomId int) (roomConditions []*Condition) {
 	if gameConditions, ok := conditions[config.gameName]; ok {
 		for _, condition := range gameConditions {
 			if condition.Map == roomId {
-				hubConditions = append(hubConditions, condition)
+				roomConditions = append(roomConditions, condition)
 			}
 		}
 	}
-	return hubConditions
+	return roomConditions
 }
 
-func checkHubConditions(h *Hub, client *HubClient, trigger string, value string) {
+func checkRoomConditions(r *Room, client *RoomClient, trigger string, value string) {
 	if !client.sClient.account {
 		return
 	}
@@ -278,12 +278,12 @@ func checkHubConditions(h *Hub, client *HubClient, trigger string, value string)
 		checkCondition(c, 0, nil, client, trigger, value)
 	}
 
-	for _, c := range h.conditions {
-		checkCondition(c, h.roomId, h.minigameConfigs, client, trigger, value)
+	for _, c := range r.conditions {
+		checkCondition(c, r.roomId, r.minigameConfigs, client, trigger, value)
 	}
 }
 
-func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig, client *HubClient, trigger string, value string) {
+func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig, client *RoomClient, trigger string, value string) {
 	if c.Disabled && client.sClient.rank < 2 {
 		return
 	}
@@ -407,7 +407,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 	}
 }
 
-func checkConditionCoords(condition *Condition, client *HubClient) bool {
+func checkConditionCoords(condition *Condition, client *RoomClient) bool {
 	return ((condition.MapX1 <= 0 && condition.MapX2 <= 0) ||
 		((condition.MapX1 == -1 || condition.MapX1 <= client.x) && (condition.MapX2 == -1 || condition.MapX2 >= client.x))) &&
 		((condition.MapY1 <= 0 && condition.MapY2 <= 0) ||

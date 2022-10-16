@@ -55,9 +55,9 @@ type Picture struct {
 	useTransparentColor, fixedToMap bool
 }
 
-// HubClient is a middleman between the websocket connection and the hub.
-type HubClient struct {
-	hub     *Hub
+// RoomClient is a middleman between the websocket connection and the room.
+type RoomClient struct {
+	room     *Room
 	sClient *SessionClient
 
 	conn *websocket.Conn
@@ -93,7 +93,7 @@ type HubClient struct {
 }
 
 type SessionClient struct {
-	hClient *HubClient
+	hClient *RoomClient
 
 	conn *websocket.Conn
 	ip   string
@@ -119,7 +119,7 @@ type SessionClient struct {
 	systemName string
 }
 
-func (c *HubClient) msgReader() {
+func (c *RoomClient) msgReader() {
 	defer c.disconnect()
 
 	c.conn.SetReadLimit(maxMessageSize)
@@ -129,7 +129,7 @@ func (c *HubClient) msgReader() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error(), 500)
+			writeLog(c.sClient.ip, strconv.Itoa(c.room.roomId), err.Error(), 500)
 			break
 		}
 
@@ -155,7 +155,7 @@ func (s *SessionClient) msgReader() {
 	}
 }
 
-func (c *HubClient) msgWriter() {
+func (c *RoomClient) msgWriter() {
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
@@ -203,16 +203,16 @@ func (s *SessionClient) msgWriter() {
 	}
 }
 
-func (c *HubClient) msgProcessor() {
+func (c *RoomClient) msgProcessor() {
 	for {
 		message, ok := <-c.receive
 		if !ok {
 			return
 		}
 
-		if errs := c.hub.processMsgs(c, message); len(errs) > 0 {
+		if errs := c.room.processMsgs(c, message); len(errs) > 0 {
 			for _, err := range errs {
-				writeErrLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error())
+				writeErrLog(c.sClient.ip, strconv.Itoa(c.room.roomId), err.Error())
 			}
 		}
 	}
@@ -233,7 +233,7 @@ func (s *SessionClient) msgProcessor() {
 	}
 }
 
-func (c *HubClient) sendMsg(segments ...any) {
+func (c *RoomClient) sendMsg(segments ...any) {
 	c.send <- buildMsg(segments)
 }
 
@@ -241,7 +241,7 @@ func (s *SessionClient) sendMsg(segments ...any) {
 	s.send <- buildMsg(segments)
 }
 
-func (c *HubClient) disconnect() {
+func (c *RoomClient) disconnect() {
 	c.dcOnce.Do(func() {
 		c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 		c.conn.WriteMessage(websocket.CloseMessage, nil)
@@ -250,13 +250,13 @@ func (c *HubClient) disconnect() {
 
 		c.sClient.hClient = nil
 
-		c.hub.clients.Delete(c)
+		c.room.clients.Delete(c)
 
-		c.hub.broadcast(c, "d", c.sClient.id) // user %id% has disconnected message
+		c.room.broadcast(c, "d", c.sClient.id) // user %id% has disconnected message
 
 		close(c.receive)
 
-		writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), "disconnect", 200)
+		writeLog(c.sClient.ip, strconv.Itoa(c.room.roomId), "disconnect", 200)
 	})
 }
 

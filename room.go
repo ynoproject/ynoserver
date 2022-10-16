@@ -48,12 +48,12 @@ var (
 		},
 	}
 
-	hubs = make(map[int]*Hub)
+	rooms = make(map[int]*Room)
 )
 
-// Hub maintains the set of active clients and broadcasts messages to the
+// Room maintains the set of active clients and broadcasts messages to the
 // clients.
-type Hub struct {
+type Room struct {
 	// Registered clients.
 	clients sync.Map
 
@@ -65,13 +65,13 @@ type Hub struct {
 	minigameConfigs []*MinigameConfig
 }
 
-func createHubs(roomIds []int, spRooms []int) {
+func createRooms(roomIds []int, spRooms []int) {
 	for _, roomId := range roomIds {
-		hubs[roomId] = &Hub{
+		rooms[roomId] = &Room{
 			roomId:          roomId,
 			singleplayer:    contains(spRooms, roomId),
-			conditions:      getHubConditions(roomId),
-			minigameConfigs: getHubMinigameConfigs(roomId),
+			conditions:      getRoomConditions(roomId),
+			minigameConfigs: getRoomMinigameConfigs(roomId),
 		}
 	}
 }
@@ -99,20 +99,20 @@ func handleRoom(w http.ResponseWriter, r *http.Request) {
 		playerToken = token[0]
 	}
 
-	if hub, ok := hubs[idInt]; ok {
-		hub.addClient(conn, getIp(r), playerToken)
+	if room, ok := rooms[idInt]; ok {
+		room.addClient(conn, getIp(r), playerToken)
 	}
 }
 
-func (h *Hub) addClient(conn *websocket.Conn, ip string, token string) {
-	client := &HubClient{
-		hub:         h,
+func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
+	client := &RoomClient{
+		room:         r,
 		conn:        conn,
 		send:        make(chan []byte, 16),
 		receive:     make(chan []byte, 16),
 		key:         generateKey(),
 		pictures:    make(map[int]*Picture),
-		mapId:       fmt.Sprintf("%04d", h.roomId),
+		mapId:       fmt.Sprintf("%04d", r.roomId),
 		switchCache: make(map[int]bool),
 		varCache:    make(map[int]int),
 	}
@@ -129,25 +129,25 @@ func (h *Hub) addClient(conn *websocket.Conn, ip string, token string) {
 	if s, ok := clients.Load(uuid); ok {
 		session := s.(*SessionClient)
 		if session.hClient != nil {
-			writeErrLog(ip, strconv.Itoa(h.roomId), "session in use")
+			writeErrLog(ip, strconv.Itoa(r.roomId), "session in use")
 			return
 		}
 
 		session.hClient = client
 		client.sClient = session
 	} else {
-		writeErrLog(ip, strconv.Itoa(h.roomId), "player has no session")
+		writeErrLog(ip, strconv.Itoa(r.roomId), "player has no session")
 		return
 	}
 
 	if tags, err := getPlayerTags(uuid); err != nil {
-		writeErrLog(ip, strconv.Itoa(h.roomId), "failed to read player tags")
+		writeErrLog(ip, strconv.Itoa(r.roomId), "failed to read player tags")
 	} else {
 		client.tags = tags
 	}
 
-	// register client to the hub
-	h.clients.Store(client, nil)
+	// register client to the room
+	r.clients.Store(client, nil)
 
 	// queue s message
 	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // "your id is %id%" message
@@ -157,16 +157,16 @@ func (h *Hub) addClient(conn *websocket.Conn, ip string, token string) {
 	go client.msgWriter()
 	go client.msgReader()
 
-	writeLog(ip, strconv.Itoa(h.roomId), "connect", 200)
+	writeLog(ip, strconv.Itoa(r.roomId), "connect", 200)
 }
 
-func (h *Hub) broadcast(sender *HubClient, segments ...any) {
-	if h.singleplayer {
+func (r *Room) broadcast(sender *RoomClient, segments ...any) {
+	if r.singleplayer {
 		return
 	}
 
-	h.clients.Range(func(k, _ any) bool {
-		client := k.(*HubClient)
+	r.clients.Range(func(k, _ any) bool {
+		client := k.(*RoomClient)
 		if !client.valid || (client == sender && segments[0].(string) != "say") {
 			return true
 		}
@@ -177,7 +177,7 @@ func (h *Hub) broadcast(sender *HubClient, segments ...any) {
 	})
 }
 
-func (h *Hub) processMsgs(sender *HubClient, data []byte) (errs []error) {
+func (r *Room) processMsgs(sender *RoomClient, data []byte) (errs []error) {
 	if len(data) < 8 || len(data) > 4096 {
 		return append(errs, errors.New("bad request size"))
 	}
@@ -204,7 +204,7 @@ func (h *Hub) processMsgs(sender *HubClient, data []byte) (errs []error) {
 
 	// message processing
 	for _, msgStr := range strings.Split(string(data), mdelim) {
-		err := h.processMsg(msgStr, sender)
+		err := r.processMsg(msgStr, sender)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -213,7 +213,7 @@ func (h *Hub) processMsgs(sender *HubClient, data []byte) (errs []error) {
 	return errs
 }
 
-func (h *Hub) processMsg(msgStr string, sender *HubClient) (err error) {
+func (r *Room) processMsg(msgStr string, sender *RoomClient) (err error) {
 	msgFields := strings.Split(msgStr, delim)
 
 	if len(msgFields) == 0 {
@@ -222,40 +222,40 @@ func (h *Hub) processMsg(msgStr string, sender *HubClient) (err error) {
 
 	if !sender.valid {
 		if msgFields[0] == "ident" {
-			err = h.handleIdent(msgFields, sender)
+			err = r.handleIdent(msgFields, sender)
 		}
 	} else {
 		switch msgFields[0] {
 		case "m", "tp": // moved / teleported to x y
-			err = h.handleM(msgFields, sender)
+			err = r.handleM(msgFields, sender)
 		case "f": // change facing direction
-			err = h.handleF(msgFields, sender)
+			err = r.handleF(msgFields, sender)
 		case "spd": // change my speed to spd
-			err = h.handleSpd(msgFields, sender)
+			err = r.handleSpd(msgFields, sender)
 		case "spr": // change my sprite
-			err = h.handleSpr(msgFields, sender)
+			err = r.handleSpr(msgFields, sender)
 		case "fl", "rfl": // player flash / repeating player flash
-			err = h.handleFl(msgFields, sender)
+			err = r.handleFl(msgFields, sender)
 		case "rrfl": // remove repeating player flash
-			err = h.handleRrfl(sender)
+			err = r.handleRrfl(sender)
 		case "h": // change sprite visibility
-			err = h.handleH(msgFields, sender)
+			err = r.handleH(msgFields, sender)
 		case "sys": // change my system graphic
-			err = h.handleSys(msgFields, sender)
+			err = r.handleSys(msgFields, sender)
 		case "se": // play sound effect
-			err = h.handleSe(msgFields, sender)
+			err = r.handleSe(msgFields, sender)
 		case "ap", "mp": // add picture / move picture
-			err = h.handleP(msgFields, sender)
+			err = r.handleP(msgFields, sender)
 		case "rp": // remove picture
-			err = h.handleRp(msgFields, sender)
+			err = r.handleRp(msgFields, sender)
 		case "say":
-			err = h.handleSay(msgFields, sender)
+			err = r.handleSay(msgFields, sender)
 		case "ss": // sync switch
-			err = h.handleSs(msgFields, sender)
+			err = r.handleSs(msgFields, sender)
 		case "sv": // sync variable
-			err = h.handleSv(msgFields, sender)
+			err = r.handleSv(msgFields, sender)
 		case "sev":
-			err = h.handleSev(msgFields, sender)
+			err = r.handleSev(msgFields, sender)
 		default:
 			err = errors.New("unknown message type")
 		}
@@ -264,24 +264,24 @@ func (h *Hub) processMsg(msgStr string, sender *HubClient) (err error) {
 		return err
 	}
 
-	writeLog(sender.sClient.ip, strconv.Itoa(h.roomId), msgStr, 200)
+	writeLog(sender.sClient.ip, strconv.Itoa(r.roomId), msgStr, 200)
 
 	return nil
 }
 
-func (h *Hub) handleValidClient(client *HubClient) {
-	if !h.singleplayer {
+func (r *Room) handleValidClient(client *RoomClient) {
+	if !r.singleplayer {
 		// tell everyone that a new client has connected
-		h.broadcast(client, "c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
+		r.broadcast(client, "c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
 
 		// send name of client
 		if client.sClient.name != "" {
-			h.broadcast(client, "name", client.sClient.id, client.sClient.name)
+			r.broadcast(client, "name", client.sClient.id, client.sClient.name)
 		}
 
 		// send the new client info about the game state
-		h.clients.Range(func(k, _ any) bool {
-			otherClient := k.(*HubClient)
+		r.clients.Range(func(k, _ any) bool {
+			otherClient := k.(*RoomClient)
 			if !otherClient.valid || otherClient == client {
 				return true
 			}
@@ -315,12 +315,12 @@ func (h *Hub) handleValidClient(client *HubClient) {
 		})
 	}
 
-	checkHubConditions(h, client, "", "")
+	checkRoomConditions(r, client, "", "")
 
-	for _, minigame := range h.minigameConfigs {
+	for _, minigame := range r.minigameConfigs {
 		score, err := getPlayerMinigameScore(client.sClient.uuid, minigame.MinigameId)
 		if err != nil {
-			writeErrLog(client.sClient.ip, strconv.Itoa(h.roomId), "failed to read player minigame score for "+minigame.MinigameId)
+			writeErrLog(client.sClient.ip, strconv.Itoa(r.roomId), "failed to read player minigame score for "+minigame.MinigameId)
 		}
 		client.minigameScores = append(client.minigameScores, score)
 		varSyncType := 1
@@ -331,11 +331,11 @@ func (h *Hub) handleValidClient(client *HubClient) {
 	}
 
 	// send variable sync request for vending machine expeditions
-	if h.roomId != currentEventVmMapId {
+	if r.roomId != currentEventVmMapId {
 		return
 	}
 
-	if eventIds, hasVms := eventVms[h.roomId]; hasVms {
+	if eventIds, hasVms := eventVms[r.roomId]; hasVms {
 		for _, eventId := range eventIds {
 			if eventId != currentEventVmEventId {
 				continue

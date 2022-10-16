@@ -28,19 +28,19 @@ var (
 	errLengthMismatch = errors.New("command length mismatch")
 )
 
-func (h *Hub) handleIdent(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleIdent(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 1 {
 		return errLengthMismatch
 	}
 
 	sender.valid = true
 	sender.sendMsg("ident") // tell client they're valid
-	h.handleValidClient(sender)
+	r.handleValidClient(sender)
 
 	return nil
 }
 
-func (h *Hub) handleM(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleM(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -58,17 +58,17 @@ func (h *Hub) handleM(msg []string, sender *HubClient) (err error) {
 
 	if msg[0] == "m" {
 		if sender.syncCoords {
-			checkHubConditions(h, sender, "coords", "")
+			checkRoomConditions(r, sender, "coords", "")
 		}
-		h.broadcast(sender, "m", sender.sClient.id, msg[1:]) // user %id% moved to x y
+		r.broadcast(sender, "m", sender.sClient.id, msg[1:]) // user %id% moved to x y
 	} else {
-		checkHubConditions(h, sender, "teleport", "")
+		checkRoomConditions(r, sender, "teleport", "")
 	}
 
 	return nil
 }
 
-func (h *Hub) handleF(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleF(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -78,12 +78,12 @@ func (h *Hub) handleF(msg []string, sender *HubClient) (err error) {
 		return errconv
 	}
 	sender.facing = facing
-	h.broadcast(sender, "f", sender.sClient.id, msg[1]) // user %id% facing changed to f
+	r.broadcast(sender, "f", sender.sClient.id, msg[1]) // user %id% facing changed to f
 
 	return nil
 }
 
-func (h *Hub) handleSpd(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleSpd(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -95,19 +95,19 @@ func (h *Hub) handleSpd(msg []string, sender *HubClient) (err error) {
 		return errconv
 	}
 	sender.spd = spd
-	h.broadcast(sender, "spd", sender.sClient.id, msg[1])
+	r.broadcast(sender, "spd", sender.sClient.id, msg[1])
 
 	return nil
 }
 
-func (h *Hub) handleSpr(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleSpr(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
 	if !isValidSprite(msg[1]) {
 		return err
 	}
-	if config.gameName == "2kki" && (!strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") && !strings.Contains(msg[1], "#null")) || strings.Contains(msg[1], "zenmaigaharaten_kisekae") && h.roomId != 176 {
+	if config.gameName == "2kki" && (!strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") && !strings.Contains(msg[1], "#null")) || strings.Contains(msg[1], "zenmaigaharaten_kisekae") && r.roomId != 176 {
 		return err
 	}
 	index, errconv := strconv.Atoi(msg[2])
@@ -116,12 +116,12 @@ func (h *Hub) handleSpr(msg []string, sender *HubClient) (err error) {
 	}
 	sender.sClient.spriteName = msg[1]
 	sender.sClient.spriteIndex = index
-	h.broadcast(sender, "spr", sender.sClient.id, msg[1:])
+	r.broadcast(sender, "spr", sender.sClient.id, msg[1:])
 
 	return nil
 }
 
-func (h *Hub) handleFl(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleFl(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 6 {
 		return errLengthMismatch
 	}
@@ -153,22 +153,22 @@ func (h *Hub) handleFl(msg []string, sender *HubClient) (err error) {
 		sender.flash[4] = frames
 		sender.repeatingFlash = true
 	}
-	h.broadcast(sender, msg[0], sender.sClient.id, msg[1:])
+	r.broadcast(sender, msg[0], sender.sClient.id, msg[1:])
 
 	return nil
 }
 
-func (h *Hub) handleRrfl(sender *HubClient) (err error) {
+func (r *Room) handleRrfl(sender *RoomClient) (err error) {
 	sender.repeatingFlash = false
 	for i := 0; i < 5; i++ {
 		sender.flash[i] = 0
 	}
-	h.broadcast(sender, "rrfl", sender.sClient.id)
+	r.broadcast(sender, "rrfl", sender.sClient.id)
 
 	return nil
 }
 
-func (h *Hub) handleH(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleH(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -177,12 +177,12 @@ func (h *Hub) handleH(msg []string, sender *HubClient) (err error) {
 		return errconv
 	}
 	sender.hidden = hiddenBin == 1
-	h.broadcast(sender, msg[0], sender.sClient.id, msg[1])
+	r.broadcast(sender, msg[0], sender.sClient.id, msg[1])
 
 	return nil
 }
 
-func (h *Hub) handleSys(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleSys(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -190,12 +190,12 @@ func (h *Hub) handleSys(msg []string, sender *HubClient) (err error) {
 		return err
 	}
 	sender.sClient.systemName = msg[1]
-	h.broadcast(sender, "sys", sender.sClient.id, msg[1])
+	r.broadcast(sender, "sys", sender.sClient.id, msg[1])
 
 	return nil
 }
 
-func (h *Hub) handleSe(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleSe(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 5 {
 		return errLengthMismatch
 	}
@@ -214,12 +214,12 @@ func (h *Hub) handleSe(msg []string, sender *HubClient) (err error) {
 	if errconv != nil || balance < 0 || balance > 100 {
 		return errconv
 	}
-	h.broadcast(sender, "se", sender.sClient.id, msg[1:])
+	r.broadcast(sender, "se", sender.sClient.id, msg[1:])
 
 	return nil
 }
 
-func (h *Hub) handleP(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleP(msg []string, sender *RoomClient) (err error) {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
@@ -230,7 +230,7 @@ func (h *Hub) handleP(msg []string, sender *HubClient) (err error) {
 	}
 
 	if isShow {
-		checkHubConditions(h, sender, "picture", msg[17])
+		checkRoomConditions(r, sender, "picture", msg[17])
 		if !isValidPicName(msg[17]) {
 			return err
 		}
@@ -329,7 +329,7 @@ func (h *Hub) handleP(msg []string, sender *HubClient) (err error) {
 		}
 
 		if _, found := sender.pictures[picId]; found {
-			rpErr := h.processMsg("rp"+delim+msg[1], sender)
+			rpErr := r.processMsg("rp"+delim+msg[1], sender)
 			if rpErr != nil {
 				return rpErr
 			}
@@ -363,14 +363,14 @@ func (h *Hub) handleP(msg []string, sender *HubClient) (err error) {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	h.broadcast(sender, msg[0], sender.sClient.id, msg[1:])
+	r.broadcast(sender, msg[0], sender.sClient.id, msg[1:])
 
 	sender.pictures[picId] = pic
 
 	return nil
 }
 
-func (h *Hub) handleRp(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleRp(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 2 {
 		return errLengthMismatch
 	}
@@ -378,13 +378,13 @@ func (h *Hub) handleRp(msg []string, sender *HubClient) (err error) {
 	if errconv != nil || picId < 1 {
 		return errconv
 	}
-	h.broadcast(sender, "rp", sender.sClient.id, msg[1])
+	r.broadcast(sender, "rp", sender.sClient.id, msg[1])
 	delete(sender.pictures, picId)
 
 	return nil
 }
 
-func (h *Hub) handleSay(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleSay(msg []string, sender *RoomClient) (err error) {
 	if sender.sClient.muted {
 		return nil
 	}
@@ -396,12 +396,12 @@ func (h *Hub) handleSay(msg []string, sender *HubClient) (err error) {
 	if sender.sClient.name == "" || sender.sClient.systemName == "" || msgContents == "" || len(msgContents) > 150 {
 		return err
 	}
-	h.broadcast(sender, "say", sender.sClient.id, msgContents)
+	r.broadcast(sender, "say", sender.sClient.id, msgContents)
 
 	return nil
 }
 
-func (h *Hub) handleSs(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleSs(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -423,15 +423,15 @@ func (h *Hub) handleSs(msg []string, sender *HubClient) (err error) {
 			sender.sendMsg("sv", "88", "0") // time elapsed
 		}
 	} else {
-		if len(sender.hub.minigameConfigs) > 0 {
-			for m, minigame := range sender.hub.minigameConfigs {
+		if len(sender.room.minigameConfigs) > 0 {
+			for m, minigame := range sender.room.minigameConfigs {
 				if minigame.SwitchId == switchId && minigame.SwitchValue == value && sender.minigameScores[m] < sender.varCache[minigame.VarId] {
 					tryWritePlayerMinigameScore(sender.sClient.uuid, minigame.MinigameId, sender.varCache[minigame.VarId])
 				}
 			}
 		}
 
-		for _, c := range append(globalConditions, h.conditions...) {
+		for _, c := range append(globalConditions, r.conditions...) {
 			validVars := !c.VarTrigger
 			if c.VarTrigger {
 				if c.VarId > 0 {
@@ -519,7 +519,7 @@ func (h *Hub) handleSs(msg []string, sender *HubClient) (err error) {
 	return nil
 }
 
-func (h *Hub) handleSv(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleSv(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -533,13 +533,13 @@ func (h *Hub) handleSv(msg []string, sender *HubClient) (err error) {
 	}
 	sender.varCache[varId] = value
 
-	conditions := append(globalConditions, h.conditions...)
+	conditions := append(globalConditions, r.conditions...)
 
 	if varId == 88 && config.gameName == "2kki" {
 		for _, c := range conditions {
 			if c.TimeTrial && value < 3600 {
 				if checkConditionCoords(c, sender) {
-					success, err := tryWritePlayerTimeTrial(sender.sClient.uuid, h.roomId, value)
+					success, err := tryWritePlayerTimeTrial(sender.sClient.uuid, r.roomId, value)
 					if err != nil {
 						return err
 					}
@@ -550,8 +550,8 @@ func (h *Hub) handleSv(msg []string, sender *HubClient) (err error) {
 			}
 		}
 	} else {
-		if len(sender.hub.minigameConfigs) > 0 {
-			for m, minigame := range sender.hub.minigameConfigs {
+		if len(sender.room.minigameConfigs) > 0 {
+			for m, minigame := range sender.room.minigameConfigs {
 				if minigame.VarId == varId && sender.minigameScores[m] < value {
 					if minigame.SwitchId > 0 {
 						sender.sendMsg("ss", minigame.SwitchId, "0")
@@ -650,7 +650,7 @@ func (h *Hub) handleSv(msg []string, sender *HubClient) (err error) {
 	return nil
 }
 
-func (h *Hub) handleSev(msg []string, sender *HubClient) (err error) {
+func (r *Room) handleSev(msg []string, sender *RoomClient) (err error) {
 	if len(msg) != 3 {
 		return errLengthMismatch
 	}
@@ -662,9 +662,9 @@ func (h *Hub) handleSev(msg []string, sender *HubClient) (err error) {
 	if actionBin == 1 {
 		triggerType = "eventAction"
 	}
-	checkHubConditions(h, sender, triggerType, msg[1])
+	checkRoomConditions(r, sender, triggerType, msg[1])
 
-	if sender.hub.roomId != currentEventVmMapId {
+	if sender.room.roomId != currentEventVmMapId {
 		return err
 	}
 
@@ -724,7 +724,7 @@ func (s *Session) handleName(msg []string, sender *SessionClient) (err error) {
 	}
 	sender.name = msg[1]
 
-	sender.hClient.hub.broadcast(sender.hClient, "name", sender.id, sender.name) // broadcast name change to hub if client is in one
+	sender.hClient.room.broadcast(sender.hClient, "name", sender.id, sender.name) // broadcast name change to room if client is in one
 
 	return nil
 }
@@ -744,7 +744,7 @@ func (s *Session) handlePloc(msg []string, sender *SessionClient) (err error) {
 
 	sender.hClient.prevMapId = msg[1]
 	sender.hClient.prevLocations = msg[2]
-	checkHubConditions(sender.hClient.hub, sender.hClient, "prevMap", sender.hClient.prevMapId)
+	checkRoomConditions(sender.hClient.room, sender.hClient, "prevMap", sender.hClient.prevMapId)
 
 	return nil
 }
