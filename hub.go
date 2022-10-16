@@ -20,7 +20,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -48,7 +47,7 @@ var (
 		},
 	}
 
-	hubs []*Hub
+	hubs map[int]*Hub
 )
 
 type ConnInfo struct {
@@ -66,9 +65,6 @@ type Hub struct {
 	// Inbound messages from the clients.
 	processMsgCh chan *Message
 
-	// Connection requests from the clients.
-	connect chan *ConnInfo
-
 	roomId       int
 	singleplayer bool
 
@@ -85,14 +81,13 @@ func createAllHubs(roomIds []int, spRooms []int) {
 
 func addHub(roomId int, singleplayer bool) {
 	hub := newHub(roomId, singleplayer)
-	hubs = append(hubs, hub)
+	hubs[roomId] = hub
 	go hub.run()
 }
 
 func newHub(roomId int, singleplayer bool) *Hub {
 	return &Hub{
 		processMsgCh:    make(chan *Message, 16),
-		connect:         make(chan *ConnInfo, 4),
 		roomId:          roomId,
 		singleplayer:    singleplayer,
 		conditions:      getHubConditions(roomId),
@@ -101,85 +96,68 @@ func newHub(roomId int, singleplayer bool) *Hub {
 }
 
 func (h *Hub) run() {
-	http.HandleFunc("/"+strconv.Itoa(h.roomId), h.serve)
 	for {
-		select {
-		case conn := <-h.connect:
-			client := &HubClient{
-				hub:         h,
-				conn:        conn.Connect,
-				send:        make(chan []byte, 16),
-				key:         generateKey(),
-				pictures:    make(map[int]*Picture),
-				mapId:       fmt.Sprintf("%04d", h.roomId),
-				switchCache: make(map[int]bool),
-				varCache:    make(map[int]int),
-			}
-
-			var uuid string
-			if conn.Token != "" {
-				uuid = getUuidFromToken(conn.Token)
-			}
-
-			if uuid == "" {
-				uuid, _, _ = getOrCreatePlayerData(conn.Ip)
-			}
-
-			if s, ok := clients.Load(uuid); ok {
-				session := s.(*SessionClient)
-				if session.hClient != nil {
-					writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "session in use")
-					continue
-				}
-
-				session.hClient = client
-				client.sClient = session
-			} else {
-				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "player has no session")
-				continue
-			}
-
-			if tags, err := getPlayerTags(uuid); err != nil {
-				writeErrLog(conn.Ip, strconv.Itoa(h.roomId), "failed to read player tags")
-			} else {
-				client.tags = tags
-			}
-
-			// register client to the hub
-			h.clients.Store(client, nil)
-
-			// queue s message
-			client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // "your id is %id%" message
-
-			// start writePump and readPump
-			go client.writePump()
-			go client.readPump()
-
-			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
-		case message := <-h.processMsgCh:
-			if errs := h.processMsgs(message); len(errs) > 0 {
-				for _, err := range errs {
-					writeErrLog(message.sender.sClient.ip, strconv.Itoa(h.roomId), err.Error())
-				}
+		message := <-h.processMsgCh
+		if errs := h.processMsgs(message); len(errs) > 0 {
+			for _, err := range errs {
+				writeErrLog(message.sender.sClient.ip, strconv.Itoa(h.roomId), err.Error())
 			}
 		}
 	}
 }
 
-// serve handles websocket requests from the peer.
-func (h *Hub) serve(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
-	if err != nil {
-		log.Println(err)
+func (h *Hub) addClient(conn *websocket.Conn, ip string, token string) {
+	client := &HubClient{
+		hub:         h,
+		conn:        conn,
+		send:        make(chan []byte, 16),
+		key:         generateKey(),
+		pictures:    make(map[int]*Picture),
+		mapId:       fmt.Sprintf("%04d", h.roomId),
+		switchCache: make(map[int]bool),
+		varCache:    make(map[int]int),
+	}
+
+	var uuid string
+	if token != "" {
+		uuid = getUuidFromToken(token)
+	}
+
+	if uuid == "" {
+		uuid, _, _ = getOrCreatePlayerData(ip)
+	}
+
+	if s, ok := clients.Load(uuid); ok {
+		session := s.(*SessionClient)
+		if session.hClient != nil {
+			writeErrLog(ip, strconv.Itoa(h.roomId), "session in use")
+			return
+		}
+
+		session.hClient = client
+		client.sClient = session
+	} else {
+		writeErrLog(ip, strconv.Itoa(h.roomId), "player has no session")
 		return
 	}
 
-	var playerToken string
-	if token, ok := r.URL.Query()["token"]; ok && len(token[0]) == 32 {
-		playerToken = token[0]
+	if tags, err := getPlayerTags(uuid); err != nil {
+		writeErrLog(ip, strconv.Itoa(h.roomId), "failed to read player tags")
+	} else {
+		client.tags = tags
 	}
 
-	h.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
+	// register client to the hub
+	h.clients.Store(client, nil)
+
+	// queue s message
+	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // "your id is %id%" message
+
+	// start writePump and readPump
+	go client.writePump()
+	go client.readPump()
+
+	writeLog(ip, strconv.Itoa(h.roomId), "connect", 200)
 }
 
 func (h *Hub) broadcast(sender *HubClient, segments ...any) {

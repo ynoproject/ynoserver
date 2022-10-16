@@ -118,7 +118,37 @@ func main() {
 		log.Fatal(err)
 	}
 
+	http.HandleFunc("/room", handleRoom)
+
 	http.Serve(listener, nil)
+}
+
+func handleRoom(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	id, ok := r.URL.Query()["id"]
+	if !ok {
+		return
+	}
+
+	idInt, err := strconv.Atoi(id[0])
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var playerToken string
+	if token, ok := r.URL.Query()["token"]; ok && len(token[0]) == 32 {
+		playerToken = token[0]
+	}
+
+	if hub, ok := hubs[idInt]; ok {
+		hub.addClient(conn, getIp(r), playerToken)
+	}
 }
 
 func getCharSetList() map[string]bool {
