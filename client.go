@@ -64,7 +64,8 @@ type HubClient struct {
 
 	dcOnce sync.Once
 
-	send chan []byte
+	send    chan []byte
+	receive chan *HubMessage
 
 	key, counter uint32
 
@@ -117,7 +118,7 @@ type SessionClient struct {
 	systemName string
 }
 
-type Message struct {
+type HubMessage struct {
 	sender *HubClient
 	data   []byte
 }
@@ -149,7 +150,7 @@ func (c *HubClient) readPump() {
 			break
 		}
 
-		c.hub.processMsgCh <- &Message{sender: c, data: message}
+		c.receive <- &HubMessage{sender: c, data: message}
 	}
 }
 
@@ -241,6 +242,8 @@ func (c *HubClient) disconnect() {
 
 		c.hub.broadcast(c, "d", c.sClient.id) // user %id% has disconnected message
 
+		close(c.receive)
+
 		writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), "disconnect", 200)
 	})
 }
@@ -258,6 +261,21 @@ func (s *SessionClient) disconnect() {
 
 		writeLog(s.ip, "session", "disconnect", 200)
 	})
+}
+
+func (c *HubClient) handleMsg() {
+	for {
+		message, ok := <-c.receive
+		if !ok {
+			return
+		}
+
+		if errs := c.hub.processMsgs(message); len(errs) > 0 {
+			for _, err := range errs {
+				writeErrLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error())
+			}
+		}
+	}
 }
 
 func (c *HubClient) sendMsg(segments ...any) {

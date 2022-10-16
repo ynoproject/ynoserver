@@ -20,6 +20,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -63,7 +64,7 @@ type Hub struct {
 	clients sync.Map
 
 	// Inbound messages from the clients.
-	processMsgCh chan *Message
+	processMsgCh chan *HubMessage
 
 	roomId       int
 	singleplayer bool
@@ -73,36 +74,43 @@ type Hub struct {
 	minigameConfigs []*MinigameConfig
 }
 
-func createAllHubs(roomIds []int, spRooms []int) {
+func createHubs(roomIds []int, spRooms []int) {
 	for _, roomId := range roomIds {
-		addHub(roomId, contains(spRooms, roomId))
-	}
-}
-
-func addHub(roomId int, singleplayer bool) {
-	hub := newHub(roomId, singleplayer)
-	hubs[roomId] = hub
-	go hub.run()
-}
-
-func newHub(roomId int, singleplayer bool) *Hub {
-	return &Hub{
-		processMsgCh:    make(chan *Message, 16),
-		roomId:          roomId,
-		singleplayer:    singleplayer,
-		conditions:      getHubConditions(roomId),
-		minigameConfigs: getHubMinigameConfigs(roomId),
-	}
-}
-
-func (h *Hub) run() {
-	for {
-		message := <-h.processMsgCh
-		if errs := h.processMsgs(message); len(errs) > 0 {
-			for _, err := range errs {
-				writeErrLog(message.sender.sClient.ip, strconv.Itoa(h.roomId), err.Error())
-			}
+		hubs[roomId] = &Hub{
+			processMsgCh:    make(chan *HubMessage, 16),
+			roomId:          roomId,
+			singleplayer:    contains(spRooms, roomId),
+			conditions:      getHubConditions(roomId),
+			minigameConfigs: getHubMinigameConfigs(roomId),
 		}
+	}
+}
+
+func handleRoom(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	id, ok := r.URL.Query()["id"]
+	if !ok {
+		return
+	}
+
+	idInt, err := strconv.Atoi(id[0])
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var playerToken string
+	if token, ok := r.URL.Query()["token"]; ok && len(token[0]) == 32 {
+		playerToken = token[0]
+	}
+
+	if hub, ok := hubs[idInt]; ok {
+		hub.addClient(conn, getIp(r), playerToken)
 	}
 }
 
@@ -111,6 +119,7 @@ func (h *Hub) addClient(conn *websocket.Conn, ip string, token string) {
 		hub:         h,
 		conn:        conn,
 		send:        make(chan []byte, 16),
+		receive:     make(chan *HubMessage, 16),
 		key:         generateKey(),
 		pictures:    make(map[int]*Picture),
 		mapId:       fmt.Sprintf("%04d", h.roomId),
@@ -153,6 +162,8 @@ func (h *Hub) addClient(conn *websocket.Conn, ip string, token string) {
 	// queue s message
 	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // "your id is %id%" message
 
+	go client.handleMsg()
+
 	// start writePump and readPump
 	go client.writePump()
 	go client.readPump()
@@ -177,7 +188,7 @@ func (h *Hub) broadcast(sender *HubClient, segments ...any) {
 	})
 }
 
-func (h *Hub) processMsgs(msg *Message) []error {
+func (h *Hub) processMsgs(msg *HubMessage) []error {
 	var errs []error
 
 	if len(msg.data) < 8 || len(msg.data) > 4096 {
