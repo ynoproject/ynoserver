@@ -127,12 +127,12 @@ func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 
 	if s, ok := clients.Load(uuid); ok {
 		session := s.(*SessionClient)
-		if session.hClient != nil {
+		if session.rClient != nil {
 			writeErrLog(ip, strconv.Itoa(r.roomId), "session in use")
 			return
 		}
 
-		session.hClient = client
+		session.rClient = client
 		client.sClient = session
 	} else {
 		writeErrLog(ip, strconv.Itoa(r.roomId), "player has no session")

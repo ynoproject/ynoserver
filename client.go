@@ -96,7 +96,7 @@ type RoomClient struct {
 }
 
 type SessionClient struct {
-	hClient *RoomClient
+	rClient *RoomClient
 
 	conn *websocket.Conn
 	ip   string
@@ -264,7 +264,7 @@ func (s *SessionClient) sendMsg(segments ...any) {
 func (c *RoomClient) disconnect() {
 	c.dcOnce.Do(func() {
 		// unregister
-		c.sClient.hClient = nil
+		c.sClient.rClient = nil
 
 		c.room.clients.Delete(c)
 

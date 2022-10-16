@@ -95,8 +95,8 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 
 	if client, ok := clients.Load(recipientUuid); ok {
 		client := client.(*SessionClient)
-		if client.hClient != nil {
-			client.hClient.disconnect()
+		if client.rClient != nil {
+			client.rClient.disconnect()
 		}
 
 		client.disconnect()
@@ -423,12 +423,12 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 			if client.spriteIndex > -1 {
 				partyMember.SpriteIndex = client.spriteIndex
 			}
-			if !simple && client.hClient != nil {
-				partyMember.MapId = client.hClient.mapId
-				partyMember.PrevMapId = client.hClient.prevMapId
-				partyMember.PrevLocations = client.hClient.prevLocations
-				partyMember.X = client.hClient.x
-				partyMember.Y = client.hClient.y
+			if !simple && client.rClient != nil {
+				partyMember.MapId = client.rClient.mapId
+				partyMember.PrevMapId = client.rClient.prevMapId
+				partyMember.PrevLocations = client.rClient.prevLocations
+				partyMember.X = client.rClient.x
+				partyMember.Y = client.rClient.y
 			}
 			partyMember.Online = true
 
@@ -499,12 +499,12 @@ func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 			if client.spriteIndex > -1 {
 				partyMember.SpriteIndex = client.spriteIndex
 			}
-			if client.hClient != nil {
-				partyMember.MapId = client.hClient.mapId
-				partyMember.PrevMapId = client.hClient.prevMapId
-				partyMember.PrevLocations = client.hClient.prevLocations
-				partyMember.X = client.hClient.x
-				partyMember.Y = client.hClient.y
+			if client.rClient != nil {
+				partyMember.MapId = client.rClient.mapId
+				partyMember.PrevMapId = client.rClient.prevMapId
+				partyMember.PrevLocations = client.rClient.prevLocations
+				partyMember.X = client.rClient.x
+				partyMember.Y = client.rClient.y
 			}
 			partyMember.Online = true
 		}
@@ -640,7 +640,7 @@ func assumeNextPartyOwner(partyId int) error {
 
 	for _, uuid := range partyMemberUuids {
 		if client, ok := clients.Load(uuid); ok {
-			if client.(*SessionClient).hClient == nil {
+			if client.(*SessionClient).rClient == nil {
 				continue
 			}
 
@@ -973,7 +973,7 @@ func getCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventL
 func tryCompleteEventLocation(periodId int, playerUuid string, location string) (exp int, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
 		client := client.(*SessionClient)
-		if client.hClient == nil {
+		if client.rClient == nil {
 			return -1, err
 		}
 
@@ -1007,7 +1007,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 			}
 
 			for _, mapId := range mapIds {
-				if client.hClient.mapId != mapId {
+				if client.rClient.mapId != mapId {
 					continue
 				}
 				if weekEventExp >= weeklyExpCap {
@@ -1038,7 +1038,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 
 func tryCompletePlayerEventLocation(periodId int, playerUuid string, location string) (complete bool, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
-		client := client.(*SessionClient).hClient
+		client := client.(*SessionClient).rClient
 		if client == nil {
 			return false, err
 		}
@@ -1166,7 +1166,7 @@ func writeEventVmData(periodId int, mapId int, eventId int, exp int) (err error)
 
 func tryCompleteEventVm(periodId int, playerUuid string, mapId int, eventId int) (exp int, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
-		client := client.(*SessionClient).hClient
+		client := client.(*SessionClient).rClient
 		if client == nil {
 			return -1, err
 		}
@@ -1348,7 +1348,7 @@ func getPlayerTags(playerUuid string) (tags []string, err error) {
 
 func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
 	if client, ok := clients.Load(playerUuid); ok { // Player must be online to add a tag
-		client := client.(*SessionClient).hClient
+		client := client.(*SessionClient).rClient
 		if client == nil {
 			return false, nil
 		}

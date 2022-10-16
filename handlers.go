@@ -711,7 +711,7 @@ func (s *Session) handleI(sender *SessionClient) (err error) {
 }
 
 func (s *Session) handleName(sender *SessionClient, msg []string) (err error) {
-	if sender.hClient == nil {
+	if sender.rClient == nil {
 		return err
 	}
 
@@ -724,13 +724,13 @@ func (s *Session) handleName(sender *SessionClient, msg []string) (err error) {
 	}
 	sender.name = msg[1]
 
-	sender.hClient.room.broadcast(sender.hClient, "name", sender.id, sender.name) // broadcast name change to room if client is in one
+	sender.rClient.room.broadcast(sender.rClient, "name", sender.id, sender.name) // broadcast name change to room if client is in one
 
 	return nil
 }
 
 func (s *Session) handlePloc(sender *SessionClient, msg []string) (err error) {
-	if sender.hClient == nil {
+	if sender.rClient == nil {
 		return err
 	}
 
@@ -742,9 +742,9 @@ func (s *Session) handlePloc(sender *SessionClient, msg []string) (err error) {
 		return errors.New("invalid prev map ID")
 	}
 
-	sender.hClient.prevMapId = msg[1]
-	sender.hClient.prevLocations = msg[2]
-	checkRoomConditions(sender.hClient.room, sender.hClient, "prevMap", sender.hClient.prevMapId)
+	sender.rClient.prevMapId = msg[1]
+	sender.rClient.prevLocations = msg[2]
+	checkRoomConditions(sender.rClient.room, sender.rClient, "prevMap", sender.rClient.prevMapId)
 
 	return nil
 }
@@ -775,12 +775,12 @@ func (s *Session) handleGSay(sender *SessionClient, msg []string) (err error) {
 	x := -1
 	y := -1
 
-	if sender.hClient != nil {
-		mapId = sender.hClient.mapId
-		prevMapId = sender.hClient.prevMapId
-		prevLocations = sender.hClient.prevLocations
-		x = sender.hClient.x
-		y = sender.hClient.y
+	if sender.rClient != nil {
+		mapId = sender.rClient.mapId
+		prevMapId = sender.rClient.prevMapId
+		prevLocations = sender.rClient.prevLocations
+		x = sender.rClient.x
+		y = sender.rClient.y
 	}
 
 	session.broadcast("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge)

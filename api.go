@@ -717,7 +717,7 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 		}
 		ret := -1
 		if client, found := clients.Load(uuid); found {
-			if client.(*SessionClient).hClient != nil {
+			if client.(*SessionClient).rClient != nil {
 				if !free {
 					exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
 					if err != nil {
