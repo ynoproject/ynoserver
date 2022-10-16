@@ -62,7 +62,7 @@ type HubClient struct {
 
 	conn *websocket.Conn
 
-	disconnect sync.Once
+	dcOnce sync.Once
 
 	send chan []byte
 
@@ -97,7 +97,7 @@ type SessionClient struct {
 	conn *websocket.Conn
 	ip   string
 
-	disconnect sync.Once
+	dcOnce sync.Once
 
 	send chan []byte
 
@@ -136,7 +136,7 @@ type SessionMessage struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *HubClient) readPump() {
-	defer func() { c.hub.unregister <- c }()
+	defer c.disconnect()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -154,7 +154,7 @@ func (c *HubClient) readPump() {
 }
 
 func (s *SessionClient) readPump() {
-	defer func() { session.unregister <- s }()
+	defer s.disconnect()
 
 	s.conn.SetReadLimit(maxMessageSize)
 	s.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -181,7 +181,7 @@ func (c *HubClient) writePump() {
 
 	defer func() {
 		ticker.Stop()
-		c.hub.unregister <- c
+		c.disconnect()
 	}()
 
 	for {
@@ -207,7 +207,7 @@ func (s *SessionClient) writePump() {
 
 	defer func() {
 		ticker.Stop()
-		session.unregister <- s
+		s.disconnect()
 	}()
 
 	for {
@@ -226,6 +226,38 @@ func (s *SessionClient) writePump() {
 			}
 		}
 	}
+}
+
+func (c *HubClient) disconnect() {
+	c.dcOnce.Do(func() {
+		c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+		c.conn.WriteMessage(websocket.CloseMessage, nil)
+
+		c.conn.Close()
+
+		c.sClient.hClient = nil
+
+		c.hub.clients.Delete(c)
+
+		c.hub.broadcast(c, "d", c.sClient.id) // user %id% has disconnected message
+
+		writeLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), "disconnect", 200)
+	})
+}
+
+func (s *SessionClient) disconnect() {
+	s.dcOnce.Do(func() {
+		s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+		s.conn.WriteMessage(websocket.CloseMessage, nil)
+
+		s.conn.Close()
+
+		clients.Delete(s.uuid)
+
+		updatePlayerGameData(s)
+
+		writeLog(s.ip, "session", "disconnect", 200)
+	})
 }
 
 func (c *HubClient) sendMsg(segments ...any) {

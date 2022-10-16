@@ -25,7 +25,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
@@ -70,9 +69,6 @@ type Hub struct {
 	// Connection requests from the clients.
 	connect chan *ConnInfo
 
-	// Unregister requests from clients.
-	unregister chan *HubClient
-
 	roomId       int
 	singleplayer bool
 
@@ -97,7 +93,6 @@ func newHub(roomId int, singleplayer bool) *Hub {
 	return &Hub{
 		processMsgCh:    make(chan *Message, 16),
 		connect:         make(chan *ConnInfo, 4),
-		unregister:      make(chan *HubClient, 4),
 		roomId:          roomId,
 		singleplayer:    singleplayer,
 		conditions:      getHubConditions(roomId),
@@ -161,21 +156,6 @@ func (h *Hub) run() {
 			go client.readPump()
 
 			writeLog(conn.Ip, strconv.Itoa(h.roomId), "connect", 200)
-		case client := <-h.unregister:
-			client.disconnect.Do(func() {
-				client.conn.SetWriteDeadline(time.Now().Add(writeWait))
-				client.conn.WriteMessage(websocket.CloseMessage, nil)
-
-				client.conn.Close()
-
-				client.sClient.hClient = nil
-
-				h.clients.Delete(client)
-
-				h.broadcast(client, "d", client.sClient.id) // user %id% has disconnected message
-
-				writeLog(client.sClient.ip, strconv.Itoa(h.roomId), "disconnect", 200)
-			})
 		case message := <-h.processMsgCh:
 			if errs := h.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {

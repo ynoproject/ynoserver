@@ -23,10 +23,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 	"unicode/utf8"
-
-	"github.com/gorilla/websocket"
 )
 
 var (
@@ -34,7 +31,6 @@ var (
 	session = &Session{
 		processMsgCh: make(chan *SessionMessage, 16),
 		connect:      make(chan *ConnInfo, 4),
-		unregister:   make(chan *SessionClient, 4),
 	}
 )
 
@@ -44,9 +40,6 @@ type Session struct {
 
 	// Connection requests from the clients.
 	connect chan *ConnInfo
-
-	// Unregister requests from clients.
-	unregister chan *SessionClient
 
 	lastId int
 }
@@ -141,19 +134,6 @@ func (s *Session) run() {
 			go client.readPump()
 
 			writeLog(conn.Ip, "session", "connect", 200)
-		case client := <-s.unregister:
-			client.disconnect.Do(func() {
-				client.conn.SetWriteDeadline(time.Now().Add(writeWait))
-				client.conn.WriteMessage(websocket.CloseMessage, nil)
-
-				client.conn.Close()
-
-				clients.Delete(client.uuid)
-
-				updatePlayerGameData(client)
-
-				writeLog(client.ip, "session", "disconnect", 200)
-			})
 		case message := <-s.processMsgCh:
 			if errs := s.processMsgs(message); len(errs) > 0 {
 				for _, err := range errs {
