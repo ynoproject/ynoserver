@@ -29,16 +29,16 @@ import (
 )
 
 var (
-	db *sql.DB
+	db = getDatabaseConn()
 )
 
-func setDatabase() {
+func getDatabaseConn() *sql.DB {
 	conn, err := sql.Open("mysql", "yno@unix(/run/mysqld/mysqld.sock)/ynodb?parseTime=true")
 	if err != nil {
-		return
+		return nil
 	}
 
-	db = conn
+	return conn
 }
 
 func getOrCreatePlayerData(ip string) (uuid string, banned bool, muted bool) {

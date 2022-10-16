@@ -77,10 +77,9 @@ func main() {
 	}
 
 	config.spriteNames = getCharSetList()
-	config.soundNames = getSoundList()
 	config.systemNames = getSystemList()
-
-	setDatabase()
+	config.soundNames = getSoundList()
+	
 	setConditions()
 	setBadges()
 	setEventVms()

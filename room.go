@@ -37,9 +37,7 @@ const (
 
 var (
 	delimBytes = []byte("\uffff")
-)
 
-var (
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -106,7 +104,7 @@ func handleRoom(w http.ResponseWriter, r *http.Request) {
 
 func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 	client := &RoomClient{
-		room:         r,
+		room:        r,
 		conn:        conn,
 		send:        make(chan []byte, 16),
 		receive:     make(chan []byte, 16),
