@@ -61,10 +61,11 @@ func handleSession(w http.ResponseWriter, r *http.Request) {
 
 func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 	client := &SessionClient{
-		conn: conn,
-		ip:   ip,
-		send: make(chan []byte, 16),
-		receive: make(chan []byte, 16),
+		conn:      conn,
+		ip:        ip,
+		writerEnd: make(chan bool, 1),
+		send:      make(chan []byte, 16),
+		receive:   make(chan []byte, 16),
 	}
 
 	var banned bool
