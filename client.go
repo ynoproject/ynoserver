@@ -100,7 +100,8 @@ type SessionClient struct {
 
 	dcOnce sync.Once
 
-	send chan []byte
+	send    chan []byte
+	receive chan *SessionMessage
 
 	id int
 
@@ -168,7 +169,7 @@ func (s *SessionClient) readPump() {
 			break
 		}
 
-		session.processMsgCh <- &SessionMessage{sender: s, data: message}
+		s.receive <- &SessionMessage{sender: s, data: message}
 	}
 }
 
@@ -229,6 +230,44 @@ func (s *SessionClient) writePump() {
 	}
 }
 
+func (c *HubClient) handleMsg() {
+	for {
+		message, ok := <-c.receive
+		if !ok {
+			return
+		}
+
+		if errs := c.hub.processMsgs(message); len(errs) > 0 {
+			for _, err := range errs {
+				writeErrLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error())
+			}
+		}
+	}
+}
+
+func (s *SessionClient) handleMsg() {
+	for {
+		message, ok := <-s.receive
+		if !ok {
+			return
+		}
+
+		if errs := session.processMsgs(message); len(errs) > 0 {
+			for _, err := range errs {
+				writeErrLog(s.ip, "session", err.Error())
+			}
+		}
+	}
+}
+
+func (c *HubClient) sendMsg(segments ...any) {
+	c.send <- buildMsg(segments)
+}
+
+func (s *SessionClient) sendMsg(segments ...any) {
+	s.send <- buildMsg(segments)
+}
+
 func (c *HubClient) disconnect() {
 	c.dcOnce.Do(func() {
 		c.conn.SetWriteDeadline(time.Now().Add(writeWait))
@@ -259,29 +298,8 @@ func (s *SessionClient) disconnect() {
 
 		updatePlayerGameData(s)
 
+		close(s.receive)
+
 		writeLog(s.ip, "session", "disconnect", 200)
 	})
-}
-
-func (c *HubClient) handleMsg() {
-	for {
-		message, ok := <-c.receive
-		if !ok {
-			return
-		}
-
-		if errs := c.hub.processMsgs(message); len(errs) > 0 {
-			for _, err := range errs {
-				writeErrLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error())
-			}
-		}
-	}
-}
-
-func (c *HubClient) sendMsg(segments ...any) {
-	c.send <- buildMsg(segments)
-}
-
-func (s *SessionClient) sendMsg(segments ...any) {
-	s.send <- buildMsg(segments)
 }

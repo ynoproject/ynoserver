@@ -63,9 +63,6 @@ type Hub struct {
 	// Registered clients.
 	clients sync.Map
 
-	// Inbound messages from the clients.
-	processMsgCh chan *HubMessage
-
 	roomId       int
 	singleplayer bool
 
@@ -77,7 +74,6 @@ type Hub struct {
 func createHubs(roomIds []int, spRooms []int) {
 	for _, roomId := range roomIds {
 		hubs[roomId] = &Hub{
-			processMsgCh:    make(chan *HubMessage, 16),
 			roomId:          roomId,
 			singleplayer:    contains(spRooms, roomId),
 			conditions:      getHubConditions(roomId),

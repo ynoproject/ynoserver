@@ -119,6 +119,7 @@ func main() {
 	}
 
 	http.HandleFunc("/room", handleRoom)
+	http.HandleFunc("/session", handleSession)
 
 	http.Serve(listener, nil)
 }

@@ -24,36 +24,27 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
+
+	"github.com/gorilla/websocket"
 )
 
 var (
 	clients sync.Map
-	session = &Session{
-		processMsgCh: make(chan *SessionMessage, 16),
-		connect:      make(chan *ConnInfo, 4),
-	}
+	session = &Session{}
 )
 
 type Session struct {
-	// Inbound messages from the clients.
-	processMsgCh chan *SessionMessage
-
-	// Connection requests from the clients.
-	connect chan *ConnInfo
-
 	lastId int
 }
 
 func initSession() {
-	go session.run()
-
 	scheduler.Every(5).Seconds().Do(func() {
 		session.broadcast("pc", getSessionClientsLen())
 		sendPartyUpdate()
 	})
 }
 
-func (s *Session) serve(w http.ResponseWriter, r *http.Request) {
+func handleSession(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
 	if err != nil {
 		log.Println(err)
@@ -61,87 +52,76 @@ func (s *Session) serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var playerToken string
-	token, ok := r.URL.Query()["token"]
-	if ok && len(token[0]) == 32 {
+	if token, ok := r.URL.Query()["token"]; ok && len(token[0]) == 32 {
 		playerToken = token[0]
 	}
 
-	s.connect <- &ConnInfo{Connect: conn, Ip: getIp(r), Token: playerToken}
+	session.addClient(conn, getIp(r), playerToken)
 }
 
-func (s *Session) run() {
-	http.HandleFunc("/session", s.serve)
-	for {
-		select {
-		case conn := <-s.connect:
-			client := &SessionClient{
-				conn: conn.Connect,
-				ip:   conn.Ip,
-				send: make(chan []byte, 16),
-			}
-
-			var banned bool
-			if conn.Token != "" {
-				client.uuid, client.name, client.rank, client.badge, banned, client.muted = getPlayerDataFromToken(conn.Token)
-			}
-
-			if client.uuid != "" {
-				client.account = true
-			} else {
-				client.uuid, banned, client.muted = getOrCreatePlayerData(conn.Ip)
-			}
-
-			if banned {
-				writeErrLog(conn.Ip, "session", "player is banned")
-				continue
-			}
-
-			if _, ok := clients.Load(client.uuid); ok {
-				writeErrLog(conn.Ip, "session", "session already exists for uuid")
-				continue
-			}
-
-			var sameIp int
-			clients.Range(func(_, v any) bool {
-				if v.(*SessionClient).ip == conn.Ip {
-					sameIp++
-				}
-
-				return true
-			})
-			if sameIp >= 3 {
-				writeErrLog(conn.Ip, "session", "too many connections from ip")
-				continue
-			}
-
-			if client.badge == "" {
-				client.badge = "null"
-			}
-
-			client.id = s.lastId
-			s.lastId++
-
-			client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
-
-			// register client to the clients list
-			clients.Store(client.uuid, client)
-
-			// queue s message
-			client.sendMsg("s", client.uuid, client.rank, client.account, client.badge)
-
-			// start writePump and readPump
-			go client.writePump()
-			go client.readPump()
-
-			writeLog(conn.Ip, "session", "connect", 200)
-		case message := <-s.processMsgCh:
-			if errs := s.processMsgs(message); len(errs) > 0 {
-				for _, err := range errs {
-					writeErrLog(message.sender.ip, "session", err.Error())
-				}
-			}
-		}
+func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
+	client := &SessionClient{
+		conn: conn,
+		ip:   ip,
+		send: make(chan []byte, 16),
 	}
+
+	var banned bool
+	if token != "" {
+		client.uuid, client.name, client.rank, client.badge, banned, client.muted = getPlayerDataFromToken(token)
+	}
+
+	if client.uuid != "" {
+		client.account = true
+	} else {
+		client.uuid, banned, client.muted = getOrCreatePlayerData(ip)
+	}
+
+	if banned {
+		writeErrLog(ip, "session", "player is banned")
+		return
+	}
+
+	if _, ok := clients.Load(client.uuid); ok {
+		writeErrLog(ip, "session", "session already exists for uuid")
+		return
+	}
+
+	var sameIp int
+	clients.Range(func(_, v any) bool {
+		if v.(*SessionClient).ip == ip {
+			sameIp++
+		}
+
+		return true
+	})
+	if sameIp >= 3 {
+		writeErrLog(ip, "session", "too many connections from ip")
+		return
+	}
+
+	if client.badge == "" {
+		client.badge = "null"
+	}
+
+	client.id = s.lastId
+	s.lastId++
+
+	client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
+
+	// register client to the clients list
+	clients.Store(client.uuid, client)
+
+	// queue s message
+	client.sendMsg("s", client.uuid, client.rank, client.account, client.badge)
+
+	go client.handleMsg()
+
+	// start writePump and readPump
+	go client.writePump()
+	go client.readPump()
+
+	writeLog(ip, "session", "connect", 200)
 }
 
 func (s *Session) broadcast(segments ...any) {
