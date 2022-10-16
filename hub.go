@@ -115,7 +115,7 @@ func (h *Hub) addClient(conn *websocket.Conn, ip string, token string) {
 		hub:         h,
 		conn:        conn,
 		send:        make(chan []byte, 16),
-		receive:     make(chan *HubMessage, 16),
+		receive:     make(chan []byte, 16),
 		key:         generateKey(),
 		pictures:    make(map[int]*Picture),
 		mapId:       fmt.Sprintf("%04d", h.roomId),
@@ -183,36 +183,36 @@ func (h *Hub) broadcast(sender *HubClient, segments ...any) {
 	})
 }
 
-func (h *Hub) processMsgs(msg *HubMessage) []error {
+func (h *Hub) processMsgs(sender *HubClient, data []byte) []error {
 	var errs []error
 
-	if len(msg.data) < 8 || len(msg.data) > 4096 {
+	if len(data) < 8 || len(data) > 4096 {
 		return append(errs, errors.New("bad request size"))
 	}
 
-	if !verifySignature(msg.sender.key, msg.data) {
+	if !verifySignature(sender.key, data) {
 		return append(errs, errors.New("bad signature"))
 	}
 
-	if !verifyCounter(&msg.sender.counter, msg.data) {
+	if !verifyCounter(&sender.counter, data) {
 		return append(errs, errors.New("bad counter"))
 	}
 
-	msg.data = msg.data[8:]
+	data = data[8:]
 
-	for _, v := range msg.data {
+	for _, v := range data {
 		if v < 32 {
 			return append(errs, errors.New("bad byte sequence"))
 		}
 	}
 
-	if !utf8.Valid(msg.data) {
+	if !utf8.Valid(data) {
 		return append(errs, errors.New("invalid UTF-8"))
 	}
 
 	// message processing
-	for _, msgStr := range strings.Split(string(msg.data), mdelim) {
-		err := h.processMsg(msgStr, msg.sender)
+	for _, msgStr := range strings.Split(string(data), mdelim) {
+		err := h.processMsg(msgStr, sender)
 		if err != nil {
 			errs = append(errs, err)
 		}

@@ -131,26 +131,26 @@ func (s *Session) broadcast(segments ...any) {
 	})
 }
 
-func (s *Session) processMsgs(msg *SessionMessage) []error {
+func (s *Session) processMsgs(sender *SessionClient, data []byte) []error {
 	var errs []error
 
-	if len(msg.data) > 4096 {
+	if len(data) > 4096 {
 		return append(errs, errors.New("bad request size"))
 	}
 
-	for _, v := range msg.data {
+	for _, v := range data {
 		if v < 32 {
 			return append(errs, errors.New("bad byte sequence"))
 		}
 	}
 
-	if !utf8.Valid(msg.data) {
+	if !utf8.Valid(data) {
 		return append(errs, errors.New("invalid UTF-8"))
 	}
 
 	// message processing
-	for _, msgStr := range strings.Split(string(msg.data), mdelim) {
-		if err := s.processMsg(msgStr, msg.sender); err != nil {
+	for _, msgStr := range strings.Split(string(data), mdelim) {
+		if err := s.processMsg(msgStr, sender); err != nil {
 			errs = append(errs, err)
 		}
 	}

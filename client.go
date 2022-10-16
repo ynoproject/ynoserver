@@ -65,7 +65,7 @@ type HubClient struct {
 	dcOnce sync.Once
 
 	send    chan []byte
-	receive chan *HubMessage
+	receive chan []byte
 
 	key, counter uint32
 
@@ -101,7 +101,7 @@ type SessionClient struct {
 	dcOnce sync.Once
 
 	send    chan []byte
-	receive chan *SessionMessage
+	receive chan []byte
 
 	id int
 
@@ -119,16 +119,6 @@ type SessionClient struct {
 	systemName string
 }
 
-type HubMessage struct {
-	sender *HubClient
-	data   []byte
-}
-
-type SessionMessage struct {
-	sender *SessionClient
-	data   []byte
-}
-
 func (c *HubClient) msgReader() {
 	defer c.disconnect()
 
@@ -143,7 +133,7 @@ func (c *HubClient) msgReader() {
 			break
 		}
 
-		c.receive <- &HubMessage{sender: c, data: message}
+		c.receive <- message
 	}
 }
 
@@ -161,7 +151,7 @@ func (s *SessionClient) msgReader() {
 			break
 		}
 
-		s.receive <- &SessionMessage{sender: s, data: message}
+		s.receive <- message
 	}
 }
 
@@ -224,7 +214,7 @@ func (c *HubClient) msgProcessor() {
 			return
 		}
 
-		if errs := c.hub.processMsgs(message); len(errs) > 0 {
+		if errs := c.hub.processMsgs(c, message); len(errs) > 0 {
 			for _, err := range errs {
 				writeErrLog(c.sClient.ip, strconv.Itoa(c.hub.roomId), err.Error())
 			}
@@ -239,7 +229,7 @@ func (s *SessionClient) msgProcessor() {
 			return
 		}
 
-		if errs := session.processMsgs(message); len(errs) > 0 {
+		if errs := session.processMsgs(s, message); len(errs) > 0 {
 			for _, err := range errs {
 				writeErrLog(s.ip, "session", err.Error())
 			}
