@@ -58,13 +58,12 @@ type ConfigFile struct {
 	} `yaml:"logging"`
 }
 
-func parseConfig(file string) ConfigFile {
+func parseConfig(file string) (config ConfigFile) {
 	yamlFile, err := os.ReadFile(file)
 	if err != nil {
 		panic(err)
 	}
 
-	var config ConfigFile
 	err = yaml.Unmarshal(yamlFile, &config)
 	if err != nil {
 		panic(err)
