@@ -35,7 +35,7 @@ var (
 func getDatabaseConn() *sql.DB {
 	conn, err := sql.Open("mysql", "yno@unix(/run/mysqld/mysqld.sock)/ynodb?parseTime=true")
 	if err != nil {
-		return nil
+		panic(err)
 	}
 
 	return conn
