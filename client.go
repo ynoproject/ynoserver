@@ -67,8 +67,7 @@ type RoomClient struct {
 	writerEnd chan bool
 	writerWg  sync.WaitGroup
 
-	send    chan []byte
-	receive chan []byte
+	send, receive chan []byte
 
 	key, counter uint32
 
@@ -106,8 +105,7 @@ type SessionClient struct {
 	writerEnd chan bool
 	writerWg  sync.WaitGroup
 
-	send    chan []byte
-	receive chan []byte
+	send, receive chan []byte
 
 	id int
 
