@@ -1036,7 +1036,7 @@ func tryCompleteEventLocation(periodId int, playerUuid string, location string) 
 	return -1, err
 }
 
-func tryCompletePlayerEventLocation(periodId int, playerUuid string, location string) (complete bool, err error) {
+func tryCompletePlayerEventLocation(periodId int, playerUuid string, location string) (success bool, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
 		client := client.(*SessionClient).rClient
 		if client == nil {
@@ -1047,8 +1047,6 @@ func tryCompletePlayerEventLocation(periodId int, playerUuid string, location st
 		if err != nil {
 			return false, err
 		}
-
-		var success bool
 
 		for results.Next() {
 			var eventId string
