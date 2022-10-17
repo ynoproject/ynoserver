@@ -172,8 +172,6 @@ func initRankings() {
 	}
 
 	scheduler.Every(15).Minute().Do(func() {
-		defer rankingsMtx.Unlock()
-
 		rankingsMtx.Lock()
 
 		for _, category := range rankingCategories {
@@ -188,5 +186,7 @@ func initRankings() {
 				}
 			}
 		}
+
+		rankingsMtx.Unlock()
 	})
 }
