@@ -172,9 +172,7 @@ func (s *Session) processMsg(sender *SessionClient, msg []byte) (err error) {
 	return nil
 }
 
-func getSessionClientsLen() int {
-	var length int
-
+func getSessionClientsLen() (length int) {
 	clients.Range(func(_, _ any) bool {
 		length++
 
