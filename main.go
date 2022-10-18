@@ -45,31 +45,8 @@ func main() {
 
 	configFileData := parseConfig(*configFile)
 
-	// list of sound names to ignore
-	var ignoredSoundNames []string
-	if configFileData.BadSounds != "" {
-		ignoredSoundNames = strings.Split(configFileData.BadSounds, ",")
-	}
-
-	// list of picture names to allow
-	pictureNames := make(map[string]bool)
-	if configFileData.PictureNames != "" {
-		for _, name := range strings.Split(configFileData.PictureNames, ",") {
-			pictureNames[name] = true
-		}
-	}
-
-	// list of picture prefixes to allow
-	var picturePrefixes []string
-	if configFileData.PicturePrefixes != "" {
-		picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
-	}
-
 	config = Config{
-		ignoredSoundNames: ignoredSoundNames,
-		pictureNames:      pictureNames,
-		picturePrefixes:   picturePrefixes,
-		gameName:          configFileData.GameName,
+		gameName:     configFileData.GameName,
 
 		signKey:  []byte(configFileData.SignKey),
 		ipHubKey: configFileData.IPHubKey,
@@ -79,11 +56,30 @@ func main() {
 	config.systemNames = getSystemList()
 	config.soundNames = getSoundList()
 
+	// list of sound names to ignore
+	if configFileData.BadSounds != "" {
+		config.ignoredSoundNames = strings.Split(configFileData.BadSounds, ",")
+	}
+
+	// list of picture names to allow
+	config.pictureNames = make(map[string]bool)
+	if configFileData.PictureNames != "" {
+		for _, name := range strings.Split(configFileData.PictureNames, ",") {
+			config.pictureNames[name] = true
+		}
+	}
+
+	// list of picture prefixes to allow
+	if configFileData.PicturePrefixes != "" {
+		config.picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
+	}
+
 	setConditions()
 	setBadges()
 	setEventVms()
 
 	globalConditions = getGlobalConditions()
+
 	createRooms(getMapList(), atoiArray(strings.Split(configFileData.SpRooms, ",")))
 
 	log.SetOutput(&lumberjack.Logger{
