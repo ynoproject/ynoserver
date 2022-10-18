@@ -78,7 +78,7 @@ func main() {
 	config.spriteNames = getCharSetList()
 	config.systemNames = getSystemList()
 	config.soundNames = getSoundList()
-	
+
 	setConditions()
 	setBadges()
 	setEventVms()
@@ -102,24 +102,28 @@ func main() {
 
 	scheduler.StartAsync()
 
+	http.HandleFunc("/room", handleRoom)
+	http.HandleFunc("/session", handleSession)
+
+	http.Serve(getListener(), nil)
+}
+
+func getListener() net.Listener {
 	// remove socket file
-	os.Remove("sockets/" + configFileData.GameName + ".sock")
+	os.Remove("sockets/" + config.gameName + ".sock")
 
 	// create unix socket at sockets/<game>.sock
-	listener, err := net.Listen("unix", "sockets/"+configFileData.GameName+".sock")
+	listener, err := net.Listen("unix", "sockets/"+config.gameName+".sock")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// listen for connections to socket
-	if err := os.Chmod("sockets/"+configFileData.GameName+".sock", 0666); err != nil {
+	if err := os.Chmod("sockets/"+config.gameName+".sock", 0666); err != nil {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/room", handleRoom)
-	http.HandleFunc("/session", handleSession)
-
-	http.Serve(listener, nil)
+	return listener
 }
 
 func atoiArray(strArray []string) (intArray []int) {
