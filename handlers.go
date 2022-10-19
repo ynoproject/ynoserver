@@ -19,18 +19,17 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"strconv"
 	"strings"
 )
 
 var (
-	errLengthMismatch = errors.New("command length mismatch")
+	
 )
 
 func (r *Room) handleIdent(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 1 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 
 	sender.valid = true
@@ -42,7 +41,7 @@ func (r *Room) handleIdent(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleM(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	// check if the coordinates are valid
 	x, errconv := strconv.Atoi(msg[1])
@@ -70,7 +69,7 @@ func (r *Room) handleM(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleF(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	// check if direction is valid
 	facing, errconv := strconv.Atoi(msg[1])
@@ -85,7 +84,7 @@ func (r *Room) handleF(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleSpd(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	spd, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
@@ -102,7 +101,7 @@ func (r *Room) handleSpd(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleSpr(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	if !isValidSprite(msg[1]) {
 		return err
@@ -123,7 +122,7 @@ func (r *Room) handleSpr(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleFl(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 6 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	red, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || red < 0 || red > 255 {
@@ -170,7 +169,7 @@ func (r *Room) handleRrfl(sender *RoomClient) (err error) {
 
 func (r *Room) handleH(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	hiddenBin, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || hiddenBin < 0 || hiddenBin > 1 {
@@ -184,7 +183,7 @@ func (r *Room) handleH(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleSys(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	if !isValidSystem(msg[1], false) {
 		return err
@@ -197,7 +196,7 @@ func (r *Room) handleSys(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleSe(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 5 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	if !isValidSound(msg[1]) {
 		return err
@@ -226,7 +225,7 @@ func (r *Room) handleP(sender *RoomClient, msg []string) (err error) {
 		msgLength = 20
 	}
 	if len(msg) != msgLength {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 
 	if isShow {
@@ -372,7 +371,7 @@ func (r *Room) handleP(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleRp(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	picId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil || picId < 1 {
@@ -390,7 +389,7 @@ func (r *Room) handleSay(sender *RoomClient, msg []string) (err error) {
 	}
 
 	if len(msg) != 2 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	msgContents := strings.TrimSpace(msg[1])
 	if sender.sClient.name == "" || sender.sClient.systemName == "" || msgContents == "" || len(msgContents) > 150 {
@@ -403,7 +402,7 @@ func (r *Room) handleSay(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleSs(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	switchId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
@@ -521,7 +520,7 @@ func (r *Room) handleSs(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleSv(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	varId, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
@@ -652,7 +651,7 @@ func (r *Room) handleSv(sender *RoomClient, msg []string) (err error) {
 
 func (r *Room) handleSev(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	actionBin, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || actionBin < 0 || actionBin > 1 {
@@ -716,7 +715,7 @@ func (s *Session) handleName(sender *SessionClient, msg []string) (err error) {
 	}
 
 	if len(msg) != 2 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 
 	if sender.name != "" || !isOkString(msg[1]) || len(msg[1]) > 12 {
@@ -735,11 +734,11 @@ func (s *Session) handlePloc(sender *SessionClient, msg []string) (err error) {
 	}
 
 	if len(msg) != 3 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 
 	if len(msg[1]) != 4 {
-		return errors.New("invalid prev map ID")
+		return errInvalidPrevMap
 	}
 
 	sender.rClient.prevMapId = msg[1]
@@ -755,13 +754,13 @@ func (s *Session) handleGSay(sender *SessionClient, msg []string) (err error) {
 	}
 
 	if len(msg) != 3 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	msgContents := strings.TrimSpace(msg[1])
 	if sender.name == "" || sender.systemName == "" {
-		return errors.New("invalid client")
+		return errInvalidClient
 	} else if msgContents == "" || len(msgContents) > 150 {
-		return errors.New("invalid message")
+		return errInvalidMsg
 	}
 
 	enableLocBin, errconv := strconv.Atoi(msg[2])
@@ -795,13 +794,13 @@ func (s *Session) handlePSay(sender *SessionClient, msg []string) (err error) {
 	}
 
 	if len(msg) != 2 {
-		return errLengthMismatch
+		return errLenMismatch
 	}
 	msgContents := strings.TrimSpace(msg[1])
 	if sender.name == "" || sender.systemName == "" {
-		return errors.New("invalid client")
+		return errInvalidClient
 	} else if msgContents == "" || len(msgContents) > 150 {
-		return errors.New("invalid message")
+		return errInvalidMsg
 	}
 
 	partyId, err := getPlayerPartyId(sender.uuid)
@@ -809,7 +808,7 @@ func (s *Session) handlePSay(sender *SessionClient, msg []string) (err error) {
 		return err
 	}
 	if partyId == 0 {
-		return errors.New("player not in a party")
+		return errNoParty
 	}
 	partyMemberUuids, err := getPartyMemberUuids(partyId)
 	if err != nil {
@@ -830,7 +829,7 @@ func (s *Session) handlePt(sender *SessionClient) (err error) {
 		return err
 	}
 	if partyId == 0 {
-		return errors.New("player not in a party")
+		return errNoParty
 	}
 	partyData, err := getPartyData(sender.uuid)
 	if err != nil {

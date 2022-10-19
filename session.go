@@ -18,7 +18,6 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -135,7 +134,7 @@ func (s *Session) broadcast(segments ...any) {
 
 func (s *Session) processMsg(sender *SessionClient, msg []byte) (err error) {
 	if !utf8.Valid(msg) {
-		return errors.New("invalid UTF-8")
+		return errInvalidUTF8
 	}
 
 	msgFields := strings.Split(string(msg), delim)
@@ -161,7 +160,7 @@ func (s *Session) processMsg(sender *SessionClient, msg []byte) (err error) {
 	case "e": // event list
 		err = s.handleE(sender)
 	default:
-		err = errors.New("unknown message type")
+		err = errUnkMsgType
 	}
 	if err != nil {
 		return err

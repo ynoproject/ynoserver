@@ -18,7 +18,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -179,21 +178,21 @@ func (r *Room) broadcast(sender *RoomClient, segments ...any) {
 
 func (r *Room) processMsgs(sender *RoomClient, msg []byte) (errs []error) {
 	if len(msg) < 8 {
-		return append(errs, errors.New("bad request size"))
+		return append(errs, errBadReqSize)
 	}
 
 	if !security.VerifySignature(sender.key, config.signKey, msg) {
-		return append(errs, errors.New("bad signature"))
+		return append(errs, errBadSignature)
 	}
 
 	if !security.VerifyCounter(&sender.counter, msg) {
-		return append(errs, errors.New("bad counter"))
+		return append(errs, errBadCounter)
 	}
 
 	msg = msg[8:]
 
 	if !utf8.Valid(msg) {
-		return append(errs, errors.New("invalid UTF-8"))
+		return append(errs, errInvalidUTF8)
 	}
 
 	// message processing
@@ -247,7 +246,7 @@ func (r *Room) processMsg(sender *RoomClient, msgStr string) (err error) {
 		case "sev":
 			err = r.handleSev(sender, msgFields)
 		default:
-			err = errors.New("unknown message type")
+			err = errUnkMsgType
 		}
 	}
 	if err != nil {

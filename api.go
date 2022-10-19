@@ -20,7 +20,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -1280,14 +1279,14 @@ func handleResetPw(user string) (newPassword string, err error) {
 	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user).Scan(&userCount)
 
 	if userCount == 0 {
-		return "", errors.New("user not found")
+		return "", errUserNotFound
 	}
 
 	newPassword = randString(8)
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return "", errors.New("bcrypt error")
+		return "", errBcryptError
 	}
 
 	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, user)
