@@ -46,21 +46,21 @@ type Config struct {
 }
 
 type configFile struct {
-	spRooms         string `yaml:"sp_rooms"`
-	badSounds       string `yaml:"bad_sounds"`
-	pictureNames    string `yaml:"picture_names"`
-	picturePrefixes string `yaml:"picture_prefixes"`
+	SpRooms         string `yaml:"sp_rooms"`
+	BadSounds       string `yaml:"bad_sounds"`
+	PictureNames    string `yaml:"picture_names"`
+	PicturePrefixes string `yaml:"picture_prefixes"`
 
-	gameName string `yaml:"game_name"`
+	GameName string `yaml:"game_name"`
 
-	signKey  string `yaml:"sign_key"`
-	ipHubKey string `yaml:"iphub_key"`
+	SignKey  string `yaml:"sign_key"`
+	IPHubKey string `yaml:"iphub_key"`
 
-	logging struct {
-		file       string `yaml:"file"`
-		maxSize    int    `yaml:"max_size"`
-		maxBackups int    `yaml:"max_backups"`
-		maxAge     int    `yaml:"max_age"`
+	Logging struct {
+		File       string `yaml:"file"`
+		MaxSize    int    `yaml:"max_size"`
+		MaxBackups int    `yaml:"max_backups"`
+		MaxAge     int    `yaml:"max_age"`
 	} `yaml:"logging"`
 }
 
@@ -77,47 +77,49 @@ func ParseConfigFile(filename string) (config *Config) {
 		panic(err)
 	}
 
-	if configFile.spRooms != "" {
-		for _, str := range strings.Split(configFile.spRooms, ",") {
+	config = &Config{}
+
+	if configFile.SpRooms != "" {
+		for _, str := range strings.Split(configFile.SpRooms, ",") {
 			num, err := strconv.Atoi(str)
 			if err != nil {
-				return nil
+				continue
 			}
 
 			config.SpRooms = append(config.SpRooms, num)
 		}
 	}
 
-	if configFile.badSounds != "" {
-		config.BadSounds = strings.Split(configFile.badSounds, ",")
+	if configFile.BadSounds != "" {
+		config.BadSounds = strings.Split(configFile.BadSounds, ",")
 	}
 
 	config.PictureNames = make(map[string]bool)
-	if configFile.pictureNames != "" {
-		for _, name := range strings.Split(configFile.pictureNames, ",") {
+	if configFile.PictureNames != "" {
+		for _, name := range strings.Split(configFile.PictureNames, ",") {
 			config.PictureNames[name] = true
 		}
 	}
 
-	if configFile.picturePrefixes != "" {
-		config.PicturePrefixes = strings.Split(configFile.picturePrefixes, ",")
+	if configFile.PicturePrefixes != "" {
+		config.PicturePrefixes = strings.Split(configFile.PicturePrefixes, ",")
 	}
 
-	config.GameName = configFile.gameName
+	config.GameName = configFile.GameName
 
-	config.SignKey = []byte(configFile.signKey)
-	config.IPHubKey = configFile.ipHubKey
+	config.SignKey = []byte(configFile.SignKey)
+	config.IPHubKey = configFile.IPHubKey
 
-	if configFile.logging.file == "" {
+	if configFile.Logging.File == "" {
 		config.Logging.File = "server.log"
 	}
-	if configFile.logging.maxSize == 0 {
+	if configFile.Logging.MaxSize == 0 {
 		config.Logging.MaxSize = 50 // MB
 	}
-	if configFile.logging.maxBackups == 0 {
+	if configFile.Logging.MaxBackups == 0 {
 		config.Logging.MaxBackups = 6
 	}
-	if configFile.logging.maxAge == 0 {
+	if configFile.Logging.MaxAge == 0 {
 		config.Logging.MaxAge = 28 // Days
 	}
 
