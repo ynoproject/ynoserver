@@ -181,7 +181,7 @@ func (r *Room) processMsgs(sender *RoomClient, msg []byte) (errs []error) {
 		return append(errs, errBadReqSize)
 	}
 
-	if !security.VerifySignature(sender.key, config.signKey, msg) {
+	if !security.VerifySignature(sender.key, serverConfig.SignKey, msg) {
 		return append(errs, errBadSignature)
 	}
 

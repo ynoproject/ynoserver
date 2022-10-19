@@ -33,46 +33,24 @@ import (
 
 	"github.com/go-co-op/gocron"
 	"github.com/ynoproject/ynoserver/assets"
+	"github.com/ynoproject/ynoserver/config"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
-	scheduler  = gocron.NewScheduler(time.UTC)
-	gameAssets *assets.Assets
+	scheduler = gocron.NewScheduler(time.UTC)
+
+	serverConfig *config.Config
+	gameAssets   *assets.Assets
 )
 
 func Start() {
 	configFile := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
-	configFileData := parseConfig(*configFile)
+	serverConfig = config.ParseConfigFile(*configFile)
 
-	config = Config{
-		gameName: configFileData.GameName,
-
-		signKey:  []byte(configFileData.SignKey),
-		ipHubKey: configFileData.IPHubKey,
-	}
-
-	gameAssets = assets.GetAssets(config.gameName)
-
-	// list of sound names to ignore
-	if configFileData.BadSounds != "" {
-		gameAssets.IgnoredSoundNames = strings.Split(configFileData.BadSounds, ",")
-	}
-
-	// list of picture names to allow
-	gameAssets.PictureNames = make(map[string]bool)
-	if configFileData.PictureNames != "" {
-		for _, name := range strings.Split(configFileData.PictureNames, ",") {
-			gameAssets.PictureNames[name] = true
-		}
-	}
-
-	// list of picture prefixes to allow
-	if configFileData.PicturePrefixes != "" {
-		gameAssets.PicturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
-	}
+	gameAssets = assets.GetAssets(serverConfig.GameName)
 
 	setConditions()
 	setBadges()
@@ -80,13 +58,13 @@ func Start() {
 
 	globalConditions = getGlobalConditions()
 
-	createRooms(gameAssets.MapIDs, atoiArray(strings.Split(configFileData.SpRooms, ",")))
+	createRooms(gameAssets.MapIDs, serverConfig.SpRooms)
 
 	log.SetOutput(&lumberjack.Logger{
-		Filename:   configFileData.Logging.File,
-		MaxSize:    configFileData.Logging.MaxSize,
-		MaxBackups: configFileData.Logging.MaxBackups,
-		MaxAge:     configFileData.Logging.MaxAge,
+		Filename:   serverConfig.Logging.File,
+		MaxSize:    serverConfig.Logging.MaxSize,
+		MaxBackups: serverConfig.Logging.MaxBackups,
+		MaxAge:     serverConfig.Logging.MaxAge,
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
@@ -106,33 +84,20 @@ func Start() {
 
 func getListener() net.Listener {
 	// remove socket file
-	os.Remove("sockets/" + config.gameName + ".sock")
+	os.Remove("sockets/" + serverConfig.GameName + ".sock")
 
 	// create unix socket at sockets/<game>.sock
-	listener, err := net.Listen("unix", "sockets/"+config.gameName+".sock")
+	listener, err := net.Listen("unix", "sockets/"+serverConfig.GameName+".sock")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// listen for connections to socket
-	if err := os.Chmod("sockets/"+config.gameName+".sock", 0666); err != nil {
+	if err := os.Chmod("sockets/"+serverConfig.GameName+".sock", 0666); err != nil {
 		log.Fatal(err)
 	}
 
 	return listener
-}
-
-func atoiArray(strArray []string) (intArray []int) {
-	for _, str := range strArray {
-		num, err := strconv.Atoi(str)
-		if err != nil {
-			return nil
-		}
-
-		intArray = append(intArray, num)
-	}
-
-	return intArray
 }
 
 func contains(s []int, num int) bool {
@@ -150,7 +115,7 @@ func getIp(r *http.Request) string {
 }
 
 func isVpn(ip string) (vpn bool) {
-	if config.ipHubKey == "" {
+	if serverConfig.IPHubKey == "" {
 		return false // VPN checking is not available
 	}
 
@@ -159,7 +124,7 @@ func isVpn(ip string) (vpn bool) {
 		return false
 	}
 
-	req.Header.Set("X-Key", config.ipHubKey)
+	req.Header.Set("X-Key", serverConfig.IPHubKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

@@ -107,7 +107,7 @@ var (
 )
 
 func initEvents() {
-	if config.gameName == "2kki" {
+	if serverConfig.GameName == "2kki" {
 		db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&eventsCount)
 
 		scheduler.Every(1).Day().At("00:00").Do(func() {
@@ -312,7 +312,7 @@ func handleEventError(eventType int, payload string) {
 }
 
 func setEventVms() {
-	if config.gameName != "2kki" {
+	if serverConfig.GameName != "2kki" {
 		return
 	}
 

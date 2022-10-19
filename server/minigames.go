@@ -26,7 +26,7 @@ type MinigameConfig struct {
 }
 
 func getRoomMinigameConfigs(roomId int) (minigameConfigs []*MinigameConfig) {
-	switch config.gameName {
+	switch serverConfig.GameName {
 	case "yume":
 		if roomId == 155 {
 			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "nasu", VarId: 88, SwitchId: 215})

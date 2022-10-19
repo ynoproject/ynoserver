@@ -248,7 +248,7 @@ func updateActiveBadgesAndConditions() {
 }
 
 func getGlobalConditions() (globalConditions []*Condition) {
-	if gameConditions, ok := conditions[config.gameName]; ok {
+	if gameConditions, ok := conditions[serverConfig.GameName]; ok {
 		for _, condition := range gameConditions {
 			if condition.Map == 0 {
 				globalConditions = append(globalConditions, condition)
@@ -259,7 +259,7 @@ func getGlobalConditions() (globalConditions []*Condition) {
 }
 
 func getRoomConditions(roomId int) (roomConditions []*Condition) {
-	if gameConditions, ok := conditions[config.gameName]; ok {
+	if gameConditions, ok := conditions[serverConfig.GameName]; ok {
 		for _, condition := range gameConditions {
 			if condition.Map == roomId {
 				roomConditions = append(roomConditions, condition)
@@ -344,7 +344,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 			}
 			client.sendMsg("sv", varId, varSyncType)
 		} else if checkConditionCoords(c, client) {
-			timeTrial := c.TimeTrial && config.gameName == "2kki"
+			timeTrial := c.TimeTrial && serverConfig.GameName == "2kki"
 			if !timeTrial {
 				success, err := tryWritePlayerTag(client.sClient.uuid, c.ConditionId)
 				if err != nil {

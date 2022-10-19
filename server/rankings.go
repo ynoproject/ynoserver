@@ -61,15 +61,15 @@ func initRankings() {
 		bpCategory.SubCategories = append(bpCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
 		badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all"})
 
-		if _, ok := badges[config.gameName]; ok {
+		if _, ok := badges[serverConfig.GameName]; ok {
 			// Use Yume 2kki server to update badge data
-			if config.gameName == "2kki" {
+			if serverConfig.GameName == "2kki" {
 				// Badge records needed for determining badge game
 				writeGameBadges()
 				updatePlayerBadgeSlotCounts("")
 			}
-			bpCategory.SubCategories = append(bpCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
-			badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: config.gameName, Game: config.gameName})
+			bpCategory.SubCategories = append(bpCategory.SubCategories, RankingSubCategory{SubCategoryId: serverConfig.GameName, Game: serverConfig.GameName})
+			badgeCountCategory.SubCategories = append(badgeCountCategory.SubCategories, RankingSubCategory{SubCategoryId: serverConfig.GameName, Game: serverConfig.GameName})
 		}
 	}
 
@@ -77,70 +77,70 @@ func initRankings() {
 	if err != nil {
 		writeErrLog("SERVER", "exp", err.Error())
 	} else if len(eventPeriods) > 0 {
-		expCategory := &RankingCategory{CategoryId: "exp", Game: config.gameName}
+		expCategory := &RankingCategory{CategoryId: "exp", Game: serverConfig.GameName}
 		rankingCategories = append(rankingCategories, expCategory)
 
 		if len(eventPeriods) > 1 {
-			expCategory.SubCategories = append(expCategory.SubCategories, RankingSubCategory{SubCategoryId: "all", Game: config.gameName})
+			expCategory.SubCategories = append(expCategory.SubCategories, RankingSubCategory{SubCategoryId: "all", Game: serverConfig.GameName})
 		}
 		for _, eventPeriod := range eventPeriods {
-			expCategory.SubCategories = append(expCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: config.gameName})
+			expCategory.SubCategories = append(expCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: serverConfig.GameName})
 		}
 
-		eventLocationCountCategory := &RankingCategory{CategoryId: "eventLocationCount", Game: config.gameName}
+		eventLocationCountCategory := &RankingCategory{CategoryId: "eventLocationCount", Game: serverConfig.GameName}
 		rankingCategories = append(rankingCategories, eventLocationCountCategory)
 
 		if len(eventPeriods) > 1 {
-			eventLocationCountCategory.SubCategories = append(eventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all", Game: config.gameName})
+			eventLocationCountCategory.SubCategories = append(eventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all", Game: serverConfig.GameName})
 		}
 		for _, eventPeriod := range eventPeriods {
-			eventLocationCountCategory.SubCategories = append(eventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: config.gameName})
+			eventLocationCountCategory.SubCategories = append(eventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: serverConfig.GameName})
 		}
 
-		freeEventLocationCountCategory := &RankingCategory{CategoryId: "freeEventLocationCount", Game: config.gameName}
+		freeEventLocationCountCategory := &RankingCategory{CategoryId: "freeEventLocationCount", Game: serverConfig.GameName}
 		rankingCategories = append(rankingCategories, freeEventLocationCountCategory)
 
 		if len(eventPeriods) > 1 {
-			freeEventLocationCountCategory.SubCategories = append(freeEventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all", Game: config.gameName})
+			freeEventLocationCountCategory.SubCategories = append(freeEventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: "all", Game: serverConfig.GameName})
 		}
 		for _, eventPeriod := range eventPeriods {
-			freeEventLocationCountCategory.SubCategories = append(freeEventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: config.gameName})
+			freeEventLocationCountCategory.SubCategories = append(freeEventLocationCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: serverConfig.GameName})
 		}
 
-		eventLocationCompletionCategory := &RankingCategory{CategoryId: "eventLocationCompletion", Game: config.gameName}
+		eventLocationCompletionCategory := &RankingCategory{CategoryId: "eventLocationCompletion", Game: serverConfig.GameName}
 		rankingCategories = append(rankingCategories, eventLocationCompletionCategory)
 
 		if len(eventPeriods) > 1 {
-			eventLocationCompletionCategory.SubCategories = append(eventLocationCompletionCategory.SubCategories, RankingSubCategory{SubCategoryId: "all", Game: config.gameName})
+			eventLocationCompletionCategory.SubCategories = append(eventLocationCompletionCategory.SubCategories, RankingSubCategory{SubCategoryId: "all", Game: serverConfig.GameName})
 		}
 		for _, eventPeriod := range eventPeriods {
-			eventLocationCompletionCategory.SubCategories = append(eventLocationCompletionCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: config.gameName})
+			eventLocationCompletionCategory.SubCategories = append(eventLocationCompletionCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: serverConfig.GameName})
 		}
 
-		eventVmCountCategory := &RankingCategory{CategoryId: "eventVmCount", Game: config.gameName}
+		eventVmCountCategory := &RankingCategory{CategoryId: "eventVmCount", Game: serverConfig.GameName}
 		rankingCategories = append(rankingCategories, eventVmCountCategory)
 
 		for _, eventPeriod := range eventPeriods {
 			if eventPeriod.EnableVms {
-				eventVmCountCategory.SubCategories = append(eventVmCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: config.gameName})
+				eventVmCountCategory.SubCategories = append(eventVmCountCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(eventPeriod.PeriodOrdinal), Game: serverConfig.GameName})
 			}
 		}
 
 		if len(eventVmCountCategory.SubCategories) > 1 {
-			eventVmCountCategory.SubCategories = append([]RankingSubCategory{{SubCategoryId: "all", Game: config.gameName}}, eventVmCountCategory.SubCategories...)
+			eventVmCountCategory.SubCategories = append([]RankingSubCategory{{SubCategoryId: "all", Game: serverConfig.GameName}}, eventVmCountCategory.SubCategories...)
 		}
 	}
 
-	if config.gameName == "2kki" {
+	if serverConfig.GameName == "2kki" {
 		timeTrialMapIds, err := getTimeTrialMapIds()
 		if err != nil {
 			writeErrLog("SERVER", "timeTrial", err.Error())
 		} else if len(timeTrialMapIds) > 0 {
-			timeTrialCategory := &RankingCategory{CategoryId: "timeTrial", Game: config.gameName}
+			timeTrialCategory := &RankingCategory{CategoryId: "timeTrial", Game: serverConfig.GameName}
 			rankingCategories = append(rankingCategories, timeTrialCategory)
 
 			for _, mapId := range timeTrialMapIds {
-				timeTrialCategory.SubCategories = append(timeTrialCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(mapId), Game: config.gameName})
+				timeTrialCategory.SubCategories = append(timeTrialCategory.SubCategories, RankingSubCategory{SubCategoryId: strconv.Itoa(mapId), Game: serverConfig.GameName})
 			}
 		}
 	}
@@ -149,11 +149,11 @@ func initRankings() {
 	if err != nil {
 		writeErrLog("SERVER", "minigame", err.Error())
 	} else {
-		minigameCategory := &RankingCategory{CategoryId: "minigame", Game: config.gameName}
+		minigameCategory := &RankingCategory{CategoryId: "minigame", Game: serverConfig.GameName}
 		rankingCategories = append(rankingCategories, minigameCategory)
 
 		for _, minigameId := range gameMinigameIds {
-			minigameCategory.SubCategories = append(minigameCategory.SubCategories, RankingSubCategory{SubCategoryId: minigameId, Game: config.gameName})
+			minigameCategory.SubCategories = append(minigameCategory.SubCategories, RankingSubCategory{SubCategoryId: minigameId, Game: serverConfig.GameName})
 		}
 	}
 
@@ -177,7 +177,7 @@ func initRankings() {
 		for _, category := range rankingCategories {
 			for _, subCategory := range category.SubCategories {
 				// Use Yume 2kki server to update 'all' rankings
-				if subCategory.SubCategoryId == "all" && config.gameName != "2kki" {
+				if subCategory.SubCategoryId == "all" && serverConfig.GameName != "2kki" {
 					continue
 				}
 				err := updateRankingEntries(category.CategoryId, subCategory.SubCategoryId)

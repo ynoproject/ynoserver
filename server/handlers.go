@@ -104,7 +104,7 @@ func (r *Room) handleSpr(sender *RoomClient, msg []string) (err error) {
 	if !gameAssets.IsValidSprite(msg[1]) {
 		return err
 	}
-	if config.gameName == "2kki" && (!strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") && !strings.Contains(msg[1], "#null")) || strings.Contains(msg[1], "zenmaigaharaten_kisekae") && r.roomId != 176 {
+	if serverConfig.GameName == "2kki" && (!strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") && !strings.Contains(msg[1], "#null")) || strings.Contains(msg[1], "zenmaigaharaten_kisekae") && r.roomId != 176 {
 		return err
 	}
 	index, errconv := strconv.Atoi(msg[2])
@@ -415,7 +415,7 @@ func (r *Room) handleSs(sender *RoomClient, msg []string) (err error) {
 		value = true
 	}
 	sender.switchCache[switchId] = value
-	if switchId == 1430 && config.gameName == "2kki" { // time trial mode
+	if switchId == 1430 && serverConfig.GameName == "2kki" { // time trial mode
 		if value {
 			sender.sendMsg("sv", "88", "0") // time elapsed
 		}
@@ -469,7 +469,7 @@ func (r *Room) handleSs(sender *RoomClient, msg []string) (err error) {
 										sender.sendMsg("b")
 									}
 								}
-							} else if config.gameName == "2kki" {
+							} else if serverConfig.GameName == "2kki" {
 								sender.sendMsg("ss", "1430", "0")
 							}
 						} else {
@@ -494,7 +494,7 @@ func (r *Room) handleSs(sender *RoomClient, msg []string) (err error) {
 											sender.sendMsg("b")
 										}
 									}
-								} else if config.gameName == "2kki" {
+								} else if serverConfig.GameName == "2kki" {
 									sender.sendMsg("ss", "1430", "0")
 								}
 							} else {
@@ -532,7 +532,7 @@ func (r *Room) handleSv(sender *RoomClient, msg []string) (err error) {
 
 	conditions := append(globalConditions, r.conditions...)
 
-	if varId == 88 && config.gameName == "2kki" {
+	if varId == 88 && serverConfig.GameName == "2kki" {
 		for _, c := range conditions {
 			if c.TimeTrial && value < 3600 {
 				if checkConditionCoords(c, sender) {
@@ -600,7 +600,7 @@ func (r *Room) handleSv(sender *RoomClient, msg []string) (err error) {
 										sender.sendMsg("b")
 									}
 								}
-							} else if config.gameName == "2kki" {
+							} else if serverConfig.GameName == "2kki" {
 								sender.sendMsg("ss", "1430", "0")
 							}
 						} else {
@@ -625,7 +625,7 @@ func (r *Room) handleSv(sender *RoomClient, msg []string) (err error) {
 											sender.sendMsg("b")
 										}
 									}
-								} else if config.gameName == "2kki" {
+								} else if serverConfig.GameName == "2kki" {
 									sender.sendMsg("ss", "1430", "0")
 								}
 							} else {
@@ -875,7 +875,7 @@ func (s *Session) handleE(sender *SessionClient) (err error) {
 			break
 		}
 	}
-	if !hasIncompleteEvent && config.gameName == "2kki" {
+	if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
 		addPlayer2kkiEventLocation(-1, 2, 0, 0, sender.uuid)
 		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(periodId, sender.uuid)
 		if err != nil {

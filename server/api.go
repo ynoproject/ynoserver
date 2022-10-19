@@ -72,7 +72,7 @@ func initApi() {
 	http.HandleFunc("/api/changepw", handleChangePw)
 
 	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
-		if config.gameName != "2kki" {
+		if serverConfig.GameName != "2kki" {
 			handleError(w, r, "endpoint not supported")
 			return
 		}
@@ -751,7 +751,7 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
-			if !hasIncompleteEvent && config.gameName == "2kki" {
+			if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
 				addPlayer2kkiEventLocation(-1, 2, 0, 0, uuid)
 			}
 		} else {
