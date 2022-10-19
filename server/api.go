@@ -384,7 +384,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "theme not specified")
 			return
 		}
-		if !isValidSystem(themeParam[0], true) {
+		if !gameAssets.IsValidSystem(themeParam[0], true) {
 			handleError(w, r, "invalid system name for theme")
 			return
 		}
@@ -1139,13 +1139,13 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
 	if syncedPicsResponse == nil {
 		var pictureNames []string
-		for name := range config.pictureNames {
+		for name := range gameAssets.PictureNames {
 			pictureNames = append(pictureNames, name)
 		}
 
 		response, err := json.Marshal(SyncedPicsInfo{
 			PictureNames:    pictureNames,
-			PicturePrefixes: config.picturePrefixes,
+			PicturePrefixes: gameAssets.PicturePrefixes,
 		})
 		if err != nil {
 			handleInternalError(w, r, err)

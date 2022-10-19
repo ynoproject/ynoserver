@@ -29,13 +29,6 @@ var (
 )
 
 type Config struct {
-	spriteNames       map[string]bool
-	systemNames       map[string]bool
-	soundNames        map[string]bool
-	ignoredSoundNames []string
-	pictureNames      map[string]bool
-	picturePrefixes   []string
-
 	gameName string
 
 	signKey  []byte

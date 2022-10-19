@@ -32,11 +32,13 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	"github.com/ynoproject/ynoserver/assets"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
-	scheduler = gocron.NewScheduler(time.UTC)
+	scheduler  = gocron.NewScheduler(time.UTC)
+	gameAssets *assets.Assets
 )
 
 func Start() {
@@ -46,32 +48,30 @@ func Start() {
 	configFileData := parseConfig(*configFile)
 
 	config = Config{
-		gameName:     configFileData.GameName,
+		gameName: configFileData.GameName,
 
 		signKey:  []byte(configFileData.SignKey),
 		ipHubKey: configFileData.IPHubKey,
 	}
 
-	config.spriteNames = getCharSetList()
-	config.systemNames = getSystemList()
-	config.soundNames = getSoundList()
+	gameAssets = assets.GetAssets(config.gameName)
 
 	// list of sound names to ignore
 	if configFileData.BadSounds != "" {
-		config.ignoredSoundNames = strings.Split(configFileData.BadSounds, ",")
+		gameAssets.IgnoredSoundNames = strings.Split(configFileData.BadSounds, ",")
 	}
 
 	// list of picture names to allow
-	config.pictureNames = make(map[string]bool)
+	gameAssets.PictureNames = make(map[string]bool)
 	if configFileData.PictureNames != "" {
 		for _, name := range strings.Split(configFileData.PictureNames, ",") {
-			config.pictureNames[name] = true
+			gameAssets.PictureNames[name] = true
 		}
 	}
 
 	// list of picture prefixes to allow
 	if configFileData.PicturePrefixes != "" {
-		config.picturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
+		gameAssets.PicturePrefixes = strings.Split(configFileData.PicturePrefixes, ",")
 	}
 
 	setConditions()
@@ -80,7 +80,7 @@ func Start() {
 
 	globalConditions = getGlobalConditions()
 
-	createRooms(getMapList(), atoiArray(strings.Split(configFileData.SpRooms, ",")))
+	createRooms(gameAssets.MapIDs, atoiArray(strings.Split(configFileData.SpRooms, ",")))
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   configFileData.Logging.File,

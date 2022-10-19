@@ -23,9 +23,7 @@ import (
 	"strings"
 )
 
-var (
-	
-)
+var ()
 
 func (r *Room) handleIdent(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 1 {
@@ -103,7 +101,7 @@ func (r *Room) handleSpr(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 3 {
 		return errLenMismatch
 	}
-	if !isValidSprite(msg[1]) {
+	if !gameAssets.IsValidSprite(msg[1]) {
 		return err
 	}
 	if config.gameName == "2kki" && (!strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") && !strings.Contains(msg[1], "#null")) || strings.Contains(msg[1], "zenmaigaharaten_kisekae") && r.roomId != 176 {
@@ -185,7 +183,7 @@ func (r *Room) handleSys(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 2 {
 		return errLenMismatch
 	}
-	if !isValidSystem(msg[1], false) {
+	if !gameAssets.IsValidSystem(msg[1], false) {
 		return err
 	}
 	sender.sClient.systemName = msg[1]
@@ -198,7 +196,7 @@ func (r *Room) handleSe(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 5 {
 		return errLenMismatch
 	}
-	if !isValidSound(msg[1]) {
+	if !gameAssets.IsValidSound(msg[1]) {
 		return err
 	}
 	volume, errconv := strconv.Atoi(msg[2])
@@ -230,7 +228,7 @@ func (r *Room) handleP(sender *RoomClient, msg []string) (err error) {
 
 	if isShow {
 		checkRoomConditions(r, sender, "picture", msg[17])
-		if !isValidPicName(msg[17]) {
+		if !gameAssets.IsValidPicture(msg[17]) {
 			return err
 		}
 	}
