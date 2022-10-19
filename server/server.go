@@ -34,14 +34,16 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/ynoproject/ynoserver/assets"
 	"github.com/ynoproject/ynoserver/config"
+	"github.com/ynoproject/ynoserver/security"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
 	scheduler = gocron.NewScheduler(time.UTC)
 
-	serverConfig *config.Config
-	gameAssets   *assets.Assets
+	serverConfig   *config.Config
+	serverSecurity *security.Security
+	gameAssets     *assets.Assets
 )
 
 func Start() {
@@ -49,7 +51,7 @@ func Start() {
 	flag.Parse()
 
 	serverConfig = config.ParseConfigFile(*configFile)
-
+	serverSecurity = security.New(serverConfig.SignKey)
 	gameAssets = assets.GetAssets(serverConfig.GameName)
 
 	setConditions()

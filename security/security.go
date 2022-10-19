@@ -25,25 +25,33 @@ import (
 	"time"
 )
 
-func NewClientKey() uint32 {
+type Security struct {
+	signKey []byte
+}
+
+func New(signKey []byte) *Security {
+	return &Security{signKey: signKey}
+}
+
+func (s *Security) NewClientKey() uint32 {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Uint32()
 }
 
-func VerifySignature(clientKey uint32, signKey []byte, msg []byte) bool {
+func (s *Security) VerifySignature(clientKey uint32, msg []byte) bool {
 	clientKeyBytes := make([]byte, 4)
 
 	binary.BigEndian.PutUint32(clientKeyBytes, clientKey)
 
 	hash := sha1.New()
-	hash.Write(signKey)
+	hash.Write(s.signKey)
 	hash.Write(clientKeyBytes)
 	hash.Write(msg[4:])
 
 	return bytes.Equal(hash.Sum(nil)[:4], msg[:4])
 }
 
-func VerifyCounter(counter *uint32, msg []byte) bool {
+func (s *Security) VerifyCounter(counter *uint32, msg []byte) bool {
 	if cnt := binary.BigEndian.Uint32(msg[4 : len(msg)-4]); *counter < cnt {
 		*counter = cnt
 		return true
