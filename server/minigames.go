@@ -15,7 +15,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package main
+package server
 
 type MinigameConfig struct {
 	MinigameId     string `json:"minigameId"`
