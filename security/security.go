@@ -15,7 +15,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package main
+package security
 
 import (
 	"bytes"
@@ -25,25 +25,25 @@ import (
 	"time"
 )
 
-func generateKey() uint32 {
+func NewClientKey() uint32 {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Uint32()
 }
 
-func verifySignature(key uint32, msg []byte) bool {
-	byteKey := make([]byte, 4)
+func VerifySignature(clientKey uint32, signKey []byte, msg []byte) bool {
+	clientKeyBytes := make([]byte, 4)
 
-	binary.BigEndian.PutUint32(byteKey, key)
+	binary.BigEndian.PutUint32(clientKeyBytes, clientKey)
 
 	hash := sha1.New()
-	hash.Write(config.signKey)
-	hash.Write(byteKey)
+	hash.Write(signKey)
+	hash.Write(clientKeyBytes)
 	hash.Write(msg[4:])
 
 	return bytes.Equal(hash.Sum(nil)[:4], msg[:4])
 }
 
-func verifyCounter(counter *uint32, msg []byte) bool {
+func VerifyCounter(counter *uint32, msg []byte) bool {
 	if cnt := binary.BigEndian.Uint32(msg[4 : len(msg)-4]); *counter < cnt {
 		*counter = cnt
 		return true

@@ -28,6 +28,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
+	"github.com/ynoproject/ynoserver/security"
 )
 
 const (
@@ -109,7 +110,7 @@ func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 		writerEnd:   make(chan bool, 1),
 		send:        make(chan []byte, 16),
 		receive:     make(chan []byte, 16),
-		key:         generateKey(),
+		key:         security.NewClientKey(),
 		pictures:    make(map[int]*Picture),
 		mapId:       fmt.Sprintf("%04d", r.roomId),
 		switchCache: make(map[int]bool),
@@ -181,11 +182,11 @@ func (r *Room) processMsgs(sender *RoomClient, msg []byte) (errs []error) {
 		return append(errs, errors.New("bad request size"))
 	}
 
-	if !verifySignature(sender.key, msg) {
+	if !security.VerifySignature(sender.key, config.signKey, msg) {
 		return append(errs, errors.New("bad signature"))
 	}
 
-	if !verifyCounter(&sender.counter, msg) {
+	if !security.VerifyCounter(&sender.counter, msg) {
 		return append(errs, errors.New("bad counter"))
 	}
 
