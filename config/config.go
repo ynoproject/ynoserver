@@ -110,16 +110,24 @@ func ParseConfigFile(filename string) (config *Config) {
 	config.SignKey = []byte(configFile.SignKey)
 	config.IPHubKey = configFile.IPHubKey
 
-	if configFile.Logging.File == "" {
+	if configFile.Logging.File != "" {
+		config.Logging.File = configFile.Logging.File
+	} else {
 		config.Logging.File = "server.log"
 	}
-	if configFile.Logging.MaxSize == 0 {
+	if configFile.Logging.MaxSize != 0 {
+		config.Logging.MaxSize = configFile.Logging.MaxSize
+	} else {
 		config.Logging.MaxSize = 50 // MB
 	}
-	if configFile.Logging.MaxBackups == 0 {
+	if configFile.Logging.MaxBackups != 0 {
+		config.Logging.MaxBackups = configFile.Logging.MaxBackups
+	} else {
 		config.Logging.MaxBackups = 6
 	}
-	if configFile.Logging.MaxAge == 0 {
+	if configFile.Logging.MaxAge != 0 {
+		config.Logging.MaxAge = configFile.Logging.MaxAge
+	} else {
 		config.Logging.MaxAge = 28 // Days
 	}
 
