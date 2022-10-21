@@ -23,8 +23,6 @@ import (
 	"strings"
 )
 
-var ()
-
 func (r *Room) handleIdent(sender *RoomClient, msg []string) (err error) {
 	if len(msg) != 1 {
 		return errLenMismatch
