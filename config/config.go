@@ -28,7 +28,7 @@ import (
 
 type Config struct {
 	SpRooms         []int
-	BadSounds       []string
+	BadSounds       map[string]bool
 	PictureNames    map[string]bool
 	PicturePrefixes []string
 
@@ -90,8 +90,11 @@ func ParseConfigFile(filename string) (config *Config) {
 		}
 	}
 
+	config.BadSounds = make(map[string]bool)
 	if configFile.BadSounds != "" {
-		config.BadSounds = strings.Split(configFile.BadSounds, ",")
+		for _, name := range strings.Split(configFile.BadSounds, ",") {
+			config.BadSounds[name] = true
+		}
 	}
 
 	config.PictureNames = make(map[string]bool)

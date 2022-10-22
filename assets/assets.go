@@ -30,7 +30,7 @@ type Assets struct {
 	SpriteNames       map[string]bool
 	SystemNames       map[string]bool
 	SoundNames        map[string]bool
-	IgnoredSoundNames []string
+	IgnoredSoundNames map[string]bool
 	PictureNames      map[string]bool
 	PicturePrefixes   []string
 }
@@ -129,6 +129,10 @@ func (a *Assets) IsValidSystem(name string, ignoreSingleQuotes bool) bool {
 
 func (a *Assets) IsValidSound(name string) bool {
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+
+	if a.IgnoredSoundNames[name] {
 		return false
 	}
 

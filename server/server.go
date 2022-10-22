@@ -54,6 +54,10 @@ func Start() {
 	serverSecurity = security.New(serverConfig.SignKey)
 	gameAssets = assets.GetAssets(serverConfig.GameName)
 
+	gameAssets.IgnoredSoundNames = serverConfig.BadSounds
+	gameAssets.PictureNames = serverConfig.PictureNames
+	gameAssets.PicturePrefixes = serverConfig.PicturePrefixes
+
 	setConditions()
 	setBadges()
 	setEventVms()
