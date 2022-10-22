@@ -35,18 +35,18 @@ type Assets struct {
 	PicturePrefixes   []string
 }
 
-func GetAssets(gameName string) *Assets {
+func GetAssets(gamePath string) *Assets {
 	return &Assets{
-		MapIDs: getMaps(gameName),
+		MapIDs: getMaps(gamePath),
 
-		SpriteNames: getCharSets(gameName),
-		SystemNames: getSystems(gameName),
-		SoundNames:  getSounds(gameName),
+		SpriteNames: getCharSets(gamePath),
+		SystemNames: getSystems(gamePath),
+		SoundNames:  getSounds(gamePath),
 	}
 }
 
-func getCharSets(gameName string) map[string]bool {
-	files, err := os.ReadDir(gameName + "/CharSet")
+func getCharSets(gamePath string) map[string]bool {
+	files, err := os.ReadDir(gamePath + "/CharSet")
 	if err != nil {
 		panic(err)
 	}
@@ -59,8 +59,8 @@ func getCharSets(gameName string) map[string]bool {
 	return charSets
 }
 
-func getSounds(gameName string) map[string]bool {
-	files, err := os.ReadDir(gameName + "/Sound")
+func getSounds(gamePath string) map[string]bool {
+	files, err := os.ReadDir(gamePath + "/Sound")
 	if err != nil {
 		panic(err)
 	}
@@ -73,8 +73,8 @@ func getSounds(gameName string) map[string]bool {
 	return sounds
 }
 
-func getSystems(gameName string) map[string]bool {
-	files, err := os.ReadDir(gameName + "/System")
+func getSystems(gamePath string) map[string]bool {
+	files, err := os.ReadDir(gamePath + "/System")
 	if err != nil {
 		panic(err)
 	}
@@ -87,8 +87,8 @@ func getSystems(gameName string) map[string]bool {
 	return systems
 }
 
-func getMaps(gameName string) []int {
-	files, err := os.ReadDir(gameName + "/")
+func getMaps(gamePath string) []int {
+	files, err := os.ReadDir(gamePath + "/")
 	if err != nil {
 		panic(err)
 	}

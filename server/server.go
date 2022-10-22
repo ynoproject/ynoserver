@@ -52,7 +52,7 @@ func Start() {
 
 	serverConfig = config.ParseConfigFile(*configFile)
 	serverSecurity = security.New(serverConfig.SignKey)
-	gameAssets = assets.GetAssets(serverConfig.GameName)
+	gameAssets = assets.GetAssets(serverConfig.GamePath)
 
 	gameAssets.IgnoredSoundNames = serverConfig.BadSounds
 	gameAssets.PictureNames = serverConfig.PictureNames
@@ -67,7 +67,7 @@ func Start() {
 	createRooms(gameAssets.MapIDs, serverConfig.SpRooms)
 
 	log.SetOutput(&lumberjack.Logger{
-		Filename:   serverConfig.Logging.File,
+		Filename:   "logs/" + serverConfig.GameName + "/ynoserver.log",
 		MaxSize:    serverConfig.Logging.MaxSize,
 		MaxBackups: serverConfig.Logging.MaxBackups,
 		MaxAge:     serverConfig.Logging.MaxAge,

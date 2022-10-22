@@ -1,3 +1,6 @@
+## Path to game files
+#game_path: ""
+
 ## Maps to exclude from multiplayer
 #sp_rooms: ""
 
@@ -21,9 +24,6 @@
 
 ## Logging settings
 logging:
-  ## Path to log file written by ynoserver
-  #file: "ynoserver.log"
-
   ## Size of log file (MB)
   #max_size: 50
 

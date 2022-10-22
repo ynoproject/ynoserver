@@ -27,6 +27,8 @@ import (
 )
 
 type Config struct {
+	GamePath string
+
 	SpRooms         []int
 	BadSounds       map[string]bool
 	PictureNames    map[string]bool
@@ -38,7 +40,6 @@ type Config struct {
 	IPHubKey string
 
 	Logging struct {
-		File       string
 		MaxSize    int
 		MaxBackups int
 		MaxAge     int
@@ -46,6 +47,8 @@ type Config struct {
 }
 
 type configFile struct {
+	GamePath string `yaml:"game_path"`
+
 	SpRooms         string `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
 	PictureNames    string `yaml:"picture_names"`
@@ -57,10 +60,9 @@ type configFile struct {
 	IPHubKey string `yaml:"iphub_key"`
 
 	Logging struct {
-		File       string `yaml:"file"`
-		MaxSize    int    `yaml:"max_size"`
-		MaxBackups int    `yaml:"max_backups"`
-		MaxAge     int    `yaml:"max_age"`
+		MaxSize    int `yaml:"max_size"`
+		MaxBackups int `yaml:"max_backups"`
+		MaxAge     int `yaml:"max_age"`
 	} `yaml:"logging"`
 }
 
@@ -78,6 +80,8 @@ func ParseConfigFile(filename string) (config *Config) {
 	}
 
 	config = &Config{}
+
+	config.GamePath = configFile.GamePath
 
 	if configFile.SpRooms != "" {
 		for _, str := range strings.Split(configFile.SpRooms, ",") {
@@ -113,11 +117,6 @@ func ParseConfigFile(filename string) (config *Config) {
 	config.SignKey = []byte(configFile.SignKey)
 	config.IPHubKey = configFile.IPHubKey
 
-	if configFile.Logging.File != "" {
-		config.Logging.File = configFile.Logging.File
-	} else {
-		config.Logging.File = "server.log"
-	}
 	if configFile.Logging.MaxSize != 0 {
 		config.Logging.MaxSize = configFile.Logging.MaxSize
 	} else {
