@@ -32,9 +32,9 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
-	"github.com/ynoproject/ynoserver/assets"
-	"github.com/ynoproject/ynoserver/config"
-	"github.com/ynoproject/ynoserver/security"
+	"github.com/ynoproject/ynoserver/server/assets"
+	"github.com/ynoproject/ynoserver/server/config"
+	"github.com/ynoproject/ynoserver/server/security"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
