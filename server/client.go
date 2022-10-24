@@ -298,5 +298,10 @@ func (s *SessionClient) disconnect() {
 		updatePlayerGameData(s)
 
 		writeLog(s.ip, "session", "disconnect", 200)
+
+		// disconnect rClient if connected
+		if s.rClient != nil {
+			s.rClient.disconnect()
+		}
 	})
 }
