@@ -83,9 +83,8 @@ func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 		return
 	}
 
-	if _, ok := clients.Load(client.uuid); ok {
-		writeErrLog(ip, "session", "session already exists for uuid")
-		return
+	if client, ok := clients.Load(client.uuid); ok {
+		client.(*SessionClient).disconnect()
 	}
 
 	var sameIp int

@@ -175,7 +175,7 @@ func (c *RoomClient) msgWriter() {
 		select {
 		case <-c.writerEnd:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			c.conn.WriteMessage(websocket.CloseMessage, nil)
+			c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
 			return
 		case message := <-c.send:
@@ -206,7 +206,7 @@ func (s *SessionClient) msgWriter() {
 		select {
 		case <-s.writerEnd:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			s.conn.WriteMessage(websocket.CloseMessage, nil)
+			s.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
 			return
 		case message := <-s.send:
