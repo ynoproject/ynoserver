@@ -1,3 +1,6 @@
+## Set to name of game
+#game_name: ""
+
 ## Path to game files
 #game_path: ""
 
@@ -12,9 +15,6 @@
 
 ## Picture prefixes to sync in multiplayer
 #picture_prefixes: ""
-
-## Set to name of game
-#game_name: ""
 
 ## YNOclient signature key
 #sign_key: ""

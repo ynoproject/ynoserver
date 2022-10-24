@@ -27,14 +27,13 @@ import (
 )
 
 type Config struct {
+	GameName string
 	GamePath string
 
 	SpRooms         []int
 	BadSounds       map[string]bool
 	PictureNames    map[string]bool
 	PicturePrefixes []string
-
-	GameName string
 
 	SignKey  []byte
 	IPHubKey string
@@ -47,14 +46,13 @@ type Config struct {
 }
 
 type configFile struct {
+	GameName string `yaml:"game_name"`
 	GamePath string `yaml:"game_path"`
 
 	SpRooms         string `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
 	PictureNames    string `yaml:"picture_names"`
 	PicturePrefixes string `yaml:"picture_prefixes"`
-
-	GameName string `yaml:"game_name"`
 
 	SignKey  string `yaml:"sign_key"`
 	IPHubKey string `yaml:"iphub_key"`
@@ -81,6 +79,7 @@ func ParseConfigFile(filename string) (config *Config) {
 
 	config = &Config{}
 
+	config.GameName = configFile.GameName
 	config.GamePath = configFile.GamePath
 
 	if configFile.SpRooms != "" {
@@ -111,8 +110,6 @@ func ParseConfigFile(filename string) (config *Config) {
 	if configFile.PicturePrefixes != "" {
 		config.PicturePrefixes = strings.Split(configFile.PicturePrefixes, ",")
 	}
-
-	config.GameName = configFile.GameName
 
 	config.SignKey = []byte(configFile.SignKey)
 	config.IPHubKey = configFile.IPHubKey
