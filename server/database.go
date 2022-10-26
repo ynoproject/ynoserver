@@ -1773,14 +1773,9 @@ func getNameFromUuid(uuid string) (name string) {
 		if err != nil {
 			return ""
 		}
-
-		if name != "" {
-			return name
-		}
 	}
 
-	// couldn't find a name
-	return ""
+	return name
 }
 
 func isIpBanned(ip string) bool {
