@@ -358,9 +358,9 @@ func (r *Room) handleP(sender *RoomClient, msg []string) (err error) {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	r.broadcast(sender, msg[0], sender.sClient.id, msg[1:])
-
 	sender.pictures[picId] = pic
+
+	r.broadcast(sender, msg[0], sender.sClient.id, msg[1:])
 
 	return nil
 }
@@ -373,8 +373,10 @@ func (r *Room) handleRp(sender *RoomClient, msg []string) (err error) {
 	if errconv != nil || picId < 1 {
 		return errconv
 	}
-	r.broadcast(sender, "rp", sender.sClient.id, msg[1])
+
 	delete(sender.pictures, picId)
+
+	r.broadcast(sender, "rp", sender.sClient.id, msg[1])
 
 	return nil
 }
