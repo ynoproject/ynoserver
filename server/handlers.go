@@ -708,10 +708,6 @@ func (s *Session) handleI(sender *SessionClient) (err error) {
 }
 
 func (s *Session) handleName(sender *SessionClient, msg []string) (err error) {
-	if sender.rClient == nil {
-		return err
-	}
-
 	if len(msg) != 2 {
 		return errLenMismatch
 	}
@@ -721,7 +717,9 @@ func (s *Session) handleName(sender *SessionClient, msg []string) (err error) {
 	}
 	sender.name = msg[1]
 
-	sender.rClient.room.broadcast(sender.rClient, "name", sender.id, sender.name) // broadcast name change to room if client is in one
+	if sender.rClient != nil {
+		sender.rClient.room.broadcast(sender.rClient, "name", sender.id, sender.name) // broadcast name change to room if client is in one
+	}
 
 	return nil
 }
