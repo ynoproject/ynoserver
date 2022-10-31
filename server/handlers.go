@@ -102,7 +102,14 @@ func (r *Room) handleSpr(sender *RoomClient, msg []string) (err error) {
 	if !gameAssets.IsValidSprite(msg[1]) {
 		return err
 	}
-	if serverConfig.GameName == "2kki" && (!strings.Contains(msg[1], "syujinkou") && !strings.Contains(msg[1], "effect") && !strings.Contains(msg[1], "yukihitsuji_game") && !strings.Contains(msg[1], "zenmaigaharaten_kisekae") && !strings.Contains(msg[1], "主人公") && !strings.Contains(msg[1], "#null")) || strings.Contains(msg[1], "zenmaigaharaten_kisekae") && r.roomId != 176 {
+	if serverConfig.GameName == "2kki" &&
+		(!strings.Contains(msg[1], "syujinkou") &&
+			!strings.Contains(msg[1], "effect") &&
+			!strings.Contains(msg[1], "yukihitsuji_game") &&
+			!strings.Contains(msg[1], "zenmaigaharaten_kisekae") &&
+			!strings.Contains(msg[1], "主人公") &&
+			!strings.Contains(msg[1], "#null")) ||
+		strings.Contains(msg[1], "zenmaigaharaten_kisekae") && r.roomId != 176 {
 		return err
 	}
 	index, errconv := strconv.Atoi(msg[2])
