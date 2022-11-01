@@ -82,7 +82,7 @@ func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 	}
 
 	if banned {
-		writeErrLog(ip, "session", "player is banned")
+		writeErrLog(client.uuid, "sess", "player is banned")
 		return
 	}
 
@@ -99,7 +99,7 @@ func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 		return true
 	})
 	if sameIp >= 3 {
-		writeErrLog(ip, "session", "too many connections from ip")
+		writeErrLog(client.uuid, "sess", "too many connections from ip")
 		return
 	}
 
@@ -123,7 +123,7 @@ func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 	go client.msgWriter()
 	go client.msgReader()
 
-	writeLog(ip, "session", "connect", 200)
+	writeLog(client.uuid, "sess", "connect", 200)
 }
 
 func (sender *SessionClient) broadcast(segments ...any) {
@@ -170,7 +170,7 @@ func (sender *SessionClient) processMsg(msg []byte) (err error) {
 		return err
 	}
 
-	writeLog(sender.ip, "session", string(msg), 200)
+	writeLog(sender.uuid, "sess", string(msg), 200)
 
 	return nil
 }

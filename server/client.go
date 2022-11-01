@@ -18,7 +18,6 @@
 package server
 
 import (
-	"strconv"
 	"sync"
 	"time"
 
@@ -93,7 +92,6 @@ func (s *SessionClient) msgReader() {
 	for {
 		_, message, err := s.conn.ReadMessage()
 		if err != nil {
-			writeLog(s.ip, "session", err.Error(), 500)
 			break
 		}
 
@@ -143,7 +141,7 @@ func (s *SessionClient) msgProcessor() {
 		}
 
 		if err := s.processMsg(message); err != nil {
-			writeErrLog(s.ip, "session", err.Error())
+			writeErrLog(s.uuid, "sess", err.Error())
 		}
 	}
 }
@@ -168,7 +166,7 @@ func (s *SessionClient) disconnect() {
 
 		updatePlayerGameData(s)
 
-		writeLog(s.ip, "session", "disconnect", 200)
+		writeLog(s.uuid, "sess", "disconnect", 200)
 
 		// disconnect rClient if connected
 		if s.rClient != nil {
@@ -224,7 +222,6 @@ func (c *RoomClient) msgReader() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			writeLog(c.sClient.ip, strconv.Itoa(c.room.id), err.Error(), 500)
 			break
 		}
 
@@ -275,7 +272,7 @@ func (c *RoomClient) msgProcessor() {
 
 		if errs := c.processMsgs(message); len(errs) > 0 {
 			for _, err := range errs {
-				writeErrLog(c.sClient.ip, strconv.Itoa(c.room.id), err.Error())
+				writeErrLog(c.sClient.uuid, c.mapId, err.Error())
 			}
 		}
 	}
@@ -303,6 +300,6 @@ func (c *RoomClient) disconnect() {
 		// close conn, ends reader and processor
 		c.conn.Close()
 
-		writeLog(c.sClient.ip, strconv.Itoa(c.room.id), "disconnect", 200)
+		writeLog(c.sClient.uuid, c.mapId, "disconnect", 200)
 	})
 }

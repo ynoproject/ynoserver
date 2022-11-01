@@ -159,12 +159,12 @@ func isOkString(str string) bool {
 	return regexp.MustCompile("^[A-Za-z0-9]+$").MatchString(str)
 }
 
-func writeLog(ip string, location string, payload string, errorcode int) {
-	log.Printf("%v %v \"%v\" %v\n", ip, location, strings.Replace(payload, "\"", "'", -1), errorcode)
+func writeLog(uuid string, location string, payload string, errorcode int) {
+	log.Printf("%v %v \"%v\" %v\n", uuid, location, strings.Replace(payload, "\"", "'", -1), errorcode)
 }
 
-func writeErrLog(ip string, location string, payload string) {
-	writeLog(ip, location, payload, 400)
+func writeErrLog(uuid string, location string, payload string) {
+	writeLog(uuid, location, payload, 400)
 }
 
 func randString(length int) string {

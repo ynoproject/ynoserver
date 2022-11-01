@@ -127,19 +127,19 @@ func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 	if s, ok := clients.Load(uuid); ok {
 		session := s.(*SessionClient)
 		if session.rClient != nil {
-			writeErrLog(ip, strconv.Itoa(r.id), "session in use")
+			writeErrLog(uuid, client.mapId, "session in use")
 			return
 		}
 
 		session.rClient = client
 		client.sClient = session
 	} else {
-		writeErrLog(ip, strconv.Itoa(r.id), "player has no session")
+		writeErrLog(uuid, client.mapId, "player has no session")
 		return
 	}
 
 	if tags, err := getPlayerTags(uuid); err != nil {
-		writeErrLog(ip, strconv.Itoa(r.id), "failed to read player tags")
+		writeErrLog(uuid, client.mapId, "failed to read player tags")
 	} else {
 		client.tags = tags
 	}
@@ -155,7 +155,7 @@ func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 	go client.msgWriter()
 	go client.msgReader()
 
-	writeLog(ip, strconv.Itoa(r.id), "connect", 200)
+	writeLog(client.sClient.uuid, client.mapId, "connect", 200)
 }
 
 func (sender *RoomClient) broadcast(segments ...any) {
@@ -252,7 +252,7 @@ func (sender *RoomClient) processMsg(msgStr string) (err error) {
 		return err
 	}
 
-	writeLog(sender.sClient.ip, strconv.Itoa(sender.room.id), msgStr, 200)
+	writeLog(sender.sClient.uuid, sender.mapId, msgStr, 200)
 
 	return nil
 }
@@ -313,7 +313,7 @@ func (client *RoomClient) handleIdentSuccess() {
 	for _, minigame := range client.room.minigameConfigs {
 		score, err := getPlayerMinigameScore(client.sClient.uuid, minigame.MinigameId)
 		if err != nil {
-			writeErrLog(client.sClient.ip, strconv.Itoa(client.room.id), "failed to read player minigame score for "+minigame.MinigameId)
+			writeErrLog(client.sClient.uuid, client.mapId, "failed to read player minigame score for "+minigame.MinigameId)
 		}
 		client.minigameScores = append(client.minigameScores, score)
 		varSyncType := 1

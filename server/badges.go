@@ -351,7 +351,7 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 			if !timeTrial {
 				success, err := tryWritePlayerTag(client.sClient.uuid, c.ConditionId)
 				if err != nil {
-					writeErrLog(client.sClient.ip, strconv.Itoa(roomId), err.Error())
+					writeErrLog(client.sClient.uuid, client.mapId, err.Error())
 				}
 				if success {
 					client.sendMsg("b")
