@@ -54,7 +54,7 @@ type Room struct {
 	// Registered clients.
 	clients sync.Map
 
-	roomId       int
+	id           int
 	singleplayer bool
 
 	conditions []*Condition
@@ -65,7 +65,7 @@ type Room struct {
 func createRooms(roomIds []int, spRooms []int) {
 	for _, roomId := range roomIds {
 		rooms[roomId] = &Room{
-			roomId:          roomId,
+			id:              roomId,
 			singleplayer:    contains(spRooms, roomId),
 			conditions:      getRoomConditions(roomId),
 			minigameConfigs: getRoomMinigameConfigs(roomId),
@@ -110,7 +110,7 @@ func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 		receive:     make(chan []byte, 16),
 		key:         serverSecurity.NewClientKey(),
 		pictures:    make(map[int]*Picture),
-		mapId:       fmt.Sprintf("%04d", r.roomId),
+		mapId:       fmt.Sprintf("%04d", r.id),
 		switchCache: make(map[int]bool),
 		varCache:    make(map[int]int),
 	}
@@ -127,19 +127,19 @@ func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 	if s, ok := clients.Load(uuid); ok {
 		session := s.(*SessionClient)
 		if session.rClient != nil {
-			writeErrLog(ip, strconv.Itoa(r.roomId), "session in use")
+			writeErrLog(ip, strconv.Itoa(r.id), "session in use")
 			return
 		}
 
 		session.rClient = client
 		client.sClient = session
 	} else {
-		writeErrLog(ip, strconv.Itoa(r.roomId), "player has no session")
+		writeErrLog(ip, strconv.Itoa(r.id), "player has no session")
 		return
 	}
 
 	if tags, err := getPlayerTags(uuid); err != nil {
-		writeErrLog(ip, strconv.Itoa(r.roomId), "failed to read player tags")
+		writeErrLog(ip, strconv.Itoa(r.id), "failed to read player tags")
 	} else {
 		client.tags = tags
 	}
@@ -155,15 +155,15 @@ func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 	go client.msgWriter()
 	go client.msgReader()
 
-	writeLog(ip, strconv.Itoa(r.roomId), "connect", 200)
+	writeLog(ip, strconv.Itoa(r.id), "connect", 200)
 }
 
-func (r *Room) broadcast(sender *RoomClient, segments ...any) {
-	if r.singleplayer {
+func (sender *RoomClient) broadcast(segments ...any) {
+	if sender.room.singleplayer {
 		return
 	}
 
-	r.clients.Range(func(k, _ any) bool {
+	sender.room.clients.Range(func(k, _ any) bool {
 		client := k.(*RoomClient)
 		if !client.valid || (client == sender && segments[0].(string) != "say") {
 			return true
@@ -175,7 +175,7 @@ func (r *Room) broadcast(sender *RoomClient, segments ...any) {
 	})
 }
 
-func (r *Room) processMsgs(sender *RoomClient, msg []byte) (errs []error) {
+func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
 	if len(msg) < 8 {
 		return append(errs, errBadReqSize)
 	}
@@ -196,7 +196,7 @@ func (r *Room) processMsgs(sender *RoomClient, msg []byte) (errs []error) {
 
 	// message processing
 	for _, msgStr := range strings.Split(string(msg), mdelim) {
-		err := r.processMsg(sender, msgStr)
+		err := sender.processMsg(msgStr)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -205,45 +205,45 @@ func (r *Room) processMsgs(sender *RoomClient, msg []byte) (errs []error) {
 	return errs
 }
 
-func (r *Room) processMsg(sender *RoomClient, msgStr string) (err error) {
+func (sender *RoomClient) processMsg(msgStr string) (err error) {
 	msgFields := strings.Split(msgStr, delim)
 
 	if !sender.valid {
 		if msgFields[0] == "ident" {
-			err = r.handleIdent(sender, msgFields)
+			err = sender.handleIdent(msgFields)
 		}
 	} else {
 		switch msgFields[0] {
 		case "m", "tp": // moved / teleported to x y
-			err = r.handleM(sender, msgFields)
+			err = sender.handleM(msgFields)
 		case "f": // change facing direction
-			err = r.handleF(sender, msgFields)
+			err = sender.handleF(msgFields)
 		case "spd": // change my speed to spd
-			err = r.handleSpd(sender, msgFields)
+			err = sender.handleSpd(msgFields)
 		case "spr": // change my sprite
-			err = r.handleSpr(sender, msgFields)
+			err = sender.handleSpr(msgFields)
 		case "fl", "rfl": // player flash / repeating player flash
-			err = r.handleFl(sender, msgFields)
+			err = sender.handleFl(msgFields)
 		case "rrfl": // remove repeating player flash
-			err = r.handleRrfl(sender)
+			err = sender.handleRrfl()
 		case "h": // change sprite visibility
-			err = r.handleH(sender, msgFields)
+			err = sender.handleH(msgFields)
 		case "sys": // change my system graphic
-			err = r.handleSys(sender, msgFields)
+			err = sender.handleSys(msgFields)
 		case "se": // play sound effect
-			err = r.handleSe(sender, msgFields)
+			err = sender.handleSe(msgFields)
 		case "ap", "mp": // add picture / move picture
-			err = r.handleP(sender, msgFields)
+			err = sender.handleP(msgFields)
 		case "rp": // remove picture
-			err = r.handleRp(sender, msgFields)
+			err = sender.handleRp(msgFields)
 		case "say":
-			err = r.handleSay(sender, msgFields)
+			err = sender.handleSay(msgFields)
 		case "ss": // sync switch
-			err = r.handleSs(sender, msgFields)
+			err = sender.handleSs(msgFields)
 		case "sv": // sync variable
-			err = r.handleSv(sender, msgFields)
+			err = sender.handleSv(msgFields)
 		case "sev":
-			err = r.handleSev(sender, msgFields)
+			err = sender.handleSev(msgFields)
 		default:
 			err = errUnkMsgType
 		}
@@ -252,23 +252,23 @@ func (r *Room) processMsg(sender *RoomClient, msgStr string) (err error) {
 		return err
 	}
 
-	writeLog(sender.sClient.ip, strconv.Itoa(r.roomId), msgStr, 200)
+	writeLog(sender.sClient.ip, strconv.Itoa(sender.room.id), msgStr, 200)
 
 	return nil
 }
 
-func (r *Room) handleValidClient(client *RoomClient) {
-	if !r.singleplayer {
+func (client *RoomClient) handleIdentSuccess() {
+	if !client.room.singleplayer {
 		// tell everyone that a new client has connected
-		r.broadcast(client, "c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
+		client.broadcast("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
 
 		// send name of client
 		if client.sClient.name != "" {
-			r.broadcast(client, "name", client.sClient.id, client.sClient.name)
+			client.broadcast("name", client.sClient.id, client.sClient.name)
 		}
 
 		// send the new client info about the game state
-		r.clients.Range(func(k, _ any) bool {
+		client.room.clients.Range(func(k, _ any) bool {
 			otherClient := k.(*RoomClient)
 			if !otherClient.valid || otherClient == client {
 				return true
@@ -283,8 +283,8 @@ func (r *Room) handleValidClient(client *RoomClient) {
 			if otherClient.sClient.name != "" {
 				client.sendMsg("name", otherClient.sClient.id, otherClient.sClient.name)
 			}
-			if otherClient.sClient.spriteIndex >= 0 { // if the other client sent us valid sprite and index before
-				client.sendMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex)
+			if otherClient.sClient.spriteIndex >= 0 {
+				client.sendMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
 			}
 			if otherClient.repeatingFlash {
 				client.sendMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
@@ -303,12 +303,17 @@ func (r *Room) handleValidClient(client *RoomClient) {
 		})
 	}
 
-	checkRoomConditions(r, client, "", "")
+	// if you need an account to do the stuff after this, why bother?
+	if !client.sClient.account {
+		return
+	}
 
-	for _, minigame := range r.minigameConfigs {
+	client.checkRoomConditions("", "")
+
+	for _, minigame := range client.room.minigameConfigs {
 		score, err := getPlayerMinigameScore(client.sClient.uuid, minigame.MinigameId)
 		if err != nil {
-			writeErrLog(client.sClient.ip, strconv.Itoa(r.roomId), "failed to read player minigame score for "+minigame.MinigameId)
+			writeErrLog(client.sClient.ip, strconv.Itoa(client.room.id), "failed to read player minigame score for "+minigame.MinigameId)
 		}
 		client.minigameScores = append(client.minigameScores, score)
 		varSyncType := 1
@@ -319,11 +324,11 @@ func (r *Room) handleValidClient(client *RoomClient) {
 	}
 
 	// send variable sync request for vending machine expeditions
-	if r.roomId != currentEventVmMapId {
+	if client.room.id != currentEventVmMapId {
 		return
 	}
 
-	if eventIds, hasVms := eventVms[r.roomId]; hasVms {
+	if eventIds, hasVms := eventVms[client.room.id]; hasVms {
 		for _, eventId := range eventIds {
 			if eventId != currentEventVmEventId {
 				continue

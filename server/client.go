@@ -131,7 +131,7 @@ func (c *RoomClient) msgReader() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			writeLog(c.sClient.ip, strconv.Itoa(c.room.roomId), err.Error(), 500)
+			writeLog(c.sClient.ip, strconv.Itoa(c.room.id), err.Error(), 500)
 			break
 		}
 
@@ -230,9 +230,9 @@ func (c *RoomClient) msgProcessor() {
 			return
 		}
 
-		if errs := c.room.processMsgs(c, message); len(errs) > 0 {
+		if errs := c.processMsgs(message); len(errs) > 0 {
 			for _, err := range errs {
-				writeErrLog(c.sClient.ip, strconv.Itoa(c.room.roomId), err.Error())
+				writeErrLog(c.sClient.ip, strconv.Itoa(c.room.id), err.Error())
 			}
 		}
 	}
@@ -245,7 +245,7 @@ func (s *SessionClient) msgProcessor() {
 			return
 		}
 
-		if err := session.processMsg(s, message); err != nil {
+		if err := s.processMsg(message); err != nil {
 			writeErrLog(s.ip, "session", err.Error())
 		}
 	}
@@ -266,7 +266,7 @@ func (c *RoomClient) disconnect() {
 
 		c.room.clients.Delete(c)
 
-		c.room.broadcast(c, "d", c.sClient.id) // user %id% has disconnected message
+		c.broadcast("d", c.sClient.id) // user %id% has disconnected message
 
 		// send terminate signal to writer
 		close(c.writerEnd)
@@ -277,7 +277,7 @@ func (c *RoomClient) disconnect() {
 		// close conn, ends reader and processor
 		c.conn.Close()
 
-		writeLog(c.sClient.ip, strconv.Itoa(c.room.roomId), "disconnect", 200)
+		writeLog(c.sClient.ip, strconv.Itoa(c.room.id), "disconnect", 200)
 	})
 }
 

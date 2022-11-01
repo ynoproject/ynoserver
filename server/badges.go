@@ -269,21 +269,24 @@ func getRoomConditions(roomId int) (roomConditions []*Condition) {
 	return roomConditions
 }
 
-func checkRoomConditions(r *Room, client *RoomClient, trigger string, value string) {
+// this would probably be better under Room instead of RoomClient
+// but passing RoomClient as an argument every time just seems wasteful
+// not like anyone's going to see this anyways, right?
+func (client *RoomClient) checkRoomConditions(trigger string, value string) {
 	if !client.sClient.account {
 		return
 	}
 
 	for _, c := range globalConditions {
-		checkCondition(c, 0, nil, client, trigger, value)
+		c.check(0, nil, client, trigger, value)
 	}
 
-	for _, c := range r.conditions {
-		checkCondition(c, r.roomId, r.minigameConfigs, client, trigger, value)
+	for _, c := range client.room.conditions {
+		c.check(client.room.id, client.room.minigameConfigs, client, trigger, value)
 	}
 }
 
-func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig, client *RoomClient, trigger string, value string) {
+func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client *RoomClient, trigger string, value string) {
 	if c.Disabled && client.sClient.rank < 2 {
 		return
 	}
@@ -343,7 +346,7 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 				}
 			}
 			client.sendMsg("sv", varId, varSyncType)
-		} else if checkConditionCoords(c, client) {
+		} else if c.checkConditionCoords(client) {
 			timeTrial := c.TimeTrial && serverConfig.GameName == "2kki"
 			if !timeTrial {
 				success, err := tryWritePlayerTag(client.sClient.uuid, c.ConditionId)
@@ -407,11 +410,11 @@ func checkCondition(c *Condition, roomId int, minigameConfigs []*MinigameConfig,
 	}
 }
 
-func checkConditionCoords(condition *Condition, client *RoomClient) bool {
-	return ((condition.MapX1 <= 0 && condition.MapX2 <= 0) ||
-		((condition.MapX1 == -1 || condition.MapX1 <= client.x) && (condition.MapX2 == -1 || condition.MapX2 >= client.x))) &&
-		((condition.MapY1 <= 0 && condition.MapY2 <= 0) ||
-			((condition.MapY1 == -1 || condition.MapY1 <= client.y) && (condition.MapY2 == -1 || condition.MapY2 >= client.y)))
+func (c *Condition) checkConditionCoords(client *RoomClient) bool {
+	return ((c.MapX1 <= 0 && c.MapX2 <= 0) ||
+		((c.MapX1 == -1 || c.MapX1 <= client.x) && (c.MapX2 == -1 || c.MapX2 >= client.x))) &&
+		((c.MapY1 <= 0 && c.MapY2 <= 0) ||
+			((c.MapY1 == -1 || c.MapY1 <= client.y) && (c.MapY2 == -1 || c.MapY2 >= client.y)))
 }
 
 func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, account bool, simple bool) (playerBadges []*PlayerBadge, err error) {

@@ -37,8 +37,11 @@ type Session struct {
 }
 
 func initSession() {
+	// we need a sender
+	sender := SessionClient{}
+
 	scheduler.Every(5).Seconds().Do(func() {
-		session.broadcast("pc", getSessionClientsLen())
+		sender.broadcast("pc", getSessionClientsLen())
 		sendPartyUpdate()
 	})
 }
@@ -123,7 +126,7 @@ func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 	writeLog(ip, "session", "connect", 200)
 }
 
-func (s *Session) broadcast(segments ...any) {
+func (sender *SessionClient) broadcast(segments ...any) {
 	clients.Range(func(_, v any) bool {
 		v.(*SessionClient).sendMsg(segments...)
 
@@ -131,7 +134,7 @@ func (s *Session) broadcast(segments ...any) {
 	})
 }
 
-func (s *Session) processMsg(sender *SessionClient, msg []byte) (err error) {
+func (sender *SessionClient) processMsg(msg []byte) (err error) {
 	if !utf8.Valid(msg) {
 		return errInvalidUTF8
 	}
@@ -140,24 +143,24 @@ func (s *Session) processMsg(sender *SessionClient, msg []byte) (err error) {
 
 	switch msgFields[0] {
 	case "i": // player info
-		err = s.handleI(sender)
+		err = sender.handleI()
 	case "name": // nick set
-		err = s.handleName(sender, msgFields)
+		err = sender.handleName(msgFields)
 	case "ploc": // previous location
-		err = s.handlePloc(sender, msgFields)
+		err = sender.handlePloc(msgFields)
 	case "gsay": // global say
-		err = s.handleGSay(sender, msgFields)
+		err = sender.handleGSay(msgFields)
 	case "psay": // party say
-		err = s.handlePSay(sender, msgFields)
+		err = sender.handlePSay(msgFields)
 	case "pt": // party update
-		err = s.handlePt(sender)
+		err = sender.handlePt()
 		if err != nil {
 			sender.sendMsg("pt", "null")
 		}
 	case "ep": // event period
-		err = s.handleEp(sender)
+		err = sender.handleEp()
 	case "e": // event list
-		err = s.handleE(sender)
+		err = sender.handleE()
 	default:
 		err = errUnkMsgType
 	}

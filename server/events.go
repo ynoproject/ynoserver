@@ -193,9 +193,9 @@ func initEvents() {
 
 func sendEventsUpdate() {
 	clients.Range(func(_, v any) bool {
-		sessionClient := v.(*SessionClient)
-		if sessionClient.account {
-			session.handleE(sessionClient)
+		client := v.(*SessionClient)
+		if client.account {
+			client.handleE()
 		}
 
 		return true
