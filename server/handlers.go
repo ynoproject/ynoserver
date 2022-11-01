@@ -907,3 +907,30 @@ func (sender *SessionClient) handleE() (err error) {
 
 	return nil
 }
+
+type SyncedPicsInfo struct {
+	PictureNames    []string `json:"pictureNames"`
+	PicturePrefixes []string `json:"picturePrefixes"`
+}
+
+var syncedPicsResponse []byte // cached response
+
+func (sender *SessionClient) handleSp() (err error) {
+	if syncedPicsResponse == nil {
+		var pictureNames []string
+		for name := range gameAssets.PictureNames {
+			pictureNames = append(pictureNames, name)
+		}
+
+		response, _ := json.Marshal(SyncedPicsInfo{
+			PictureNames:    pictureNames,
+			PicturePrefixes: gameAssets.PicturePrefixes,
+		})
+
+		syncedPicsResponse = response // cache response
+	}
+
+	sender.sendMsg("sp", syncedPicsResponse)
+
+	return nil
+}

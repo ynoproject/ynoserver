@@ -161,6 +161,8 @@ func (sender *SessionClient) processMsg(msg []byte) (err error) {
 		err = sender.handleEp()
 	case "e": // event list
 		err = sender.handleE()
+	case "sp": // synced pics
+		err = sender.handleSp()
 	default:
 		err = errUnkMsgType
 	}

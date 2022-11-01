@@ -40,15 +40,6 @@ type PlayerInfo struct {
 	BadgeSlotCols int    `json:"badgeSlotCols"`
 }
 
-type SyncedPicsInfo struct {
-	PictureNames    []string `json:"pictureNames"`
-	PicturePrefixes []string `json:"picturePrefixes"`
-}
-
-var (
-	syncedPicsResponse []byte // cached response
-)
-
 func initApi() {
 	http.HandleFunc("/admin/getplayers", adminGetOnlinePlayers)
 	http.HandleFunc("/admin/getbans", adminGetBans)
@@ -64,7 +55,6 @@ func initApi() {
 	http.HandleFunc("/api/events", handleEvents)
 	http.HandleFunc("/api/badge", handleBadge)
 	http.HandleFunc("/api/ranking", handleRanking)
-	http.HandleFunc("/api/syncedPics", handleSyncedPics)
 
 	http.HandleFunc("/api/register", handleRegister)
 	http.HandleFunc("/api/login", handleLogin)
@@ -1134,28 +1124,6 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "unknown command")
 		return
 	}
-}
-
-func handleSyncedPics(w http.ResponseWriter, r *http.Request) {
-	if syncedPicsResponse == nil {
-		var pictureNames []string
-		for name := range gameAssets.PictureNames {
-			pictureNames = append(pictureNames, name)
-		}
-
-		response, err := json.Marshal(SyncedPicsInfo{
-			PictureNames:    pictureNames,
-			PicturePrefixes: gameAssets.PicturePrefixes,
-		})
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		syncedPicsResponse = response // cache response
-	}
-
-	w.Write(syncedPicsResponse)
 }
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
