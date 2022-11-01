@@ -55,7 +55,129 @@ type Picture struct {
 	useTransparentColor, fixedToMap bool
 }
 
-// RoomClient is a middleman between the websocket connection and the room.
+// SessionClient
+type SessionClient struct {
+	rClient *RoomClient
+
+	conn *websocket.Conn
+	ip   string
+
+	dcOnce sync.Once
+
+	writerEnd chan bool
+	writerWg  sync.WaitGroup
+
+	send, receive chan []byte
+
+	id int
+
+	account bool
+	name    string
+	uuid    string
+	rank    int
+	badge   string
+
+	muted bool
+
+	spriteName  string
+	spriteIndex int
+
+	systemName string
+}
+
+func (s *SessionClient) msgReader() {
+	s.conn.SetReadLimit(maxMessageSize)
+	s.conn.SetReadDeadline(time.Now().Add(pongWait))
+	s.conn.SetPongHandler(func(string) error { s.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+
+	for {
+		_, message, err := s.conn.ReadMessage()
+		if err != nil {
+			writeLog(s.ip, "session", err.Error(), 500)
+			break
+		}
+
+		s.receive <- message
+	}
+
+	close(s.receive)
+	s.disconnect()
+}
+
+func (s *SessionClient) msgWriter() {
+	s.writerWg.Add(1)
+	ticker := time.NewTicker(pingPeriod)
+
+	defer func() {
+		s.writerWg.Done()
+		ticker.Stop()
+		s.disconnect()
+	}()
+
+	for {
+		select {
+		case <-s.writerEnd:
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			s.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
+
+			return
+		case message := <-s.send:
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				return
+			}
+		case <-ticker.C:
+			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (s *SessionClient) msgProcessor() {
+	for {
+		message, ok := <-s.receive
+		if !ok {
+			return
+		}
+
+		if err := s.processMsg(message); err != nil {
+			writeErrLog(s.ip, "session", err.Error())
+		}
+	}
+}
+
+func (s *SessionClient) sendMsg(segments ...any) {
+	s.send <- buildMsg(segments)
+}
+
+func (s *SessionClient) disconnect() {
+	s.dcOnce.Do(func() {
+		// unregister
+		clients.Delete(s.uuid)
+
+		// send terminate signal to writer
+		close(s.writerEnd)
+
+		// wait for writer to end
+		s.writerWg.Wait()
+
+		// close conn, ends reader and processor
+		s.conn.Close()
+
+		updatePlayerGameData(s)
+
+		writeLog(s.ip, "session", "disconnect", 200)
+
+		// disconnect rClient if connected
+		if s.rClient != nil {
+			s.rClient.disconnect()
+		}
+	})
+}
+
+// RoomClient
 type RoomClient struct {
 	room    *Room
 	sClient *SessionClient
@@ -94,35 +216,6 @@ type RoomClient struct {
 	varCache    map[int]int
 }
 
-type SessionClient struct {
-	rClient *RoomClient
-
-	conn *websocket.Conn
-	ip   string
-
-	dcOnce sync.Once
-
-	writerEnd chan bool
-	writerWg  sync.WaitGroup
-
-	send, receive chan []byte
-
-	id int
-
-	account bool
-	name    string
-	uuid    string
-	rank    int
-	badge   string
-
-	muted bool
-
-	spriteName  string
-	spriteIndex int
-
-	systemName string
-}
-
 func (c *RoomClient) msgReader() {
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -140,25 +233,6 @@ func (c *RoomClient) msgReader() {
 
 	close(c.receive)
 	c.disconnect()
-}
-
-func (s *SessionClient) msgReader() {
-	s.conn.SetReadLimit(maxMessageSize)
-	s.conn.SetReadDeadline(time.Now().Add(pongWait))
-	s.conn.SetPongHandler(func(string) error { s.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-
-	for {
-		_, message, err := s.conn.ReadMessage()
-		if err != nil {
-			writeLog(s.ip, "session", err.Error(), 500)
-			break
-		}
-
-		s.receive <- message
-	}
-
-	close(s.receive)
-	s.disconnect()
 }
 
 func (c *RoomClient) msgWriter() {
@@ -192,37 +266,6 @@ func (c *RoomClient) msgWriter() {
 	}
 }
 
-func (s *SessionClient) msgWriter() {
-	s.writerWg.Add(1)
-	ticker := time.NewTicker(pingPeriod)
-
-	defer func() {
-		s.writerWg.Done()
-		ticker.Stop()
-		s.disconnect()
-	}()
-
-	for {
-		select {
-		case <-s.writerEnd:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			s.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
-
-			return
-		case message := <-s.send:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				return
-			}
-		case <-ticker.C:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
-		}
-	}
-}
-
 func (c *RoomClient) msgProcessor() {
 	for {
 		message, ok := <-c.receive
@@ -238,25 +281,8 @@ func (c *RoomClient) msgProcessor() {
 	}
 }
 
-func (s *SessionClient) msgProcessor() {
-	for {
-		message, ok := <-s.receive
-		if !ok {
-			return
-		}
-
-		if err := s.processMsg(message); err != nil {
-			writeErrLog(s.ip, "session", err.Error())
-		}
-	}
-}
-
 func (c *RoomClient) sendMsg(segments ...any) {
 	c.send <- buildMsg(segments)
-}
-
-func (s *SessionClient) sendMsg(segments ...any) {
-	s.send <- buildMsg(segments)
 }
 
 func (c *RoomClient) disconnect() {
@@ -278,30 +304,5 @@ func (c *RoomClient) disconnect() {
 		c.conn.Close()
 
 		writeLog(c.sClient.ip, strconv.Itoa(c.room.id), "disconnect", 200)
-	})
-}
-
-func (s *SessionClient) disconnect() {
-	s.dcOnce.Do(func() {
-		// unregister
-		clients.Delete(s.uuid)
-
-		// send terminate signal to writer
-		close(s.writerEnd)
-
-		// wait for writer to end
-		s.writerWg.Wait()
-
-		// close conn, ends reader and processor
-		s.conn.Close()
-
-		updatePlayerGameData(s)
-
-		writeLog(s.ip, "session", "disconnect", 200)
-
-		// disconnect rClient if connected
-		if s.rClient != nil {
-			s.rClient.disconnect()
-		}
 	})
 }
