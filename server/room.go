@@ -206,9 +206,7 @@ func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
 }
 
 func (sender *RoomClient) processMsg(msgStr string) (err error) {
-	msgFields := strings.Split(msgStr, delim)
-
-	if !sender.valid {
+	if msgFields := strings.Split(msgStr, delim); !sender.valid {
 		if msgFields[0] == "ident" {
 			err = sender.handleIdent(msgFields)
 		}

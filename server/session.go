@@ -139,9 +139,7 @@ func (sender *SessionClient) processMsg(msg []byte) (err error) {
 		return errInvalidUTF8
 	}
 
-	msgFields := strings.Split(string(msg), delim)
-
-	switch msgFields[0] {
+	switch msgFields := strings.Split(string(msg), delim); msgFields[0] {
 	case "i": // player info
 		err = sender.handleI()
 	case "name": // nick set
@@ -153,8 +151,7 @@ func (sender *SessionClient) processMsg(msg []byte) (err error) {
 	case "psay": // party say
 		err = sender.handlePSay(msgFields)
 	case "pt": // party update
-		err = sender.handlePt()
-		if err != nil {
+		if sender.handlePt() != nil {
 			sender.sendMsg("pt", "null")
 		}
 	case "ep": // event period
