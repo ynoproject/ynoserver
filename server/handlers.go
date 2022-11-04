@@ -23,15 +23,23 @@ import (
 	"strings"
 )
 
-func (sender *RoomClient) handleIdent(msg []string) (err error) {
-	if len(msg) != 1 {
+func (sender *RoomClient) handleSw(msg []string) (err error) {
+	if len(msg) != 2 {
 		return errLenMismatch
 	}
 
-	sender.valid = true
-	sender.sendMsg("ident") // tell client they're valid
+	roomId, errconv := strconv.Atoi(msg[1])
+	if errconv != nil {
+		return errconv
+	}
 
-	sender.handleIdentSuccess()
+	room, ok := rooms[roomId]
+	if !ok {
+		return err
+	}
+
+	sender.leaveRoom()
+	sender.joinRoom(room)
 
 	return nil
 }

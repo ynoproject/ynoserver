@@ -18,6 +18,7 @@
 package server
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -191,8 +192,6 @@ type RoomClient struct {
 
 	key, counter uint32
 
-	valid bool
-
 	x, y, facing, spd int
 
 	flash          [5]int
@@ -287,9 +286,7 @@ func (c *RoomClient) disconnect() {
 		// unregister
 		c.sClient.rClient = nil
 
-		c.room.clients.Delete(c)
-
-		c.broadcast("d", c.sClient.id) // user %id% has disconnected message
+		c.leaveRoom()
 
 		// send terminate signal to writer
 		close(c.writerEnd)
@@ -302,4 +299,34 @@ func (c *RoomClient) disconnect() {
 
 		writeLog(c.sClient.uuid, c.mapId, "disconnect", 200)
 	})
+}
+
+func (c *RoomClient) reset() {
+	c.key = serverSecurity.NewClientKey()
+	c.counter = 0
+
+	c.x = 0
+	c.y = 0
+	c.facing = 0
+	c.spd = 0
+
+	c.flash = [5]int{}
+	c.repeatingFlash = false
+
+	c.hidden = false
+
+	c.pictures = make(map[int]*Picture)
+
+	c.mapId = fmt.Sprintf("%04d", c.room.id)
+	c.prevMapId = ""
+	c.prevLocations = ""
+
+	// don't clear tags
+
+	c.syncCoords = false
+
+	c.minigameScores = []int{}
+
+	c.switchCache = make(map[int]bool)
+	c.varCache = make(map[int]int)
 }

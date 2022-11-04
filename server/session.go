@@ -58,10 +58,10 @@ func handleSession(w http.ResponseWriter, r *http.Request) {
 		playerToken = token[0]
 	}
 
-	session.addClient(conn, getIp(r), playerToken)
+	joinSessionWs(conn, getIp(r), playerToken)
 }
 
-func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
+func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	client := &SessionClient{
 		conn:      conn,
 		ip:        ip,
@@ -107,8 +107,8 @@ func (s *Session) addClient(conn *websocket.Conn, ip string, token string) {
 		client.badge = "null"
 	}
 
-	client.id = s.lastId
-	s.lastId++
+	client.id = session.lastId
+	session.lastId++
 
 	client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
 

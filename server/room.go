@@ -18,7 +18,6 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -96,23 +95,15 @@ func handleRoom(w http.ResponseWriter, r *http.Request) {
 		playerToken = token[0]
 	}
 
-	if room, ok := rooms[idInt]; ok {
-		room.addClient(conn, getIp(r), playerToken)
-	}
+	joinRoomWs(conn, getIp(r), playerToken, idInt)
 }
 
-func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
-	client := &RoomClient{
-		room:        r,
-		conn:        conn,
-		writerEnd:   make(chan bool, 1),
-		send:        make(chan []byte, 16),
-		receive:     make(chan []byte, 16),
-		key:         serverSecurity.NewClientKey(),
-		pictures:    make(map[int]*Picture),
-		mapId:       fmt.Sprintf("%04d", r.id),
-		switchCache: make(map[int]bool),
-		varCache:    make(map[int]int),
+func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
+	// we don't need the value of room until later but it would be silly to do
+	// the database lookups then close the socket after due to a bad room id
+	room, ok := rooms[roomId]
+	if !ok {
+		return
 	}
 
 	var uuid string
@@ -124,38 +115,67 @@ func (r *Room) addClient(conn *websocket.Conn, ip string, token string) {
 		uuid, _, _ = getOrCreatePlayerData(ip)
 	}
 
+	client := &RoomClient{
+		conn:      conn,
+		writerEnd: make(chan bool, 1),
+		send:      make(chan []byte, 16),
+		receive:   make(chan []byte, 16),
+	}
+
+	// use 0000 as a placeholder since client.mapId isn't set until later
 	if s, ok := clients.Load(uuid); ok {
 		session := s.(*SessionClient)
 		if session.rClient != nil {
-			writeErrLog(uuid, client.mapId, "session in use")
+			writeErrLog(uuid, "0000", "session in use")
 			return
 		}
 
 		session.rClient = client
 		client.sClient = session
 	} else {
-		writeErrLog(uuid, client.mapId, "player has no session")
+		writeErrLog(uuid, "0000", "player has no session")
 		return
 	}
 
 	if tags, err := getPlayerTags(uuid); err != nil {
-		writeErrLog(uuid, client.mapId, "failed to read player tags")
+		writeErrLog(uuid, "0000", "failed to read player tags")
 	} else {
 		client.tags = tags
 	}
 
-	// register client to the room
-	r.clients.Store(client, nil)
-
-	// queue s message
-	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // "your id is %id%" message
-
-	go client.msgProcessor()
-
+	// start msgWriter first otherwise the call to syncRoomState in joinRoom
+	// will make the send channel full and start blocking the goroutine
 	go client.msgWriter()
+
+	client.joinRoom(room)
+
+	// start msgProcessor and msgReader after so a client can't send packets
+	// before they're in a room and try to crash the server
+	go client.msgProcessor()
 	go client.msgReader()
 
 	writeLog(client.sClient.uuid, client.mapId, "connect", 200)
+}
+
+func (c *RoomClient) joinRoom(room *Room) {
+	c.room = room
+
+	c.reset()
+
+	room.clients.Store(c, nil)
+
+	c.sendMsg("s", c.sClient.id, int(c.key), c.sClient.uuid, c.sClient.rank, c.sClient.account, c.sClient.badge)
+
+	c.syncRoomState()
+}
+
+func (c *RoomClient) leaveRoom() {
+	// setting c.room to nil could cause a nil pointer dereference
+	// so we let joinRoom update it
+
+	c.room.clients.Delete(c)
+
+	c.broadcast("d", c.sClient.id) // user %id% has disconnected message
 }
 
 func (sender *RoomClient) broadcast(segments ...any) {
@@ -165,7 +185,7 @@ func (sender *RoomClient) broadcast(segments ...any) {
 
 	sender.room.clients.Range(func(k, _ any) bool {
 		client := k.(*RoomClient)
-		if !client.valid || (client == sender && segments[0].(string) != "say") {
+		if client == sender && segments[0].(string) != "say" {
 			return true
 		}
 
@@ -206,45 +226,41 @@ func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
 }
 
 func (sender *RoomClient) processMsg(msgStr string) (err error) {
-	if msgFields := strings.Split(msgStr, delim); !sender.valid {
-		if msgFields[0] == "ident" {
-			err = sender.handleIdent(msgFields)
-		}
-	} else {
-		switch msgFields[0] {
-		case "m", "tp": // moved / teleported to x y
-			err = sender.handleM(msgFields)
-		case "f": // change facing direction
-			err = sender.handleF(msgFields)
-		case "spd": // change my speed to spd
-			err = sender.handleSpd(msgFields)
-		case "spr": // change my sprite
-			err = sender.handleSpr(msgFields)
-		case "fl", "rfl": // player flash / repeating player flash
-			err = sender.handleFl(msgFields)
-		case "rrfl": // remove repeating player flash
-			err = sender.handleRrfl()
-		case "h": // change sprite visibility
-			err = sender.handleH(msgFields)
-		case "sys": // change my system graphic
-			err = sender.handleSys(msgFields)
-		case "se": // play sound effect
-			err = sender.handleSe(msgFields)
-		case "ap", "mp": // add picture / move picture
-			err = sender.handleP(msgFields)
-		case "rp": // remove picture
-			err = sender.handleRp(msgFields)
-		case "say":
-			err = sender.handleSay(msgFields)
-		case "ss": // sync switch
-			err = sender.handleSs(msgFields)
-		case "sv": // sync variable
-			err = sender.handleSv(msgFields)
-		case "sev":
-			err = sender.handleSev(msgFields)
-		default:
-			err = errUnkMsgType
-		}
+	switch msgFields := strings.Split(msgStr, delim); msgFields[0] {
+	case "sw": // switch room
+		err = sender.handleSw(msgFields)
+	case "m", "tp": // moved / teleported to x y
+		err = sender.handleM(msgFields)
+	case "f": // change facing direction
+		err = sender.handleF(msgFields)
+	case "spd": // change my speed to spd
+		err = sender.handleSpd(msgFields)
+	case "spr": // change my sprite
+		err = sender.handleSpr(msgFields)
+	case "fl", "rfl": // player flash / repeating player flash
+		err = sender.handleFl(msgFields)
+	case "rrfl": // remove repeating player flash
+		err = sender.handleRrfl()
+	case "h": // change sprite visibility
+		err = sender.handleH(msgFields)
+	case "sys": // change my system graphic
+		err = sender.handleSys(msgFields)
+	case "se": // play sound effect
+		err = sender.handleSe(msgFields)
+	case "ap", "mp": // add picture / move picture
+		err = sender.handleP(msgFields)
+	case "rp": // remove picture
+		err = sender.handleRp(msgFields)
+	case "say":
+		err = sender.handleSay(msgFields)
+	case "ss": // sync switch
+		err = sender.handleSs(msgFields)
+	case "sv": // sync variable
+		err = sender.handleSv(msgFields)
+	case "sev":
+		err = sender.handleSev(msgFields)
+	default:
+		err = errUnkMsgType
 	}
 	if err != nil {
 		return err
@@ -255,7 +271,7 @@ func (sender *RoomClient) processMsg(msgStr string) (err error) {
 	return nil
 }
 
-func (client *RoomClient) handleIdentSuccess() {
+func (client *RoomClient) syncRoomState() {
 	if !client.room.singleplayer {
 		// tell everyone that a new client has connected
 		client.broadcast("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
@@ -268,7 +284,7 @@ func (client *RoomClient) handleIdentSuccess() {
 		// send the new client info about the game state
 		client.room.clients.Range(func(k, _ any) bool {
 			otherClient := k.(*RoomClient)
-			if !otherClient.valid || otherClient == client {
+			if otherClient == client {
 				return true
 			}
 
