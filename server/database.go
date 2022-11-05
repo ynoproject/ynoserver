@@ -1302,7 +1302,7 @@ func removePlayerBadge(playerUuid string, badgeId string) (err error) {
 }
 
 func getBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, err error) {
-	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE aa.timestampLoggedIn IS NOT NULL) aa WHERE a.timestampLoggedIn IS NOT NULL GROUP BY b.badgeId")
+	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE EXISTS(SELECT * FROM playerBadges aab WHERE aab.uuid = aa.uuid)) aa WHERE EXISTS(SELECT * FROM playerBadges ab WHERE ab.uuid = a.uuid) GROUP BY b.badgeId")
 	if err != nil {
 		return unlockPercentages, err
 	}
