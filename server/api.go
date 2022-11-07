@@ -808,13 +808,13 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		uuid, name, rank, badge, banned, _ = getPlayerDataFromToken(token)
 	}
 
-	if strings.HasPrefix(commandParam[0], "slot") {
-		badgeSlotRows, badgeSlotCols = getPlayerBadgeSlotCounts(name)
-	}
-
 	if banned {
 		handleError(w, r, "player is banned")
 		return
+	}
+
+	if strings.HasPrefix(commandParam[0], "slot") {
+		badgeSlotRows, badgeSlotCols = getPlayerBadgeSlotCounts(name)
 	}
 
 	switch commandParam[0] {
