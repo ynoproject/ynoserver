@@ -1203,14 +1203,12 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid := getUuidFromToken(token)
-
-	if uuid == "" {
+	if getUuidFromToken(token) == "" {
 		handleError(w, r, "invalid token")
 		return
 	}
 
-	db.Exec("DELETE FROM playerSessions WHERE sessionId = ? AND uuid = ?", token, uuid)
+	db.Exec("DELETE FROM playerSessions WHERE sessionId = ?", token)
 
 	w.Write([]byte("ok"))
 }
