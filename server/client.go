@@ -283,9 +283,10 @@ func (c *RoomClient) sendMsg(segments ...any) {
 
 func (c *RoomClient) disconnect() {
 	c.dcOnce.Do(func() {
-		// unregister
+		// unbind rClient from session
 		c.sClient.rClient = nil
 
+		// unregister
 		c.leaveRoom()
 
 		// send terminate signal to writer

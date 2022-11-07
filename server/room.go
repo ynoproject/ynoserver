@@ -126,8 +126,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	if s, ok := clients.Load(uuid); ok {
 		session := s.(*SessionClient)
 		if session.rClient != nil {
-			writeErrLog(uuid, "0000", "session in use")
-			return
+			session.rClient.disconnect()
 		}
 
 		session.rClient = client
