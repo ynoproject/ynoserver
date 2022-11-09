@@ -147,11 +147,11 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	// will make the send channel full and start blocking the goroutine
 	go client.msgWriter()
 
-	// register client to room
-	client.joinRoom(room)
-
 	// send client info about itself
 	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge)
+
+	// register client to room
+	client.joinRoom(room)
 
 	// start msgProcessor and msgReader after so a client can't send packets
 	// before they're in a room and try to crash the server
