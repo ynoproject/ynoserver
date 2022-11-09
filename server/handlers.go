@@ -422,6 +422,21 @@ func (sender *RoomClient) handleRp(msg []string) (err error) {
 	return nil
 }
 
+func (sender *RoomClient) handleBa(msg []string) (err error) {
+	if len(msg) != 2 {
+		return errLenMismatch
+	}
+
+	_, errconv := strconv.Atoi(msg[1])
+	if errconv != nil {
+		return errconv
+	}
+
+	sender.broadcast("ba", sender.sClient.id, msg[1])
+
+	return nil
+}
+
 func (sender *RoomClient) handleSay(msg []string) (err error) {
 	if sender.sClient.muted {
 		return nil

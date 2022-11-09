@@ -257,6 +257,8 @@ func (sender *RoomClient) processMsg(msgStr string) (err error) {
 		err = sender.handleP(msgFields)
 	case "rp": // remove picture
 		err = sender.handleRp(msgFields)
+	case "ba": // battle animation
+		err = sender.handleBa(msgFields)
 	case "say":
 		err = sender.handleSay(msgFields)
 	case "ss": // sync switch
