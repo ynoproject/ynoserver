@@ -120,6 +120,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		writerEnd: make(chan bool, 1),
 		send:      make(chan []byte, 16),
 		receive:   make(chan []byte, 16),
+		key:       serverSecurity.NewClientKey(),
 	}
 
 	// use 0000 as a placeholder since client.mapId isn't set until later
@@ -146,7 +147,11 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	// will make the send channel full and start blocking the goroutine
 	go client.msgWriter()
 
+	// register client to room
 	client.joinRoom(room)
+
+	// send client info about itself
+	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge)
 
 	// start msgProcessor and msgReader after so a client can't send packets
 	// before they're in a room and try to crash the server
@@ -166,8 +171,6 @@ func (c *RoomClient) joinRoom(room *Room) {
 	c.reset()
 
 	room.clients.Store(c, nil)
-
-	c.sendMsg("s", c.sClient.id, int(c.key), c.sClient.uuid, c.sClient.rank, c.sClient.account, c.sClient.badge)
 
 	c.syncRoomState()
 }
