@@ -169,7 +169,7 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.reset()
 
-	c.sendMsg("ri", c.room.id, c.key)
+	c.sendMsg("ri", c.room.id, int(c.key))
 
 	room.clients.Store(c, nil)
 
