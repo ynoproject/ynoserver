@@ -303,6 +303,7 @@ func (c *RoomClient) disconnect() {
 }
 
 func (c *RoomClient) reset() {
+	c.key = serverSecurity.NewClientKey()
 	c.counter = 0
 
 	c.x = 0

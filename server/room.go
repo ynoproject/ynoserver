@@ -120,7 +120,6 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		writerEnd: make(chan bool, 1),
 		send:      make(chan []byte, 16),
 		receive:   make(chan []byte, 16),
-		key:       serverSecurity.NewClientKey(),
 	}
 
 	// use 0000 as a placeholder since client.mapId isn't set until later
@@ -148,7 +147,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	go client.msgWriter()
 
 	// send client info about itself
-	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge)
+	client.sendMsg("s", client.sClient.id, uuid, client.sClient.rank, client.sClient.account, client.sClient.badge)
 
 	// register client to room
 	client.joinRoom(room)
@@ -169,6 +168,8 @@ func (c *RoomClient) joinRoom(room *Room) {
 	c.room = room
 
 	c.reset()
+
+	c.sendMsg("ri", c.room.id, c.key)
 
 	room.clients.Store(c, nil)
 
