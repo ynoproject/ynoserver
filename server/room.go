@@ -157,7 +157,6 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	go client.msgProcessor()
 	go client.msgReader()
 
-
 	// TODO: create these arrays once and store them
 	// convert PictureNames to a string array so we can send it
 	var picNames []string
