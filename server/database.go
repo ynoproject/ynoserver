@@ -1631,23 +1631,23 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 	isFiltered := subCategoryId != "all"
 	var isUnion bool
 
-	query := "INSERT INTO rankingEntries (categoryId, subCategoryId, position, uuid, value" + valueType + ", timestamp) "
+	query := "INSERT INTO rankingEntries (categoryId, subCategoryId, position, actualPosition, uuid, value" + valueType + ", timestamp) "
 
 	switch categoryId {
 	case "badgeCount":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), a.uuid, COUNT(pb.uuid), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid JOIN badges b ON b.badgeId = pb.badgeId WHERE b.hidden = 0"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), 1, a.uuid, COUNT(pb.uuid), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid JOIN badges b ON b.badgeId = pb.badgeId WHERE b.hidden = 0"
 		if isFiltered {
 			query += " AND b.game = ?"
 		}
 		query += " GROUP BY a.uuid ORDER BY 5 DESC, 6"
 	case "bp":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(b.bp) DESC), a.uuid, SUM(b.bp), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid JOIN badges b ON b.badgeId = pb.badgeId"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(b.bp) DESC), 1, a.uuid, SUM(b.bp), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid JOIN badges b ON b.badgeId = pb.badgeId"
 		if isFiltered {
 			query += " WHERE b.game = ?"
 		}
 		query += " GROUP BY a.uuid ORDER BY 5 DESC, 6"
 	case "exp":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(ec.exp) DESC), ec.uuid, SUM(ec.exp), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM ((SELECT ec.uuid, ec.exp FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY SUM(ec.exp) DESC), 1, ec.uuid, SUM(ec.exp), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM ((SELECT ec.uuid, ec.exp FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0"
 		if isFiltered {
 			query += " JOIN eventPeriods ep ON ep.id = el.periodId AND ep.periodOrdinal = ?"
 		}
@@ -1659,7 +1659,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		isUnion = true
 	case "eventLocationCount", "freeEventLocationCount":
 		isFree := categoryId == "freeEventLocationCount"
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec "
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), 1, ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec "
 		if isFiltered {
 			if isFree {
 				query += "JOIN playerEventLocations el"
@@ -1676,21 +1676,21 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		}
 		query += " GROUP BY ec.uuid ORDER BY 5 DESC, 6"
 	case "eventLocationCompletion":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count DESC), a.uuid, COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count, (SELECT MAX(aect.timestampCompleted) FROM eventCompletions aect WHERE aect.uuid = ec.uuid) FROM eventCompletions ec JOIN accounts a ON a.uuid = ec.uuid LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 JOIN (SELECT COUNT(DISTINCT COALESCE(ael.title, apel.title)) count FROM eventCompletions aec LEFT JOIN eventLocations ael ON ael.id = aec.eventId AND aec.type = 0 LEFT JOIN playerEventLocations apel ON apel.id = aec.eventId AND aec.type = 1 WHERE (ael.title IS NOT NULL OR apel.title IS NOT NULL)) aec"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count DESC), 1, a.uuid, COUNT(DISTINCT COALESCE(el.title, pel.title)) / aec.count, (SELECT MAX(aect.timestampCompleted) FROM eventCompletions aect WHERE aect.uuid = ec.uuid) FROM eventCompletions ec JOIN accounts a ON a.uuid = ec.uuid LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 JOIN (SELECT COUNT(DISTINCT COALESCE(ael.title, apel.title)) count FROM eventCompletions aec LEFT JOIN eventLocations ael ON ael.id = aec.eventId AND aec.type = 0 LEFT JOIN playerEventLocations apel ON apel.id = aec.eventId AND aec.type = 1 WHERE (ael.title IS NOT NULL OR apel.title IS NOT NULL)) aec"
 		if isFiltered {
 			query += " JOIN eventPeriods ep ON ep.id = COALESCE(el.periodId, pel.periodId) AND ep.periodOrdinal = ?"
 		}
 		query += " GROUP BY a.user ORDER BY 5 DESC, 6"
 	case "eventVmCount":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec "
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(ec.uuid) DESC), 1, ec.uuid, COUNT(ec.uuid), (SELECT MAX(aec.timestampCompleted) FROM eventCompletions aec WHERE aec.uuid = ec.uuid) FROM eventCompletions ec "
 		if isFiltered {
 			query += "JOIN eventVms ev ON ev.id = ec.eventId JOIN eventPeriods ep ON ep.id = ev.periodId AND ep.periodOrdinal = ? "
 		}
 		query += "WHERE ec.type = 2 GROUP BY ec.uuid ORDER BY 5 DESC, 6"
 	case "timeTrial":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY MIN(tt.seconds)), tt.uuid, MIN(tt.seconds), (SELECT MAX(att.timestampCompleted) FROM playerTimeTrials att WHERE att.uuid = tt.uuid AND att.mapId = tt.mapId AND att.seconds = tt.seconds) FROM playerTimeTrials tt WHERE tt.mapId = ? GROUP BY tt.uuid ORDER BY 5, 6"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY MIN(tt.seconds)), 1, tt.uuid, MIN(tt.seconds), (SELECT MAX(att.timestampCompleted) FROM playerTimeTrials att WHERE att.uuid = tt.uuid AND att.mapId = tt.mapId AND att.seconds = tt.seconds) FROM playerTimeTrials tt WHERE tt.mapId = ? GROUP BY tt.uuid ORDER BY 5, 6"
 	case "minigame":
-		query += "SELECT ?, ?, RANK() OVER (ORDER BY MAX(ms.score) DESC), ms.uuid, MAX(ms.score), (SELECT MAX(ams.timestampCompleted) FROM playerMinigameScores ams WHERE ams.uuid = ms.uuid AND ams.minigameId = ms.minigameId AND ams.score = ms.score) FROM playerMinigameScores ms WHERE ms.minigameId = ? GROUP BY ms.uuid ORDER BY 5 DESC, 6"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY MAX(ms.score) DESC), 1, ms.uuid, MAX(ms.score), (SELECT MAX(ams.timestampCompleted) FROM playerMinigameScores ams WHERE ams.uuid = ms.uuid AND ams.minigameId = ms.minigameId AND ams.score = ms.score) FROM playerMinigameScores ms WHERE ms.minigameId = ? GROUP BY ms.uuid ORDER BY 5 DESC, 6"
 	}
 
 	if isFiltered {
@@ -1702,6 +1702,12 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 	} else {
 		_, err = db.Exec(query, categoryId, subCategoryId)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("UPDATE rankingEntries SET actualPosition = RANK() OVER (ORDER BY position, timestamp) FROM rankingEntries WHERE categoryId = ? AND subCategoryId = ?")
 
 	if err != nil {
 		return err
