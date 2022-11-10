@@ -57,6 +57,7 @@ func Start() {
 	gameAssets.IgnoredSoundNames = serverConfig.BadSounds
 	gameAssets.PictureNames = serverConfig.PictureNames
 	gameAssets.PicturePrefixes = serverConfig.PicturePrefixes
+	gameAssets.BattleAnimIds = serverConfig.BattleAnimIds
 
 	setConditions()
 	setBadges()

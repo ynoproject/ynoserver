@@ -427,9 +427,13 @@ func (sender *RoomClient) handleBa(msg []string) (err error) {
 		return errLenMismatch
 	}
 
-	_, errconv := strconv.Atoi(msg[1])
+	id, errconv := strconv.Atoi(msg[1])
 	if errconv != nil {
 		return errconv
+	}
+
+	if !gameAssets.BattleAnimIds[id] {
+		return err
 	}
 
 	sender.broadcast("ba", sender.sClient.id, msg[1])

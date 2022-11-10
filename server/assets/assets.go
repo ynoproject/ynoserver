@@ -33,6 +33,7 @@ type Assets struct {
 	IgnoredSoundNames map[string]bool
 	PictureNames      map[string]bool
 	PicturePrefixes   []string
+	BattleAnimIds     map[int]bool
 }
 
 func GetAssets(gamePath string) *Assets {

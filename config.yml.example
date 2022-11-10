@@ -16,6 +16,9 @@
 ## Picture prefixes to sync in multiplayer
 #picture_prefixes: ""
 
+## Battle Animation IDs to sync in multiplayer
+#battle_anim_ids: ""
+
 ## YNOclient signature key
 #sign_key: ""
 

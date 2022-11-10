@@ -34,6 +34,7 @@ type Config struct {
 	BadSounds       map[string]bool
 	PictureNames    map[string]bool
 	PicturePrefixes []string
+	BattleAnimIds   map[int]bool
 
 	SignKey  []byte
 	IPHubKey string
@@ -53,6 +54,7 @@ type configFile struct {
 	BadSounds       string `yaml:"bad_sounds"`
 	PictureNames    string `yaml:"picture_names"`
 	PicturePrefixes string `yaml:"picture_prefixes"`
+	BattleAnimIds   string `yaml:"battle_anim_ids"`
 
 	SignKey  string `yaml:"sign_key"`
 	IPHubKey string `yaml:"iphub_key"`
@@ -109,6 +111,18 @@ func ParseConfigFile(filename string) (config *Config) {
 
 	if configFile.PicturePrefixes != "" {
 		config.PicturePrefixes = strings.Split(configFile.PicturePrefixes, ",")
+	}
+
+	config.BattleAnimIds = make(map[int]bool)
+	if configFile.BattleAnimIds != "" {
+		for _, id := range strings.Split(configFile.BattleAnimIds, ",") {
+			idInt, errconv := strconv.Atoi(id)
+			if errconv != nil {
+				continue
+			}
+
+			config.BattleAnimIds[idInt] = true
+		}
 	}
 
 	config.SignKey = []byte(configFile.SignKey)
