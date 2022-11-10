@@ -1763,16 +1763,9 @@ func getNameFromUuid(uuid string) (name string) {
 	}
 
 	// otherwise check playergamedata
-	results, err := db.Query("SELECT name FROM playerGameData WHERE uuid = ?")
+	err = db.QueryRow("SELECT name FROM playerGameData WHERE uuid = ?").Scan(&name)
 	if err != nil {
 		return ""
-	}
-
-	for results.Next() {
-		err := results.Scan(&name)
-		if err != nil {
-			return ""
-		}
 	}
 
 	return name
