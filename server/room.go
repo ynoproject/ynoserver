@@ -233,8 +233,8 @@ func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
 
 func (sender *RoomClient) processMsg(msgStr string) (err error) {
 	switch msgFields := strings.Split(msgStr, delim); msgFields[0] {
-	case "sw": // switch room
-		err = sender.handleSw(msgFields)
+	case "sr": // switch room
+		err = sender.handleSr(msgFields)
 	case "m", "tp": // moved / teleported to x y
 		err = sender.handleM(msgFields)
 	case "f": // change facing direction

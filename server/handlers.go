@@ -23,7 +23,7 @@ import (
 	"strings"
 )
 
-func (sender *RoomClient) handleSw(msg []string) (err error) {
+func (sender *RoomClient) handleSr(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errLenMismatch
 	}
