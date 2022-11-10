@@ -115,9 +115,6 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	// register client to the clients list
 	clients.Store(client.uuid, client)
 
-	// queue s message
-	client.sendMsg("s", client.uuid, client.rank, client.account, client.badge)
-
 	go client.msgProcessor()
 
 	go client.msgWriter()
