@@ -1707,7 +1707,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 		return err
 	}
 
-	_, err = db.Exec("UPDATE rankingEntries SET actualPosition = RANK() OVER (ORDER BY position, timestamp) FROM rankingEntries WHERE categoryId = ? AND subCategoryId = ?")
+	_, err = db.Exec("UPDATE rankingEntries SET actualPosition = RANK() OVER (ORDER BY position, timestamp) FROM rankingEntries WHERE categoryId = ? AND subCategoryId = ?", categoryId, subCategoryId)
 
 	if err != nil {
 		return err
