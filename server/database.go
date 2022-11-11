@@ -413,7 +413,7 @@ func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*P
 		var partyId int
 		var accountBin int
 		partyMember := &PartyMember{}
-		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.Badge, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex, &partyMember.Medals[0], &partyMember.Medals[1], &partyMember.Medals[2], &partyMember.Medals[3])
+		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.Badge, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex, &partyMember.Medals[0], &partyMember.Medals[1], &partyMember.Medals[2], &partyMember.Medals[3], &partyMember.Medals[4])
 		if err != nil {
 			return partyMembersByParty, err
 		}
@@ -489,7 +489,7 @@ func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
 		var partyId int
 		var accountBin int
 		partyMember := &PartyMember{}
-		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.Badge, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex, &partyMember.Medals[0], &partyMember.Medals[1], &partyMember.Medals[2], &partyMember.Medals[3])
+		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.Badge, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex, &partyMember.Medals[0], &partyMember.Medals[1], &partyMember.Medals[2], &partyMember.Medals[3], &partyMember.Medals[4])
 		if err != nil {
 			return partyMembers, err
 		}
