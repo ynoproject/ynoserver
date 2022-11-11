@@ -38,6 +38,7 @@ type PlayerInfo struct {
 	Badge         string `json:"badge"`
 	BadgeSlotRows int    `json:"badgeSlotRows"`
 	BadgeSlotCols int    `json:"badgeSlotCols"`
+	Medals        [4]int `json:"medals"`
 }
 
 func initApi() {
@@ -129,12 +130,14 @@ func initApi() {
 		var badge string
 		var badgeSlotRows int
 		var badgeSlotCols int
+		var medals [4]int
 
 		token := r.Header.Get("Authorization")
 		if token == "" {
 			uuid, name, rank = getPlayerInfo(getIp(r))
 		} else {
 			uuid, name, rank, badge, badgeSlotRows, badgeSlotCols = getPlayerInfoFromToken(token)
+			medals = getPlayerMedals(uuid)
 		}
 
 		// guest accounts with no playerGameData records will return nothing
@@ -150,6 +153,7 @@ func initApi() {
 			Badge:         badge,
 			BadgeSlotRows: badgeSlotRows,
 			BadgeSlotCols: badgeSlotCols,
+			Medals:        medals,
 		}
 		playerInfoJson, err := json.Marshal(playerInfo)
 		if err != nil {

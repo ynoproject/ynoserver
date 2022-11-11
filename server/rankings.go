@@ -187,6 +187,11 @@ func initRankings() {
 			}
 		}
 
+		err := updatePlayerMedals()
+		if err != nil {
+			writeErrLog("SERVER", "medals", err.Error())
+		}
+
 		rankingsMtx.Unlock()
 	})
 }
