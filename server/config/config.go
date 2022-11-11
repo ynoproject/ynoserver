@@ -37,7 +37,7 @@ type Config struct {
 	BattleAnimIds   map[int]bool
 
 	SignKey  []byte
-	IPHubKey string
+	IpHubKey string
 
 	Logging struct {
 		MaxSize    int
@@ -57,7 +57,7 @@ type configFile struct {
 	BattleAnimIds   string `yaml:"battle_anim_ids"`
 
 	SignKey  string `yaml:"sign_key"`
-	IPHubKey string `yaml:"iphub_key"`
+	IpHubKey string `yaml:"iphub_key"`
 
 	Logging struct {
 		MaxSize    int `yaml:"max_size"`
@@ -126,7 +126,7 @@ func ParseConfigFile(filename string) (config *Config) {
 	}
 
 	config.SignKey = []byte(configFile.SignKey)
-	config.IPHubKey = configFile.IPHubKey
+	config.IpHubKey = configFile.IpHubKey
 
 	if configFile.Logging.MaxSize != 0 {
 		config.Logging.MaxSize = configFile.Logging.MaxSize

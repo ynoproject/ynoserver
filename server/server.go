@@ -122,7 +122,7 @@ func getIp(r *http.Request) string {
 }
 
 func isVpn(ip string) (vpn bool) {
-	if serverConfig.IPHubKey == "" {
+	if serverConfig.IpHubKey == "" {
 		return false // VPN checking is not available
 	}
 
@@ -131,7 +131,7 @@ func isVpn(ip string) (vpn bool) {
 		return false
 	}
 
-	req.Header.Set("X-Key", serverConfig.IPHubKey)
+	req.Header.Set("X-Key", serverConfig.IpHubKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
