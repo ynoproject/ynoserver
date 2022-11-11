@@ -25,7 +25,7 @@ import (
 )
 
 type Assets struct {
-	MapIDs []int
+	MapIds []int
 
 	SpriteNames       map[string]bool
 	SystemNames       map[string]bool
@@ -38,7 +38,7 @@ type Assets struct {
 
 func GetAssets(gamePath string) *Assets {
 	return &Assets{
-		MapIDs: getMaps(gamePath),
+		MapIds: getMaps(gamePath),
 
 		SpriteNames: getCharSets(gamePath),
 		SystemNames: getSystems(gamePath),
