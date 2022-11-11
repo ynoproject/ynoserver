@@ -65,7 +65,7 @@ func Start() {
 
 	globalConditions = getGlobalConditions()
 
-	createRooms(gameAssets.MapIDs, serverConfig.SpRooms)
+	createRooms(gameAssets.MapIds, serverConfig.SpRooms)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   "logs/" + serverConfig.GameName + "/ynoserver.log",
