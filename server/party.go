@@ -38,7 +38,7 @@ type PartyMember struct {
 	Rank          int    `json:"rank"`
 	Account       bool   `json:"account"`
 	Badge         string `json:"badge"`
-	Medals        [4]int `json:"medals"`
+	Medals        [5]int `json:"medals"`
 	SystemName    string `json:"systemName"`
 	SpriteName    string `json:"spriteName"`
 	SpriteIndex   int    `json:"spriteIndex"`

@@ -76,7 +76,7 @@ type SessionClient struct {
 	uuid    string
 	rank    int
 	badge   string
-	medals  [4]int
+	medals  [5]int
 
 	muted bool
 

@@ -163,14 +163,14 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { // called 
 	return nil
 }
 
-func getPlayerMedals(uuid string) (medals [4]int) {
+func getPlayerMedals(uuid string) (medals [5]int) {
 	if client, ok := clients.Load(uuid); ok {
 		return client.(*SessionClient).medals // return medals from session if client is connected
 	}
 
-	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, serverConfig.GameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3])
+	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, serverConfig.GameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3], &medals[4])
 	if err != nil {
-		return [4]int{0, 0, 0, 0}
+		return [5]int{0, 0, 0, 0, 0}
 	}
 
 	return medals
@@ -402,7 +402,7 @@ func getAllPartyData(simple bool) (parties []*Party, err error) {
 func getAllPartyMemberDataByParty(simple bool) (partyMembersByParty map[int][]*PartyMember, err error) {
 	partyMembersByParty = make(map[int][]*PartyMember)
 
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", serverConfig.GameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", serverConfig.GameName)
 	if err != nil {
 		return partyMembersByParty, err
 	}
@@ -480,7 +480,7 @@ func getPartyData(playerUuid string) (party Party, err error) { // called by api
 }
 
 func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, serverConfig.GameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, serverConfig.GameName)
 	if err != nil {
 		return partyMembers, err
 	}
@@ -1724,7 +1724,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 }
 
 func updatePlayerMedals() (err error) {
-	_, err = db.Exec("UPDATE playerGameData pgd JOIN (SELECT uuid, SUM(CASE WHEN actualPosition <= 100 AND actualPosition > 30 THEN 1 ELSE 0 END) bronze, SUM(CASE WHEN actualPosition <= 30 AND actualPosition > 10 THEN 1 ELSE 0 END) silver, SUM(CASE WHEN actualPosition <= 10 AND actualPosition > 1 THEN 1 ELSE 0 END) gold, SUM(CASE WHEN actualPosition = 1 THEN 1 ELSE 0 END) plat FROM rankingEntries e JOIN rankingCategories rc ON rc.categoryId = e.categoryId JOIN rankingSubCategories rsc ON rsc.categoryId = e.categoryId AND rsc.subCategoryId = e.subCategoryId AND rc.game IN ('', ?) AND rsc.game IN ('', ?) WHERE (rc.periodic = 0 OR e.subCategoryId IN ('all', 3)) GROUP BY uuid) m ON m.uuid = pgd.uuid SET pgd.medalCountBronze = m.bronze, pgd.medalCountSilver = m.silver, pgd.medalCountGold = m.gold, pgd.medalCountPlatinum = m.plat WHERE pgd.game = ?", serverConfig.GameName, serverConfig.GameName, serverConfig.GameName)
+	_, err = db.Exec("UPDATE playerGameData pgd JOIN (SELECT uuid, SUM(CASE WHEN actualPosition <= 100 AND actualPosition > 30 THEN 1 ELSE 0 END) bronze, SUM(CASE WHEN actualPosition <= 30 AND actualPosition > 10 THEN 1 ELSE 0 END) silver, SUM(CASE WHEN actualPosition <= 10 AND actualPosition > 1 THEN 1 ELSE 0 END) gold, SUM(CASE WHEN actualPosition <= 3 AND actualPosition > 1 THEN 1 ELSE 0 END) plat, SUM(CASE WHEN actualPosition = 1 THEN 1 ELSE 0 END) diamond FROM rankingEntries e JOIN rankingCategories rc ON rc.categoryId = e.categoryId JOIN rankingSubCategories rsc ON rsc.categoryId = e.categoryId AND rsc.subCategoryId = e.subCategoryId AND rc.game IN ('', ?) AND rsc.game IN ('', ?) WHERE (rc.periodic = 0 OR e.subCategoryId IN ('all', 3)) GROUP BY uuid) m ON m.uuid = pgd.uuid SET pgd.medalCountBronze = m.bronze, pgd.medalCountSilver = m.silver, pgd.medalCountGold = m.gold, pgd.medalCountPlatinum = m.plat, pgd.medalCountDiamond = m.diamond WHERE pgd.game = ?", serverConfig.GameName, serverConfig.GameName, serverConfig.GameName)
 
 	if err != nil {
 		return err

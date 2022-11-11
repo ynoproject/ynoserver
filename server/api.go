@@ -38,7 +38,7 @@ type PlayerInfo struct {
 	Badge         string `json:"badge"`
 	BadgeSlotRows int    `json:"badgeSlotRows"`
 	BadgeSlotCols int    `json:"badgeSlotCols"`
-	Medals        [4]int `json:"medals"`
+	Medals        [5]int `json:"medals"`
 }
 
 func initApi() {
@@ -130,7 +130,7 @@ func initApi() {
 		var badge string
 		var badgeSlotRows int
 		var badgeSlotCols int
-		var medals [4]int
+		var medals [5]int
 
 		token := r.Header.Get("Authorization")
 		if token == "" {
