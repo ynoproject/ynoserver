@@ -112,12 +112,12 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
 
+	go client.msgWriter()
+
 	// register client to the clients list
 	clients.Store(client.uuid, client)
 
 	go client.msgProcessor()
-
-	go client.msgWriter()
 	go client.msgReader()
 
 	writeLog(client.uuid, "sess", "connect", 200)
