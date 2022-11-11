@@ -761,7 +761,7 @@ func (sender *RoomClient) handleSev(msg []string) (err error) {
 
 func (sender *SessionClient) handleI() (err error) {
 	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(sender.name)
-	medals := getPlayerMedals(sender.name)
+	medals := getPlayerMedals(sender.uuid)
 	playerInfo := PlayerInfo{
 		Uuid:          sender.uuid,
 		Name:          sender.name,
