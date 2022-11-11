@@ -170,7 +170,7 @@ func getPlayerMedals(uuid string) (medals [5]int) {
 
 	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, serverConfig.GameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3], &medals[4])
 	if err != nil {
-		return [5]int{0, 0, 0, 0, 0}
+		return [5]int{}
 	}
 
 	return medals
