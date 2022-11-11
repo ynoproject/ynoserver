@@ -761,6 +761,7 @@ func (sender *RoomClient) handleSev(msg []string) (err error) {
 
 func (sender *SessionClient) handleI() (err error) {
 	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(sender.name)
+	medals := getPlayerMedals(sender.name)
 	playerInfo := PlayerInfo{
 		Uuid:          sender.uuid,
 		Name:          sender.name,
@@ -768,6 +769,7 @@ func (sender *SessionClient) handleI() (err error) {
 		Badge:         sender.badge,
 		BadgeSlotRows: badgeSlotRows,
 		BadgeSlotCols: badgeSlotCols,
+		Medals:        medals,
 	}
 	playerInfoJson, err := json.Marshal(playerInfo)
 	if err != nil {
@@ -855,7 +857,7 @@ func (sender *SessionClient) handleGSay(msg []string) (err error) {
 		y = sender.rClient.y
 	}
 
-	sender.broadcast("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge)
+	sender.broadcast("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge, sender.medals[:])
 	sender.broadcast("gsay", sender.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
 
 	return nil

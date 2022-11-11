@@ -148,7 +148,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	go client.msgWriter()
 
 	// send client info about itself
-	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge)
+	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:])
 
 	// register client to room
 	client.joinRoom(room)
@@ -305,7 +305,7 @@ func (sender *RoomClient) processMsg(msgStr string) (err error) {
 func (client *RoomClient) syncRoomState() {
 	if !client.room.singleplayer {
 		// tell everyone that a new client has connected
-		client.broadcast("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge) // user %id% has connected message
+		client.broadcast("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:]) // user %id% has connected message
 
 		// send name of client
 		if client.sClient.name != "" {
@@ -319,7 +319,7 @@ func (client *RoomClient) syncRoomState() {
 				return true
 			}
 
-			client.sendMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge)
+			client.sendMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
 			client.sendMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
 			if otherClient.facing > 0 {
 				client.sendMsg("f", otherClient.sClient.id, otherClient.facing)
