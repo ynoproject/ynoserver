@@ -1648,7 +1648,7 @@ func updateRankingEntries(categoryId string, subCategoryId string) (err error) {
 
 	switch categoryId {
 	case "badgeCount":
-		query += "SELECT 'exp', 'all', RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), RANK() OVER (ORDER BY COUNT(pb.uuid) DESC, (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId)), a.uuid, COUNT(pb.uuid), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid JOIN badges b ON b.badgeId = pb.badgeId WHERE b.hidden = 0"
+		query += "SELECT ?, ?, RANK() OVER (ORDER BY COUNT(pb.uuid) DESC), RANK() OVER (ORDER BY COUNT(pb.uuid) DESC, (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId)), a.uuid, COUNT(pb.uuid), (SELECT MAX(apb.timestampUnlocked) FROM playerBadges apb WHERE apb.uuid = a.uuid AND apb.badgeId = b.badgeId) FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid JOIN badges b ON b.badgeId = pb.badgeId WHERE b.hidden = 0"
 		if isFiltered {
 			query += " AND b.game = ?"
 		}
