@@ -98,7 +98,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 		return true
 	})
-	if sameIp >= 3 {
+	if sameIp > 3 {
 		writeErrLog(client.uuid, "sess", "too many connections from ip")
 		return
 	}
