@@ -25,7 +25,7 @@ type Party struct {
 	Id          int           `json:"id"`
 	Name        string        `json:"name"`
 	Public      bool          `json:"public"`
-	Pass        string        `json:"pass"`
+	Pass        string        //`json:"pass"
 	SystemName  string        `json:"systemName"`
 	Description string        `json:"description"`
 	OwnerUuid   string        `json:"ownerUuid"`
@@ -56,35 +56,25 @@ func sendPartyUpdate() {
 	}
 
 	for _, party := range parties { // for every party
-		var partyPass string
-		if party.Pass != "" {
-			partyPass = party.Pass
-			party.Pass = ""
+		var onlinePartyMemberUuids []string
+		for _, member := range party.Members {
+			if member.Online {
+				onlinePartyMemberUuids = append(onlinePartyMemberUuids, member.Uuid)
+			}
 		}
+
+		if len(onlinePartyMemberUuids) < 1 {
+			continue
+		}
+
 		partyDataJson, err := json.Marshal(party)
 		if err != nil {
 			continue
 		}
 
-		for _, member := range party.Members { // for every member
-			if !member.Online {
-				continue
-			}
-			if client, ok := clients.Load(member.Uuid); ok {
-				var jsonData []byte
-				if member.Uuid == party.OwnerUuid {
-					// Expose password only for party owner
-					party.Pass = partyPass
-					ownerPartyDataJson, err := json.Marshal(party)
-					party.Pass = ""
-					if err != nil {
-						continue
-					}
-					jsonData = ownerPartyDataJson
-				} else {
-					jsonData = partyDataJson
-				}
-				client.(*SessionClient).sendMsg("pt", jsonData) // send JSON to client
+		for _, memberUuid := range onlinePartyMemberUuids { // for every member
+			if client, ok := clients.Load(memberUuid); ok {
+				client.(*SessionClient).sendMsg("pt", partyDataJson) // send JSON to client
 			}
 		}
 	}
