@@ -110,7 +110,14 @@ func initApi() {
 			if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
 				writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
 			} else {
-				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)", actionParam[0], queryString, string(body), string(body))
+				var interval string
+				// Shorter expiration for map queries returning unknown location in case of new maps that haven't yet been added to the wiki
+				if actionParam[0] == "getMapLocationNames" && response == "[]" {
+					interval = "1 HOUR"
+				} else {
+					interval = "7 DAY"
+				}
+				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL "+interval+")) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL "+interval+")", actionParam[0], queryString, string(body), string(body))
 				if err != nil {
 					writeErrLog(getIp(r), r.URL.Path, err.Error())
 				}
