@@ -849,7 +849,7 @@ func (sender *SessionClient) handleGSay(msg []string) (err error) {
 	x := -1
 	y := -1
 
-	if sender.rClient != nil {
+	if sender.rClient != nil && enableLocBin == 1 {
 		mapId = sender.rClient.mapId
 		prevMapId = sender.rClient.prevMapId
 		prevLocations = sender.rClient.prevLocations
