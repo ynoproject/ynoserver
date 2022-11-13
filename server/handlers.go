@@ -984,3 +984,83 @@ func (sender *SessionClient) handleE() (err error) {
 
 	return nil
 }
+
+func (sender *SessionClient) handleEexp() (err error) {
+	periodId, err := getCurrentEventPeriodId()
+	if err != nil {
+		return err
+	}
+	playerEventExpData, err := getPlayerEventExpData(periodId, sender.uuid)
+	if err != nil {
+		return err
+	}
+	playerEventExpDataJson, err := json.Marshal(playerEventExpData)
+	if err != nil {
+		return err
+	}
+
+	sender.sendMsg("eexp", playerEventExpDataJson)
+
+	return nil
+}
+
+func (sender *SessionClient) handleEec(msg []string) (err error) {
+	if len(msg) < 3 {
+		sender.sendMsg("eec", 0, false)
+		return errLenMismatch
+	}
+
+	location := msg[1]
+	if len(location) < 1 {
+		sender.sendMsg("eec", 0, false)
+		return err // location not specified
+	}
+
+	periodId, err := getCurrentEventPeriodId()
+	if err != nil {
+		return err
+	}
+	ret := -1
+	if sender.rClient != nil {
+		if msg[2] != "1" { // not free expedition
+			exp, err := tryCompleteEventLocation(periodId, sender.uuid, location)
+			if err != nil {
+				sender.sendMsg("eec", 0, false)
+				return err
+			}
+			if exp < 0 {
+				sender.sendMsg("eec", 0, false)
+				return err // unexpected state
+			}
+			ret = exp
+		} else { // free expedition
+			complete, err := tryCompletePlayerEventLocation(periodId, sender.uuid, location)
+			if err != nil {
+				sender.sendMsg("eec", 0, false)
+				return err
+			}
+			if complete {
+				ret = 0
+			}
+		}
+	}
+	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, sender.uuid)
+	if err != nil {
+		sender.sendMsg("eec", 0, false)
+		return err
+	}
+	var hasIncompleteEvent bool
+	for _, currentEventLocation := range currentEventLocationsData {
+		if !currentEventLocation.Complete {
+			hasIncompleteEvent = true
+			break
+		}
+	}
+	if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
+		addPlayer2kkiEventLocation(-1, 2, 0, 0, sender.uuid)
+	}
+
+	sender.sendMsg("eec", ret, true)
+
+	return nil
+}

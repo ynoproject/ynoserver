@@ -156,6 +156,10 @@ func (sender *SessionClient) processMsg(msg []byte) (err error) {
 		err = sender.handleEp()
 	case "e": // event list
 		err = sender.handleE()
+	case "eexp": // update expedition points
+		err = sender.handleEexp()
+	case "eec": // claim expedition
+		err = sender.handleEec(msgFields)
 	default:
 		err = errUnkMsgType
 	}

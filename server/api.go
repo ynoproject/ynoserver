@@ -53,7 +53,7 @@ func initApi() {
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/saveSync", handleSaveSync)
-	http.HandleFunc("/api/events", handleEvents)
+	http.HandleFunc("/api/vm", handleVm)
 	http.HandleFunc("/api/badge", handleBadge)
 	http.HandleFunc("/api/ranking", handleRanking)
 
@@ -652,139 +652,34 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func handleEvents(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-	var banned bool
-
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		handleError(w, r, "token not specified")
-		return
-	} else {
-		uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
-	}
-
-	if banned {
-		handleError(w, r, "player is banned")
+func handleVm(w http.ResponseWriter, r *http.Request) {
+	idParam, ok := r.URL.Query()["id"]
+	if !ok || len(idParam) < 1 {
+		handleError(w, r, "id not specified")
 		return
 	}
 
-	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) < 1 {
-		handleError(w, r, "command not specified")
+	eventVmId, err := strconv.Atoi(idParam[0])
+	if err != nil {
+		handleInternalError(w, r, err)
 		return
 	}
 
-	switch commandParam[0] {
-	case "exp":
-		periodId, err := getCurrentEventPeriodId()
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		playerEventExpData, err := getPlayerEventExpData(periodId, uuid)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		playerEventExpDataJson, err := json.Marshal(playerEventExpData)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write(playerEventExpDataJson)
-	case "claim":
-		locationParam, ok := r.URL.Query()["location"]
-		if !ok || len(locationParam) < 1 {
-			handleError(w, r, "location not specified")
-			return
-		}
-		var free bool
-		freeParam, ok := r.URL.Query()["free"]
-		if ok && len(freeParam) >= 1 && freeParam[0] != "0" {
-			free = true
-		}
-		periodId, err := getCurrentEventPeriodId()
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		ret := -1
-		if client, found := clients.Load(uuid); found {
-			if client.(*SessionClient).rClient != nil {
-				if !free {
-					exp, err := tryCompleteEventLocation(periodId, uuid, locationParam[0])
-					if err != nil {
-						handleInternalError(w, r, err)
-						return
-					}
-					if exp < 0 {
-						handleError(w, r, "unexpected state")
-						return
-					}
-					ret = exp
-				} else {
-					complete, err := tryCompletePlayerEventLocation(periodId, uuid, locationParam[0])
-					if err != nil {
-						handleInternalError(w, r, err)
-						return
-					}
-					if complete {
-						ret = 0
-					}
-				}
-			}
-			currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, uuid)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-			var hasIncompleteEvent bool
-			for _, currentEventLocation := range currentEventLocationsData {
-				if !currentEventLocation.Complete {
-					hasIncompleteEvent = true
-					break
-				}
-			}
-			if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
-				addPlayer2kkiEventLocation(-1, 2, 0, 0, uuid)
-			}
-		} else {
-			handleError(w, r, "unexpected state")
-			return
-		}
-		w.Write([]byte(strconv.Itoa(ret)))
-	case "vm":
-		idParam, ok := r.URL.Query()["id"]
-		if !ok || len(idParam) < 1 {
-			handleError(w, r, "id not specified")
-			return
-		}
-
-		eventVmId, err := strconv.Atoi(idParam[0])
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		mapId, eventId, err := getEventVmInfo(eventVmId)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		fileBytes, err := os.ReadFile("vms/Map" + fmt.Sprintf("%04d", mapId) + "_EV" + fmt.Sprintf("%04d", eventId) + ".png")
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Write(fileBytes)
-	default:
-		handleError(w, r, "unknown command")
+	mapId, eventId, err := getEventVmInfo(eventVmId)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
 	}
+
+	fileBytes, err := os.ReadFile("vms/Map" + fmt.Sprintf("%04d", mapId) + "_EV" + fmt.Sprintf("%04d", eventId) + ".png")
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Write(fileBytes)
 }
 
 func handleBadge(w http.ResponseWriter, r *http.Request) {
