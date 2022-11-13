@@ -69,7 +69,7 @@ func initApi() {
 		}
 
 		actionParam, ok := r.URL.Query()["action"]
-		if !ok || len(actionParam) < 1 {
+		if !ok || len(actionParam) == 0 {
 			handleError(w, r, "action not specified")
 			return
 		}
@@ -173,13 +173,13 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	var rank int
 
 	uuid, _, rank, _, _, _ = getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank < 1 {
+	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
 
 	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) < 1 {
+	if !ok || len(commandParam) == 0 {
 		handleError(w, r, "command not specified")
 		return
 	}
@@ -187,13 +187,13 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	switch commandParam[0] {
 	case "grantbadge", "revokebadge":
 		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) < 1 {
+		if !ok || len(playerParam) == 0 {
 			handleError(w, r, "player not specified")
 			return
 		}
 
 		idParam, ok := r.URL.Query()["id"]
-		if !ok || len(playerParam) < 1 {
+		if !ok || len(playerParam) == 0 {
 			handleError(w, r, "badge ID not specified")
 			return
 		}
@@ -234,7 +234,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) < 1 {
+		if !ok || len(playerParam) == 0 {
 			handleError(w, r, "player not specified")
 			return
 		}
@@ -272,7 +272,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 	}
 
 	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) < 1 {
+	if !ok || len(commandParam) == 0 {
 		handleError(w, r, "command not specified")
 		return
 	}
@@ -301,7 +301,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		return
 	case "description":
 		partyIdParam, ok := r.URL.Query()["partyId"]
-		if !ok || len(partyIdParam) < 1 {
+		if !ok || len(partyIdParam) == 0 {
 			handleError(w, r, "partyId not specified")
 			return
 		}
@@ -345,7 +345,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		nameParam, ok := r.URL.Query()["name"]
-		if !ok || len(nameParam) < 1 {
+		if !ok || len(nameParam) == 0 {
 			handleError(w, r, "name not specified")
 			return
 		}
@@ -375,7 +375,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		themeParam, ok := r.URL.Query()["theme"]
-		if !ok || len(themeParam) < 1 {
+		if !ok || len(themeParam) == 0 {
 			handleError(w, r, "theme not specified")
 			return
 		}
@@ -403,7 +403,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		}
 	case "join":
 		partyIdParam, ok := r.URL.Query()["partyId"]
-		if !ok || len(partyIdParam) < 1 {
+		if !ok || len(partyIdParam) == 0 {
 			handleError(w, r, "partyId not specified")
 			return
 		}
@@ -420,7 +420,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			}
 			if !public {
 				passParam, ok := r.URL.Query()["pass"]
-				if !ok || len(passParam) < 1 {
+				if !ok || len(passParam) == 0 {
 					handleError(w, r, "pass not specified")
 					return
 				}
@@ -489,7 +489,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) < 1 {
+		if !ok || len(playerParam) == 0 {
 			handleError(w, r, "player not specified")
 			return
 		}
@@ -586,7 +586,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) < 1 {
+	if !ok || len(commandParam) == 0 {
 		handleError(w, r, "command not specified")
 		return
 	}
@@ -617,7 +617,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		return
 	case "push":
 		timestampParam, ok := r.URL.Query()["timestamp"]
-		if !ok || len(timestampParam) < 1 {
+		if !ok || len(timestampParam) == 0 {
 			handleError(w, r, "timestamp not specified")
 			return
 		}
@@ -654,7 +654,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 
 func handleVm(w http.ResponseWriter, r *http.Request) {
 	idParam, ok := r.URL.Query()["id"]
-	if !ok || len(idParam) < 1 {
+	if !ok || len(idParam) == 0 {
 		handleError(w, r, "id not specified")
 		return
 	}
@@ -692,7 +692,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	var banned bool
 
 	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) < 1 {
+	if !ok || len(commandParam) == 0 {
 		handleError(w, r, "command not specified")
 		return
 	}
@@ -720,7 +720,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	switch commandParam[0] {
 	case "set", "slotSet":
 		idParam, ok := r.URL.Query()["id"]
-		if !ok || len(idParam) < 1 {
+		if !ok || len(idParam) == 0 {
 			handleError(w, r, "id not specified")
 			return
 		}
@@ -772,25 +772,25 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			rowParam, ok := r.URL.Query()["row"]
-			if !ok || len(rowParam) < 1 {
+			if !ok || len(rowParam) == 0 {
 				handleError(w, r, "row not specified")
 				return
 			}
 
 			colParam, ok := r.URL.Query()["col"]
-			if !ok || len(colParam) < 1 {
+			if !ok || len(colParam) == 0 {
 				handleError(w, r, "col not specified")
 				return
 			}
 
 			slotRow, err := strconv.Atoi(rowParam[0])
-			if err != nil || slotRow < 1 || slotRow > badgeSlotRows {
+			if err != nil || slotRow == 0 || slotRow > badgeSlotRows {
 				handleError(w, r, "invalid row value")
 				return
 			}
 
 			slotCol, err := strconv.Atoi(colParam[0])
-			if err != nil || slotCol < 1 || slotCol > badgeSlotCols {
+			if err != nil || slotCol == 0 || slotCol > badgeSlotCols {
 				handleError(w, r, "invalid col value")
 				return
 			}
@@ -890,7 +890,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	case "playerSlotList":
 		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) < 1 {
+		if !ok || len(playerParam) == 0 {
 			handleError(w, r, "player not specified")
 			return
 		}
@@ -934,7 +934,7 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 	}
 
 	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) < 1 {
+	if !ok || len(commandParam) == 0 {
 		handleError(w, r, "command not specified")
 		return
 	}
@@ -957,13 +957,13 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 		return
 	case "page":
 		categoryParam, ok := r.URL.Query()["category"]
-		if !ok || len(categoryParam) < 1 {
+		if !ok || len(categoryParam) == 0 {
 			handleError(w, r, "category not specified")
 			return
 		}
 
 		subCategoryParam, ok := r.URL.Query()["subCategory"]
-		if !ok || len(subCategoryParam) < 1 {
+		if !ok || len(subCategoryParam) == 0 {
 			handleError(w, r, "subCategory not specified")
 			return
 		}
@@ -982,20 +982,20 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 		return
 	case "list":
 		categoryParam, ok := r.URL.Query()["category"]
-		if !ok || len(categoryParam) < 1 {
+		if !ok || len(categoryParam) == 0 {
 			handleError(w, r, "category not specified")
 			return
 		}
 
 		subCategoryParam, ok := r.URL.Query()["subCategory"]
-		if !ok || len(subCategoryParam) < 1 {
+		if !ok || len(subCategoryParam) == 0 {
 			handleError(w, r, "subCategory not specified")
 			return
 		}
 
 		var page int
 		pageParam, ok := r.URL.Query()["page"]
-		if !ok || len(pageParam) < 1 {
+		if !ok || len(pageParam) == 0 {
 			page = 1
 		} else {
 			pageInt, err := strconv.Atoi(pageParam[0])
@@ -1029,7 +1029,7 @@ func handleRanking(w http.ResponseWriter, r *http.Request) {
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	// GET params user, password
 	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
-	if len(user) < 1 || len(user[0]) > 12 || !isOkString(user[0]) || len(password) < 1 || len(password[0]) > 72 {
+	if len(user) == 0 || len(user[0]) > 12 || !isOkString(user[0]) || len(password) == 0 || len(password[0]) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}
@@ -1075,7 +1075,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	// GET params user, password
 	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
-	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len(password[0]) > 72 {
+	if len(user) == 0 || !isOkString(user[0]) || len(password) == 0 || len(password[0]) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}
@@ -1116,7 +1116,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	// GET params user, old password, new password
 	user, password, newPassword := r.URL.Query()["user"], r.URL.Query()["password"], r.URL.Query()["newPassword"]
-	if len(user) < 1 || !isOkString(user[0]) || len(password) < 1 || len(password[0]) > 72 || len(newPassword) < 1 || len(newPassword[0]) > 72 {
+	if len(user) == 0 || !isOkString(user[0]) || len(password) == 0 || len(password[0]) > 72 || len(newPassword) == 0 || len(newPassword[0]) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}

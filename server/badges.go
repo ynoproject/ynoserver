@@ -462,7 +462,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 
 	for game, gameBadges := range badges {
 		for badgeId, gameBadge := range gameBadges {
-			if gameBadge.Dev && playerRank < 1 {
+			if gameBadge.Dev && playerRank == 0 {
 				continue
 			}
 

@@ -24,7 +24,7 @@ import (
 
 func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank < 1 {
+	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -55,7 +55,7 @@ func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
 
 func adminGetBans(w http.ResponseWriter, r *http.Request) {
 	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank < 1 {
+	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -70,7 +70,7 @@ func adminGetBans(w http.ResponseWriter, r *http.Request) {
 
 func adminGetMutes(w http.ResponseWriter, r *http.Request) {
 	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank < 1 {
+	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -85,13 +85,13 @@ func adminGetMutes(w http.ResponseWriter, r *http.Request) {
 
 func adminBan(w http.ResponseWriter, r *http.Request) {
 	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank < 1 {
+	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
 
 	playerParam, ok := r.URL.Query()["player"]
-	if !ok || len(playerParam) < 1 {
+	if !ok || len(playerParam) == 0 {
 		handleError(w, r, "player not specified")
 		return
 	}
@@ -107,13 +107,13 @@ func adminBan(w http.ResponseWriter, r *http.Request) {
 
 func adminMute(w http.ResponseWriter, r *http.Request) {
 	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank < 1 {
+	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
 
 	playerParam, ok := r.URL.Query()["player"]
-	if !ok || len(playerParam) < 1 {
+	if !ok || len(playerParam) == 0 {
 		handleError(w, r, "player not specified")
 		return
 	}
@@ -129,13 +129,13 @@ func adminMute(w http.ResponseWriter, r *http.Request) {
 
 func adminUnban(w http.ResponseWriter, r *http.Request) {
 	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank < 1 {
+	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
 
 	playerParam, ok := r.URL.Query()["player"]
-	if !ok || len(playerParam) < 1 {
+	if !ok || len(playerParam) == 0 {
 		handleError(w, r, "player not specified")
 		return
 	}
@@ -151,13 +151,13 @@ func adminUnban(w http.ResponseWriter, r *http.Request) {
 
 func adminUnmute(w http.ResponseWriter, r *http.Request) {
 	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank < 1 {
+	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
 
 	playerParam, ok := r.URL.Query()["player"]
-	if !ok || len(playerParam) < 1 {
+	if !ok || len(playerParam) == 0 {
 		handleError(w, r, "player not specified")
 		return
 	}

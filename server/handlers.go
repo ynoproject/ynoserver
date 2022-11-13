@@ -273,7 +273,7 @@ func (sender *RoomClient) handleP(msg []string) (err error) {
 	}
 
 	picId, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || picId < 1 {
+	if errconv != nil || picId == 0 {
 		return errconv
 	}
 
@@ -412,7 +412,7 @@ func (sender *RoomClient) handleRp(msg []string) (err error) {
 	}
 
 	picId, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || picId < 1 {
+	if errconv != nil || picId == 0 {
 		return errconv
 	}
 
@@ -1011,7 +1011,7 @@ func (sender *SessionClient) handleEec(msg []string) (err error) {
 	}
 
 	location := msg[1]
-	if len(location) < 1 {
+	if len(location) == 0 {
 		sender.sendMsg("eec", 0, false)
 		return err // location not specified
 	}

@@ -64,7 +64,7 @@ func sendPartyUpdate() {
 			}
 		}
 
-		if len(onlinePartyMemberUuids) < 1 {
+		if len(onlinePartyMemberUuids) == 0 {
 			continue
 		}
 
