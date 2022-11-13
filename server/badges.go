@@ -424,6 +424,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 	var playerEventVmCount int
 	var playerBadgeCount int
 	var timeTrialRecords []*TimeTrialRecord
+	var medalCounts [5]int
 
 	if account {
 		playerExp, err = getPlayerTotalEventExp(playerUuid)
@@ -446,6 +447,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 		if err != nil {
 			return playerBadges, err
 		}
+		medalCounts = getPlayerMedals(playerUuid)
 	}
 
 	playerBadgesMap := make(map[string]*PlayerBadge)
@@ -536,9 +538,8 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 						}
 					}
 				case "medal":
-					medalCounts := getPlayerMedals(playerUuid)
 					if gameBadge.ReqInt < 5 {
-						var medalCount int
+						medalCount := 0
 						for m := gameBadge.ReqInt; m >= 0; m-- {
 							medalCount += medalCounts[m]
 						}
