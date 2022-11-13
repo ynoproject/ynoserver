@@ -535,6 +535,11 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 							playerBadge.Unlocked = record.Seconds < gameBadge.ReqInt
 						}
 					}
+				case "medal":
+					medalCounts := getPlayerMedals(playerUuid)
+					if gameBadge.ReqInt < 5 && medalCounts[gameBadge.ReqInt] > 0 {
+						playerBadge.Unlocked = true
+					}
 				}
 
 				if !playerBadge.Unlocked {
