@@ -18,7 +18,6 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/json"
 	"io"
 	"math/rand"
@@ -184,7 +183,7 @@ func initEvents() {
 
 			// vending machine expedition
 			db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
-			if err == sql.ErrNoRows {
+			if currentEventVmMapId < 1 && currentEventVmEventId < 1 {
 				add2kkiEventVm()
 			}
 		}
