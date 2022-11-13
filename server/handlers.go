@@ -1018,6 +1018,7 @@ func (sender *SessionClient) handleEec(msg []string) (err error) {
 
 	periodId, err := getCurrentEventPeriodId()
 	if err != nil {
+		sender.sendMsg("eec", 0, false)
 		return err
 	}
 	ret := -1
