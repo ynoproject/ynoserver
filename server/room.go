@@ -194,9 +194,9 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.sendMsg("ri", c.room.id)
 
-	room.clients.Store(c, nil)
-
 	c.syncRoomState()
+	
+	room.clients.Store(c, nil)
 }
 
 func (c *RoomClient) leaveRoom() {
