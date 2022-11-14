@@ -106,86 +106,88 @@ var (
 )
 
 func initEvents() {
-	if serverConfig.GameName == "2kki" {
-		db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&eventsCount)
+	if serverConfig.GameName != "2kki" {
+		return
+	}
 
-		scheduler.Every(1).Day().At("00:00").Do(func() {
-			add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
-			add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
+	db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&eventsCount)
+
+	scheduler.Every(1).Day().At("00:00").Do(func() {
+		add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
+		add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
+		eventsCount += 2
+
+		switch time.Now().UTC().Weekday() {
+		case time.Sunday:
+			add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
+			add2kkiEventVm()
 			eventsCount += 2
+		case time.Tuesday:
+			add2kkiEventVm()
+			eventsCount++
+		case time.Friday:
+			add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
+			add2kkiEventVm()
+			eventsCount += 2
+		}
 
-			switch time.Now().UTC().Weekday() {
-			case time.Sunday:
-				add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
-				add2kkiEventVm()
-				eventsCount += 2
-			case time.Tuesday:
-				add2kkiEventVm()
-				eventsCount++
-			case time.Friday:
-				add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
-				add2kkiEventVm()
-				eventsCount += 2
-			}
+		sendEventsUpdate()
+	})
 
+	scheduler.Every(5).Minutes().Do(func() {
+		var newEventLocationsCount int
+		db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&newEventLocationsCount)
+		if newEventLocationsCount != eventsCount {
+			eventsCount = newEventLocationsCount
 			sendEventsUpdate()
-		})
+		}
+	})
 
-		scheduler.Every(5).Minutes().Do(func() {
-			var newEventLocationsCount int
-			db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&newEventLocationsCount)
-			if newEventLocationsCount != eventsCount {
-				eventsCount = newEventLocationsCount
-				sendEventsUpdate()
-			}
-		})
+	periodId, err := getCurrentEventPeriodId()
+	if err == nil {
+		var count int
 
-		periodId, err := getCurrentEventPeriodId()
-		if err == nil {
-			var count int
+		// daily easy expedition
+		db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 1", periodId).Scan(&count)
+		if count == 0 {
+			add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
+		}
 
-			// daily easy expedition
-			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 1", periodId).Scan(&count)
+		// daily hard expedition
+		db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 3", periodId).Scan(&count)
+		if count == 0 {
+			add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
+		}
+
+		weekday := time.Now().UTC().Weekday()
+
+		// weekly expedition
+		db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)).Scan(&count)
+		if count == 0 {
+			add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
+		}
+
+		var lastVmWeekday time.Weekday
+
+		switch weekday {
+		case time.Sunday, time.Monday:
+			lastVmWeekday = time.Sunday
+		case time.Tuesday, time.Wednesday, time.Thursday:
+			lastVmWeekday = time.Tuesday
+		case time.Friday, time.Saturday:
+			// weekend expedition
+			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-time.Friday)).Scan(&count)
 			if count == 0 {
-				add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
+				add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
 			}
 
-			// daily hard expedition
-			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 3", periodId).Scan(&count)
-			if count == 0 {
-				add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
-			}
+			lastVmWeekday = time.Friday
+		}
 
-			weekday := time.Now().UTC().Weekday()
-
-			// weekly expedition
-			db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday)).Scan(&count)
-			if count == 0 {
-				add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
-			}
-
-			var lastVmWeekday time.Weekday
-
-			switch weekday {
-			case time.Sunday, time.Monday:
-				lastVmWeekday = time.Sunday
-			case time.Tuesday, time.Wednesday, time.Thursday:
-				lastVmWeekday = time.Tuesday
-			case time.Friday, time.Saturday:
-				// weekend expedition
-				db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN eventPeriods ep ON ep.id = el.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-time.Friday)).Scan(&count)
-				if count == 0 {
-					add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
-				}
-
-				lastVmWeekday = time.Friday
-			}
-
-			// vending machine expedition
-			db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
-			if currentEventVmMapId == 0 && currentEventVmEventId == 0 {
-				add2kkiEventVm()
-			}
+		// vending machine expedition
+		db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN eventPeriods ep ON ep.id = ev.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", periodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
+		if currentEventVmMapId == 0 && currentEventVmEventId == 0 {
+			add2kkiEventVm()
 		}
 	}
 }
