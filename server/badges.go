@@ -541,7 +541,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 					if gameBadge.ReqInt < 5 {
 						var medalCount int
 						for m := 0; m <= gameBadge.ReqInt; m++ {
-							medalCount += medalCounts[4-m]
+							medalCount += medalCounts[m]
 						}
 						if medalCount > 0 {
 							playerBadge.Unlocked = true
