@@ -540,7 +540,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				case "medal":
 					if gameBadge.ReqInt < 5 {
 						var medalCount int
-						for m := 0; m <= gameBadge.ReqInt; m++ {
+						for m := 4; m >= gameBadge.ReqInt; m-- {
 							medalCount += medalCounts[m]
 						}
 						if medalCount > 0 {
