@@ -491,6 +491,9 @@ func (sender *RoomClient) handleSs(msg []string) (err error) {
 	} else {
 		if len(sender.room.minigameConfigs) > 0 {
 			for m, minigame := range sender.room.minigameConfigs {
+				if minigame.Dev && sender.sClient.rank < 1 {
+					continue
+				}
 				if minigame.SwitchId == switchId && minigame.SwitchValue == value && sender.minigameScores[m] < sender.varCache[minigame.VarId] {
 					tryWritePlayerMinigameScore(sender.sClient.uuid, minigame.MinigameId, sender.varCache[minigame.VarId])
 				}
@@ -619,6 +622,9 @@ func (sender *RoomClient) handleSv(msg []string) (err error) {
 	} else {
 		if len(sender.room.minigameConfigs) > 0 {
 			for m, minigame := range sender.room.minigameConfigs {
+				if minigame.Dev && sender.sClient.rank < 1 {
+					continue
+				}
 				if minigame.VarId == varId && sender.minigameScores[m] < value {
 					if minigame.SwitchId > 0 {
 						sender.sendMsg("ss", minigame.SwitchId, "0")

@@ -356,6 +356,9 @@ func (client *RoomClient) syncRoomState() {
 	client.checkRoomConditions("", "")
 
 	for _, minigame := range client.room.minigameConfigs {
+		if minigame.Dev && client.sClient.rank < 1 {
+			continue
+		}
 		score, err := getPlayerMinigameScore(client.sClient.uuid, minigame.MinigameId)
 		if err != nil {
 			writeErrLog(client.sClient.uuid, client.mapId, "failed to read player minigame score for "+minigame.MinigameId)
