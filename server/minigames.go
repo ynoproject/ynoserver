@@ -38,7 +38,7 @@ func getRoomMinigameConfigs(roomId int) (minigameConfigs []*MinigameConfig) {
 			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "rby", VarId: 1010, InitialVarSync: true})
 		case 618:
 			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "rby_ex", VarId: 79, InitialVarSync: true})
-		case 341:
+		case 344:
 			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "fuji_ex", VarId: 3218, SwitchId: 3219, SwitchValue: true, Dev: true})
 		}
 	}
