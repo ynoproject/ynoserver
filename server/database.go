@@ -933,6 +933,8 @@ func getCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventL
 		return eventLocations, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		eventLocation := &EventLocation{}
 
@@ -954,12 +956,12 @@ func getCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventL
 		eventLocations = append(eventLocations, eventLocation)
 	}
 
-	results.Close()
-
 	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.minDepth, pel.endDate FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, periodId)
 	if err != nil {
 		return eventLocations, err
 	}
+
+	defer results.Close()
 
 	for results.Next() {
 		eventLocation := &EventLocation{}
@@ -977,8 +979,6 @@ func getCurrentPlayerEventLocationsData(periodId int, playerUuid string) (eventL
 
 		eventLocations = append(eventLocations, eventLocation)
 	}
-
-	results.Close()
 
 	return eventLocations, nil
 }
@@ -1517,6 +1517,8 @@ func getRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		return rankingCategories, err
 	}
 
+	defer results.Close()
+
 	for results.Next() {
 		rankingCategory := &RankingCategory{}
 
@@ -1528,12 +1530,12 @@ func getRankingCategories() (rankingCategories []*RankingCategory, err error) {
 		rankingCategories = append(rankingCategories, rankingCategory)
 	}
 
-	results.Close()
-
 	results, err = db.Query("SELECT sc.categoryId, sc.subCategoryId, sc.game, CEILING(COUNT(r.uuid) / 25) FROM rankingSubCategories sc JOIN rankingEntries r ON r.categoryId = sc.categoryId AND r.subCategoryId = sc.subCategoryId WHERE sc.game IN ('', ?) GROUP BY sc.categoryId, sc.subCategoryId, sc.game ORDER BY 1, sc.ordinal", serverConfig.GameName)
 	if err != nil {
 		return rankingCategories, err
 	}
+
+	defer results.Close()
 
 	var lastCategoryId string
 	var lastCategory *RankingCategory
@@ -1558,8 +1560,6 @@ func getRankingCategories() (rankingCategories []*RankingCategory, err error) {
 
 		lastCategory.SubCategories = append(lastCategory.SubCategories, *rankingSubCategory)
 	}
-
-	results.Close()
 
 	return rankingCategories, nil
 }
