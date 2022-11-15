@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	rankingsMtx sync.Mutex
+	rankingsMtx sync.RWMutex // write is used for updateRankingEntries
 )
 
 type RankingCategory struct {
