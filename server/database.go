@@ -20,6 +20,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -80,11 +81,11 @@ func getPlayerRank(uuid string) (rank int) {
 
 func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
-		return errInsuffRank
+		return errors.New("insufficient rank")
 	}
 
 	if senderUuid == recipientUuid {
-		return errSelfBan
+		return errors.New("attempted self-ban")
 	}
 
 	_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUuid)
@@ -106,11 +107,11 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 
 func tryUnbanPlayer(senderUuid string, recipientUuid string) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
-		return errInsuffRank
+		return errors.New("insufficient rank")
 	}
 
 	if senderUuid == recipientUuid {
-		return errSelfUnban
+		return errors.New("attempted self-unban")
 	}
 
 	_, err := db.Exec("UPDATE players SET banned = 0 WHERE uuid = ?", recipientUuid)
@@ -123,11 +124,11 @@ func tryUnbanPlayer(senderUuid string, recipientUuid string) error { // called b
 
 func tryMutePlayer(senderUuid string, recipientUuid string) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
-		return errInsuffRank
+		return errors.New("insufficient rank")
 	}
 
 	if senderUuid == recipientUuid {
-		return errSelfMute
+		return errors.New("attempted self-mute")
 	}
 
 	_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUuid)
@@ -144,11 +145,11 @@ func tryMutePlayer(senderUuid string, recipientUuid string) error { // called by
 
 func tryUnmutePlayer(senderUuid string, recipientUuid string) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
-		return errInsuffRank
+		return errors.New("insufficient rank")
 	}
 
 	if senderUuid == recipientUuid {
-		return errSelfUnmute
+		return errors.New("attempted self-unmute")
 	}
 
 	_, err := db.Exec("UPDATE players SET muted = 0 WHERE uuid = ?", recipientUuid)

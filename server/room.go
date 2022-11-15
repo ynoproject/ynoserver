@@ -18,6 +18,7 @@
 package server
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -227,21 +228,21 @@ func (sender *RoomClient) broadcast(segments ...any) {
 
 func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
 	if len(msg) < 8 {
-		return append(errs, errBadReqSize)
+		return append(errs, errors.New("bad request size"))
 	}
 
 	if !serverSecurity.VerifySignature(sender.key, msg) {
-		return append(errs, errBadSignature)
+		return append(errs, errors.New("bad signature"))
 	}
 
 	if !serverSecurity.VerifyCounter(&sender.counter, msg) {
-		return append(errs, errBadCounter)
+		return append(errs, errors.New("bad counter"))
 	}
 
 	msg = msg[8:]
 
 	if !utf8.Valid(msg) {
-		return append(errs, errInvalidUTF8)
+		return append(errs, errors.New("invalid UTF-8"))
 	}
 
 	// message processing
@@ -291,7 +292,7 @@ func (sender *RoomClient) processMsg(msgStr string) (err error) {
 	case "sev":
 		err = sender.handleSev(msgFields)
 	default:
-		err = errUnkMsgType
+		err = errors.New("unknown message type")
 	}
 	if err != nil {
 		return err

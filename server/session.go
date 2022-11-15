@@ -18,6 +18,7 @@
 package server
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -134,7 +135,7 @@ func (sender *SessionClient) broadcast(segments ...any) {
 
 func (sender *SessionClient) processMsg(msg []byte) (err error) {
 	if !utf8.Valid(msg) {
-		return errInvalidUTF8
+		return errors.New("invalid UTF-8")
 	}
 
 	switch msgFields := strings.Split(string(msg), delim); msgFields[0] {
@@ -161,7 +162,7 @@ func (sender *SessionClient) processMsg(msg []byte) (err error) {
 	case "eec": // claim expedition
 		err = sender.handleEec(msgFields)
 	default:
-		err = errUnkMsgType
+		err = errors.New("unknown message type")
 	}
 	if err != nil {
 		return err
