@@ -993,6 +993,10 @@ func (sender *SessionClient) handleE() (err error) {
 }
 
 func (sender *SessionClient) handleEexp() (err error) {
+	if serverConfig.GameName != "2kki" {
+		return err
+	}
+
 	periodId, err := getCurrentEventPeriodId()
 	if err != nil {
 		return err
@@ -1012,6 +1016,11 @@ func (sender *SessionClient) handleEexp() (err error) {
 }
 
 func (sender *SessionClient) handleEec(msg []string) (err error) {
+	if serverConfig.GameName != "2kki" {
+		sender.sendMsg("eec", 0, false)
+		return err
+	}
+
 	if len(msg) < 3 {
 		sender.sendMsg("eec", 0, false)
 		return errors.New("command length mismatch")
