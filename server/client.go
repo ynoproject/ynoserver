@@ -84,8 +84,6 @@ type SessionClient struct {
 	spriteIndex int
 
 	systemName string
-
-	processingFreeExp bool
 }
 
 func (s *SessionClient) msgReader() {
