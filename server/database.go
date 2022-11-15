@@ -919,7 +919,7 @@ func writePlayerEventLocationData(periodId int, playerUuid string, title string,
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO playerEventLocations (periodId, uuid, title, titleJP, depth, minDepth, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL 1 DAY), ?)", periodId, playerUuid, title, titleJP, depth, minDepth, mapIdsJson)
+	_, err = db.Exec("INSERT INTO playerEventLocations (periodId, uuid, title, titleJP, depth, minDepth, startDate, endDate, mapIds) SELECT ?, ?, ?, ?, ?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL 1 DAY), ? WHERE NOT EXISTS(SELECT * FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate)", periodId, playerUuid, title, titleJP, depth, minDepth, mapIdsJson, playerUuid, periodId)
 	if err != nil {
 		return err
 	}
