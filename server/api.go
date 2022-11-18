@@ -437,8 +437,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 					handleInternalError(w, r, err)
 				}
 				if partyPass != "" && passParam[0] != partyPass {
-					w.WriteHeader(http.StatusUnauthorized)
-					w.Write([]byte("401 - Unauthorized"))
+					http.Error(w, "401 - Unauthorized", http.StatusUnauthorized)
 					return
 				}
 			}
@@ -1170,12 +1169,10 @@ func handleResetPw(user string) (newPassword string, err error) {
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {
 	writeErrLog(getIp(r), r.URL.Path, payload)
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte(payload))
+	http.Error(w, payload, http.StatusBadRequest)
 }
 
 func handleInternalError(w http.ResponseWriter, r *http.Request, err error) {
 	writeErrLog(getIp(r), r.URL.Path, err.Error())
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("400 - Bad Request"))
+	http.Error(w, "400 - Bad Request", http.StatusBadRequest)
 }
