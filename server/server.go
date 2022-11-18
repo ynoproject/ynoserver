@@ -121,6 +121,10 @@ func getIp(r *http.Request) string {
 	return r.Header.Get("x-forwarded-for")
 }
 
+type IpHubResponse struct {
+	Block int `json:"block"`
+}
+
 func isVpn(ip string) (vpn bool) {
 	if serverConfig.IpHubKey == "" {
 		return false // VPN checking is not available
@@ -144,12 +148,12 @@ func isVpn(ip string) (vpn bool) {
 		return false
 	}
 
-	var response interface{}
+	var response IpHubResponse
 	if err := json.Unmarshal(body, &response); err != nil {
 		return false
 	}
 
-	if response.(map[string]interface{})["block"].(float64) != 0 {
+	if response.Block != 0 {
 		vpn = true
 	}
 
