@@ -78,7 +78,6 @@ func Start() {
 	initApi()
 	initEvents()
 	initBadges()
-	initRankings()
 	initSession()
 
 	scheduler.StartAsync()

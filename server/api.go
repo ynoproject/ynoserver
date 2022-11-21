@@ -56,7 +56,6 @@ func initApi() {
 	http.HandleFunc("/api/saveSync", handleSaveSync)
 	http.HandleFunc("/api/vm", handleVm)
 	http.HandleFunc("/api/badge", handleBadge)
-	http.HandleFunc("/api/ranking", handleRanking)
 
 	http.HandleFunc("/api/register", handleRegister)
 	http.HandleFunc("/api/login", handleLogin)
@@ -921,115 +920,6 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("ok"))
-}
-
-func handleRanking(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-	var banned bool
-
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		uuid, banned, _ = getOrCreatePlayerData(getIp(r))
-	} else {
-		uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
-	}
-
-	if banned {
-		handleError(w, r, "player is banned")
-		return
-	}
-
-	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) == 0 {
-		handleError(w, r, "command not specified")
-		return
-	}
-
-	switch commandParam[0] {
-	case "categories":
-		rankingCategories, err := getRankingCategories()
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		rankingCategoriesJson, err := json.Marshal(rankingCategories)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		w.Write(rankingCategoriesJson)
-		return
-	case "page":
-		categoryParam, ok := r.URL.Query()["category"]
-		if !ok || len(categoryParam) == 0 {
-			handleError(w, r, "category not specified")
-			return
-		}
-
-		subCategoryParam, ok := r.URL.Query()["subCategory"]
-		if !ok || len(subCategoryParam) == 0 {
-			handleError(w, r, "subCategory not specified")
-			return
-		}
-
-		playerPage := 1
-		if token != "" {
-			var err error
-			playerPage, err = getRankingEntryPage(uuid, categoryParam[0], subCategoryParam[0])
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-		}
-
-		w.Write([]byte(strconv.Itoa(playerPage)))
-		return
-	case "list":
-		categoryParam, ok := r.URL.Query()["category"]
-		if !ok || len(categoryParam) == 0 {
-			handleError(w, r, "category not specified")
-			return
-		}
-
-		subCategoryParam, ok := r.URL.Query()["subCategory"]
-		if !ok || len(subCategoryParam) == 0 {
-			handleError(w, r, "subCategory not specified")
-			return
-		}
-
-		var page int
-		pageParam, ok := r.URL.Query()["page"]
-		if !ok || len(pageParam) == 0 {
-			page = 1
-		} else {
-			pageInt, err := strconv.Atoi(pageParam[0])
-			if err != nil {
-				page = 1
-			} else {
-				page = pageInt
-			}
-		}
-
-		rankings, err := getRankingsPaged(categoryParam[0], subCategoryParam[0], page)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		rankingsJson, err := json.Marshal(rankings)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		w.Write(rankingsJson)
-		return
-	default:
-		handleError(w, r, "unknown command")
-		return
-	}
 }
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
