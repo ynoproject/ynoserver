@@ -101,6 +101,7 @@ func (s *SessionClient) msgReader() {
 	}
 
 	close(s.receive)
+
 	s.disconnect()
 }
 
@@ -108,31 +109,36 @@ func (s *SessionClient) msgWriter() {
 	s.writerWg.Add(1)
 	ticker := time.NewTicker(pingPeriod)
 
-	defer func() {
-		s.writerWg.Done()
-		ticker.Stop()
-		s.disconnect()
-	}()
-
-	for {
+	var terminate bool
+	for !terminate {
 		select {
 		case <-s.writerEnd:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
 			s.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
-			return
+			terminate = true
 		case message := <-s.send:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := s.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				return
+
+			err := s.conn.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				terminate = true
 			}
 		case <-ticker.C:
 			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := s.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
+
+			err := s.conn.WriteMessage(websocket.PingMessage, nil)
+			if err != nil {
+				terminate = true
 			}
 		}
 	}
+
+	ticker.Stop()
+	s.writerWg.Done()
+
+	s.disconnect()
 }
 
 func (s *SessionClient) msgProcessor() {
@@ -142,7 +148,8 @@ func (s *SessionClient) msgProcessor() {
 			return
 		}
 
-		if err := s.processMsg(message); err != nil {
+		err := s.processMsg(message)
+		if err != nil {
 			writeErrLog(s.uuid, "sess", err.Error())
 		}
 	}
@@ -229,6 +236,7 @@ func (c *RoomClient) msgReader() {
 	}
 
 	close(c.receive)
+
 	c.disconnect()
 }
 
@@ -236,31 +244,36 @@ func (c *RoomClient) msgWriter() {
 	c.writerWg.Add(1)
 	ticker := time.NewTicker(pingPeriod)
 
-	defer func() {
-		c.writerWg.Done()
-		ticker.Stop()
-		c.disconnect()
-	}()
-
-	for {
+	var terminate bool
+	for !terminate {
 		select {
 		case <-c.writerEnd:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
 			c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
-			return
+			terminate = true
 		case message := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				return
+
+			err := c.conn.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				terminate = true
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
+
+			err := c.conn.WriteMessage(websocket.PingMessage, nil)
+			if err != nil {
+				terminate = true
 			}
 		}
 	}
+
+	ticker.Stop()
+	c.writerWg.Done()
+
+	c.disconnect()
 }
 
 func (c *RoomClient) msgProcessor() {
@@ -270,7 +283,8 @@ func (c *RoomClient) msgProcessor() {
 			return
 		}
 
-		if errs := c.processMsgs(message); len(errs) > 0 {
+		errs := c.processMsgs(message)
+		if len(errs) > 0 {
 			for _, err := range errs {
 				writeErrLog(c.sClient.uuid, c.mapId, err.Error())
 			}
