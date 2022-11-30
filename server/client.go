@@ -26,16 +26,9 @@ import (
 )
 
 const (
-	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
 	pongWait = 60 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
-
-	// Maximum message size allowed from peer.
 	maxMessageSize = 4096
 )
 
@@ -107,6 +100,7 @@ func (s *SessionClient) msgReader() {
 
 func (s *SessionClient) msgWriter() {
 	s.writerWg.Add(1)
+
 	ticker := time.NewTicker(pingPeriod)
 
 	var terminate bool
@@ -136,6 +130,7 @@ func (s *SessionClient) msgWriter() {
 	}
 
 	ticker.Stop()
+
 	s.writerWg.Done()
 
 	s.disconnect()
@@ -242,6 +237,7 @@ func (c *RoomClient) msgReader() {
 
 func (c *RoomClient) msgWriter() {
 	c.writerWg.Add(1)
+
 	ticker := time.NewTicker(pingPeriod)
 
 	var terminate bool
@@ -271,6 +267,7 @@ func (c *RoomClient) msgWriter() {
 	}
 
 	ticker.Stop()
+
 	c.writerWg.Done()
 
 	c.disconnect()

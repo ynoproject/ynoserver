@@ -48,10 +48,7 @@ var (
 	rooms = make(map[int]*Room)
 )
 
-// Room maintains the set of active clients and broadcasts messages to the
-// clients.
 type Room struct {
-	// Registered clients.
 	clients sync.Map
 
 	id           int
