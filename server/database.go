@@ -771,7 +771,7 @@ func getCurrentEventPeriodId() (periodId int, err error) {
 	return periodId, nil
 }
 
-func getEventPeriodData() (eventPeriods []*EventPeriod, err error) {
+/*func getEventPeriodData() (eventPeriods []*EventPeriod, err error) {
 	results, err := db.Query("SELECT periodOrdinal, endDate, enableVms FROM eventPeriods WHERE game = ? AND periodOrdinal > 0", serverConfig.GameName)
 	if err != nil {
 		return eventPeriods, err
@@ -791,7 +791,7 @@ func getEventPeriodData() (eventPeriods []*EventPeriod, err error) {
 	}
 
 	return eventPeriods, nil
-}
+}*/
 
 func getCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 	err = db.QueryRow("SELECT periodOrdinal, endDate, enableVms FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", serverConfig.GameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
@@ -1374,7 +1374,7 @@ func tryWritePlayerTag(playerUuid string, name string) (success bool, err error)
 	return false, nil
 }
 
-func getTimeTrialMapIds() (mapIds []int, err error) {
+/*func getTimeTrialMapIds() (mapIds []int, err error) {
 	results, err := db.Query("SELECT mapId FROM playerTimeTrials GROUP BY mapId ORDER BY MIN(seconds)")
 	if err != nil {
 		return mapIds, err
@@ -1393,7 +1393,7 @@ func getTimeTrialMapIds() (mapIds []int, err error) {
 	}
 
 	return mapIds, nil
-}
+}*/
 
 func getPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTrialRecord, err error) {
 	results, err := db.Query("SELECT mapId, MIN(seconds) FROM playerTimeTrials WHERE uuid = ? GROUP BY mapId", playerUuid)
@@ -1442,7 +1442,7 @@ func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success
 	return true, nil
 }
 
-func getGameMinigameIds() (minigameIds []string, err error) {
+/*func getGameMinigameIds() (minigameIds []string, err error) {
 	results, err := db.Query("SELECT DISTINCT minigameId FROM playerMinigameScores WHERE game = ? ORDER BY minigameId", serverConfig.GameName)
 	if err != nil {
 		return minigameIds, err
@@ -1461,7 +1461,7 @@ func getGameMinigameIds() (minigameIds []string, err error) {
 	}
 
 	return minigameIds, nil
-}
+}*/
 
 func getPlayerMinigameScore(playerUuid string, minigameId string) (score int, err error) {
 	err = db.QueryRow("SELECT score FROM playerMinigameScores WHERE uuid = ? AND minigameId = ?", playerUuid, minigameId).Scan(&score)
