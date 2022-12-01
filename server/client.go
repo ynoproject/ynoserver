@@ -150,10 +150,6 @@ func (s *SessionClient) msgProcessor() {
 	}
 }
 
-func (s *SessionClient) sendMsg(segments ...any) {
-	s.send <- buildMsg(segments)
-}
-
 func (s *SessionClient) disconnect() {
 	s.dcOnce.Do(func() {
 		// unregister
@@ -287,10 +283,6 @@ func (c *RoomClient) msgProcessor() {
 			}
 		}
 	}
-}
-
-func (c *RoomClient) sendMsg(segments ...any) {
-	c.send <- buildMsg(segments)
 }
 
 func (c *RoomClient) disconnect() {

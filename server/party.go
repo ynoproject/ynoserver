@@ -75,7 +75,7 @@ func sendPartyUpdate() {
 
 		for _, memberUuid := range onlinePartyMemberUuids { // for every member
 			if client, ok := clients.Load(memberUuid); ok {
-				client.(*SessionClient).sendMsg("pt", partyDataJson) // send JSON to client
+				client.(*SessionClient).send <- buildMsg("pt", partyDataJson) // send JSON to client
 			}
 		}
 	}

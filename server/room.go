@@ -146,7 +146,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	go client.msgWriter()
 
 	// send client info about itself
-	client.sendMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:])
+	client.send <- buildMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:])
 
 	// register client to room
 	client.joinRoom(room)
@@ -165,10 +165,10 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 
 	// send synced picture names and picture prefixes
 	if len(picNames) > 0 {
-		client.sendMsg("pns", 0, picNames)
+		client.send <- buildMsg("pns", 0, picNames)
 	}
 	if len(gameAssets.PicturePrefixes) > 0 {
-		client.sendMsg("pns", 1, gameAssets.PicturePrefixes)
+		client.send <- buildMsg("pns", 1, gameAssets.PicturePrefixes)
 	}
 
 	// convert BattleAnimIds to an int array so we can send it
@@ -179,7 +179,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 
 	// send synced battle animation ids
 	if len(battleAnimIds) > 0 {
-		client.sendMsg("bas", battleAnimIds)
+		client.send <- buildMsg("bas", battleAnimIds)
 	}
 
 	writeLog(client.sClient.uuid, client.mapId, "connect", 200)
@@ -190,7 +190,7 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.reset()
 
-	c.sendMsg("ri", c.room.id)
+	c.send <- buildMsg("ri", c.room.id)
 
 	c.syncRoomState()
 	
@@ -217,7 +217,7 @@ func (sender *RoomClient) broadcast(segments ...any) {
 			return true
 		}
 
-		client.sendMsg(segments...)
+		client.send <- buildMsg(segments)
 
 		return true
 	})
@@ -317,29 +317,29 @@ func (client *RoomClient) syncRoomState() {
 				return true
 			}
 
-			client.sendMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
-			client.sendMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
+			client.send <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
+			client.send <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
 			if otherClient.facing > 0 {
-				client.sendMsg("f", otherClient.sClient.id, otherClient.facing)
+				client.send <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
 			}
-			client.sendMsg("spd", otherClient.sClient.id, otherClient.spd)
+			client.send <- buildMsg("spd", otherClient.sClient.id, otherClient.spd)
 			if otherClient.sClient.name != "" {
-				client.sendMsg("name", otherClient.sClient.id, otherClient.sClient.name)
+				client.send <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
 			}
 			if otherClient.sClient.spriteIndex >= 0 {
-				client.sendMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
+				client.send <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
 			}
 			if otherClient.repeatingFlash {
-				client.sendMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
+				client.send <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
 			}
 			if otherClient.hidden {
-				client.sendMsg("h", otherClient.sClient.id, "1")
+				client.send <- buildMsg("h", otherClient.sClient.id, "1")
 			}
 			if otherClient.sClient.systemName != "" {
-				client.sendMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
+				client.send <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
 			}
 			for picId, pic := range otherClient.pictures {
-				client.sendMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
+				client.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 			}
 
 			return true
@@ -366,7 +366,7 @@ func (client *RoomClient) syncRoomState() {
 		if minigame.InitialVarSync {
 			varSyncType = 2
 		}
-		client.sendMsg("sv", minigame.VarId, varSyncType)
+		client.send <- buildMsg("sv", minigame.VarId, varSyncType)
 	}
 
 	// send variable sync request for vending machine expeditions
@@ -379,7 +379,7 @@ func (client *RoomClient) syncRoomState() {
 			if eventId != currentEventVmEventId {
 				continue
 			}
-			client.sendMsg("sev", eventId, "1")
+			client.send <- buildMsg("sev", eventId, "1")
 		}
 	}
 }

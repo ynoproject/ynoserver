@@ -327,7 +327,7 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 					switchSyncType = 1
 				}
 			}
-			client.sendMsg("ss", switchId, switchSyncType)
+			client.send <- buildMsg("ss", switchId, switchSyncType)
 		} else if c.VarId > 0 || len(c.VarIds) > 0 {
 			varId := c.VarId
 			if len(c.VarIds) > 0 {
@@ -354,7 +354,7 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 					varSyncType = 1
 				}
 			}
-			client.sendMsg("sv", varId, varSyncType)
+			client.send <- buildMsg("sv", varId, varSyncType)
 		} else if c.checkConditionCoords(client) {
 			timeTrial := c.TimeTrial && serverConfig.GameName == "2kki"
 			if !timeTrial {
@@ -363,10 +363,10 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 					writeErrLog(client.sClient.uuid, client.mapId, err.Error())
 				}
 				if success {
-					client.sendMsg("b")
+					client.send <- buildMsg("b")
 				}
 			} else {
-				client.sendMsg("ss", "1430", "0")
+				client.send <- buildMsg("ss", "1430", "0")
 			}
 		}
 	} else if trigger == "" {
@@ -379,7 +379,7 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 			}
 			for _, value := range values {
 				if c.Trigger == "picture" {
-					client.sendMsg("sp", value)
+					client.send <- buildMsg("sp", value)
 				} else {
 					valueInt, err := strconv.Atoi(value)
 					if err != nil {
@@ -410,7 +410,7 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 						eventTriggerType = 1
 					}
 
-					client.sendMsg("sev", value, eventTriggerType)
+					client.send <- buildMsg("sev", value, eventTriggerType)
 				}
 			}
 		} else if c.Trigger == "coords" {

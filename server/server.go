@@ -183,7 +183,7 @@ func randString(length int) string {
 	return string(b)
 }
 
-func buildMsg(segments []any) (message []byte) {
+func buildMsg(segments ...any) (message []byte) {
 	for idx, segment := range segments {
 		switch segment := segment.(type) {
 		case byte:

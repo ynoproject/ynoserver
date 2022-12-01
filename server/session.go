@@ -127,7 +127,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 func (sender *SessionClient) broadcast(segments ...any) {
 	clients.Range(func(_, v any) bool {
-		v.(*SessionClient).sendMsg(segments...)
+		v.(*SessionClient).send <- buildMsg(segments)
 
 		return true
 	})
@@ -151,7 +151,7 @@ func (sender *SessionClient) processMsg(msg []byte) (err error) {
 		err = sender.handlePSay(msgFields)
 	case "pt": // party update
 		if sender.handlePt() != nil {
-			sender.sendMsg("pt", "null")
+			sender.send <- buildMsg("pt", "null")
 		}
 	case "ep": // event period
 		err = sender.handleEp()
