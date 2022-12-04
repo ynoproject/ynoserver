@@ -42,7 +42,7 @@ func initSession() {
 	sender := SessionClient{}
 
 	scheduler.Every(5).Seconds().Do(func() {
-		sender.broadcast("pc", getSessionClientsLen())
+		sender.broadcast(buildMsg("pc", getSessionClientsLen()))
 		sendPartyUpdate()
 	})
 }
@@ -125,9 +125,9 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	writeLog(client.uuid, "sess", "connect", 200)
 }
 
-func (sender *SessionClient) broadcast(segments ...any) {
+func (sender *SessionClient) broadcast(msg []byte) {
 	clients.Range(func(_, v any) bool {
-		v.(*SessionClient).send <- buildMsg(segments...)
+		v.(*SessionClient).send <- buildMsg(msg)
 
 		return true
 	})

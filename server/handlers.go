@@ -67,7 +67,7 @@ func (sender *RoomClient) handleM(msg []string) (err error) {
 		if sender.syncCoords {
 			sender.checkRoomConditions("coords", "")
 		}
-		sender.broadcast("m", sender.sClient.id, msg[1:]) // user %id% moved to x y
+		sender.broadcast(buildMsg("m", sender.sClient.id, msg[1:])) // user %id% moved to x y
 	} else {
 		sender.checkRoomConditions("teleport", "")
 	}
@@ -88,7 +88,7 @@ func (sender *RoomClient) handleF(msg []string) (err error) {
 
 	sender.facing = facing
 
-	sender.broadcast("f", sender.sClient.id, msg[1]) // user %id% facing changed to f
+	sender.broadcast(buildMsg("f", sender.sClient.id, msg[1])) // user %id% facing changed to f
 
 	return nil
 }
@@ -105,7 +105,7 @@ func (sender *RoomClient) handleSpd(msg []string) (err error) {
 
 	sender.spd = spd
 
-	sender.broadcast("spd", sender.sClient.id, msg[1])
+	sender.broadcast(buildMsg("spd", sender.sClient.id, msg[1]))
 
 	return nil
 }
@@ -139,7 +139,7 @@ func (sender *RoomClient) handleSpr(msg []string) (err error) {
 	sender.sClient.spriteName = msg[1]
 	sender.sClient.spriteIndex = index
 
-	sender.broadcast("spr", sender.sClient.id, msg[1:])
+	sender.broadcast(buildMsg("spr", sender.sClient.id, msg[1:]))
 
 	return nil
 }
@@ -179,7 +179,7 @@ func (sender *RoomClient) handleFl(msg []string) (err error) {
 		sender.repeatingFlash = true
 	}
 
-	sender.broadcast(msg[0], sender.sClient.id, msg[1:])
+	sender.broadcast(buildMsg(msg[0], sender.sClient.id, msg[1:]))
 
 	return nil
 }
@@ -191,7 +191,7 @@ func (sender *RoomClient) handleRrfl() (err error) {
 		sender.flash[i] = 0
 	}
 
-	sender.broadcast("rrfl", sender.sClient.id)
+	sender.broadcast(buildMsg("rrfl", sender.sClient.id))
 
 	return nil
 }
@@ -208,7 +208,7 @@ func (sender *RoomClient) handleH(msg []string) (err error) {
 
 	sender.hidden = hiddenBin == 1
 
-	sender.broadcast(msg[0], sender.sClient.id, msg[1])
+	sender.broadcast(buildMsg(msg[0], sender.sClient.id, msg[1]))
 
 	return nil
 }
@@ -224,7 +224,7 @@ func (sender *RoomClient) handleSys(msg []string) (err error) {
 
 	sender.sClient.systemName = msg[1]
 
-	sender.broadcast("sys", sender.sClient.id, msg[1])
+	sender.broadcast(buildMsg("sys", sender.sClient.id, msg[1]))
 
 	return nil
 }
@@ -251,7 +251,7 @@ func (sender *RoomClient) handleSe(msg []string) (err error) {
 		return errconv
 	}
 
-	sender.broadcast("se", sender.sClient.id, msg[1:])
+	sender.broadcast(buildMsg("se", sender.sClient.id, msg[1:]))
 
 	return nil
 }
@@ -402,7 +402,7 @@ func (sender *RoomClient) handleP(msg []string) (err error) {
 
 	sender.pictures[picId] = pic
 
-	sender.broadcast(msg[0], sender.sClient.id, msg[1:])
+	sender.broadcast(buildMsg(msg[0], sender.sClient.id, msg[1:]))
 
 	return nil
 }
@@ -419,7 +419,7 @@ func (sender *RoomClient) handleRp(msg []string) (err error) {
 
 	delete(sender.pictures, picId)
 
-	sender.broadcast("rp", sender.sClient.id, msg[1])
+	sender.broadcast(buildMsg("rp", sender.sClient.id, msg[1]))
 
 	return nil
 }
@@ -438,7 +438,7 @@ func (sender *RoomClient) handleBa(msg []string) (err error) {
 		return err
 	}
 
-	sender.broadcast("ba", sender.sClient.id, msg[1])
+	sender.broadcast(buildMsg("ba", sender.sClient.id, msg[1]))
 
 	return nil
 }
@@ -461,7 +461,7 @@ func (sender *RoomClient) handleSay(msg []string) (err error) {
 		return errors.New("invalid message")
 	}
 
-	sender.broadcast("say", sender.sClient.id, msgContents)
+	sender.broadcast(buildMsg("say", sender.sClient.id, msgContents))
 
 	return nil
 }
@@ -800,7 +800,7 @@ func (sender *SessionClient) handleName(msg []string) (err error) {
 	sender.name = msg[1]
 
 	if sender.rClient != nil {
-		sender.rClient.broadcast("name", sender.id, sender.name) // broadcast name change to room if client is in one
+		sender.rClient.broadcast(buildMsg("name", sender.id, sender.name)) // broadcast name change to room if client is in one
 	}
 
 	return nil
@@ -864,8 +864,8 @@ func (sender *SessionClient) handleGSay(msg []string) (err error) {
 		y = sender.rClient.y
 	}
 
-	sender.broadcast("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge, sender.medals[:])
-	sender.broadcast("gsay", sender.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
+	sender.broadcast(buildMsg("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge, sender.medals[:]))
+	sender.broadcast(buildMsg("gsay", sender.uuid, mapId, prevMapId, prevLocations, x, y, msgContents))
 
 	return nil
 }

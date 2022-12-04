@@ -203,21 +203,21 @@ func (c *RoomClient) leaveRoom() {
 
 	c.room.clients.Delete(c)
 
-	c.broadcast("d", c.sClient.id) // user %id% has disconnected message
+	c.broadcast(buildMsg("d", c.sClient.id)) // user %id% has disconnected message
 }
 
-func (sender *RoomClient) broadcast(segments ...any) {
+func (sender *RoomClient) broadcast(msg []byte) {
 	if sender.room.singleplayer {
 		return
 	}
 
 	sender.room.clients.Range(func(k, _ any) bool {
 		client := k.(*RoomClient)
-		if client == sender && segments[0].(string) != "say" {
+		if client == sender && !(len(msg) > 3 && string(msg[:3]) == "say") {
 			return true
 		}
 
-		client.send <- buildMsg(segments...)
+		client.send <- msg
 
 		return true
 	})
@@ -303,11 +303,11 @@ func (sender *RoomClient) processMsg(msgStr string) (err error) {
 func (client *RoomClient) syncRoomState() {
 	if !client.room.singleplayer {
 		// tell everyone that a new client has connected
-		client.broadcast("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:]) // user %id% has connected message
+		client.broadcast(buildMsg("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:])) // user %id% has connected message
 
 		// send name of client
 		if client.sClient.name != "" {
-			client.broadcast("name", client.sClient.id, client.sClient.name)
+			client.broadcast(buildMsg("name", client.sClient.id, client.sClient.name))
 		}
 
 		// send the new client info about the game state
