@@ -217,7 +217,7 @@ func (sender *RoomClient) broadcast(segments ...any) {
 			return true
 		}
 
-		client.send <- buildMsg(segments)
+		client.send <- buildMsg(segments...)
 
 		return true
 	})

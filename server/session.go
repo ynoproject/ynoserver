@@ -127,7 +127,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 func (sender *SessionClient) broadcast(segments ...any) {
 	clients.Range(func(_, v any) bool {
-		v.(*SessionClient).send <- buildMsg(segments)
+		v.(*SessionClient).send <- buildMsg(segments...)
 
 		return true
 	})
