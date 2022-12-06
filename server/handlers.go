@@ -793,7 +793,12 @@ func (sender *SessionClient) handleName(msg []string) (err error) {
 		return errors.New("command length mismatch")
 	}
 
-	if sender.name != "" || !isOkString(msg[1]) || len(msg[1]) > 12 {
+	maxNameLength := 10
+	if sender.account {
+		maxNameLength = 12
+	}
+
+	if sender.name != "" || !isOkString(msg[1]) || len(msg[1]) > maxNameLength {
 		return err
 	}
 
