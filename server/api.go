@@ -1010,19 +1010,45 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleChangePw(w http.ResponseWriter, r *http.Request) {
-	// GET params user, old password, new password
-	user, password, newPassword := r.URL.Query()["user"], r.URL.Query()["password"], r.URL.Query()["newPassword"]
-	if len(user) == 0 || !isOkString(user[0]) || len(password) == 0 || len(password[0]) > 72 || len(newPassword) == 0 || len(newPassword[0]) > 72 {
-		handleError(w, r, "bad response")
+	token := r.Header.Get("Authorization")
+
+	if token == "" {
+		handleError(w, r, "token not specified")
 		return
 	}
 
-	var userPassHash string
-	db.QueryRow("SELECT pass FROM accounts WHERE user = ?", user[0]).Scan(&userPassHash)
+	var username string
 
-	if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password[0])) != nil {
-		handleError(w, r, "bad login")
-		return
+	_, loginUser, rank, _, _, _ := getPlayerInfoFromToken(token)
+
+	// GET params user, new password
+	user, newPassword := r.URL.Query()["user"], r.URL.Query()["newPassword"]
+
+	if rank < 1 || len(user) == 0 {
+		username = loginUser
+
+		// GET param password
+		password := r.URL.Query()["password"]
+
+		if !isOkString(username) || len(password) == 0 || len(password[0]) > 72 || len(newPassword) == 0 || len(newPassword[0]) > 72 {
+			handleError(w, r, "bad response")
+			return
+		}
+
+		var userPassHash string
+		db.QueryRow("SELECT pass FROM accounts WHERE user = ?", username).Scan(&userPassHash)
+
+		if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password[0])) != nil {
+			handleError(w, r, "bad login")
+			return
+		}
+	} else {
+		username = user[0]
+
+		if !isOkString(username) || len(newPassword) == 0 || len(newPassword[0]) > 72 {
+			handleError(w, r, "bad response")
+			return
+		}
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword[0]), bcrypt.DefaultCost)
@@ -1031,7 +1057,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, user[0])
+	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, username)
 
 	w.Write([]byte("ok"))
 }
