@@ -68,8 +68,8 @@ func initApi() {
 			return
 		}
 
-		actionParam, ok := r.URL.Query()["action"]
-		if !ok || len(actionParam) == 0 {
+		actionParam := r.URL.Query().Get("action")
+		if actionParam == "" {
 			handleError(w, r, "action not specified")
 			return
 		}
@@ -88,7 +88,7 @@ func initApi() {
 				return
 			}
 
-			url := "https://2kki.app/" + actionParam[0]
+			url := "https://2kki.app/" + actionParam
 			if len(queryString) > 0 {
 				url += "?" + queryString
 			}
@@ -112,7 +112,7 @@ func initApi() {
 			} else {
 				var interval string
 				// Shorter expiration for map queries returning unknown location in case of new maps that haven't yet been added to the wiki
-				if actionParam[0] == "getMapLocationNames" && response == "[]" {
+				if actionParam == "getMapLocationNames" && response == "[]" {
 					interval = "1 HOUR"
 				} else {
 					interval = "7 DAY"
@@ -185,22 +185,22 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) == 0 {
+	commandParam := r.URL.Query().Get("command")
+	if commandParam == "" {
 		handleError(w, r, "command not specified")
 		return
 	}
 
-	switch commandParam[0] {
+	switch commandParam {
 	case "grantbadge", "revokebadge":
-		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) == 0 {
+		playerParam := r.URL.Query().Get("player")
+		if playerParam == "" {
 			handleError(w, r, "player not specified")
 			return
 		}
 
-		idParam, ok := r.URL.Query()["id"]
-		if !ok || len(playerParam) == 0 {
+		idParam := r.URL.Query().Get("id")
+		if playerParam == "" {
 			handleError(w, r, "badge ID not specified")
 			return
 		}
@@ -209,7 +209,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 		for _, gameBadges := range badges {
 			for badgeId := range gameBadges {
-				if badgeId == idParam[0] {
+				if badgeId == idParam {
 					badgeExists = true
 					break
 				}
@@ -225,10 +225,10 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var err error
-		if commandParam[0] == "grantbadge" {
-			err = unlockPlayerBadge(playerParam[0], idParam[0])
+		if commandParam == "grantbadge" {
+			err = unlockPlayerBadge(playerParam, idParam)
 		} else {
-			err = removePlayerBadge(playerParam[0], idParam[0])
+			err = removePlayerBadge(playerParam, idParam)
 		}
 		if err != nil {
 			handleInternalError(w, r, err)
@@ -240,13 +240,13 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) == 0 {
+		playerParam := r.URL.Query().Get("player")
+		if playerParam == "" {
 			handleError(w, r, "player not specified")
 			return
 		}
 
-		newPw, err := handleResetPw(playerParam[0])
+		newPw, err := handleResetPw(playerParam)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -278,13 +278,13 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) == 0 {
+	commandParam := r.URL.Query().Get("command")
+	if commandParam == "" {
 		handleError(w, r, "command not specified")
 		return
 	}
 
-	switch commandParam[0] {
+	switch commandParam {
 	case "id":
 		partyId, err := getPlayerPartyId(uuid)
 		if err != nil {
@@ -307,12 +307,12 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write(partyListDataJson)
 		return
 	case "description":
-		partyIdParam, ok := r.URL.Query()["partyId"]
-		if !ok || len(partyIdParam) == 0 {
+		partyIdParam := r.URL.Query().Get("partyId")
+		if partyIdParam == "" {
 			handleError(w, r, "partyId not specified")
 			return
 		}
-		partyId, err := strconv.Atoi(partyIdParam[0])
+		partyId, err := strconv.Atoi(partyIdParam)
 		if err != nil {
 			handleError(w, r, "invalid partyId value")
 			return
@@ -330,7 +330,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		create := commandParam[0] == "create"
+		create := commandParam == "create"
 		if create {
 			if partyId > 0 {
 				handleError(w, r, "player already in a party")
@@ -351,49 +351,49 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		nameParam, ok := r.URL.Query()["name"]
-		if !ok || len(nameParam) == 0 {
+		nameParam := r.URL.Query().Get("name")
+		if nameParam == "" {
 			handleError(w, r, "name not specified")
 			return
 		}
-		if len(nameParam[0]) > 255 {
+		if len(nameParam) > 255 {
 			handleError(w, r, "name too long")
 			return
 		}
 		var description string
-		descriptionParam, ok := r.URL.Query()["description"]
-		if ok && len(descriptionParam) >= 1 {
-			description = descriptionParam[0]
+		descriptionParam := r.URL.Query().Get("description")
+		if descriptionParam != "" {
+			description = descriptionParam
 		}
 		var public bool
-		publicParam, ok := r.URL.Query()["public"]
-		if ok && len(publicParam) >= 1 {
+		publicParam := r.URL.Query().Get("public")
+		if publicParam != "" {
 			public = true
 		}
 		var pass string
 		if !public {
-			passParam, ok := r.URL.Query()["pass"]
-			if ok && len(passParam) >= 1 {
-				if len(passParam[0]) > 255 {
+			passParam := r.URL.Query().Get("pass")
+			if passParam != "" {
+				if len(passParam) > 255 {
 					handleError(w, r, "pass too long")
 					return
 				}
-				pass = passParam[0]
+				pass = passParam
 			}
 		}
-		themeParam, ok := r.URL.Query()["theme"]
-		if !ok || len(themeParam) == 0 {
+		themeParam := r.URL.Query().Get("theme")
+		if themeParam == "" {
 			handleError(w, r, "theme not specified")
 			return
 		}
-		if !gameAssets.IsValidSystem(themeParam[0], true) {
+		if !gameAssets.IsValidSystem(themeParam, true) {
 			handleError(w, r, "invalid system name for theme")
 			return
 		}
 		if create {
-			partyId, err = createPartyData(nameParam[0], public, pass, themeParam[0], description, uuid)
+			partyId, err = createPartyData(nameParam, public, pass, themeParam, description, uuid)
 		} else {
-			err = updatePartyData(partyId, nameParam[0], public, pass, themeParam[0], description, uuid)
+			err = updatePartyData(partyId, nameParam, public, pass, themeParam, description, uuid)
 		}
 		if err != nil {
 			handleInternalError(w, r, err)
@@ -409,12 +409,12 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "join":
-		partyIdParam, ok := r.URL.Query()["partyId"]
-		if !ok || len(partyIdParam) == 0 {
+		partyIdParam := r.URL.Query().Get("partyId")
+		if partyIdParam == "" {
 			handleError(w, r, "partyId not specified")
 			return
 		}
-		partyId, err := strconv.Atoi(partyIdParam[0])
+		partyId, err := strconv.Atoi(partyIdParam)
 		if err != nil {
 			handleError(w, r, "invalid partyId value")
 			return
@@ -426,8 +426,8 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if !public {
-				passParam, ok := r.URL.Query()["pass"]
-				if !ok || len(passParam) == 0 {
+				passParam := r.URL.Query().Get("pass")
+				if passParam == "" {
 					handleError(w, r, "pass not specified")
 					return
 				}
@@ -435,7 +435,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					handleInternalError(w, r, err)
 				}
-				if partyPass != "" && passParam[0] != partyPass {
+				if partyPass != "" && passParam != partyPass {
 					http.Error(w, "401 - Unauthorized", http.StatusUnauthorized)
 					return
 				}
@@ -471,7 +471,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "kick", "transfer":
-		kick := commandParam[0] == "kick"
+		kick := commandParam == "kick"
 		partyId, err := getPlayerPartyId(uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
@@ -494,13 +494,12 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) == 0 {
+		playerParam := r.URL.Query().Get("player")
+		if playerParam == "" {
 			handleError(w, r, "player not specified")
 			return
 		}
-		playerUuid := playerParam[0]
-		playerPartyId, err := getPlayerPartyId(playerUuid)
+		playerPartyId, err := getPlayerPartyId(playerParam)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -514,9 +513,9 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if kick {
-			err = clearPlayerParty(playerUuid)
+			err = clearPlayerParty(playerParam)
 		} else {
-			err = setPartyOwner(partyId, playerUuid)
+			err = setPartyOwner(partyId, playerParam)
 		}
 		if err != nil {
 			handleInternalError(w, r, nil)
@@ -591,13 +590,13 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) == 0 {
+	commandParam := r.URL.Query().Get("command")
+	if commandParam == "" {
 		handleError(w, r, "command not specified")
 		return
 	}
 
-	switch commandParam[0] {
+	switch commandParam {
 	case "timestamp":
 		timestamp, err := getSaveDataTimestamp(uuid)
 		if err != nil {
@@ -622,12 +621,12 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(saveData))
 		return
 	case "push":
-		timestampParam, ok := r.URL.Query()["timestamp"]
-		if !ok || len(timestampParam) == 0 {
+		timestampParam := r.URL.Query().Get("timestamp")
+		if timestampParam == "" {
 			handleError(w, r, "timestamp not specified")
 			return
 		}
-		timestamp, err := time.Parse(time.RFC3339, timestampParam[0])
+		timestamp, err := time.Parse(time.RFC3339, timestampParam)
 		if err != nil {
 			handleError(w, r, "invalid timestamp value")
 			return
@@ -659,13 +658,13 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleVm(w http.ResponseWriter, r *http.Request) {
-	idParam, ok := r.URL.Query()["id"]
-	if !ok || len(idParam) == 0 {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" {
 		handleError(w, r, "id not specified")
 		return
 	}
 
-	eventVmId, err := strconv.Atoi(idParam[0])
+	eventVmId, err := strconv.Atoi(idParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -696,14 +695,14 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	var badgeSlotCols int
 	var banned bool
 
-	commandParam, ok := r.URL.Query()["command"]
-	if !ok || len(commandParam) == 0 {
+	commandParam := r.URL.Query().Get("command")
+	if commandParam == "" {
 		handleError(w, r, "command not specified")
 		return
 	}
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		if commandParam[0] == "list" || commandParam[0] == "playerSlotList" {
+		if commandParam == "list" || commandParam == "playerSlotList" {
 			uuid, banned, _ = getOrCreatePlayerData(getIp(r))
 		} else {
 			handleError(w, r, "token not specified")
@@ -718,24 +717,22 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.HasPrefix(commandParam[0], "slot") {
+	if strings.HasPrefix(commandParam, "slot") {
 		badgeSlotRows, badgeSlotCols = getPlayerBadgeSlotCounts(name)
 	}
 
-	switch commandParam[0] {
+	switch commandParam {
 	case "set", "slotSet":
-		idParam, ok := r.URL.Query()["id"]
-		if !ok || len(idParam) == 0 {
+		idParam := r.URL.Query().Get("id")
+		if idParam == "" {
 			handleError(w, r, "id not specified")
 			return
 		}
 
-		badgeId := idParam[0]
-
-		if badgeId != badge {
+		if idParam != badge {
 			var unlocked bool
 
-			switch badgeId {
+			switch idParam {
 			case "null":
 				unlocked = true
 			default:
@@ -751,7 +748,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				}
 				var badgeFound bool
 				for _, badge := range badgeData {
-					if badge.BadgeId == badgeId {
+					if badge.BadgeId == idParam {
 						badgeFound = true
 						unlocked = badge.Unlocked
 						break
@@ -769,38 +766,38 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if commandParam[0] == "set" {
-			err := setPlayerBadge(uuid, badgeId)
+		if commandParam == "set" {
+			err := setPlayerBadge(uuid, idParam)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
 			}
 		} else {
-			rowParam, ok := r.URL.Query()["row"]
-			if !ok || len(rowParam) == 0 {
+			rowParam := r.URL.Query().Get("row")
+			if rowParam == "" {
 				handleError(w, r, "row not specified")
 				return
 			}
 
-			colParam, ok := r.URL.Query()["col"]
-			if !ok || len(colParam) == 0 {
+			colParam := r.URL.Query().Get("col")
+			if colParam == "" {
 				handleError(w, r, "col not specified")
 				return
 			}
 
-			slotRow, err := strconv.Atoi(rowParam[0])
+			slotRow, err := strconv.Atoi(rowParam)
 			if err != nil || slotRow == 0 || slotRow > badgeSlotRows {
 				handleError(w, r, "invalid row value")
 				return
 			}
 
-			slotCol, err := strconv.Atoi(colParam[0])
+			slotCol, err := strconv.Atoi(colParam)
 			if err != nil || slotCol == 0 || slotCol > badgeSlotCols {
 				handleError(w, r, "invalid col value")
 				return
 			}
 
-			err = setPlayerBadgeSlot(uuid, badgeId, slotRow, slotCol)
+			err = setPlayerBadgeSlot(uuid, idParam, slotRow, slotCol)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -816,12 +813,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		var simple bool
-		simpleParam, ok := r.URL.Query()["simple"]
-		if ok && len(simpleParam) >= 1 {
-			simple = simpleParam[0] == "true"
-		}
-		if simple {
+		if r.URL.Query().Get("simple") == "true" {
 			simpleBadgeData, err := getSimplePlayerBadgeData(uuid, rank, tags, token != "")
 			if err != nil {
 				handleInternalError(w, r, err)
@@ -894,15 +886,15 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		w.Write(badgeSlotsJson)
 		return
 	case "playerSlotList":
-		playerParam, ok := r.URL.Query()["player"]
-		if !ok || len(playerParam) == 0 {
+		playerParam := r.URL.Query().Get("player")
+		if playerParam == "" {
 			handleError(w, r, "player not specified")
 			return
 		}
 
-		playerBadgeSlotRows, playerBadgeSlotCols := getPlayerBadgeSlotCounts(playerParam[0])
+		playerBadgeSlotRows, playerBadgeSlotCols := getPlayerBadgeSlotCounts(playerParam)
 
-		badgeSlots, err := getPlayerBadgeSlots(playerParam[0], playerBadgeSlotRows, playerBadgeSlotCols)
+		badgeSlots, err := getPlayerBadgeSlots(playerParam, playerBadgeSlotRows, playerBadgeSlotCols)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -924,8 +916,8 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	// GET params user, password
-	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
-	if len(user) == 0 || len(user[0]) > 12 || !isOkString(user[0]) || len(password) == 0 || len(password[0]) > 72 {
+	user, password := r.URL.Query().Get("user"), r.URL.Query().Get("password")
+	if user == "" || len(user) > 12 || !isOkString(user) || password == "" || len(password) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}
@@ -957,7 +949,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip) // set ip to null to disable ip-based login
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password[0]), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		handleError(w, r, "bcrypt error")
 		return
@@ -970,8 +962,8 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	// GET params user, password
-	user, password := r.URL.Query()["user"], r.URL.Query()["password"]
-	if len(user) == 0 || !isOkString(user[0]) || len(password) == 0 || len(password[0]) > 72 {
+	user, password := r.URL.Query().Get("user"), r.URL.Query().Get("password")
+	if user == "" || !isOkString(user) || password == "" || len(password) > 72 {
 		handleError(w, r, "bad response")
 		return
 	}
@@ -979,7 +971,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	var userPassHash string
 	db.QueryRow("SELECT pass FROM accounts WHERE user = ?", user[0]).Scan(&userPassHash)
 
-	if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password[0])) != nil {
+	if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password)) != nil {
 		handleError(w, r, "bad login")
 		return
 	}
@@ -1017,20 +1009,19 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var username string
-
 	_, loginUser, rank, _, _, _ := getPlayerInfoFromToken(token)
 
 	// GET params user, new password
-	user, newPassword := r.URL.Query()["user"], r.URL.Query()["newPassword"]
+	user, newPassword := r.URL.Query().Get("user"), r.URL.Query().Get("newPassword")
 
-	if rank < 1 || len(user) == 0 {
+	var username string
+	if rank < 1 || user == "" {
 		username = loginUser
 
 		// GET param password
-		password := r.URL.Query()["password"]
+		password := r.URL.Query().Get("password")
 
-		if !isOkString(username) || len(password) == 0 || len(password[0]) > 72 || len(newPassword) == 0 || len(newPassword[0]) == 0 || len(newPassword[0]) > 72 {
+		if username == "" || !isOkString(username) || password == "" || len(password) > 72 || newPassword == "" || len(newPassword) > 72 {
 			handleError(w, r, "bad response")
 			return
 		}
@@ -1038,20 +1029,20 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 		var userPassHash string
 		db.QueryRow("SELECT pass FROM accounts WHERE user = ?", username).Scan(&userPassHash)
 
-		if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password[0])) != nil {
+		if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password)) != nil {
 			handleError(w, r, "bad login")
 			return
 		}
 	} else {
-		username = user[0]
+		username = user
 
-		if !isOkString(username) || len(newPassword) == 0 || len(newPassword[0]) == 0 || len(newPassword[0]) > 72 {
+		if username == "" || !isOkString(username) || newPassword == "" || len(newPassword) > 72 {
 			handleError(w, r, "bad response")
 			return
 		}
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword[0]), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		handleError(w, r, "bcrypt error")
 		return

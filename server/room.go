@@ -77,20 +77,20 @@ func handleRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := r.URL.Query()["id"]
-	if !ok {
+	id := r.URL.Query().Get("id")
+	if id == "" {
 		return
 	}
 
-	idInt, err := strconv.Atoi(id[0])
+	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	var playerToken string
-	if token, ok := r.URL.Query()["token"]; ok && len(token[0]) == 32 {
-		playerToken = token[0]
+	if token := r.URL.Query().Get("token"); len(token) == 32 {
+		playerToken = token
 	}
 
 	joinRoomWs(conn, getIp(r), playerToken, idInt)
@@ -193,7 +193,7 @@ func (c *RoomClient) joinRoom(room *Room) {
 	c.send <- buildMsg("ri", c.room.id)
 
 	c.syncRoomState()
-	
+
 	room.clients.Store(c, nil)
 }
 

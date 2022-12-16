@@ -89,13 +89,13 @@ func adminBan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerParam, ok := r.URL.Query()["player"]
-	if !ok || len(playerParam) == 0 {
+	playerParam := r.URL.Query().Get("player")
+	if playerParam == "" {
 		handleError(w, r, "player not specified")
 		return
 	}
 
-	err := tryBanPlayer(uuid, playerParam[0])
+	err := tryBanPlayer(uuid, playerParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -111,13 +111,13 @@ func adminMute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerParam, ok := r.URL.Query()["player"]
-	if !ok || len(playerParam) == 0 {
+	playerParam := r.URL.Query().Get("player")
+	if playerParam == "" {
 		handleError(w, r, "player not specified")
 		return
 	}
 
-	err := tryMutePlayer(uuid, playerParam[0])
+	err := tryMutePlayer(uuid, playerParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -133,13 +133,13 @@ func adminUnban(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerParam, ok := r.URL.Query()["player"]
-	if !ok || len(playerParam) == 0 {
+	playerParam := r.URL.Query().Get("player")
+	if playerParam == "" {
 		handleError(w, r, "player not specified")
 		return
 	}
 
-	err := tryUnbanPlayer(uuid, playerParam[0])
+	err := tryUnbanPlayer(uuid, playerParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -155,13 +155,13 @@ func adminUnmute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerParam, ok := r.URL.Query()["player"]
-	if !ok || len(playerParam) == 0 {
+	playerParam := r.URL.Query().Get("player")
+	if playerParam == "" {
 		handleError(w, r, "player not specified")
 		return
 	}
 
-	err := tryUnmutePlayer(uuid, playerParam[0])
+	err := tryUnmutePlayer(uuid, playerParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return

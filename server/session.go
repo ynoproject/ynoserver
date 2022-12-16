@@ -55,8 +55,8 @@ func handleSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var playerToken string
-	if token, ok := r.URL.Query()["token"]; ok && len(token[0]) == 32 {
-		playerToken = token[0]
+	if token := r.URL.Query().Get("token"); len(token) == 32 {
+		playerToken = token
 	}
 
 	joinSessionWs(conn, getIp(r), playerToken)
