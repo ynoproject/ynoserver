@@ -1030,7 +1030,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 		// GET param password
 		password := r.URL.Query()["password"]
 
-		if !isOkString(username) || len(password) == 0 || len(password[0]) > 72 || len(newPassword) == 0 || len(newPassword[0]) > 72 {
+		if !isOkString(username) || len(password) == 0 || len(password[0]) > 72 || len(newPassword) == 0 || len(newPassword[0]) == 0 || len(newPassword[0]) > 72 {
 			handleError(w, r, "bad response")
 			return
 		}
@@ -1045,7 +1045,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	} else {
 		username = user[0]
 
-		if !isOkString(username) || len(newPassword) == 0 || len(newPassword[0]) > 72 {
+		if !isOkString(username) || len(newPassword) == 0 || len(newPassword[0]) == 0 || len(newPassword[0]) > 72 {
 			handleError(w, r, "bad response")
 			return
 		}
