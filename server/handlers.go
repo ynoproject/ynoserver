@@ -144,6 +144,33 @@ func (sender *RoomClient) handleSpr(msg []string) (err error) {
 	return nil
 }
 
+func (sender *RoomClient) handleJmp(msg []string) (err error) {
+	if len(msg) != 3 {
+		return errors.New("command length mismatch")
+	}
+
+	// check if the coordinates are valid
+	x, errconv := strconv.Atoi(msg[1])
+	if errconv != nil || x < 0 {
+		return errconv
+	}
+	y, errconv := strconv.Atoi(msg[2])
+	if errconv != nil || y < 0 {
+		return errconv
+	}
+
+	sender.x = x
+	sender.y = y
+
+	if sender.syncCoords {
+		sender.checkRoomConditions("coords", "")
+	}
+
+	sender.broadcast(buildMsg("jmp", sender.sClient.id, msg[1:])) // user %id% jumped to x y
+
+	return nil
+}
+
 func (sender *RoomClient) handleFl(msg []string) (err error) {
 	if len(msg) != 6 {
 		return errors.New("command length mismatch")
