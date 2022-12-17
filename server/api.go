@@ -81,7 +81,7 @@ func initApi() {
 
 		var response string
 
-		err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam[0], queryString).Scan(&response)
+		err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam, queryString).Scan(&response)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				handleInternalError(w, r, err)
@@ -117,7 +117,7 @@ func initApi() {
 				} else {
 					interval = "7 DAY"
 				}
-				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL "+interval+")) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL "+interval+")", actionParam[0], queryString, string(body), string(body))
+				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL "+interval+")) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL "+interval+")", actionParam, queryString, string(body), string(body))
 				if err != nil {
 					writeErrLog(getIp(r), r.URL.Path, err.Error())
 				}
@@ -934,7 +934,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userExists int
-	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user[0]).Scan(&userExists)
+	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user).Scan(&userExists)
 
 	if userExists > 0 {
 		handleError(w, r, "user exists")
@@ -955,7 +955,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, ?, ?, ?, ?)", ip, time.Now(), uuid, user[0], hashedPassword)
+	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, ?, ?, ?, ?)", ip, time.Now(), uuid, user, hashedPassword)
 
 	w.Write([]byte("ok"))
 }
@@ -969,7 +969,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userPassHash string
-	db.QueryRow("SELECT pass FROM accounts WHERE user = ?", user[0]).Scan(&userPassHash)
+	db.QueryRow("SELECT pass FROM accounts WHERE user = ?", user).Scan(&userPassHash)
 
 	if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password)) != nil {
 		handleError(w, r, "bad login")
@@ -977,8 +977,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := randString(32)
-	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", token, user[0])
-	db.Exec("UPDATE accounts SET timestampLoggedIn = CURRENT_TIMESTAMP() WHERE user = ?", user[0])
+	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", token, user)
+	db.Exec("UPDATE accounts SET timestampLoggedIn = CURRENT_TIMESTAMP() WHERE user = ?", user)
 
 	w.Write([]byte(token))
 }
