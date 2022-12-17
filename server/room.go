@@ -258,14 +258,14 @@ func (sender *RoomClient) processMsg(msgStr string) (err error) {
 		err = sender.handleSr(msgFields)
 	case "m", "tp": // moved / teleported to x y
 		err = sender.handleM(msgFields)
+	case "jmp": // jumped to x y
+		err = sender.handleJmp(msgFields)
 	case "f": // change facing direction
 		err = sender.handleF(msgFields)
 	case "spd": // change my speed to spd
 		err = sender.handleSpd(msgFields)
 	case "spr": // change my sprite
 		err = sender.handleSpr(msgFields)
-	case "jmp": // jumped to x y
-		err = sender.handleJmp(msgFields)
 	case "fl", "rfl": // player flash / repeating player flash
 		err = sender.handleFl(msgFields)
 	case "rrfl": // remove repeating player flash
