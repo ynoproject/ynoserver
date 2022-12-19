@@ -281,17 +281,17 @@ func getRoomConditions(roomId int) (roomConditions []*Condition) {
 // this would probably be better under Room instead of RoomClient
 // but passing RoomClient as an argument every time just seems wasteful
 // not like anyone's going to see this anyways, right?
-func (client *RoomClient) checkRoomConditions(trigger string, value string) {
-	if !client.sClient.account {
+func (c *RoomClient) checkRoomConditions(trigger string, value string) {
+	if !c.sClient.account {
 		return
 	}
 
-	for _, c := range globalConditions {
-		c.check(0, nil, client, trigger, value)
+	for _, condition := range globalConditions {
+		condition.check(0, nil, c, trigger, value)
 	}
 
-	for _, c := range client.room.conditions {
-		c.check(client.room.id, client.room.minigameConfigs, client, trigger, value)
+	for _, condition := range c.room.conditions {
+		condition.check(c.room.id, c.room.minigameConfigs, c, trigger, value)
 	}
 }
 

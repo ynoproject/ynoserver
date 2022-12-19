@@ -211,13 +211,13 @@ func (c *RoomClient) leaveRoom() {
 	c.broadcast(buildMsg("d", c.sClient.id)) // user %id% has disconnected message
 }
 
-func (sender *RoomClient) broadcast(msg []byte) {
-	if sender.room.singleplayer {
+func (c *RoomClient) broadcast(msg []byte) {
+	if c.room.singleplayer {
 		return
 	}
 
-	for _, client := range sender.room.clients {
-		if client == sender && !(len(msg) > 3 && string(msg[:3]) == "say") {
+	for _, client := range c.room.clients {
+		if client == c && !(len(msg) > 3 && string(msg[:3]) == "say") {
 			continue
 		}
 
@@ -225,16 +225,16 @@ func (sender *RoomClient) broadcast(msg []byte) {
 	}
 }
 
-func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
+func (c *RoomClient) processMsgs(msg []byte) (errs []error) {
 	if len(msg) < 8 {
 		return append(errs, errors.New("bad request size"))
 	}
 
-	if !serverSecurity.VerifySignature(sender.key, msg) {
+	if !serverSecurity.VerifySignature(c.key, msg) {
 		return append(errs, errors.New("bad signature"))
 	}
 
-	if !serverSecurity.VerifyCounter(&sender.counter, msg) {
+	if !serverSecurity.VerifyCounter(&c.counter, msg) {
 		return append(errs, errors.New("bad counter"))
 	}
 
@@ -246,7 +246,7 @@ func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
 
 	// message processing
 	for _, msgStr := range strings.Split(string(msg), mdelim) {
-		if err := sender.processMsg(msgStr); err != nil {
+		if err := c.processMsg(msgStr); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -254,44 +254,44 @@ func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
 	return errs
 }
 
-func (sender *RoomClient) processMsg(msgStr string) (err error) {
+func (c *RoomClient) processMsg(msgStr string) (err error) {
 	switch msgFields := strings.Split(msgStr, delim); msgFields[0] {
 	case "sr": // switch room
-		err = sender.handleSr(msgFields)
+		err = c.handleSr(msgFields)
 	case "m", "tp": // moved / teleported to x y
-		err = sender.handleM(msgFields)
+		err = c.handleM(msgFields)
 	case "jmp": // jumped to x y
-		err = sender.handleJmp(msgFields)
+		err = c.handleJmp(msgFields)
 	case "f": // change facing direction
-		err = sender.handleF(msgFields)
+		err = c.handleF(msgFields)
 	case "spd": // change my speed to spd
-		err = sender.handleSpd(msgFields)
+		err = c.handleSpd(msgFields)
 	case "spr": // change my sprite
-		err = sender.handleSpr(msgFields)
+		err = c.handleSpr(msgFields)
 	case "fl", "rfl": // player flash / repeating player flash
-		err = sender.handleFl(msgFields)
+		err = c.handleFl(msgFields)
 	case "rrfl": // remove repeating player flash
-		err = sender.handleRrfl()
+		err = c.handleRrfl()
 	case "h": // change sprite visibility
-		err = sender.handleH(msgFields)
+		err = c.handleH(msgFields)
 	case "sys": // change my system graphic
-		err = sender.handleSys(msgFields)
+		err = c.handleSys(msgFields)
 	case "se": // play sound effect
-		err = sender.handleSe(msgFields)
+		err = c.handleSe(msgFields)
 	case "ap", "mp": // add picture / move picture
-		err = sender.handleP(msgFields)
+		err = c.handleP(msgFields)
 	case "rp": // remove picture
-		err = sender.handleRp(msgFields)
+		err = c.handleRp(msgFields)
 	case "ba": // battle animation
-		err = sender.handleBa(msgFields)
+		err = c.handleBa(msgFields)
 	case "say":
-		err = sender.handleSay(msgFields)
+		err = c.handleSay(msgFields)
 	case "ss": // sync switch
-		err = sender.handleSs(msgFields)
+		err = c.handleSs(msgFields)
 	case "sv": // sync variable
-		err = sender.handleSv(msgFields)
+		err = c.handleSv(msgFields)
 	case "sev":
-		err = sender.handleSev(msgFields)
+		err = c.handleSev(msgFields)
 	default:
 		err = errors.New("unknown message type")
 	}
@@ -299,88 +299,88 @@ func (sender *RoomClient) processMsg(msgStr string) (err error) {
 		return err
 	}
 
-	writeLog(sender.sClient.uuid, sender.mapId, msgStr, 200)
+	writeLog(c.sClient.uuid, c.mapId, msgStr, 200)
 
 	return nil
 }
 
-func (client *RoomClient) syncRoomState() {
-	if !client.room.singleplayer {
+func (c *RoomClient) syncRoomState() {
+	if !c.room.singleplayer {
 		// tell everyone that a new client has connected
-		client.broadcast(buildMsg("c", client.sClient.id, client.sClient.uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:])) // user %id% has connected message
+		c.broadcast(buildMsg("c", c.sClient.id, c.sClient.uuid, c.sClient.rank, c.sClient.account, c.sClient.badge, c.sClient.medals[:])) // user %id% has connected message
 
 		// send name of client
-		if client.sClient.name != "" {
-			client.broadcast(buildMsg("name", client.sClient.id, client.sClient.name))
+		if c.sClient.name != "" {
+			c.broadcast(buildMsg("name", c.sClient.id, c.sClient.name))
 		}
 
 		// send the new client info about the game state
-		for _, otherClient := range client.room.clients {
-			if otherClient == client {
+		for _, otherClient := range c.room.clients {
+			if otherClient == c {
 				continue
 			}
 
-			client.send <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
-			client.send <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
+			c.send <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
+			c.send <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
 			if otherClient.facing > 0 {
-				client.send <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
+				c.send <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
 			}
-			client.send <- buildMsg("spd", otherClient.sClient.id, otherClient.spd)
+			c.send <- buildMsg("spd", otherClient.sClient.id, otherClient.spd)
 			if otherClient.sClient.name != "" {
-				client.send <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
+				c.send <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
 			}
 			if otherClient.sClient.spriteIndex >= 0 {
-				client.send <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
+				c.send <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
 			}
 			if otherClient.repeatingFlash {
-				client.send <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
+				c.send <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
 			}
 			if otherClient.hidden {
-				client.send <- buildMsg("h", otherClient.sClient.id, "1")
+				c.send <- buildMsg("h", otherClient.sClient.id, "1")
 			}
 			if otherClient.sClient.systemName != "" {
-				client.send <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
+				c.send <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
 			}
 			for picId, pic := range otherClient.pictures {
-				client.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
+				c.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 			}
 		}
 	}
 
 	// if you need an account to do the stuff after this, why bother?
-	if !client.sClient.account {
+	if !c.sClient.account {
 		return
 	}
 
-	client.checkRoomConditions("", "")
+	c.checkRoomConditions("", "")
 
-	for _, minigame := range client.room.minigameConfigs {
-		if minigame.Dev && client.sClient.rank < 1 {
+	for _, minigame := range c.room.minigameConfigs {
+		if minigame.Dev && c.sClient.rank < 1 {
 			continue
 		}
-		score, err := getPlayerMinigameScore(client.sClient.uuid, minigame.MinigameId)
+		score, err := getPlayerMinigameScore(c.sClient.uuid, minigame.MinigameId)
 		if err != nil {
-			writeErrLog(client.sClient.uuid, client.mapId, "failed to read player minigame score for "+minigame.MinigameId)
+			writeErrLog(c.sClient.uuid, c.mapId, "failed to read player minigame score for "+minigame.MinigameId)
 		}
-		client.minigameScores = append(client.minigameScores, score)
+		c.minigameScores = append(c.minigameScores, score)
 		varSyncType := 1
 		if minigame.InitialVarSync {
 			varSyncType = 2
 		}
-		client.send <- buildMsg("sv", minigame.VarId, varSyncType)
+		c.send <- buildMsg("sv", minigame.VarId, varSyncType)
 	}
 
 	// send variable sync request for vending machine expeditions
-	if client.room.id != currentEventVmMapId {
+	if c.room.id != currentEventVmMapId {
 		return
 	}
 
-	if eventIds, hasVms := eventVms[client.room.id]; hasVms {
+	if eventIds, hasVms := eventVms[c.room.id]; hasVms {
 		for _, eventId := range eventIds {
 			if eventId != currentEventVmEventId {
 				continue
 			}
-			client.send <- buildMsg("sev", eventId, "1")
+			c.send <- buildMsg("sev", eventId, "1")
 		}
 	}
 }

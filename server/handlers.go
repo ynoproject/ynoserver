@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-func (sender *RoomClient) handleSr(msg []string) (err error) {
+func (c *RoomClient) handleSr(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errors.New("command length mismatch")
 	}
@@ -39,13 +39,13 @@ func (sender *RoomClient) handleSr(msg []string) (err error) {
 		return err
 	}
 
-	sender.leaveRoom()
-	sender.joinRoom(room)
+	c.leaveRoom()
+	c.joinRoom(room)
 
 	return nil
 }
 
-func (sender *RoomClient) handleM(msg []string) (err error) {
+func (c *RoomClient) handleM(msg []string) (err error) {
 	if len(msg) != 3 {
 		return errors.New("command length mismatch")
 	}
@@ -60,22 +60,22 @@ func (sender *RoomClient) handleM(msg []string) (err error) {
 		return errconv
 	}
 
-	sender.x = x
-	sender.y = y
+	c.x = x
+	c.y = y
 
 	if msg[0] == "m" {
-		if sender.syncCoords {
-			sender.checkRoomConditions("coords", "")
+		if c.syncCoords {
+			c.checkRoomConditions("coords", "")
 		}
-		sender.broadcast(buildMsg("m", sender.sClient.id, msg[1:])) // user %id% moved to x y
+		c.broadcast(buildMsg("m", c.sClient.id, msg[1:])) // user %id% moved to x y
 	} else {
-		sender.checkRoomConditions("teleport", "")
+		c.checkRoomConditions("teleport", "")
 	}
 
 	return nil
 }
 
-func (sender *RoomClient) handleJmp(msg []string) (err error) {
+func (c *RoomClient) handleJmp(msg []string) (err error) {
 	if len(msg) != 3 {
 		return errors.New("command length mismatch")
 	}
@@ -90,19 +90,19 @@ func (sender *RoomClient) handleJmp(msg []string) (err error) {
 		return errconv
 	}
 
-	sender.x = x
-	sender.y = y
+	c.x = x
+	c.y = y
 
-	if sender.syncCoords {
-		sender.checkRoomConditions("coords", "")
+	if c.syncCoords {
+		c.checkRoomConditions("coords", "")
 	}
 
-	sender.broadcast(buildMsg("jmp", sender.sClient.id, msg[1:])) // user %id% jumped to x y
+	c.broadcast(buildMsg("jmp", c.sClient.id, msg[1:])) // user %id% jumped to x y
 
 	return nil
 }
 
-func (sender *RoomClient) handleF(msg []string) (err error) {
+func (c *RoomClient) handleF(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errors.New("command length mismatch")
 	}
@@ -113,14 +113,14 @@ func (sender *RoomClient) handleF(msg []string) (err error) {
 		return errconv
 	}
 
-	sender.facing = facing
+	c.facing = facing
 
-	sender.broadcast(buildMsg("f", sender.sClient.id, msg[1])) // user %id% facing changed to f
+	c.broadcast(buildMsg("f", c.sClient.id, msg[1])) // user %id% facing changed to f
 
 	return nil
 }
 
-func (sender *RoomClient) handleSpd(msg []string) (err error) {
+func (c *RoomClient) handleSpd(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errors.New("command length mismatch")
 	}
@@ -130,14 +130,14 @@ func (sender *RoomClient) handleSpd(msg []string) (err error) {
 		return errconv
 	}
 
-	sender.spd = spd
+	c.spd = spd
 
-	sender.broadcast(buildMsg("spd", sender.sClient.id, msg[1]))
+	c.broadcast(buildMsg("spd", c.sClient.id, msg[1]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleSpr(msg []string) (err error) {
+func (c *RoomClient) handleSpr(msg []string) (err error) {
 	if len(msg) != 3 {
 		return errors.New("command length mismatch")
 	}
@@ -154,7 +154,7 @@ func (sender *RoomClient) handleSpr(msg []string) (err error) {
 			!strings.Contains(msg[1], "主人公") &&
 			msg[1] != "kodomo_04-1" &&
 			msg[1] != "#null") ||
-		strings.Contains(msg[1], "zenmaigaharaten_kisekae") && sender.room.id != 176 {
+		strings.Contains(msg[1], "zenmaigaharaten_kisekae") && c.room.id != 176 {
 		return err
 	}
 
@@ -163,15 +163,15 @@ func (sender *RoomClient) handleSpr(msg []string) (err error) {
 		return errconv
 	}
 
-	sender.sClient.spriteName = msg[1]
-	sender.sClient.spriteIndex = index
+	c.sClient.spriteName = msg[1]
+	c.sClient.spriteIndex = index
 
-	sender.broadcast(buildMsg("spr", sender.sClient.id, msg[1:]))
+	c.broadcast(buildMsg("spr", c.sClient.id, msg[1:]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleFl(msg []string) (err error) {
+func (c *RoomClient) handleFl(msg []string) (err error) {
 	if len(msg) != 6 {
 		return errors.New("command length mismatch")
 	}
@@ -198,32 +198,32 @@ func (sender *RoomClient) handleFl(msg []string) (err error) {
 	}
 
 	if msg[0] == "rfl" {
-		sender.flash[0] = red
-		sender.flash[1] = green
-		sender.flash[2] = blue
-		sender.flash[3] = power
-		sender.flash[4] = frames
-		sender.repeatingFlash = true
+		c.flash[0] = red
+		c.flash[1] = green
+		c.flash[2] = blue
+		c.flash[3] = power
+		c.flash[4] = frames
+		c.repeatingFlash = true
 	}
 
-	sender.broadcast(buildMsg(msg[0], sender.sClient.id, msg[1:]))
+	c.broadcast(buildMsg(msg[0], c.sClient.id, msg[1:]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleRrfl() (err error) {
-	sender.repeatingFlash = false
+func (c *RoomClient) handleRrfl() (err error) {
+	c.repeatingFlash = false
 
 	for i := 0; i < 5; i++ {
-		sender.flash[i] = 0
+		c.flash[i] = 0
 	}
 
-	sender.broadcast(buildMsg("rrfl", sender.sClient.id))
+	c.broadcast(buildMsg("rrfl", c.sClient.id))
 
 	return nil
 }
 
-func (sender *RoomClient) handleH(msg []string) (err error) {
+func (c *RoomClient) handleH(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errors.New("command length mismatch")
 	}
@@ -233,14 +233,14 @@ func (sender *RoomClient) handleH(msg []string) (err error) {
 		return errconv
 	}
 
-	sender.hidden = hiddenBin == 1
+	c.hidden = hiddenBin == 1
 
-	sender.broadcast(buildMsg(msg[0], sender.sClient.id, msg[1]))
+	c.broadcast(buildMsg(msg[0], c.sClient.id, msg[1]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleSys(msg []string) (err error) {
+func (c *RoomClient) handleSys(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errors.New("command length mismatch")
 	}
@@ -249,14 +249,14 @@ func (sender *RoomClient) handleSys(msg []string) (err error) {
 		return err
 	}
 
-	sender.sClient.systemName = msg[1]
+	c.sClient.systemName = msg[1]
 
-	sender.broadcast(buildMsg("sys", sender.sClient.id, msg[1]))
+	c.broadcast(buildMsg("sys", c.sClient.id, msg[1]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleSe(msg []string) (err error) {
+func (c *RoomClient) handleSe(msg []string) (err error) {
 	if len(msg) != 5 {
 		return errors.New("command length mismatch")
 	}
@@ -278,12 +278,12 @@ func (sender *RoomClient) handleSe(msg []string) (err error) {
 		return errconv
 	}
 
-	sender.broadcast(buildMsg("se", sender.sClient.id, msg[1:]))
+	c.broadcast(buildMsg("se", c.sClient.id, msg[1:]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleP(msg []string) (err error) {
+func (c *RoomClient) handleP(msg []string) (err error) {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
@@ -294,7 +294,7 @@ func (sender *RoomClient) handleP(msg []string) (err error) {
 	}
 
 	if isShow {
-		sender.checkRoomConditions("picture", msg[17])
+		c.checkRoomConditions("picture", msg[17])
 		if !gameAssets.IsValidPicture(msg[17]) {
 			return err
 		}
@@ -392,20 +392,20 @@ func (sender *RoomClient) handleP(msg []string) (err error) {
 			fixedToMap:          fixedToMapBin == 1,
 		}
 
-		if _, found := sender.pictures[picId]; found {
-			rpErr := sender.processMsg("rp" + delim + msg[1])
+		if _, found := c.pictures[picId]; found {
+			rpErr := c.processMsg("rp" + delim + msg[1])
 			if rpErr != nil {
 				return rpErr
 			}
 		}
 	} else {
-		if _, found := sender.pictures[picId]; found {
+		if _, found := c.pictures[picId]; found {
 			duration, errconv := strconv.Atoi(msg[17])
 			if errconv != nil || duration < 0 {
 				return errconv
 			}
 
-			pic = sender.pictures[picId]
+			pic = c.pictures[picId]
 		} else {
 			return nil
 		}
@@ -427,14 +427,14 @@ func (sender *RoomClient) handleP(msg []string) (err error) {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	sender.pictures[picId] = pic
+	c.pictures[picId] = pic
 
-	sender.broadcast(buildMsg(msg[0], sender.sClient.id, msg[1:]))
+	c.broadcast(buildMsg(msg[0], c.sClient.id, msg[1:]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleRp(msg []string) (err error) {
+func (c *RoomClient) handleRp(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errors.New("command length mismatch")
 	}
@@ -444,14 +444,14 @@ func (sender *RoomClient) handleRp(msg []string) (err error) {
 		return errconv
 	}
 
-	delete(sender.pictures, picId)
+	delete(c.pictures, picId)
 
-	sender.broadcast(buildMsg("rp", sender.sClient.id, msg[1]))
+	c.broadcast(buildMsg("rp", c.sClient.id, msg[1]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleBa(msg []string) (err error) {
+func (c *RoomClient) handleBa(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errors.New("command length mismatch")
 	}
@@ -465,13 +465,13 @@ func (sender *RoomClient) handleBa(msg []string) (err error) {
 		return err
 	}
 
-	sender.broadcast(buildMsg("ba", sender.sClient.id, msg[1]))
+	c.broadcast(buildMsg("ba", c.sClient.id, msg[1]))
 
 	return nil
 }
 
-func (sender *RoomClient) handleSay(msg []string) (err error) {
-	if sender.sClient.muted {
+func (c *RoomClient) handleSay(msg []string) (err error) {
+	if c.sClient.muted {
 		return nil
 	}
 
@@ -479,7 +479,7 @@ func (sender *RoomClient) handleSay(msg []string) (err error) {
 		return errors.New("command length mismatch")
 	}
 
-	if sender.sClient.name == "" || sender.sClient.systemName == "" {
+	if c.sClient.name == "" || c.sClient.systemName == "" {
 		return errors.New("invalid client")
 	}
 
@@ -488,12 +488,12 @@ func (sender *RoomClient) handleSay(msg []string) (err error) {
 		return errors.New("invalid message")
 	}
 
-	sender.broadcast(buildMsg("say", sender.sClient.id, msgContents))
+	c.broadcast(buildMsg("say", c.sClient.id, msgContents))
 
 	return nil
 }
 
-func (sender *RoomClient) handleSs(msg []string) (err error) {
+func (c *RoomClient) handleSs(msg []string) (err error) {
 	if len(msg) != 3 {
 		return errors.New("command length mismatch")
 	}
@@ -511,37 +511,37 @@ func (sender *RoomClient) handleSs(msg []string) (err error) {
 	if valueBin == 1 {
 		value = true
 	}
-	sender.switchCache[switchId] = value
+	c.switchCache[switchId] = value
 	if switchId == 1430 && serverConfig.GameName == "2kki" { // time trial mode
 		if value {
-			sender.send <- buildMsg("sv", "88", "0") // time elapsed
+			c.send <- buildMsg("sv", "88", "0") // time elapsed
 		}
 	} else {
-		if len(sender.room.minigameConfigs) > 0 {
-			for m, minigame := range sender.room.minigameConfigs {
-				if minigame.Dev && sender.sClient.rank < 1 {
+		if len(c.room.minigameConfigs) > 0 {
+			for m, minigame := range c.room.minigameConfigs {
+				if minigame.Dev && c.sClient.rank < 1 {
 					continue
 				}
-				if minigame.SwitchId == switchId && minigame.SwitchValue == value && sender.minigameScores[m] < sender.varCache[minigame.VarId] {
-					tryWritePlayerMinigameScore(sender.sClient.uuid, minigame.MinigameId, sender.varCache[minigame.VarId])
+				if minigame.SwitchId == switchId && minigame.SwitchValue == value && c.minigameScores[m] < c.varCache[minigame.VarId] {
+					tryWritePlayerMinigameScore(c.sClient.uuid, minigame.MinigameId, c.varCache[minigame.VarId])
 				}
 			}
 		}
 
-		for _, c := range append(globalConditions, sender.room.conditions...) {
-			validVars := !c.VarTrigger
-			if c.VarTrigger {
-				if c.VarId > 0 {
-					if value, ok := sender.varCache[c.VarId]; ok {
-						if validVar, _ := c.checkVar(c.VarId, value); validVar {
+		for _, condition := range append(globalConditions, c.room.conditions...) {
+			validVars := !condition.VarTrigger
+			if condition.VarTrigger {
+				if condition.VarId > 0 {
+					if value, ok := c.varCache[condition.VarId]; ok {
+						if validVar, _ := condition.checkVar(condition.VarId, value); validVar {
 							validVars = true
 						}
 					}
-				} else if len(c.VarIds) > 0 {
+				} else if len(condition.VarIds) > 0 {
 					validVars = true
-					for _, vId := range c.VarIds {
-						if value, ok := sender.varCache[vId]; ok {
-							if validVar, _ := c.checkVar(vId, value); !validVar {
+					for _, vId := range condition.VarIds {
+						if value, ok := c.varCache[vId]; ok {
+							if validVar, _ := condition.checkVar(vId, value); !validVar {
 								validVars = false
 								break
 							}
@@ -556,56 +556,56 @@ func (sender *RoomClient) handleSs(msg []string) (err error) {
 			}
 
 			if validVars {
-				if switchId == c.SwitchId {
-					if valid, _ := c.checkSwitch(switchId, value); valid {
-						if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
-							if !c.TimeTrial {
-								if c.checkConditionCoords(sender) {
-									success, err := tryWritePlayerTag(sender.sClient.uuid, c.ConditionId)
+				if switchId == condition.SwitchId {
+					if valid, _ := condition.checkSwitch(switchId, value); valid {
+						if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
+							if !condition.TimeTrial {
+								if condition.checkConditionCoords(c) {
+									success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 									if err != nil {
 										return err
 									}
 									if success {
-										sender.send <- buildMsg("b")
+										c.send <- buildMsg("b")
 									}
 								}
 							} else if serverConfig.GameName == "2kki" {
-								sender.send <- buildMsg("ss", "1430", "0")
+								c.send <- buildMsg("ss", "1430", "0")
 							}
 						} else {
-							varId := c.VarId
-							if len(c.VarIds) > 0 {
-								varId = c.VarIds[0]
+							varId := condition.VarId
+							if len(condition.VarIds) > 0 {
+								varId = condition.VarIds[0]
 							}
-							sender.send <- buildMsg("sv", varId, "0")
+							c.send <- buildMsg("sv", varId, "0")
 						}
 					}
-				} else if len(c.SwitchIds) > 0 {
-					if valid, s := c.checkSwitch(switchId, value); valid {
-						if s == len(c.SwitchIds)-1 {
-							if c.VarTrigger || (c.VarId == 0 && len(c.VarIds) == 0) {
-								if !c.TimeTrial {
-									if c.checkConditionCoords(sender) {
-										success, err := tryWritePlayerTag(sender.sClient.uuid, c.ConditionId)
+				} else if len(condition.SwitchIds) > 0 {
+					if valid, s := condition.checkSwitch(switchId, value); valid {
+						if s == len(condition.SwitchIds)-1 {
+							if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
+								if !condition.TimeTrial {
+									if condition.checkConditionCoords(c) {
+										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 										if err != nil {
 											return err
 										}
 										if success {
-											sender.send <- buildMsg("b")
+											c.send <- buildMsg("b")
 										}
 									}
 								} else if serverConfig.GameName == "2kki" {
-									sender.send <- buildMsg("ss", "1430", "0")
+									c.send <- buildMsg("ss", "1430", "0")
 								}
 							} else {
-								varId := c.VarId
-								if len(c.VarIds) > 0 {
-									varId = c.VarIds[0]
+								varId := condition.VarId
+								if len(condition.VarIds) > 0 {
+									varId = condition.VarIds[0]
 								}
-								sender.send <- buildMsg("sv", varId, "0")
+								c.send <- buildMsg("sv", varId, "0")
 							}
 						} else {
-							sender.send <- buildMsg("ss", c.SwitchIds[s+1], "0")
+							c.send <- buildMsg("ss", condition.SwitchIds[s+1], "0")
 						}
 					}
 				}
@@ -616,7 +616,7 @@ func (sender *RoomClient) handleSs(msg []string) (err error) {
 	return nil
 }
 
-func (sender *RoomClient) handleSv(msg []string) (err error) {
+func (c *RoomClient) handleSv(msg []string) (err error) {
 	if len(msg) != 3 {
 		return errors.New("command length mismatch")
 	}
@@ -629,54 +629,54 @@ func (sender *RoomClient) handleSv(msg []string) (err error) {
 	if errconv != nil {
 		return errconv
 	}
-	sender.varCache[varId] = value
+	c.varCache[varId] = value
 
-	conditions := append(globalConditions, sender.room.conditions...)
+	conditions := append(globalConditions, c.room.conditions...)
 
 	if varId == 88 && serverConfig.GameName == "2kki" {
-		for _, c := range conditions {
-			if c.TimeTrial && value < 3600 {
-				if c.checkConditionCoords(sender) {
-					success, err := tryWritePlayerTimeTrial(sender.sClient.uuid, sender.room.id, value)
+		for _, condition := range conditions {
+			if condition.TimeTrial && value < 3600 {
+				if condition.checkConditionCoords(c) {
+					success, err := tryWritePlayerTimeTrial(c.sClient.uuid, c.room.id, value)
 					if err != nil {
 						return err
 					}
 					if success {
-						sender.send <- buildMsg("b")
+						c.send <- buildMsg("b")
 					}
 				}
 			}
 		}
 	} else {
-		if len(sender.room.minigameConfigs) > 0 {
-			for m, minigame := range sender.room.minigameConfigs {
-				if minigame.Dev && sender.sClient.rank < 1 {
+		if len(c.room.minigameConfigs) > 0 {
+			for m, minigame := range c.room.minigameConfigs {
+				if minigame.Dev && c.sClient.rank < 1 {
 					continue
 				}
-				if minigame.VarId == varId && sender.minigameScores[m] < value {
+				if minigame.VarId == varId && c.minigameScores[m] < value {
 					if minigame.SwitchId > 0 {
-						sender.send <- buildMsg("ss", minigame.SwitchId, "0")
+						c.send <- buildMsg("ss", minigame.SwitchId, "0")
 					} else {
-						tryWritePlayerMinigameScore(sender.sClient.uuid, minigame.MinigameId, value)
+						tryWritePlayerMinigameScore(c.sClient.uuid, minigame.MinigameId, value)
 					}
 				}
 			}
 		}
 
-		for _, c := range conditions {
-			validSwitches := c.VarTrigger
-			if !c.VarTrigger {
-				if c.SwitchId > 0 {
-					if value, ok := sender.switchCache[c.SwitchId]; ok {
-						if validSwitch, _ := c.checkSwitch(c.SwitchId, value); validSwitch {
+		for _, condition := range conditions {
+			validSwitches := condition.VarTrigger
+			if !condition.VarTrigger {
+				if condition.SwitchId > 0 {
+					if value, ok := c.switchCache[condition.SwitchId]; ok {
+						if validSwitch, _ := condition.checkSwitch(condition.SwitchId, value); validSwitch {
 							validSwitches = true
 						}
 					}
-				} else if len(c.SwitchIds) > 0 {
+				} else if len(condition.SwitchIds) > 0 {
 					validSwitches = true
-					for _, sId := range c.SwitchIds {
-						if value, ok := sender.switchCache[sId]; ok {
-							if validSwitch, _ := c.checkSwitch(sId, value); !validSwitch {
+					for _, sId := range condition.SwitchIds {
+						if value, ok := c.switchCache[sId]; ok {
+							if validSwitch, _ := condition.checkSwitch(sId, value); !validSwitch {
 								validSwitches = false
 								break
 							}
@@ -691,56 +691,56 @@ func (sender *RoomClient) handleSv(msg []string) (err error) {
 			}
 
 			if validSwitches {
-				if varId == c.VarId {
-					if valid, _ := c.checkVar(varId, value); valid {
-						if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
-							if !c.TimeTrial {
-								if c.checkConditionCoords(sender) {
-									success, err := tryWritePlayerTag(sender.sClient.uuid, c.ConditionId)
+				if varId == condition.VarId {
+					if valid, _ := condition.checkVar(varId, value); valid {
+						if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
+							if !condition.TimeTrial {
+								if condition.checkConditionCoords(c) {
+									success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 									if err != nil {
 										return err
 									}
 									if success {
-										sender.send <- buildMsg("b")
+										c.send <- buildMsg("b")
 									}
 								}
 							} else if serverConfig.GameName == "2kki" {
-								sender.send <- buildMsg("ss", "1430", "0")
+								c.send <- buildMsg("ss", "1430", "0")
 							}
 						} else {
-							switchId := c.SwitchId
-							if len(c.SwitchIds) > 0 {
-								switchId = c.SwitchIds[0]
+							switchId := condition.SwitchId
+							if len(condition.SwitchIds) > 0 {
+								switchId = condition.SwitchIds[0]
 							}
-							sender.send <- buildMsg("ss", switchId, "0")
+							c.send <- buildMsg("ss", switchId, "0")
 						}
 					}
-				} else if len(c.VarIds) > 0 {
-					if valid, v := c.checkVar(varId, value); valid {
-						if v == len(c.VarIds)-1 {
-							if !c.VarTrigger || (c.SwitchId == 0 && len(c.SwitchIds) == 0) {
-								if !c.TimeTrial {
-									if c.checkConditionCoords(sender) {
-										success, err := tryWritePlayerTag(sender.sClient.uuid, c.ConditionId)
+				} else if len(condition.VarIds) > 0 {
+					if valid, v := condition.checkVar(varId, value); valid {
+						if v == len(condition.VarIds)-1 {
+							if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
+								if !condition.TimeTrial {
+									if condition.checkConditionCoords(c) {
+										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 										if err != nil {
 											return err
 										}
 										if success {
-											sender.send <- buildMsg("b")
+											c.send <- buildMsg("b")
 										}
 									}
 								} else if serverConfig.GameName == "2kki" {
-									sender.send <- buildMsg("ss", "1430", "0")
+									c.send <- buildMsg("ss", "1430", "0")
 								}
 							} else {
-								switchId := c.SwitchId
-								if len(c.SwitchIds) > 0 {
-									switchId = c.SwitchIds[0]
+								switchId := condition.SwitchId
+								if len(condition.SwitchIds) > 0 {
+									switchId = condition.SwitchIds[0]
 								}
-								sender.send <- buildMsg("ss", switchId, "0")
+								c.send <- buildMsg("ss", switchId, "0")
 							}
 						} else {
-							sender.send <- buildMsg("sv", c.VarIds[v+1], "0")
+							c.send <- buildMsg("sv", condition.VarIds[v+1], "0")
 						}
 					}
 				}
@@ -751,7 +751,7 @@ func (sender *RoomClient) handleSv(msg []string) (err error) {
 	return nil
 }
 
-func (sender *RoomClient) handleSev(msg []string) (err error) {
+func (c *RoomClient) handleSev(msg []string) (err error) {
 	if len(msg) != 3 {
 		return errors.New("command length mismatch")
 	}
@@ -765,9 +765,9 @@ func (sender *RoomClient) handleSev(msg []string) (err error) {
 	if actionBin == 1 {
 		triggerType = "eventAction"
 	}
-	sender.checkRoomConditions(triggerType, msg[1])
+	c.checkRoomConditions(triggerType, msg[1])
 
-	if sender.room.id != currentEventVmMapId {
+	if c.room.id != currentEventVmMapId {
 		return err
 	}
 
@@ -780,12 +780,12 @@ func (sender *RoomClient) handleSev(msg []string) (err error) {
 		return err
 	}
 
-	exp, err := tryCompleteEventVm(currentEventPeriodId, sender.sClient.uuid, currentEventVmMapId, currentEventVmEventId)
+	exp, err := tryCompleteEventVm(currentEventPeriodId, c.sClient.uuid, currentEventVmMapId, currentEventVmEventId)
 	if err != nil {
 		return err
 	}
 	if exp > -1 {
-		sender.sClient.send <- buildMsg("vm", exp)
+		c.sClient.send <- buildMsg("vm", exp)
 	}
 
 	return nil
@@ -793,14 +793,14 @@ func (sender *RoomClient) handleSev(msg []string) (err error) {
 
 // SESSION
 
-func (sender *SessionClient) handleI() (err error) {
-	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(sender.name)
-	medals := getPlayerMedals(sender.uuid)
+func (c *SessionClient) handleI() (err error) {
+	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(c.name)
+	medals := getPlayerMedals(c.uuid)
 	playerInfo := PlayerInfo{
-		Uuid:          sender.uuid,
-		Name:          sender.name,
-		Rank:          sender.rank,
-		Badge:         sender.badge,
+		Uuid:          c.uuid,
+		Name:          c.name,
+		Rank:          c.rank,
+		Badge:         c.badge,
 		BadgeSlotRows: badgeSlotRows,
 		BadgeSlotCols: badgeSlotCols,
 		Medals:        medals,
@@ -810,36 +810,36 @@ func (sender *SessionClient) handleI() (err error) {
 		return err
 	}
 
-	sender.send <- buildMsg("i", playerInfoJson)
+	c.send <- buildMsg("i", playerInfoJson)
 
 	return nil
 }
 
-func (sender *SessionClient) handleName(msg []string) (err error) {
+func (c *SessionClient) handleName(msg []string) (err error) {
 	if len(msg) != 2 {
 		return errors.New("command length mismatch")
 	}
 
 	maxNameLength := 10
-	if sender.account {
+	if c.account {
 		maxNameLength = 12
 	}
 
-	if sender.name != "" || !isOkString(msg[1]) || len(msg[1]) > maxNameLength {
+	if c.name != "" || !isOkString(msg[1]) || len(msg[1]) > maxNameLength {
 		return err
 	}
 
-	sender.name = msg[1]
+	c.name = msg[1]
 
-	if sender.rClient != nil {
-		sender.rClient.broadcast(buildMsg("name", sender.id, sender.name)) // broadcast name change to room if client is in one
+	if c.rClient != nil {
+		c.rClient.broadcast(buildMsg("name", c.id, c.name)) // broadcast name change to room if client is in one
 	}
 
 	return nil
 }
 
-func (sender *SessionClient) handlePloc(msg []string) (err error) {
-	if sender.rClient == nil {
+func (c *SessionClient) handlePloc(msg []string) (err error) {
+	if c.rClient == nil {
 		return err
 	}
 
@@ -851,16 +851,16 @@ func (sender *SessionClient) handlePloc(msg []string) (err error) {
 		return errors.New("invalid prev map ID")
 	}
 
-	sender.rClient.prevMapId = msg[1]
-	sender.rClient.prevLocations = msg[2]
+	c.rClient.prevMapId = msg[1]
+	c.rClient.prevLocations = msg[2]
 
-	sender.rClient.checkRoomConditions("prevMap", sender.rClient.prevMapId)
+	c.rClient.checkRoomConditions("prevMap", c.rClient.prevMapId)
 
 	return nil
 }
 
-func (sender *SessionClient) handleGSay(msg []string) (err error) {
-	if sender.muted {
+func (c *SessionClient) handleGSay(msg []string) (err error) {
+	if c.muted {
 		return nil
 	}
 
@@ -868,7 +868,7 @@ func (sender *SessionClient) handleGSay(msg []string) (err error) {
 		return errors.New("command length mismatch")
 	}
 
-	if sender.name == "" || sender.systemName == "" {
+	if c.name == "" || c.systemName == "" {
 		return errors.New("invalid client")
 	}
 
@@ -888,22 +888,22 @@ func (sender *SessionClient) handleGSay(msg []string) (err error) {
 	x := -1
 	y := -1
 
-	if sender.rClient != nil && enableLocBin == 1 {
-		mapId = sender.rClient.mapId
-		prevMapId = sender.rClient.prevMapId
-		prevLocations = sender.rClient.prevLocations
-		x = sender.rClient.x
-		y = sender.rClient.y
+	if c.rClient != nil && enableLocBin == 1 {
+		mapId = c.rClient.mapId
+		prevMapId = c.rClient.prevMapId
+		prevLocations = c.rClient.prevLocations
+		x = c.rClient.x
+		y = c.rClient.y
 	}
 
-	sender.broadcast(buildMsg("p", sender.uuid, sender.name, sender.systemName, sender.rank, sender.account, sender.badge, sender.medals[:]))
-	sender.broadcast(buildMsg("gsay", sender.uuid, mapId, prevMapId, prevLocations, x, y, msgContents))
+	c.broadcast(buildMsg("p", c.uuid, c.name, c.systemName, c.rank, c.account, c.badge, c.medals[:]))
+	c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents))
 
 	return nil
 }
 
-func (sender *SessionClient) handlePSay(msg []string) (err error) {
-	if sender.muted {
+func (c *SessionClient) handlePSay(msg []string) (err error) {
+	if c.muted {
 		return nil
 	}
 
@@ -911,7 +911,7 @@ func (sender *SessionClient) handlePSay(msg []string) (err error) {
 		return errors.New("command length mismatch")
 	}
 
-	if sender.name == "" || sender.systemName == "" {
+	if c.name == "" || c.systemName == "" {
 		return errors.New("invalid client")
 	}
 
@@ -920,7 +920,7 @@ func (sender *SessionClient) handlePSay(msg []string) (err error) {
 		return errors.New("invalid message")
 	}
 
-	partyId, err := getPlayerPartyId(sender.uuid)
+	partyId, err := getPlayerPartyId(c.uuid)
 	if err != nil {
 		return err
 	}
@@ -933,26 +933,26 @@ func (sender *SessionClient) handlePSay(msg []string) (err error) {
 	}
 	for _, uuid := range partyMemberUuids {
 		if client, ok := clients.Load(uuid); ok {
-			client.(*SessionClient).send <- buildMsg("psay", sender.uuid, msgContents)
+			client.(*SessionClient).send <- buildMsg("psay", c.uuid, msgContents)
 		}
 	}
 
 	return nil
 }
 
-func (sender *SessionClient) handlePt() (err error) {
-	partyId, err := getPlayerPartyId(sender.uuid)
+func (c *SessionClient) handlePt() (err error) {
+	partyId, err := getPlayerPartyId(c.uuid)
 	if err != nil {
 		return err
 	}
 	if partyId == 0 {
 		return errors.New("player not in a party")
 	}
-	partyData, err := getPartyData(sender.uuid)
+	partyData, err := getPartyData(c.uuid)
 	if err != nil {
 		return err
 	}
-	if sender.uuid != partyData.OwnerUuid {
+	if c.uuid != partyData.OwnerUuid {
 		partyData.Pass = ""
 	}
 	partyDataJson, err := json.Marshal(partyData)
@@ -960,12 +960,12 @@ func (sender *SessionClient) handlePt() (err error) {
 		return err
 	}
 
-	sender.send <- buildMsg("pt", partyDataJson)
+	c.send <- buildMsg("pt", partyDataJson)
 
 	return nil
 }
 
-func (sender *SessionClient) handleEp() (err error) {
+func (c *SessionClient) handleEp() (err error) {
 	period, err := getCurrentEventPeriodData()
 	if err != nil {
 		return err
@@ -975,17 +975,17 @@ func (sender *SessionClient) handleEp() (err error) {
 		return err
 	}
 
-	sender.send <- buildMsg("ep", periodJson)
+	c.send <- buildMsg("ep", periodJson)
 
 	return nil
 }
 
-func (sender *SessionClient) handleE() (err error) {
+func (c *SessionClient) handleE() (err error) {
 	periodId, err := getCurrentEventPeriodId()
 	if err != nil {
 		return err
 	}
-	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, sender.uuid)
+	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, c.uuid)
 	if err != nil {
 		return err
 	}
@@ -997,14 +997,14 @@ func (sender *SessionClient) handleE() (err error) {
 		}
 	}
 	if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
-		addPlayer2kkiEventLocation(-1, 2, 0, 0, sender.uuid)
-		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(periodId, sender.uuid)
+		addPlayer2kkiEventLocation(-1, 2, 0, 0, c.uuid)
+		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(periodId, c.uuid)
 		if err != nil {
 			return err
 		}
 	}
 
-	currentEventVmsData, err := getCurrentPlayerEventVmsData(periodId, sender.uuid)
+	currentEventVmsData, err := getCurrentPlayerEventVmsData(periodId, c.uuid)
 	if err != nil {
 		return err
 	}
@@ -1019,12 +1019,12 @@ func (sender *SessionClient) handleE() (err error) {
 		return err
 	}
 
-	sender.send <- buildMsg("e", eventsDataJson)
+	c.send <- buildMsg("e", eventsDataJson)
 
 	return nil
 }
 
-func (sender *SessionClient) handleEexp() (err error) {
+func (c *SessionClient) handleEexp() (err error) {
 	if serverConfig.GameName != "2kki" {
 		return err
 	}
@@ -1033,7 +1033,7 @@ func (sender *SessionClient) handleEexp() (err error) {
 	if err != nil {
 		return err
 	}
-	playerEventExpData, err := getPlayerEventExpData(periodId, sender.uuid)
+	playerEventExpData, err := getPlayerEventExpData(periodId, c.uuid)
 	if err != nil {
 		return err
 	}
@@ -1042,50 +1042,50 @@ func (sender *SessionClient) handleEexp() (err error) {
 		return err
 	}
 
-	sender.send <- buildMsg("eexp", playerEventExpDataJson)
+	c.send <- buildMsg("eexp", playerEventExpDataJson)
 
 	return nil
 }
 
-func (sender *SessionClient) handleEec(msg []string) (err error) {
+func (c *SessionClient) handleEec(msg []string) (err error) {
 	if serverConfig.GameName != "2kki" {
-		sender.send <- buildMsg("eec", 0, false)
+		c.send <- buildMsg("eec", 0, false)
 		return err
 	}
 
 	if len(msg) < 3 {
-		sender.send <- buildMsg("eec", 0, false)
+		c.send <- buildMsg("eec", 0, false)
 		return errors.New("command length mismatch")
 	}
 
 	location := msg[1]
 	if len(location) == 0 {
-		sender.send <- buildMsg("eec", 0, false)
+		c.send <- buildMsg("eec", 0, false)
 		return err // location not specified
 	}
 
 	periodId, err := getCurrentEventPeriodId()
 	if err != nil {
-		sender.send <- buildMsg("eec", 0, false)
+		c.send <- buildMsg("eec", 0, false)
 		return err
 	}
 	ret := -1
-	if sender.rClient != nil {
+	if c.rClient != nil {
 		if msg[2] != "1" { // not free expedition
-			exp, err := tryCompleteEventLocation(periodId, sender.uuid, location)
+			exp, err := tryCompleteEventLocation(periodId, c.uuid, location)
 			if err != nil {
-				sender.send <- buildMsg("eec", 0, false)
+				c.send <- buildMsg("eec", 0, false)
 				return err
 			}
 			if exp < 0 {
-				sender.send <- buildMsg("eec", 0, false)
+				c.send <- buildMsg("eec", 0, false)
 				return err // unexpected state
 			}
 			ret = exp
 		} else { // free expedition
-			complete, err := tryCompletePlayerEventLocation(periodId, sender.uuid, location)
+			complete, err := tryCompletePlayerEventLocation(periodId, c.uuid, location)
 			if err != nil {
-				sender.send <- buildMsg("eec", 0, false)
+				c.send <- buildMsg("eec", 0, false)
 				return err
 			}
 			if complete {
@@ -1093,9 +1093,9 @@ func (sender *SessionClient) handleEec(msg []string) (err error) {
 			}
 		}
 	}
-	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, sender.uuid)
+	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, c.uuid)
 	if err != nil {
-		sender.send <- buildMsg("eec", 0, false)
+		c.send <- buildMsg("eec", 0, false)
 		return err
 	}
 	var hasIncompleteEvent bool
@@ -1106,10 +1106,10 @@ func (sender *SessionClient) handleEec(msg []string) (err error) {
 		}
 	}
 	if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
-		addPlayer2kkiEventLocation(-1, 2, 0, 0, sender.uuid)
+		addPlayer2kkiEventLocation(-1, 2, 0, 0, c.uuid)
 	}
 
-	sender.send <- buildMsg("eec", ret, true)
+	c.send <- buildMsg("eec", ret, true)
 
 	return nil
 }

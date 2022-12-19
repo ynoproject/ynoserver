@@ -125,7 +125,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	writeLog(client.uuid, "sess", "connect", 200)
 }
 
-func (sender *SessionClient) broadcast(msg []byte) {
+func (c *SessionClient) broadcast(msg []byte) {
 	clients.Range(func(_, v any) bool {
 		v.(*SessionClient).send <- buildMsg(msg)
 
@@ -133,34 +133,34 @@ func (sender *SessionClient) broadcast(msg []byte) {
 	})
 }
 
-func (sender *SessionClient) processMsg(msg []byte) (err error) {
+func (c *SessionClient) processMsg(msg []byte) (err error) {
 	if !utf8.Valid(msg) {
 		return errors.New("invalid UTF-8")
 	}
 
 	switch msgFields := strings.Split(string(msg), delim); msgFields[0] {
 	case "i": // player info
-		err = sender.handleI()
+		err = c.handleI()
 	case "name": // nick set
-		err = sender.handleName(msgFields)
+		err = c.handleName(msgFields)
 	case "ploc": // previous location
-		err = sender.handlePloc(msgFields)
+		err = c.handlePloc(msgFields)
 	case "gsay": // global say
-		err = sender.handleGSay(msgFields)
+		err = c.handleGSay(msgFields)
 	case "psay": // party say
-		err = sender.handlePSay(msgFields)
+		err = c.handlePSay(msgFields)
 	case "pt": // party update
-		if sender.handlePt() != nil {
-			sender.send <- buildMsg("pt", "null")
+		if c.handlePt() != nil {
+			c.send <- buildMsg("pt", "null")
 		}
 	case "ep": // event period
-		err = sender.handleEp()
+		err = c.handleEp()
 	case "e": // event list
-		err = sender.handleE()
+		err = c.handleE()
 	case "eexp": // update expedition points
-		err = sender.handleEexp()
+		err = c.handleEexp()
 	case "eec": // claim expedition
-		err = sender.handleEec(msgFields)
+		err = c.handleEec(msgFields)
 	default:
 		err = errors.New("unknown message type")
 	}
@@ -168,7 +168,7 @@ func (sender *SessionClient) processMsg(msg []byte) (err error) {
 		return err
 	}
 
-	writeLog(sender.uuid, "sess", string(msg), 200)
+	writeLog(c.uuid, "sess", string(msg), 200)
 
 	return nil
 }

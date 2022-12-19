@@ -79,52 +79,52 @@ type SessionClient struct {
 	systemName string
 }
 
-func (s *SessionClient) msgReader() {
+func (c *SessionClient) msgReader() {
 	defer func() {
-		close(s.receive)
-		s.disconnect()
+		close(c.receive)
+		c.disconnect()
 	}()
 
-	s.conn.SetReadLimit(maxMessageSize)
-	s.conn.SetReadDeadline(time.Now().Add(pongWait))
-	s.conn.SetPongHandler(func(string) error { s.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.conn.SetReadLimit(maxMessageSize)
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	for {
-		_, message, err := s.conn.ReadMessage()
+		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			break
 		}
 
-		s.receive <- message
+		c.receive <- message
 	}
 }
 
-func (s *SessionClient) msgWriter() {
-	s.writerWg.Add(1)
+func (c *SessionClient) msgWriter() {
+	c.writerWg.Add(1)
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
 		ticker.Stop()
-		s.writerWg.Done()
-		s.disconnect()
+		c.writerWg.Done()
+		c.disconnect()
 	}()
 
 	for {
 		select {
-		case <-s.writerEnd:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			s.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
+		case <-c.writerEnd:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
 			return
-		case message := <-s.send:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			err := s.conn.WriteMessage(websocket.TextMessage, message)
+		case message := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := c.conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
 				return
 			}
 		case <-ticker.C:
-			s.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			err := s.conn.WriteMessage(websocket.PingMessage, nil)
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := c.conn.WriteMessage(websocket.PingMessage, nil)
 			if err != nil {
 				return
 			}
@@ -132,41 +132,41 @@ func (s *SessionClient) msgWriter() {
 	}
 }
 
-func (s *SessionClient) msgProcessor() {
+func (c *SessionClient) msgProcessor() {
 	for {
-		message, ok := <-s.receive
+		message, ok := <-c.receive
 		if !ok {
 			return
 		}
 
-		err := s.processMsg(message)
+		err := c.processMsg(message)
 		if err != nil {
-			writeErrLog(s.uuid, "sess", err.Error())
+			writeErrLog(c.uuid, "sess", err.Error())
 		}
 	}
 }
 
-func (s *SessionClient) disconnect() {
-	s.dcOnce.Do(func() {
+func (c *SessionClient) disconnect() {
+	c.dcOnce.Do(func() {
 		// unregister
-		clients.Delete(s.uuid)
+		clients.Delete(c.uuid)
 
 		// send terminate signal to writer
-		close(s.writerEnd)
+		close(c.writerEnd)
 
 		// wait for writer to end
-		s.writerWg.Wait()
+		c.writerWg.Wait()
 
 		// close conn, ends reader and processor
-		s.conn.Close()
+		c.conn.Close()
 
-		updatePlayerGameData(s)
+		updatePlayerGameData(c)
 
-		writeLog(s.uuid, "sess", "disconnect", 200)
+		writeLog(c.uuid, "sess", "disconnect", 200)
 
 		// disconnect rClient if connected
-		if s.rClient != nil {
-			s.rClient.disconnect()
+		if c.rClient != nil {
+			c.rClient.disconnect()
 		}
 	})
 }
