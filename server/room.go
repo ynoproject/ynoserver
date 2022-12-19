@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
@@ -49,7 +48,7 @@ var (
 )
 
 type Room struct {
-	clients sync.Map
+	clients []*RoomClient
 
 	id           int
 	singleplayer bool
@@ -193,14 +192,21 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.syncRoomState()
 
-	room.clients.Store(c, nil)
+	room.clients = append(room.clients, c)
 }
 
 func (c *RoomClient) leaveRoom() {
 	// setting c.room to nil could cause a nil pointer dereference
 	// so we let joinRoom update it
 
-	c.room.clients.Delete(c)
+	for clientIdx, client := range c.room.clients {
+		if client != c {
+			continue
+		}
+
+		c.room.clients[clientIdx] = c.room.clients[len(c.room.clients)-1]
+		c.room.clients = c.room.clients[:len(c.room.clients)-1]
+	}
 
 	c.broadcast(buildMsg("d", c.sClient.id)) // user %id% has disconnected message
 }
@@ -210,16 +216,13 @@ func (sender *RoomClient) broadcast(msg []byte) {
 		return
 	}
 
-	sender.room.clients.Range(func(k, _ any) bool {
-		client := k.(*RoomClient)
+	for _, client := range sender.room.clients {
 		if client == sender && !(len(msg) > 3 && string(msg[:3]) == "say") {
-			return true
+			continue
 		}
 
 		client.send <- msg
-
-		return true
-	})
+	}
 }
 
 func (sender *RoomClient) processMsgs(msg []byte) (errs []error) {
@@ -312,10 +315,9 @@ func (client *RoomClient) syncRoomState() {
 		}
 
 		// send the new client info about the game state
-		client.room.clients.Range(func(k, _ any) bool {
-			otherClient := k.(*RoomClient)
+		for _, otherClient := range client.room.clients {
 			if otherClient == client {
-				return true
+				continue
 			}
 
 			client.send <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
@@ -342,9 +344,7 @@ func (client *RoomClient) syncRoomState() {
 			for picId, pic := range otherClient.pictures {
 				client.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 			}
-
-			return true
-		})
+		}
 	}
 
 	// if you need an account to do the stuff after this, why bother?
