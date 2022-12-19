@@ -1036,7 +1036,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	} else {
 		username = user
 
-		if username == "" || !isOkString(username) || newPassword == "" || len(newPassword) > 72 {
+		if !isOkString(username) || newPassword == "" || len(newPassword) > 72 {
 			handleError(w, r, "bad response")
 			return
 		}
