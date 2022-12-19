@@ -560,7 +560,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 					if valid, _ := condition.checkSwitch(switchId, value); valid {
 						if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
 							if !condition.TimeTrial {
-								if condition.checkConditionCoords(c) {
+								if c.checkConditionCoords(condition) {
 									success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 									if err != nil {
 										return err
@@ -585,7 +585,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 						if s == len(condition.SwitchIds)-1 {
 							if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
 								if !condition.TimeTrial {
-									if condition.checkConditionCoords(c) {
+									if c.checkConditionCoords(condition) {
 										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 										if err != nil {
 											return err
@@ -636,7 +636,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 	if varId == 88 && serverConfig.GameName == "2kki" {
 		for _, condition := range conditions {
 			if condition.TimeTrial && value < 3600 {
-				if condition.checkConditionCoords(c) {
+				if c.checkConditionCoords(condition) {
 					success, err := tryWritePlayerTimeTrial(c.sClient.uuid, c.room.id, value)
 					if err != nil {
 						return err
@@ -695,7 +695,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 					if valid, _ := condition.checkVar(varId, value); valid {
 						if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
 							if !condition.TimeTrial {
-								if condition.checkConditionCoords(c) {
+								if c.checkConditionCoords(condition) {
 									success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 									if err != nil {
 										return err
@@ -720,7 +720,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 						if v == len(condition.VarIds)-1 {
 							if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
 								if !condition.TimeTrial {
-									if condition.checkConditionCoords(c) {
+									if c.checkConditionCoords(condition) {
 										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 										if err != nil {
 											return err

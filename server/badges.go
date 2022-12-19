@@ -287,25 +287,25 @@ func (c *RoomClient) checkRoomConditions(trigger string, value string) {
 	}
 
 	for _, condition := range globalConditions {
-		condition.check(0, nil, c, trigger, value)
+		c.checkCondition(condition, 0, nil, trigger, value)
 	}
 
 	for _, condition := range c.room.conditions {
-		condition.check(c.room.id, c.room.minigameConfigs, c, trigger, value)
+		c.checkCondition(condition, c.room.id, c.room.minigameConfigs, trigger, value)
 	}
 }
 
-func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client *RoomClient, trigger string, value string) {
-	if c.Disabled && client.sClient.rank < 2 {
+func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigameConfigs []*MinigameConfig, trigger string, value string) {
+	if condition.Disabled && c.sClient.rank < 2 {
 		return
 	}
 
 	valueMatched := trigger == ""
-	if c.Trigger == trigger && !valueMatched {
-		if len(c.Values) == 0 {
-			valueMatched = value == c.Value
+	if condition.Trigger == trigger && !valueMatched {
+		if len(condition.Values) == 0 {
+			valueMatched = value == condition.Value
 		} else {
-			for _, val := range c.Values {
+			for _, val := range condition.Values {
 				if value == val {
 					valueMatched = true
 					break
@@ -314,24 +314,24 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 		}
 	}
 
-	if c.Trigger == trigger && valueMatched {
-		if (c.SwitchId > 0 || len(c.SwitchIds) > 0) && !c.VarTrigger {
-			switchId := c.SwitchId
-			if len(c.SwitchIds) > 0 {
-				switchId = c.SwitchIds[0]
+	if condition.Trigger == trigger && valueMatched {
+		if (condition.SwitchId > 0 || len(condition.SwitchIds) > 0) && !condition.VarTrigger {
+			switchId := condition.SwitchId
+			if len(condition.SwitchIds) > 0 {
+				switchId = condition.SwitchIds[0]
 			}
 			var switchSyncType int
 			if trigger == "" {
 				switchSyncType = 2
-				if c.SwitchDelay {
+				if condition.SwitchDelay {
 					switchSyncType = 1
 				}
 			}
-			client.send <- buildMsg("ss", switchId, switchSyncType)
-		} else if c.VarId > 0 || len(c.VarIds) > 0 {
-			varId := c.VarId
-			if len(c.VarIds) > 0 {
-				varId = c.VarIds[0]
+			c.send <- buildMsg("ss", switchId, switchSyncType)
+		} else if condition.VarId > 0 || len(condition.VarIds) > 0 {
+			varId := condition.VarId
+			if len(condition.VarIds) > 0 {
+				varId = condition.VarIds[0]
 			}
 
 			if len(minigameConfigs) > 0 {
@@ -350,45 +350,45 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 			var varSyncType int
 			if trigger == "" {
 				varSyncType = 2
-				if c.VarDelay {
+				if condition.VarDelay {
 					varSyncType = 1
 				}
 			}
-			client.send <- buildMsg("sv", varId, varSyncType)
-		} else if c.checkConditionCoords(client) {
-			timeTrial := c.TimeTrial && serverConfig.GameName == "2kki"
+			c.send <- buildMsg("sv", varId, varSyncType)
+		} else if c.checkConditionCoords(condition) {
+			timeTrial := condition.TimeTrial && serverConfig.GameName == "2kki"
 			if !timeTrial {
-				success, err := tryWritePlayerTag(client.sClient.uuid, c.ConditionId)
+				success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 				if err != nil {
-					writeErrLog(client.sClient.uuid, client.mapId, err.Error())
+					writeErrLog(c.sClient.uuid, c.mapId, err.Error())
 				}
 				if success {
-					client.send <- buildMsg("b")
+					c.send <- buildMsg("b")
 				}
 			} else {
-				client.send <- buildMsg("ss", "1430", "0")
+				c.send <- buildMsg("ss", "1430", "0")
 			}
 		}
 	} else if trigger == "" {
-		if c.Trigger == "event" || c.Trigger == "eventAction" || c.Trigger == "picture" {
+		if condition.Trigger == "event" || condition.Trigger == "eventAction" || condition.Trigger == "picture" {
 			var values []string
-			if len(c.Values) == 0 {
-				values = append(values, c.Value)
+			if len(condition.Values) == 0 {
+				values = append(values, condition.Value)
 			} else {
-				values = c.Values
+				values = condition.Values
 			}
 			for _, value := range values {
-				if c.Trigger == "picture" {
-					client.send <- buildMsg("sp", value)
+				if condition.Trigger == "picture" {
+					c.send <- buildMsg("sp", value)
 				} else {
 					valueInt, err := strconv.Atoi(value)
 					if err != nil {
-						writeErrLog(client.sClient.ip, strconv.Itoa(roomId), err.Error())
+						writeErrLog(c.sClient.ip, strconv.Itoa(roomId), err.Error())
 						continue
 					}
 
 					var eventTriggerType int
-					if c.Trigger == "eventAction" {
+					if condition.Trigger == "eventAction" {
 						if roomId > 0 && roomId == currentEventVmMapId {
 							if eventIds, hasVms := eventVms[roomId]; hasVms {
 								var skipEvSync bool
@@ -410,20 +410,20 @@ func (c *Condition) check(roomId int, minigameConfigs []*MinigameConfig, client 
 						eventTriggerType = 1
 					}
 
-					client.send <- buildMsg("sev", value, eventTriggerType)
+					c.send <- buildMsg("sev", value, eventTriggerType)
 				}
 			}
-		} else if c.Trigger == "coords" {
-			client.syncCoords = true
+		} else if condition.Trigger == "coords" {
+			c.syncCoords = true
 		}
 	}
 }
 
-func (c *Condition) checkConditionCoords(client *RoomClient) bool {
-	return ((c.MapX1 <= 0 && c.MapX2 <= 0) ||
-		((c.MapX1 == -1 || c.MapX1 <= client.x) && (c.MapX2 == -1 || c.MapX2 >= client.x))) &&
-		((c.MapY1 <= 0 && c.MapY2 <= 0) ||
-			((c.MapY1 == -1 || c.MapY1 <= client.y) && (c.MapY2 == -1 || c.MapY2 >= client.y)))
+func (c *RoomClient) checkConditionCoords(condition *Condition) bool {
+	return ((condition.MapX1 <= 0 && condition.MapX2 <= 0) ||
+		((condition.MapX1 == -1 || condition.MapX1 <= c.x) && (condition.MapX2 == -1 || condition.MapX2 >= c.x))) &&
+		((condition.MapY1 <= 0 && condition.MapY2 <= 0) ||
+			((condition.MapY1 == -1 || condition.MapY1 <= c.y) && (condition.MapY2 == -1 || condition.MapY2 >= c.y)))
 }
 
 func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, account bool, simple bool) (playerBadges []*PlayerBadge, err error) {
