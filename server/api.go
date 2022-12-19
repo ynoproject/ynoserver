@@ -89,7 +89,7 @@ func initApi() {
 			}
 
 			url := "https://2kki.app/" + actionParam
-			if len(queryString) > 0 {
+			if queryString != "" {
 				url += "?" + queryString
 			}
 
