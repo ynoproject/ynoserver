@@ -54,8 +54,7 @@ type Room struct {
 	id           int
 	singleplayer bool
 
-	conditions []*Condition
-
+	conditions      []*Condition
 	minigameConfigs []*MinigameConfig
 }
 
