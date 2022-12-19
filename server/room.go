@@ -190,7 +190,7 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.send <- buildMsg("ri", c.room.id)
 
-	c.syncRoomState()
+	c.getRoomData()
 
 	room.clients = append(room.clients, c)
 }
@@ -304,7 +304,7 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) syncRoomState() {
+func (c *RoomClient) getRoomData() {
 	if !c.room.singleplayer {
 		// tell everyone that a new client has connected
 		c.broadcast(buildMsg("c", c.sClient.id, c.sClient.uuid, c.sClient.rank, c.sClient.account, c.sClient.badge, c.sClient.medals[:])) // user %id% has connected message
