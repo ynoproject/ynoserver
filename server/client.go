@@ -160,7 +160,7 @@ func (c *SessionClient) disconnect() {
 		// close conn, ends reader and processor
 		c.conn.Close()
 
-		updatePlayerGameData(c)
+		c.updatePlayerGameData()
 
 		writeLog(c.uuid, "sess", "disconnect", 200)
 

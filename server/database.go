@@ -194,8 +194,8 @@ func getPlayerGameData(uuid string) (spriteName string, spriteIndex int, systemN
 	return spriteName, spriteIndex, systemName
 }
 
-func updatePlayerGameData(client *SessionClient) error {
-	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", client.uuid, serverConfig.GameName, client.name, client.systemName, client.spriteName, client.spriteIndex, client.name, client.systemName, client.spriteName, client.spriteIndex)
+func (c *SessionClient) updatePlayerGameData() error {
+	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", c.uuid, serverConfig.GameName, c.name, c.systemName, c.spriteName, c.spriteIndex, c.name, c.systemName, c.spriteName, c.spriteIndex)
 	if err != nil {
 		return err
 	}
