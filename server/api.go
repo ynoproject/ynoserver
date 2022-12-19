@@ -1034,12 +1034,12 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		username = user
-
-		if !isOkString(username) || newPassword == "" || len(newPassword) > 72 {
+		if !isOkString(user) || newPassword == "" || len(newPassword) > 72 {
 			handleError(w, r, "bad response")
 			return
 		}
+
+		username = user
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
