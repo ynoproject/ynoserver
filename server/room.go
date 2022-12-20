@@ -48,10 +48,10 @@ var (
 )
 
 type Room struct {
-	clients []*RoomClient
-
 	id           int
 	singleplayer bool
+	
+	clients []*RoomClient
 
 	conditions []*Condition
 	minigames  []*Minigame
