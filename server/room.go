@@ -115,7 +115,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		conn:      conn,
 		writerEnd: make(chan bool, 1),
 		send:      make(chan []byte, 16),
-		receive:   make(chan []byte, 16),
+		receive:   make(chan []byte, 8),
 		key:       serverSecurity.NewClientKey(),
 	}
 

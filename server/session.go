@@ -67,8 +67,8 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		conn:      conn,
 		ip:        ip,
 		writerEnd: make(chan bool, 1),
-		send:      make(chan []byte, 16),
-		receive:   make(chan []byte, 16),
+		send:      make(chan []byte, 8),
+		receive:   make(chan []byte, 4),
 	}
 
 	var banned bool
