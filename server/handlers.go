@@ -517,13 +517,13 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 			c.send <- buildMsg("sv", "88", "0") // time elapsed
 		}
 	} else {
-		if len(c.room.minigameConfigs) > 0 {
-			for m, minigame := range c.room.minigameConfigs {
+		if len(c.room.minigames) > 0 {
+			for m, minigame := range c.room.minigames {
 				if minigame.Dev && c.sClient.rank < 1 {
 					continue
 				}
 				if minigame.SwitchId == switchId && minigame.SwitchValue == value && c.minigameScores[m] < c.varCache[minigame.VarId] {
-					tryWritePlayerMinigameScore(c.sClient.uuid, minigame.MinigameId, c.varCache[minigame.VarId])
+					tryWritePlayerMinigameScore(c.sClient.uuid, minigame.Id, c.varCache[minigame.VarId])
 				}
 			}
 		}
@@ -648,8 +648,8 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 			}
 		}
 	} else {
-		if len(c.room.minigameConfigs) > 0 {
-			for m, minigame := range c.room.minigameConfigs {
+		if len(c.room.minigames) > 0 {
+			for m, minigame := range c.room.minigames {
 				if minigame.Dev && c.sClient.rank < 1 {
 					continue
 				}
@@ -657,7 +657,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 					if minigame.SwitchId > 0 {
 						c.send <- buildMsg("ss", minigame.SwitchId, "0")
 					} else {
-						tryWritePlayerMinigameScore(c.sClient.uuid, minigame.MinigameId, value)
+						tryWritePlayerMinigameScore(c.sClient.uuid, minigame.Id, value)
 					}
 				}
 			}

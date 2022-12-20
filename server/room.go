@@ -53,17 +53,17 @@ type Room struct {
 	id           int
 	singleplayer bool
 
-	conditions      []*Condition
-	minigameConfigs []*MinigameConfig
+	conditions []*Condition
+	minigames  []*Minigame
 }
 
 func createRooms(roomIds []int, spRooms []int) {
 	for _, roomId := range roomIds {
 		rooms[roomId] = &Room{
-			id:              roomId,
-			singleplayer:    contains(spRooms, roomId),
-			conditions:      getRoomConditions(roomId),
-			minigameConfigs: getRoomMinigameConfigs(roomId),
+			id:           roomId,
+			singleplayer: contains(spRooms, roomId),
+			conditions:   getRoomConditions(roomId),
+			minigames:    getRoomMinigames(roomId),
 		}
 	}
 }
@@ -354,13 +354,13 @@ func (c *RoomClient) getRoomData() {
 
 	c.checkRoomConditions("", "")
 
-	for _, minigame := range c.room.minigameConfigs {
+	for _, minigame := range c.room.minigames {
 		if minigame.Dev && c.sClient.rank < 1 {
 			continue
 		}
-		score, err := getPlayerMinigameScore(c.sClient.uuid, minigame.MinigameId)
+		score, err := getPlayerMinigameScore(c.sClient.uuid, minigame.Id)
 		if err != nil {
-			writeErrLog(c.sClient.uuid, c.mapId, "failed to read player minigame score for "+minigame.MinigameId)
+			writeErrLog(c.sClient.uuid, c.mapId, "failed to read player minigame score for "+minigame.Id)
 		}
 		c.minigameScores = append(c.minigameScores, score)
 		varSyncType := 1

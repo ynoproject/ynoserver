@@ -17,8 +17,8 @@
 
 package server
 
-type MinigameConfig struct {
-	MinigameId     string `json:"minigameId"`
+type Minigame struct {
+	Id             string `json:"minigameId"` // TODO: make this `json:"id"`
 	VarId          int    `json:"varId"`
 	InitialVarSync bool   `json:"initialVarSync"`
 	SwitchId       int    `json:"switchId"`
@@ -26,21 +26,21 @@ type MinigameConfig struct {
 	Dev            bool   `json:"dev"`
 }
 
-func getRoomMinigameConfigs(roomId int) (minigameConfigs []*MinigameConfig) {
+func getRoomMinigames(roomId int) (minigames []*Minigame) {
 	switch serverConfig.GameName {
 	case "yume":
 		if roomId == 155 {
-			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "nasu", VarId: 88, SwitchId: 215})
+			minigames = append(minigames, &Minigame{Id: "nasu", VarId: 88, SwitchId: 215})
 		}
 	case "2kki":
 		switch roomId {
 		case 102:
-			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "rby", VarId: 1010, InitialVarSync: true})
+			minigames = append(minigames, &Minigame{Id: "rby", VarId: 1010, InitialVarSync: true})
 		case 618:
-			minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "rby_ex", VarId: 79, InitialVarSync: true})
+			minigames = append(minigames, &Minigame{Id: "rby_ex", VarId: 79, InitialVarSync: true})
 			//case 344:
-			//minigameConfigs = append(minigameConfigs, &MinigameConfig{MinigameId: "fuji_ex", VarId: 3218, SwitchId: 3219, SwitchValue: true})
+			//minigames = append(minigames, &Minigame{Id: "fuji_ex", VarId: 3218, SwitchId: 3219, SwitchValue: true})
 		}
 	}
-	return minigameConfigs
+	return minigames
 }

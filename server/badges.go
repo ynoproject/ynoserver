@@ -291,11 +291,11 @@ func (c *RoomClient) checkRoomConditions(trigger string, value string) {
 	}
 
 	for _, condition := range c.room.conditions {
-		c.checkCondition(condition, c.room.id, c.room.minigameConfigs, trigger, value)
+		c.checkCondition(condition, c.room.id, c.room.minigames, trigger, value)
 	}
 }
 
-func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigameConfigs []*MinigameConfig, trigger string, value string) {
+func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames []*Minigame, trigger string, value string) {
 	if condition.Disabled && c.sClient.rank < 2 {
 		return
 	}
@@ -334,9 +334,9 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigameCo
 				varId = condition.VarIds[0]
 			}
 
-			if len(minigameConfigs) > 0 {
+			if len(minigames) > 0 {
 				var skipVarSync bool
-				for _, minigame := range minigameConfigs {
+				for _, minigame := range minigames {
 					if minigame.VarId == varId {
 						skipVarSync = true
 						break
