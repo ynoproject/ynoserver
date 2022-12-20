@@ -224,25 +224,26 @@ func updateActiveBadgesAndConditions() {
 
 	for game, gameBadges := range badges {
 		for _, gameBadge := range gameBadges {
-			if gameBadge.Batch > 0 {
-				gameBadge.Dev = gameBadge.Batch > currentBatch
-				switch gameBadge.ReqType {
-				case "tag":
-					if condition, ok := conditions[game][gameBadge.ReqString]; ok {
+			if gameBadge.Batch == 0 {
+				return
+			}
+			gameBadge.Dev = gameBadge.Batch > currentBatch
+			switch gameBadge.ReqType {
+			case "tag":
+				if condition, ok := conditions[game][gameBadge.ReqString]; ok {
+					condition.Disabled = gameBadge.Dev
+				}
+			case "tags":
+				for _, tag := range gameBadge.ReqStrings {
+					if condition, ok := conditions[game][tag]; ok {
 						condition.Disabled = gameBadge.Dev
 					}
-				case "tags":
-					for _, tag := range gameBadge.ReqStrings {
+				}
+			case "tagArrays":
+				for _, tags := range gameBadge.ReqStringArrays {
+					for _, tag := range tags {
 						if condition, ok := conditions[game][tag]; ok {
 							condition.Disabled = gameBadge.Dev
-						}
-					}
-				case "tagArrays":
-					for _, tags := range gameBadge.ReqStringArrays {
-						for _, tag := range tags {
-							if condition, ok := conditions[game][tag]; ok {
-								condition.Disabled = gameBadge.Dev
-							}
 						}
 					}
 				}
