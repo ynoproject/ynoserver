@@ -200,6 +200,15 @@ func buildMsg(segments ...any) (message []byte) {
 					message = append(message, delimBytes...)
 				}
 			}
+		case map[string]bool:
+			var strIdx int
+			for str := range segment {
+				message = append(message, []byte(str)...)
+				
+				if strIdx++; strIdx != len(segment)-1 {
+					message = append(message, delimBytes...)
+				}
+			}
 		case int:
 			message = append(message, []byte(strconv.Itoa(segment))...)
 		case []int:
@@ -207,6 +216,15 @@ func buildMsg(segments ...any) (message []byte) {
 				message = append(message, []byte(strconv.Itoa(num))...)
 
 				if numIdx != len(segment)-1 {
+					message = append(message, delimBytes...)
+				}
+			}
+		case map[int]bool:
+			var numIdx int
+			for num := range segment {
+				message = append(message, []byte(strconv.Itoa(num))...)
+
+				if numIdx++; numIdx != len(segment)-1 {
 					message = append(message, delimBytes...)
 				}
 			}

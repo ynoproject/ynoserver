@@ -154,30 +154,15 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	go client.msgProcessor()
 	go client.msgReader()
 
-	// TODO: create these arrays once and store them
-	// convert PictureNames to a string array so we can send it
-	var picNames []string
-	for picName := range gameAssets.PictureNames {
-		picNames = append(picNames, picName)
-	}
-
-	// send synced picture names and picture prefixes
-	if len(picNames) > 0 {
-		client.send <- buildMsg("pns", 0, picNames)
+	// send synced picture names, picture prefixes, and battle animation ids
+	if len(gameAssets.PictureNames) > 0 {
+		client.send <- buildMsg("pns", 0, gameAssets.PictureNames)
 	}
 	if len(gameAssets.PicturePrefixes) > 0 {
 		client.send <- buildMsg("pns", 1, gameAssets.PicturePrefixes)
 	}
-
-	// convert BattleAnimIds to an int array so we can send it
-	var battleAnimIds []int
-	for battleAnimId := range gameAssets.BattleAnimIds {
-		battleAnimIds = append(battleAnimIds, battleAnimId)
-	}
-
-	// send synced battle animation ids
-	if len(battleAnimIds) > 0 {
-		client.send <- buildMsg("bas", battleAnimIds)
+	if len(gameAssets.BattleAnimIds) > 0 {
+		client.send <- buildMsg("bas", gameAssets.BattleAnimIds)
 	}
 
 	writeLog(client.sClient.uuid, client.mapId, "connect", 200)
