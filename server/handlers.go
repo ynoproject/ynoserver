@@ -517,7 +517,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 			c.send <- buildMsg("sv", "88", "0") // time elapsed
 		}
 	} else {
-		if len(c.room.minigames) > 0 {
+		if len(c.room.minigames) != 0 {
 			for m, minigame := range c.room.minigames {
 				if minigame.Dev && c.sClient.rank < 1 {
 					continue
@@ -537,7 +537,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 							validVars = true
 						}
 					}
-				} else if len(condition.VarIds) > 0 {
+				} else if len(condition.VarIds) != 0 {
 					validVars = true
 					for _, vId := range condition.VarIds {
 						if value, ok := c.varCache[vId]; ok {
@@ -574,13 +574,13 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 							}
 						} else {
 							varId := condition.VarId
-							if len(condition.VarIds) > 0 {
+							if len(condition.VarIds) != 0 {
 								varId = condition.VarIds[0]
 							}
 							c.send <- buildMsg("sv", varId, "0")
 						}
 					}
-				} else if len(condition.SwitchIds) > 0 {
+				} else if len(condition.SwitchIds) != 0 {
 					if valid, s := condition.checkSwitch(switchId, value); valid {
 						if s == len(condition.SwitchIds)-1 {
 							if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
@@ -599,7 +599,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 								}
 							} else {
 								varId := condition.VarId
-								if len(condition.VarIds) > 0 {
+								if len(condition.VarIds) != 0 {
 									varId = condition.VarIds[0]
 								}
 								c.send <- buildMsg("sv", varId, "0")
@@ -648,7 +648,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 			}
 		}
 	} else {
-		if len(c.room.minigames) > 0 {
+		if len(c.room.minigames) != 0 {
 			for m, minigame := range c.room.minigames {
 				if minigame.Dev && c.sClient.rank < 1 {
 					continue
@@ -672,7 +672,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 							validSwitches = true
 						}
 					}
-				} else if len(condition.SwitchIds) > 0 {
+				} else if len(condition.SwitchIds) != 0 {
 					validSwitches = true
 					for _, sId := range condition.SwitchIds {
 						if value, ok := c.switchCache[sId]; ok {
@@ -709,13 +709,13 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 							}
 						} else {
 							switchId := condition.SwitchId
-							if len(condition.SwitchIds) > 0 {
+							if len(condition.SwitchIds) != 0 {
 								switchId = condition.SwitchIds[0]
 							}
 							c.send <- buildMsg("ss", switchId, "0")
 						}
 					}
-				} else if len(condition.VarIds) > 0 {
+				} else if len(condition.VarIds) != 0 {
 					if valid, v := condition.checkVar(varId, value); valid {
 						if v == len(condition.VarIds)-1 {
 							if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
@@ -734,7 +734,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 								}
 							} else {
 								switchId := condition.SwitchId
-								if len(condition.SwitchIds) > 0 {
+								if len(condition.SwitchIds) != 0 {
 									switchId = condition.SwitchIds[0]
 								}
 								c.send <- buildMsg("ss", switchId, "0")

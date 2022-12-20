@@ -269,7 +269,7 @@ func (c *RoomClient) msgProcessor() {
 		}
 
 		errs := c.processMsgs(message)
-		if len(errs) > 0 {
+		if len(errs) != 0 {
 			for _, err := range errs {
 				writeErrLog(c.sClient.uuid, c.mapId, err.Error())
 			}

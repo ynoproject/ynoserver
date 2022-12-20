@@ -155,13 +155,13 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	go client.msgReader()
 
 	// send synced picture names, picture prefixes, and battle animation ids
-	if len(gameAssets.PictureNames) > 0 {
+	if len(gameAssets.PictureNames) != 0 {
 		client.send <- buildMsg("pns", 0, gameAssets.PictureNames)
 	}
-	if len(gameAssets.PicturePrefixes) > 0 {
+	if len(gameAssets.PicturePrefixes) != 0 {
 		client.send <- buildMsg("pns", 1, gameAssets.PicturePrefixes)
 	}
-	if len(gameAssets.BattleAnimIds) > 0 {
+	if len(gameAssets.BattleAnimIds) != 0 {
 		client.send <- buildMsg("bas", gameAssets.BattleAnimIds)
 	}
 

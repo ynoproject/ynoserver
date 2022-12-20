@@ -858,7 +858,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		if len(newUnlockedBadgeIds) > 0 {
+		if len(newUnlockedBadgeIds) != 0 {
 			err := updatePlayerBadgeSlotCounts(uuid)
 			if err != nil {
 				handleInternalError(w, r, err)

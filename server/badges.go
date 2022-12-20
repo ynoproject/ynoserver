@@ -68,7 +68,7 @@ func (c *Condition) checkSwitch(switchId int, value bool) (bool, int) {
 		if c.SwitchValue == value {
 			return true, 0
 		}
-	} else if len(c.SwitchIds) > 0 {
+	} else if len(c.SwitchIds) != 0 {
 		for s, sId := range c.SwitchIds {
 			if switchId == sId {
 				if c.SwitchValues[s] == value {
@@ -102,7 +102,7 @@ func (c *Condition) checkVar(varId int, value int) (bool, int) {
 			valid = value >= c.VarValue && value < c.VarValue2
 		}
 		return valid, 0
-	} else if len(c.VarIds) > 0 {
+	} else if len(c.VarIds) != 0 {
 		for v, vId := range c.VarIds {
 			if varId == vId {
 				var valid bool
@@ -203,7 +203,7 @@ type TimeTrialRecord struct {
 
 func initBadges() {
 	// Use Yume 2kki server to update badge data
-	if len(badges) > 0 && serverConfig.GameName == "2kki" {
+	if len(badges) != 0 && serverConfig.GameName == "2kki" {
 		if _, ok := badges[serverConfig.GameName]; ok {
 			// Badge records needed for determining badge game
 			writeGameBadges()
@@ -311,9 +311,9 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 	}
 
 	if condition.Trigger == trigger && valueMatched {
-		if (condition.SwitchId > 0 || len(condition.SwitchIds) > 0) && !condition.VarTrigger {
+		if (condition.SwitchId > 0 || len(condition.SwitchIds) != 0) && !condition.VarTrigger {
 			switchId := condition.SwitchId
-			if len(condition.SwitchIds) > 0 {
+			if len(condition.SwitchIds) != 0 {
 				switchId = condition.SwitchIds[0]
 			}
 			var switchSyncType int
@@ -324,13 +324,13 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 				}
 			}
 			c.send <- buildMsg("ss", switchId, switchSyncType)
-		} else if condition.VarId > 0 || len(condition.VarIds) > 0 {
+		} else if condition.VarId > 0 || len(condition.VarIds) != 0 {
 			varId := condition.VarId
-			if len(condition.VarIds) > 0 {
+			if len(condition.VarIds) != 0 {
 				varId = condition.VarIds[0]
 			}
 
-			if len(minigames) > 0 {
+			if len(minigames) != 0 {
 				var skipVarSync bool
 				for _, minigame := range minigames {
 					if minigame.VarId == varId {
@@ -728,7 +728,7 @@ func setConditions() {
 						if condition.VarOp == "" {
 							condition.VarOp = "="
 						}
-					} else if len(condition.VarIds) > 0 {
+					} else if len(condition.VarIds) != 0 {
 						if len(condition.VarOps) < len(condition.VarIds) {
 							for v := range condition.VarIds {
 								if v >= len(condition.VarOps) {
