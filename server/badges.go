@@ -63,7 +63,7 @@ type Condition struct {
 	Disabled     bool     `json:"disabled"`
 }
 
-func (c Condition) checkSwitch(switchId int, value bool) (bool, int) {
+func (c *Condition) checkSwitch(switchId int, value bool) (bool, int) {
 	if switchId == c.SwitchId {
 		if c.SwitchValue == value {
 			return true, 0
@@ -82,7 +82,7 @@ func (c Condition) checkSwitch(switchId int, value bool) (bool, int) {
 	return false, 0
 }
 
-func (c Condition) checkVar(varId int, value int) (bool, int) {
+func (c *Condition) checkVar(varId int, value int) (bool, int) {
 	if varId == c.VarId {
 		var valid bool
 		switch c.VarOp {
