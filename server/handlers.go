@@ -780,7 +780,7 @@ func (c *RoomClient) handleSev(msg []string) (err error) {
 		return err
 	}
 
-	exp, err := tryCompleteEventVm(currentEventPeriodId, c.sClient.uuid, currentEventVmMapId, currentEventVmEventId)
+	exp, err := tryCompleteEventVm(c.sClient.uuid, currentEventVmMapId, currentEventVmEventId)
 	if err != nil {
 		return err
 	}
@@ -981,11 +981,7 @@ func (c *SessionClient) handleEp() (err error) {
 }
 
 func (c *SessionClient) handleE() (err error) {
-	periodId, err := getCurrentEventPeriodId()
-	if err != nil {
-		return err
-	}
-	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, c.uuid)
+	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(c.uuid)
 	if err != nil {
 		return err
 	}
@@ -998,13 +994,13 @@ func (c *SessionClient) handleE() (err error) {
 	}
 	if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
 		addPlayer2kkiEventLocation(-1, 2, 0, 0, c.uuid)
-		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(periodId, c.uuid)
+		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(c.uuid)
 		if err != nil {
 			return err
 		}
 	}
 
-	currentEventVmsData, err := getCurrentPlayerEventVmsData(periodId, c.uuid)
+	currentEventVmsData, err := getCurrentPlayerEventVmsData(c.uuid)
 	if err != nil {
 		return err
 	}
@@ -1029,11 +1025,7 @@ func (c *SessionClient) handleEexp() (err error) {
 		return err
 	}
 
-	periodId, err := getCurrentEventPeriodId()
-	if err != nil {
-		return err
-	}
-	playerEventExpData, err := getPlayerEventExpData(periodId, c.uuid)
+	playerEventExpData, err := getPlayerEventExpData(c.uuid)
 	if err != nil {
 		return err
 	}
@@ -1064,15 +1056,10 @@ func (c *SessionClient) handleEec(msg []string) (err error) {
 		return err // location not specified
 	}
 
-	periodId, err := getCurrentEventPeriodId()
-	if err != nil {
-		c.send <- buildMsg("eec", 0, false)
-		return err
-	}
 	ret := -1
 	if c.rClient != nil {
 		if msg[2] != "1" { // not free expedition
-			exp, err := tryCompleteEventLocation(periodId, c.uuid, location)
+			exp, err := tryCompleteEventLocation(c.uuid, location)
 			if err != nil {
 				c.send <- buildMsg("eec", 0, false)
 				return err
@@ -1083,7 +1070,7 @@ func (c *SessionClient) handleEec(msg []string) (err error) {
 			}
 			ret = exp
 		} else { // free expedition
-			complete, err := tryCompletePlayerEventLocation(periodId, c.uuid, location)
+			complete, err := tryCompletePlayerEventLocation(c.uuid, location)
 			if err != nil {
 				c.send <- buildMsg("eec", 0, false)
 				return err
@@ -1093,7 +1080,7 @@ func (c *SessionClient) handleEec(msg []string) (err error) {
 			}
 		}
 	}
-	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(periodId, c.uuid)
+	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(c.uuid)
 	if err != nil {
 		c.send <- buildMsg("eec", 0, false)
 		return err
