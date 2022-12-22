@@ -1589,3 +1589,25 @@ func getUuidFromToken(token string) (uuid string) {
 
 	return uuid
 }
+
+func writeGamePlayerCount(playerCount int) error {
+	_, err := db.Exec("INSERT INTO gamePlayerCounts (game, playerCount) VALUES (?, ?)", serverConfig.GameName, playerCount)
+	if err != nil {
+		return err
+	}
+
+	var playerCounts int
+	err = db.QueryRow("SELECT COUNT(*) FROM gamePlayerCounts WHERE game = ?", serverConfig.GameName).Scan(&playerCounts)
+	if err != nil {
+		return err
+	}
+
+	if playerCounts > 28 {
+		_, err = db.Exec("DELETE FROM gamePlayerCounts WHERE game = ? ORDER BY id LIMIT ?", serverConfig.GameName, playerCounts-28)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

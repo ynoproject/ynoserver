@@ -42,8 +42,12 @@ func initSession() {
 	sender := SessionClient{}
 
 	scheduler.Every(5).Seconds().Do(func() {
-		sender.broadcast(buildMsg("pc", getSessionClientsLen()))
+		sender.broadcast(buildMsg("pc", getPlayerCount()))
 		sendPartyUpdate()
+	})
+
+	scheduler.Cron("0 2,8,14,20 * * *").Do(func() {
+		writeGamePlayerCount(getPlayerCount())
 	})
 }
 
@@ -173,7 +177,7 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 	return nil
 }
 
-func getSessionClientsLen() (length int) {
+func getPlayerCount() (length int) {
 	clients.Range(func(_, _ any) bool {
 		length++
 

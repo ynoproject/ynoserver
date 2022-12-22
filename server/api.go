@@ -171,7 +171,7 @@ func initApi() {
 	})
 
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(strconv.Itoa(getSessionClientsLen())))
+		w.Write([]byte(strconv.Itoa(getPlayerCount())))
 	})
 }
 
