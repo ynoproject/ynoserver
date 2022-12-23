@@ -770,7 +770,7 @@ func setCurrentEventPeriodId() (err error) {
 }
 
 func getCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
-	err = db.QueryRow("SELECT ep.periodOrdinal, ep.endDate, ep.enableVms FROM eventPeriods ep WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate AND EXISTS (SELECT * FROM gameEventPeriods gep WHERE gep.game = ? AND gep.periodId = ep.periodId)", serverConfig.GameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
+	err = db.QueryRow("SELECT ep.periodOrdinal, ep.endDate, ep.enableVms FROM eventPeriods ep WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate AND EXISTS (SELECT * FROM gameEventPeriods gep WHERE gep.game = ? AND gep.periodId = ep.id)", serverConfig.GameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
 	if err != nil {
 		eventPeriod.PeriodOrdinal = -1
 		if err == sql.ErrNoRows {
