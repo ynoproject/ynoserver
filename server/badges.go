@@ -512,6 +512,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 						for _, tag := range playerTags {
 							for _, cTag := range cTags {
 								if tag == cTag {
+									tagFound = true
 									playerBadge.Goals++
 									break
 								}
