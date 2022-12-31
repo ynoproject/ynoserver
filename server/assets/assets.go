@@ -150,7 +150,7 @@ func (a *Assets) IsValidPicture(name string) bool {
 	}
 
 	for _, prefix := range a.PicturePrefixes {
-		if strings.HasPrefix(strings.ToLower(name), prefix) {
+		if strings.HasPrefix(name, prefix) {
 			return true
 		}
 	}
