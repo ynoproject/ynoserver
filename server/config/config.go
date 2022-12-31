@@ -110,7 +110,7 @@ func ParseConfigFile(filename string) (config *Config) {
 	}
 
 	if configFile.PicturePrefixes != "" {
-		config.PicturePrefixes = strings.Split(configFile.PicturePrefixes, ",")
+		config.PicturePrefixes = strings.Split(strings.ToLower(configFile.PicturePrefixes), ",")
 	}
 
 	config.BattleAnimIds = make(map[int]bool)
