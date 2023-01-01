@@ -46,9 +46,7 @@ func initSession() {
 		sendPartyUpdate()
 	})
 
-	scheduler.Cron("0 2,8,14,20 * * *").Do(func() {
-		writeGamePlayerCount(getPlayerCount())
-	})
+	scheduler.Cron("0 2,8,14,20 * * *").Do(writeGamePlayerCount, getPlayerCount())
 }
 
 func handleSession(w http.ResponseWriter, r *http.Request) {
