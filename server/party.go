@@ -25,7 +25,7 @@ type Party struct {
 	Id          int           `json:"id"`
 	Name        string        `json:"name"`
 	Public      bool          `json:"public"`
-	Pass        string        //`json:"pass"
+	Pass        string        `json:"-"`
 	SystemName  string        `json:"systemName"`
 	Description string        `json:"description"`
 	OwnerUuid   string        `json:"ownerUuid"`
