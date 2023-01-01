@@ -43,7 +43,7 @@ type PlayerInfo struct {
 }
 
 func initApi() {
-	http.HandleFunc("/admin/getplayers", adminGetOnlinePlayers)
+	http.HandleFunc("/admin/getplayers", adminGetPlayers)
 	http.HandleFunc("/admin/getbans", adminGetBans)
 	http.HandleFunc("/admin/getmutes", adminGetMutes)
 	http.HandleFunc("/admin/ban", adminBan)

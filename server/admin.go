@@ -22,7 +22,7 @@ import (
 	"net/http"
 )
 
-func adminGetOnlinePlayers(w http.ResponseWriter, r *http.Request) {
+func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank == 0 {
 		handleError(w, r, "access denied")
