@@ -131,8 +131,12 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 func (c *SessionClient) broadcast(msg []byte) {
 	clients.Range(func(_, v any) bool {
-		v.(*SessionClient).send <- buildMsg(msg)
-
+		select {
+		case v.(*SessionClient).send <- buildMsg(msg):
+		default:
+			writeErrLog(c.uuid, "sess", "send channel is full")
+		}
+		
 		return true
 	})
 }

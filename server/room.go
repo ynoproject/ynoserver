@@ -206,7 +206,11 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
-		client.send <- msg
+		select {
+		case client.send <- msg:
+		default:
+			writeErrLog(c.sClient.uuid, c.mapId, "send channel is full")
+		}
 	}
 }
 
