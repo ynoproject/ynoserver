@@ -117,6 +117,11 @@ func (c *SessionClient) msgWriter() {
 
 			return
 		case message := <-c.send:
+			for len(c.send) != 0 { // for each extra message in the channel
+				message = append(message, []byte(mdelim)...) // add message delimiter
+				message = append(message, <-c.send...) // write next message contents
+			}
+
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			err := c.conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
