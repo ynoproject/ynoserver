@@ -480,7 +480,7 @@ func (c *RoomClient) handleSay(msg []string) (err error) {
 	}
 
 	if c.sClient.name == "" || c.sClient.systemName == "" {
-		return errors.New("invalid client")
+		return errors.New("no name or system graphic set")
 	}
 
 	msgContents := strings.TrimSpace(msg[1])
@@ -869,7 +869,7 @@ func (c *SessionClient) handleGSay(msg []string) (err error) {
 	}
 
 	if c.name == "" || c.systemName == "" {
-		return errors.New("invalid client")
+		return errors.New("no name or system graphic set")
 	}
 
 	msgContents := strings.TrimSpace(msg[1])
@@ -912,7 +912,7 @@ func (c *SessionClient) handlePSay(msg []string) (err error) {
 	}
 
 	if c.name == "" || c.systemName == "" {
-		return errors.New("invalid client")
+		return errors.New("no name or system graphic set")
 	}
 
 	msgContents := strings.TrimSpace(msg[1])
