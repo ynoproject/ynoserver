@@ -89,13 +89,21 @@ func adminBan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerParam := r.URL.Query().Get("player")
-	if playerParam == "" {
-		handleError(w, r, "player not specified")
-		return
+	uuidParam := r.URL.Query().Get("uuid")
+	if uuidParam == "" {
+		userParam := r.URL.Query().Get("user")
+		if userParam == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
+		uuidParam = getUuidFromName(userParam)
+		if uuidParam == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
 	}
 
-	err := tryBanPlayer(uuid, playerParam)
+	err := tryBanPlayer(uuid, uuidParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -111,13 +119,21 @@ func adminMute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerParam := r.URL.Query().Get("player")
-	if playerParam == "" {
-		handleError(w, r, "player not specified")
-		return
+	uuidParam := r.URL.Query().Get("uuid")
+	if uuidParam == "" {
+		userParam := r.URL.Query().Get("user")
+		if userParam == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
+		uuidParam = getUuidFromName(userParam)
+		if uuidParam == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
 	}
 
-	err := tryMutePlayer(uuid, playerParam)
+	err := tryMutePlayer(uuid, uuidParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -133,13 +149,21 @@ func adminUnban(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerParam := r.URL.Query().Get("player")
-	if playerParam == "" {
-		handleError(w, r, "player not specified")
-		return
+	uuidParam := r.URL.Query().Get("uuid")
+	if uuidParam == "" {
+		userParam := r.URL.Query().Get("user")
+		if userParam == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
+		uuidParam = getUuidFromName(userParam)
+		if uuidParam == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
 	}
 
-	err := tryUnbanPlayer(uuid, playerParam)
+	err := tryUnbanPlayer(uuid, uuidParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -155,13 +179,21 @@ func adminUnmute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerParam := r.URL.Query().Get("player")
-	if playerParam == "" {
-		handleError(w, r, "player not specified")
-		return
+	uuidParam := r.URL.Query().Get("uuid")
+	if uuidParam == "" {
+		userParam := r.URL.Query().Get("user")
+		if userParam == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
+		uuidParam = getUuidFromName(userParam)
+		if uuidParam == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
 	}
 
-	err := tryUnmutePlayer(uuid, playerParam)
+	err := tryUnmutePlayer(uuid, uuidParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return

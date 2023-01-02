@@ -193,14 +193,22 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	switch commandParam {
 	case "grantbadge", "revokebadge":
-		playerParam := r.URL.Query().Get("player")
-		if playerParam == "" {
-			handleError(w, r, "player not specified")
-			return
+		uuidParam := r.URL.Query().Get("uuid")
+		if uuidParam == "" {
+			userParam := r.URL.Query().Get("user")
+			if userParam == "" {
+				handleError(w, r, "uuid or user not specified")
+				return
+			}
+			uuidParam = getUuidFromName(userParam)
+			if uuidParam == "" {
+				handleError(w, r, "invalid user specified")
+				return
+			}
 		}
 
 		idParam := r.URL.Query().Get("id")
-		if playerParam == "" {
+		if idParam == "" {
 			handleError(w, r, "badge ID not specified")
 			return
 		}
@@ -226,27 +234,30 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 		var err error
 		if commandParam == "grantbadge" {
-			err = unlockPlayerBadge(playerParam, idParam)
+			err = unlockPlayerBadge(uuidParam, idParam)
 		} else {
-			err = removePlayerBadge(playerParam, idParam)
+			err = removePlayerBadge(uuidParam, idParam)
 		}
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 	case "resetpw":
-		if getPlayerRank(uuid) < 2 {
-			handleError(w, r, "access denied")
-			return
+		uuidParam := r.URL.Query().Get("uuid")
+		if uuidParam == "" {
+			userParam := r.URL.Query().Get("user")
+			if userParam == "" {
+				handleError(w, r, "uuid or user not specified")
+				return
+			}
+			uuidParam = getUuidFromName(userParam)
+			if uuidParam == "" {
+				handleError(w, r, "invalid user specified")
+				return
+			}
 		}
 
-		playerParam := r.URL.Query().Get("player")
-		if playerParam == "" {
-			handleError(w, r, "player not specified")
-			return
-		}
-
-		newPw, err := handleResetPw(playerParam)
+		newPw, err := handleResetPw(uuidParam)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return

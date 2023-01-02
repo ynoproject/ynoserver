@@ -1530,6 +1530,15 @@ func getModeratedPlayers(action int) (players []PlayerInfo) {
 	return players
 }
 
+func getUuidFromName(name string) (uuid string) {
+	err := db.QueryRow("SELECT uuid FROM accounts WHERE user = ?", name).Scan(&uuid)
+	if err != nil {
+		return ""
+	}
+
+	return uuid
+}
+
 func getNameFromUuid(uuid string) (name string) {
 	// get name from sessionClients if they're connected
 	if client, ok := clients.Load(uuid); ok {
