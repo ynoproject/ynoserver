@@ -252,7 +252,7 @@ func (c *RoomClient) msgWriter() {
 			}
 
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			err := c.conn.WriteMessage(websocket.TextMessage, message)
+			err := c.conn.WriteMessage(websocket.BinaryMessage, message)
 			if err != nil {
 				return
 			}
