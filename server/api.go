@@ -1078,7 +1078,7 @@ func handleResetPw(uuid string) (newPassword string, err error) {
 		return "", errors.New("bcrypt error")
 	}
 
-	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, user)
+	db.Exec("UPDATE accounts SET pass = ? WHERE uuid = ?", hashedPassword, uuid)
 
 	return newPassword, nil
 }
