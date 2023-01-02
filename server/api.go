@@ -1063,9 +1063,9 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func handleResetPw(user string) (newPassword string, err error) {
+func handleResetPw(uuid string) (newPassword string, err error) {
 	var userCount int
-	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user).Scan(&userCount)
+	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE uuid = ?", uuid).Scan(&userCount)
 
 	if userCount == 0 {
 		return "", errors.New("user not found")
