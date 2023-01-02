@@ -176,10 +176,9 @@ func initApi() {
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	var uuid string
 	var rank int
 
-	uuid, _, rank, _, _, _ = getPlayerDataFromToken(r.Header.Get("Authorization"))
+	_, _, rank, _, _, _ = getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
