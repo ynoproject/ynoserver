@@ -263,6 +263,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Write([]byte(newPw))
+		return
 	default:
 		handleError(w, r, "unknown command")
 		return
