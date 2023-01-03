@@ -247,12 +247,12 @@ func (c *RoomClient) msgWriter() {
 			return
 		case message := <-c.send:
 			for len(c.send) != 0 { // for each extra message in the channel
-				if len(message) > 3840 { // stop if we're close to the message size limit
+				if len(message) > maxMessageSize-256 { // stop if we're close to the message size limit
 					break
 				}
 
 				message = append(message, []byte(mdelim)...) // add message delimiter
-				message = append(message, <-c.send...) // write next message contents
+				message = append(message, <-c.send...)       // write next message contents
 			}
 
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
