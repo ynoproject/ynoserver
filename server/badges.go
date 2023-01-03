@@ -30,9 +30,10 @@ import (
 var (
 	globalConditions []*Condition
 
-	conditions     map[string]map[string]*Condition
-	badges         map[string]map[string]*Badge
-	sortedBadgeIds map[string][]string
+	conditions             map[string]map[string]*Condition
+	badges                 map[string]map[string]*Badge
+	badgeUnlockPercentages map[string]float32
+	sortedBadgeIds         map[string][]string
 )
 
 type Condition struct {
@@ -189,11 +190,6 @@ type PlayerBadge struct {
 	GoalsTotal      int     `json:"goalsTotal"`
 	Unlocked        bool    `json:"unlocked"`
 	NewUnlock       bool    `json:"newUnlock"`
-}
-
-type BadgePercentUnlocked struct {
-	BadgeId string  `json:"badgeId"`
-	Percent float32 `json:"percent"`
 }
 
 type TimeTrialRecord struct {
@@ -473,7 +469,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, OverlayType: gameBadge.OverlayType, Art: gameBadge.Art, Animated: gameBadge.Animated, Hidden: gameBadge.Hidden || gameBadge.Dev}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, OverlayType: gameBadge.OverlayType, Art: gameBadge.Art, Animated: gameBadge.Animated, Percent: badgeUnlockPercentages[badgeId], Hidden: gameBadge.Hidden || gameBadge.Dev}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}
@@ -596,27 +592,9 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 		}
 	}
 
-	var unlockPercentages []*BadgePercentUnlocked
-
-	if !simple {
-		unlockPercentages, err = getBadgeUnlockPercentages()
-		if err != nil {
-			return playerBadges, err
-		}
-	}
-
 	var unlockedBadge bool
 
 	for _, badge := range playerBadges {
-		if !simple {
-			for _, badgePercentUnlocked := range unlockPercentages {
-				if badge.BadgeId == badgePercentUnlocked.BadgeId {
-					badge.Percent = badgePercentUnlocked.Percent
-					break
-				}
-			}
-		}
-
 		if badge.Unlocked {
 			var unlocked bool
 			for _, unlockedBadgeId := range playerUnlockedBadgeIds {
@@ -630,6 +608,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				if err != nil {
 					return playerBadges, err
 				}
+				badge.Percent = badgeUnlockPercentages[badge.BadgeId]
 				badge.NewUnlock = true
 				unlockedBadge = true
 			}
@@ -653,6 +632,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				if err != nil {
 					return playerBadges, err
 				}
+				playerBadge.Percent = badgeUnlockPercentages[playerBadge.BadgeId]
 				playerBadge.NewUnlock = true
 			}
 		}

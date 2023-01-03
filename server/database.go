@@ -245,6 +245,15 @@ func updatePlayerBadgeSlotCounts(uuid string) (err error) {
 	return nil
 }
 
+func updatePlayerActivity() (err error) {
+	_, err = db.Exec("UPDATE accounts SET inactive = CASE WHEN timestampLoggedIn < DATE_ADD(NOW(), INTERVAL -3 MONTH) THEN 1 ELSE 0 END")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func setPlayerBadge(uuid string, badge string) (err error) {
 	if client, ok := clients.Load(uuid); ok {
 		client.(*SessionClient).badge = badge
@@ -1236,11 +1245,19 @@ func writeGameBadges() (err error) {
 		return err
 	}
 
+	badgeUnlockPercentages, err = getBadgeUnlockPercentages()
+	if err != nil {
+		return err
+	}
+
 	for badgeGame := range badges {
 		for badgeId, badge := range badges[badgeGame] {
-			_, err = db.Exec("INSERT INTO badges (badgeId, game, bp, hidden) VALUES (?, ?, ?, ?)", badgeId, badgeGame, badge.Bp, badge.Hidden || badge.Dev)
-			if err != nil {
-				return err
+			if _, ok := badges[serverConfig.GameName]; ok {
+				badgeUnlockPercentage := badgeUnlockPercentages[badgeId]
+				_, err = db.Exec("INSERT INTO badges (badgeId, game, bp, hidden, percentUnlocked) VALUES (?, ?, ?, ?, ?)", badgeId, badgeGame, badge.Bp, badge.Hidden || badge.Dev, badgeUnlockPercentage)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -1274,6 +1291,11 @@ func unlockPlayerBadge(playerUuid string, badgeId string) (err error) {
 		return err
 	}
 
+	badgeUnlockPercentages[badgeId], err = getBadgeUnlockPercentage(badgeId)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1299,23 +1321,32 @@ func removePlayerBadge(playerUuid string, badgeId string) (err error) {
 	return nil
 }
 
-func getBadgeUnlockPercentages() (unlockPercentages []*BadgePercentUnlocked, err error) {
-	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE EXISTS(SELECT * FROM playerBadges aab WHERE aab.uuid = aa.uuid AND aa.timestampLoggedIn >= DATE_ADD(NOW(), INTERVAL -3 MONTH))) aa WHERE EXISTS(SELECT * FROM playerBadges ab WHERE ab.uuid = a.uuid AND a.timestampLoggedIn >= DATE_ADD(NOW(), INTERVAL -3 MONTH)) GROUP BY b.badgeId")
+func getBadgeUnlockPercentage(badgeId string) (unlockPercentage float32, err error) {
+	err = db.QueryRow("SELECT COALESCE(COUNT(b.uuid) / aa.count, 0) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE EXISTS(SELECT * FROM playerBadges aab WHERE aab.uuid = aa.uuid AND aa.inactive = 0)) aa WHERE EXISTS(SELECT * FROM playerBadges ab WHERE ab.uuid = a.uuid AND a.inactive = 0) AND b.badgeId = ?", badgeId).Scan(&unlockPercentage)
+
+	return unlockPercentage, err
+}
+
+func getBadgeUnlockPercentages() (unlockPercentages map[string]float32, err error) {
+	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE EXISTS(SELECT * FROM playerBadges aab WHERE aab.uuid = aa.uuid AND aa.inactive = 0)) aa WHERE EXISTS(SELECT * FROM playerBadges ab WHERE ab.uuid = a.uuid AND a.inactive = 0) GROUP BY b.badgeId")
 	if err != nil {
 		return unlockPercentages, err
 	}
 
 	defer results.Close()
 
-	for results.Next() {
-		percentUnlocked := &BadgePercentUnlocked{}
+	unlockPercentages = make(map[string]float32)
 
-		err := results.Scan(&percentUnlocked.BadgeId, &percentUnlocked.Percent)
+	for results.Next() {
+		var badgeId string
+		var percentUnlocked float32
+
+		err := results.Scan(&badgeId, &percentUnlocked)
 		if err != nil {
 			return unlockPercentages, err
 		}
 
-		unlockPercentages = append(unlockPercentages, percentUnlocked)
+		unlockPercentages[badgeId] = percentUnlocked
 	}
 
 	return unlockPercentages, nil

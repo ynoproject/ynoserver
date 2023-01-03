@@ -47,6 +47,7 @@ func initSession() {
 	})
 
 	scheduler.Cron("0 2,8,14,20 * * *").Do(writeGamePlayerCount, getPlayerCount())
+	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
 }
 
 func handleSession(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +135,7 @@ func (c *SessionClient) broadcast(msg []byte) {
 		default:
 			writeErrLog(c.uuid, "sess", "send channel is full")
 		}
-		
+
 		return true
 	})
 }
