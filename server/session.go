@@ -141,7 +141,7 @@ func (c *SessionClient) broadcast(msg []byte) {
 
 func (c *SessionClient) processMsg(msg []byte) (err error) {
 	if !utf8.Valid(msg) {
-		return errors.New("invalid UTF-8")
+		return errors.New("invalid utf8")
 	}
 
 	switch msgFields := strings.Split(string(msg), delim); msgFields[0] {

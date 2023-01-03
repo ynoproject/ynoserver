@@ -848,7 +848,7 @@ func (c *SessionClient) handlePloc(msg []string) (err error) {
 	}
 
 	if len(msg[1]) != 4 {
-		return errors.New("invalid prev map ID")
+		return errors.New("invalid prev map id")
 	}
 
 	c.rClient.prevMapId = msg[1]

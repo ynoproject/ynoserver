@@ -230,7 +230,7 @@ func (c *RoomClient) processMsgs(msg []byte) (errs []error) {
 	msg = msg[8:]
 
 	if !utf8.Valid(msg) {
-		return append(errs, errors.New("invalid UTF-8"))
+		return append(errs, errors.New("invalid utf8"))
 	}
 
 	// message processing
