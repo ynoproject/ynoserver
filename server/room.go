@@ -173,11 +173,21 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.reset()
 
-	c.send <- buildMsg("ri", c.room.id)
+	c.send <- buildMsg("ri", c.room.id) // tell client they've switched rooms serverside
 
 	c.getRoomData()
 
 	room.clients = append(room.clients, c)
+
+	if !c.room.singleplayer {
+		// tell everyone that a new client has connected
+		c.broadcast(buildMsg("c", c.sClient.id, c.sClient.uuid, c.sClient.rank, c.sClient.account, c.sClient.badge, c.sClient.medals[:])) // user %id% has connected message
+
+		// send name of client
+		if c.sClient.name != "" {
+			c.broadcast(buildMsg("name", c.sClient.id, c.sClient.name))
+		}
+	}
 }
 
 func (c *RoomClient) leaveRoom() {
@@ -295,14 +305,6 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 
 func (c *RoomClient) getRoomData() {
 	if !c.room.singleplayer {
-		// tell everyone that a new client has connected
-		c.broadcast(buildMsg("c", c.sClient.id, c.sClient.uuid, c.sClient.rank, c.sClient.account, c.sClient.badge, c.sClient.medals[:])) // user %id% has connected message
-
-		// send name of client
-		if c.sClient.name != "" {
-			c.broadcast(buildMsg("name", c.sClient.id, c.sClient.name))
-		}
-
 		// send the new client info about the game state
 		for _, otherClient := range c.room.clients {
 			if otherClient == c {
