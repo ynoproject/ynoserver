@@ -601,11 +601,21 @@ func createPlayerParty(partyId int, playerUuid string) error {
 		return err
 	}
 
+	_, err = db.Exec("UPDATE playerGameData pgd SET pgd.lastPartyMsgId = (SELECT MAX(cm.timestamp) FROM chatMessages cm WHERE cm.game = pgd.game AND cm.partyId = ?) WHERE pgd.uuid = ? AND pgd.game = ?", partyId, playerUuid, serverConfig.GameName)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func clearPlayerParty(playerUuid string) error {
 	_, err := db.Exec("DELETE pm FROM partyMembers pm JOIN parties p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", playerUuid, serverConfig.GameName)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("UPDATE playerGameData SET lastPartyMsgId = NULL WHERE uuid = ? AND game = ?", playerUuid, serverConfig.GameName)
 	if err != nil {
 		return err
 	}
@@ -779,8 +789,18 @@ func writePartyChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, 
 	return nil
 }
 
-func updatePlayerLastChatMessage(uuid, lastMsgId string) (err error) {
-	_, err = db.Exec("UPDATE playerGameData SET lastMsgId = ? WHERE uuid = ? AND game = ?", uuid, serverConfig.GameName)
+func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) (err error) {
+	query := "UPDATE playerGameData SET "
+
+	if party {
+		query += "lastPartyMsgId"
+	} else {
+		query += "lastGlobalMsgId"
+	}
+
+	query += " = ? WHERE uuid = ? AND game = ?"
+
+	_, err = db.Exec(query, uuid, serverConfig.GameName)
 	if err != nil {
 		return err
 	}
@@ -795,7 +815,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 	}
 
 	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN playerGameData pgd ON pgd.uuid = cm.uuid AND pgd.game = cm.game WHERE cm.game = ? AND "
-	whereClause := "cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND (pgd.lastMsgId IS NULL OR cm.timestamp > (SELECT cm2.timestamp FROM chatMessages cm2 WHERE cm2.msgId = pgd.lastMsgId))"
+	whereClause := "cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND ((pgd.lastGlobalMsgId IS NULL AND pgd.lastPartyMsgId IS NULL) OR cm.timestamp > (SELECT MAX(cm2.timestamp) FROM chatMessages cm2 WHERE cm2.msgId IN (pgd.lastGlobalMsgId, pgd.lastPartyMessageId))"
 
 	if partyId == 0 {
 		whereClause += " AND cm.partyId IS NULL"

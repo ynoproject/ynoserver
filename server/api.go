@@ -1139,14 +1139,27 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 		uuid = getUuidFromToken(token)
 	}
 
-	lastMsgId := r.URL.Query().Get("lastMsgId")
+	lastGlobalMsgId := r.URL.Query().Get("lastGlobalMsgId")
 
-	if len(lastMsgId) != 8 {
-		handleError(w, r, "invalid lastMsgId")
-		return
+	if lastGlobalMsgId != "" {
+		if len(lastGlobalMsgId) != 8 {
+			handleError(w, r, "invalid lastGlobalMsgId")
+			return
+		}
+
+		updatePlayerLastChatMessage(uuid, lastGlobalMsgId, false)
 	}
 
-	updatePlayerLastChatMessage(uuid, lastMsgId)
+	lastPartyMsgId := r.URL.Query().Get("lastPartyMsgId")
+
+	if lastPartyMsgId != "" {
+		if len(lastPartyMsgId) != 8 {
+			handleError(w, r, "invalid lastPartyMsgId")
+			return
+		}
+
+		updatePlayerLastChatMessage(uuid, lastPartyMsgId, true)
+	}
 
 	w.Write([]byte("ok"))
 }
