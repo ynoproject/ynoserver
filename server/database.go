@@ -814,8 +814,8 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 		return chatHistory, err
 	}
 
-	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN playerGameData pgd ON pgd.uuid = cm.uuid AND pgd.game = cm.game WHERE cm.game = ? AND "
-	whereClause := "cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND (cm.partyId IS NULL OR (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId))) AND (cm.partyId IS NOT NULL OR (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId)))"
+	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN players pd ON pd.uuid = cm.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = cm.game WHERE cm.game = ? AND "
+	whereClause := "pd.banned = 0 AND cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND (cm.partyId IS NULL OR (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId))) AND (cm.partyId IS NOT NULL OR (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId)))"
 
 	if partyId == 0 {
 		whereClause += " AND cm.partyId IS NULL"
