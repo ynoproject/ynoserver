@@ -821,7 +821,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 		queryArgs = append(queryArgs, lastMsgId)
 	}
 
-	messageResults, err := db.Query(query, queryArgs)
+	messageResults, err := db.Query(query, queryArgs...)
 
 	if err != nil {
 		return chatHistory, err
@@ -840,7 +840,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 
 	playersQuery := "SELECT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? AND EXISTS (SELECT * FROM chatMessages cm WHERE cm.uuid = pd.uuid AND cm.game = pgd.game AND " + whereClause + ")"
 
-	playerResults, err := db.Query(playersQuery, queryArgs)
+	playerResults, err := db.Query(playersQuery, queryArgs...)
 
 	defer playerResults.Close()
 
