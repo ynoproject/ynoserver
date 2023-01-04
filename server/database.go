@@ -794,17 +794,17 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 		return chatHistory, err
 	}
 
-	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN playerGameData pgd ON pgd.uuid = cm.uuid WHERE cm.game = ? AND "
-	whereClause := "cm.timestamp >= DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND cm.timestamp > (SELECT COALESCE(cm2.timestamp, UTC_TIMESTAMP()) FROM chatMessages cm2 WHERE cm2.msgId = pgd.lastMsgId)"
+	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN playerGameData pgd ON pgd.uuid = cm.uuid AND pgd.game = cm.game WHERE cm.game = ? AND "
+	whereClause := "cm.timestamp >= DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND cm.timestamp > (SELECT COALESCE(cm2.timestamp, DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)) FROM chatMessages cm2 WHERE cm2.msgId = pgd.lastMsgId)"
 
 	if partyId == 0 {
 		whereClause += " AND cm.partyId IS NULL"
 	} else {
-		whereClause += " AND cm.partyId IN (NULL, ?)"
+		whereClause += " AND (cm.partyId IS NULL OR cm.partyId = ?)"
 	}
 
 	if lastMsgId != "" {
-		whereClause += " AND cm.timestamp > (SELECT COALESCE(cm3.timestamp, UTC_TIMESTAMP()) FROM chatMessages cm3 WHERE cm3.msgId = ?)"
+		whereClause += " AND cm.timestamp > (SELECT COALESCE(cm3.timestamp, DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)) FROM chatMessages cm3 WHERE cm3.msgId = ?)"
 	}
 
 	query += whereClause + " ORDER BY 9"
