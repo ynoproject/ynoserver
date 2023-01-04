@@ -815,7 +815,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 	}
 
 	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN playerGameData pgd ON pgd.uuid = cm.uuid AND pgd.game = cm.game WHERE cm.game = ? AND "
-	whereClause := "cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND ((pgd.lastGlobalMsgId IS NULL AND pgd.lastPartyMsgId IS NULL) OR cm.timestamp > (SELECT MAX(cm2.timestamp) FROM chatMessages cm2 WHERE cm2.msgId IN (pgd.lastGlobalMsgId, pgd.lastPartyMsgId)))"
+	whereClause := "cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND (cm.partyId IS NULL OR (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId))) AND (cm.partyId IS NOT NULL OR (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId)))"
 
 	if partyId == 0 {
 		whereClause += " AND cm.partyId IS NULL"
@@ -824,7 +824,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 	}
 
 	if lastMsgId != "" {
-		whereClause += " AND cm.timestamp > (SELECT cm3.timestamp FROM chatMessages cm3 WHERE cm3.msgId = ?)"
+		whereClause += " AND cm.timestamp > (SELECT cm2.timestamp FROM chatMessages cm2 WHERE cm2.msgId = ?)"
 	}
 
 	query += whereClause + " ORDER BY 9"
