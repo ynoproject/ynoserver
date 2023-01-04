@@ -28,6 +28,6 @@ type ChatMessage struct {
 }
 
 type ChatHistory struct {
-	Players  []*ChatPlayer  `json:"players"`
-	Messages []*ChatMessage `json:"messages"`
+	Players  []ChatPlayer  `json:"players"`
+	Messages []ChatMessage `json:"messages"`
 }

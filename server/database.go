@@ -835,7 +835,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 		if err != nil {
 			return chatHistory, err
 		}
-		chatHistory.Messages = append(chatHistory.Messages, chatMessage)
+		chatHistory.Messages = append(chatHistory.Messages, *chatMessage)
 	}
 
 	playersQuery := "SELECT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? AND EXISTS (SELECT * FROM chatMessages cm WHERE cm.uuid = pd.uuid AND cm.game = pgd.game AND " + whereClause + ")"
@@ -850,7 +850,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 		if err != nil {
 			return chatHistory, err
 		}
-		chatHistory.Players = append(chatHistory.Players, chatPlayer)
+		chatHistory.Players = append(chatHistory.Players, *chatPlayer)
 	}
 
 	return chatHistory, nil
