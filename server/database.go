@@ -807,7 +807,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 		whereClause += " AND cm.timestamp > (SELECT COALESCE(cm3.timestamp, UTC_TIMESTAMP()) FROM chatMessages cm3 WHERE cm3.msgId = ?)"
 	}
 
-	query += whereClause + " AND cm.timestamp > ORDER BY 9"
+	query += whereClause + " ORDER BY 9"
 
 	var queryArgs []interface{}
 
