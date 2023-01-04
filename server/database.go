@@ -761,6 +761,101 @@ func clearGameSaveData(playerUuid string) (err error) { // called by api only
 	return nil
 }
 
+func writeGlobalChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, x, y int, contents string) (err error) {
+	_, err = db.Exec("INSERT INTO chatMessages (msgId, game, uuid, mapId, prevMapId, prevLocations, x, y, contents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", msgId, serverConfig.GameName, uuid, mapId, prevMapId, prevLocations, x, y, contents)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func writePartyChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, x, y int, contents string, partyId int) (err error) {
+	_, err = db.Exec("INSERT INTO chatMessages (msgId, game, uuid, mapId, prevMapId, prevLocations, x, y, contents, partyId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", msgId, serverConfig.GameName, uuid, mapId, prevMapId, prevLocations, x, y, contents, partyId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updatePlayerLastChatMessage(uuid, lastMsgId string) (err error) {
+	_, err = db.Exec("UPDATE playerGameData SET lastMsgId = ? WHERE uuid = ? AND game = ?", uuid, serverConfig.GameName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err error) {
+	partyId, err := getPlayerPartyId(uuid)
+	if err != nil {
+		return chatHistory, err
+	}
+
+	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN playerGameData pgd ON pgd.uuid = cm.uuid WHERE cm.game = ? AND "
+	whereClause := "cm.timestamp >= DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND cm.timestamp > (SELECT COALESCE(cm2.timestamp, UTC_TIMESTAMP()) FROM chatMessages cm2 WHERE cm2.msgId = pgd.lastMsgId)"
+
+	if partyId == 0 {
+		whereClause += " AND cm.partyId IS NULL"
+	} else {
+		whereClause += " AND cm.partyId IN (NULL, ?)"
+	}
+
+	if lastMsgId != "" {
+		whereClause += " AND cm.timestamp > (SELECT COALESCE(cm3.timestamp, UTC_TIMESTAMP()) FROM chatMessages cm3 WHERE cm3.msgId = ?)"
+	}
+
+	query += whereClause + " AND cm.timestamp > ORDER BY 9"
+
+	var queryArgs []interface{}
+
+	queryArgs = append(queryArgs, serverConfig.GameName)
+
+	if partyId > 0 {
+		queryArgs = append(queryArgs, partyId)
+	}
+
+	if lastMsgId != "" {
+		queryArgs = append(queryArgs, lastMsgId)
+	}
+
+	messageResults, err := db.Query(query, queryArgs)
+
+	if err != nil {
+		return chatHistory, err
+	}
+
+	defer messageResults.Close()
+
+	for messageResults.Next() {
+		chatMessage := &ChatMessage{}
+		err := messageResults.Scan(&chatMessage.MsgId, &chatMessage.Uuid, &chatMessage.MapId, &chatMessage.PrevMapId, &chatMessage.PrevLocations, &chatMessage.X, &chatMessage.Y, &chatMessage.Contents, &chatMessage.Timestamp, &chatMessage.Party)
+		if err != nil {
+			return chatHistory, err
+		}
+		chatHistory.Messages = append(chatHistory.Messages, chatMessage)
+	}
+
+	playersQuery := "SELECT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? AND EXISTS (SELECT * FROM chatMessages cm WHERE cm.uuid = pd.uuid AND cm.game = pgd.game AND " + whereClause + ")"
+
+	playerResults, err := db.Query(playersQuery, queryArgs)
+
+	defer playerResults.Close()
+
+	for playerResults.Next() {
+		chatPlayer := &ChatPlayer{}
+		err := playerResults.Scan(&chatPlayer.Uuid, &chatPlayer.Name, &chatPlayer.Rank, &chatPlayer.Account, &chatPlayer.Badge, &chatPlayer.SystemName, &chatPlayer.Medals[0], &chatPlayer.Medals[1], &chatPlayer.Medals[2], &chatPlayer.Medals[3], &chatPlayer.Medals[4])
+		if err != nil {
+			return chatHistory, err
+		}
+		chatHistory.Players = append(chatHistory.Players, chatPlayer)
+	}
+
+	return chatHistory, nil
+}
+
 func setCurrentEventPeriodId() (err error) {
 	var periodId int
 

@@ -896,8 +896,15 @@ func (c *SessionClient) handleGSay(msg []string) (err error) {
 		y = c.rClient.y
 	}
 
+	msgId := randString(8)
+
 	c.broadcast(buildMsg("p", c.uuid, c.name, c.systemName, c.rank, c.account, c.badge, c.medals[:]))
-	c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents))
+	c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
+
+	err = writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -931,10 +938,32 @@ func (c *SessionClient) handlePSay(msg []string) (err error) {
 	if err != nil {
 		return err
 	}
+
+	msgId := randString(8)
+
 	for _, uuid := range partyMemberUuids {
 		if client, ok := clients.Load(uuid); ok {
-			client.(*SessionClient).send <- buildMsg("psay", c.uuid, msgContents)
+			client.(*SessionClient).send <- buildMsg("psay", c.uuid, msgContents, msgId)
 		}
+	}
+
+	mapId := "0000"
+	prevMapId := "0000"
+	var prevLocations string
+	x := -1
+	y := -1
+
+	if c.rClient != nil {
+		mapId = c.rClient.mapId
+		prevMapId = c.rClient.prevMapId
+		prevLocations = c.rClient.prevLocations
+		x = c.rClient.x
+		y = c.rClient.y
+	}
+
+	err = writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, partyId)
+	if err != nil {
+		return err
 	}
 
 	return nil

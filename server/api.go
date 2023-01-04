@@ -62,6 +62,9 @@ func initApi() {
 	http.HandleFunc("/api/logout", handleLogout)
 	http.HandleFunc("/api/changepw", handleChangePw)
 
+	http.HandleFunc("/api/chathistory", handleChatHistory)
+	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
+
 	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
 		if serverConfig.GameName != "2kki" {
 			handleError(w, r, "endpoint not supported")
@@ -1092,4 +1095,58 @@ func handleError(w http.ResponseWriter, r *http.Request, payload string) {
 func handleInternalError(w http.ResponseWriter, r *http.Request, err error) {
 	writeErrLog(getIp(r), r.URL.Path, err.Error())
 	http.Error(w, "400 - Bad Request", http.StatusBadRequest)
+}
+
+func handleChatHistory(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		uuid, _, _ = getOrCreatePlayerData(getIp(r))
+	} else {
+		uuid = getUuidFromToken(token)
+	}
+
+	lastMsgId := r.URL.Query().Get("lastMsgId")
+
+	if lastMsgId != "" && len(lastMsgId) != 8 {
+		handleError(w, r, "invalid lastMsgId")
+		return
+	}
+
+	chatHistory, err := getChatMessageHistory(uuid, lastMsgId)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	chatHistoryJson, err := json.Marshal(chatHistory)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write(chatHistoryJson)
+}
+
+func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		uuid, _, _ = getOrCreatePlayerData(getIp(r))
+	} else {
+		uuid = getUuidFromToken(token)
+	}
+
+	lastMsgId := r.URL.Query().Get("lastMsgId")
+
+	if len(lastMsgId) != 8 {
+		handleError(w, r, "invalid lastMsgId")
+		return
+	}
+
+	updatePlayerLastChatMessage(uuid, lastMsgId)
+
+	w.Write([]byte("ok"))
 }
