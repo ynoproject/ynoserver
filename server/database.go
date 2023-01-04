@@ -800,7 +800,7 @@ func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) (err error)
 
 	query += " = ? WHERE uuid = ? AND game = ?"
 
-	_, err = db.Exec(query, uuid, serverConfig.GameName)
+	_, err = db.Exec(query, lastMsgId, uuid, serverConfig.GameName)
 	if err != nil {
 		return err
 	}

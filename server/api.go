@@ -1140,7 +1140,6 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lastGlobalMsgId := r.URL.Query().Get("lastGlobalMsgId")
-
 	if lastGlobalMsgId != "" {
 		if len(lastGlobalMsgId) != 8 {
 			handleError(w, r, "invalid lastGlobalMsgId")
@@ -1151,7 +1150,6 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lastPartyMsgId := r.URL.Query().Get("lastPartyMsgId")
-
 	if lastPartyMsgId != "" {
 		if len(lastPartyMsgId) != 8 {
 			handleError(w, r, "invalid lastPartyMsgId")
