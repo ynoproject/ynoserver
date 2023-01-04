@@ -21,7 +21,7 @@ type ChatMessage struct {
 	PrevMapId     string    `json:"prevMapId"`
 	PrevLocations string    `json:"prevLocations"`
 	X             int       `json:"x"`
-	Y             int       `json"y"`
+	Y             int       `json:"y"`
 	Contents      string    `json:"contents"`
 	Timestamp     time.Time `json:"timestamp"`
 	Party         bool      `json:"party"`
