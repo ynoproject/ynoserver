@@ -63,14 +63,14 @@ func (c *RoomClient) handleM(msg []string) (err error) {
 	c.x = x
 	c.y = y
 
-	if msg[0] == "m" {
-		if c.syncCoords {
-			c.checkRoomConditions("coords", "")
-		}
-		c.broadcast(buildMsg("m", c.sClient.id, msg[1:])) // user %id% moved to x y
-	} else {
+	if msg[0] == "tp" {
 		c.checkRoomConditions("teleport", "")
 	}
+
+	if c.syncCoords {
+		c.checkRoomConditions("coords", "")
+	}
+	c.broadcast(buildMsg("m", c.sClient.id, msg[1:])) // user %id% moved to x y
 
 	return nil
 }
