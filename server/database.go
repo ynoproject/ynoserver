@@ -795,7 +795,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 	}
 
 	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN playerGameData pgd ON pgd.uuid = cm.uuid AND pgd.game = cm.game WHERE cm.game = ? AND "
-	whereClause := "cm.timestamp >= DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND cm.timestamp > (SELECT COALESCE(cm2.timestamp, DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)) FROM chatMessages cm2 WHERE cm2.msgId = pgd.lastMsgId)"
+	whereClause := "cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND (pgd.lastMsgId IS NULL OR cm.timestamp > (SELECT cm2.timestamp FROM chatMessages cm2 WHERE cm2.msgId = pgd.lastMsgId))"
 
 	if partyId == 0 {
 		whereClause += " AND cm.partyId IS NULL"
@@ -804,7 +804,7 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 	}
 
 	if lastMsgId != "" {
-		whereClause += " AND cm.timestamp > (SELECT COALESCE(cm3.timestamp, DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)) FROM chatMessages cm3 WHERE cm3.msgId = ?)"
+		whereClause += " AND cm.timestamp > (SELECT cm3.timestamp FROM chatMessages cm3 WHERE cm3.msgId = ?)"
 	}
 
 	query += whereClause + " ORDER BY 9"
@@ -830,12 +830,12 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 	defer messageResults.Close()
 
 	for messageResults.Next() {
-		chatMessage := &ChatMessage{}
+		chatMessage := ChatMessage{}
 		err := messageResults.Scan(&chatMessage.MsgId, &chatMessage.Uuid, &chatMessage.MapId, &chatMessage.PrevMapId, &chatMessage.PrevLocations, &chatMessage.X, &chatMessage.Y, &chatMessage.Contents, &chatMessage.Timestamp, &chatMessage.Party)
 		if err != nil {
 			return chatHistory, err
 		}
-		chatHistory.Messages = append(chatHistory.Messages, *chatMessage)
+		chatHistory.Messages = append(chatHistory.Messages, chatMessage)
 	}
 
 	playersQuery := "SELECT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? AND EXISTS (SELECT * FROM chatMessages cm WHERE cm.uuid = pd.uuid AND cm.game = pgd.game AND " + whereClause + ")"
@@ -845,12 +845,12 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 	defer playerResults.Close()
 
 	for playerResults.Next() {
-		chatPlayer := &ChatPlayer{}
+		chatPlayer := ChatPlayer{}
 		err := playerResults.Scan(&chatPlayer.Uuid, &chatPlayer.Name, &chatPlayer.Rank, &chatPlayer.Account, &chatPlayer.Badge, &chatPlayer.SystemName, &chatPlayer.Medals[0], &chatPlayer.Medals[1], &chatPlayer.Medals[2], &chatPlayer.Medals[3], &chatPlayer.Medals[4])
 		if err != nil {
 			return chatHistory, err
 		}
-		chatHistory.Players = append(chatHistory.Players, *chatPlayer)
+		chatHistory.Players = append(chatHistory.Players, chatPlayer)
 	}
 
 	return chatHistory, nil
