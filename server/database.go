@@ -812,7 +812,7 @@ func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) (err error)
 	return nil
 }
 
-func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastMsgId string) (chatHistory ChatHistory, err error) {
+func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastMsgId string) (chatHistory *ChatHistory, err error) {
 	if !msgSent && lastMsgId != "" {
 		return chatHistory, nil
 	}
@@ -875,7 +875,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	defer messageResults.Close()
 
 	for messageResults.Next() {
-		chatMessage := ChatMessage{}
+		chatMessage := &ChatMessage{}
 		err := messageResults.Scan(&chatMessage.MsgId, &chatMessage.Uuid, &chatMessage.MapId, &chatMessage.PrevMapId, &chatMessage.PrevLocations, &chatMessage.X, &chatMessage.Y, &chatMessage.Contents, &chatMessage.Timestamp, &chatMessage.Party)
 		if err != nil {
 			return chatHistory, err
@@ -915,7 +915,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	defer playerResults.Close()
 
 	for playerResults.Next() {
-		chatPlayer := ChatPlayer{}
+		chatPlayer := &ChatPlayer{}
 		err := playerResults.Scan(&chatPlayer.Uuid, &chatPlayer.Name, &chatPlayer.Rank, &chatPlayer.Account, &chatPlayer.Badge, &chatPlayer.SystemName, &chatPlayer.Medals[0], &chatPlayer.Medals[1], &chatPlayer.Medals[2], &chatPlayer.Medals[3], &chatPlayer.Medals[4])
 		if err != nil {
 			return chatHistory, err
