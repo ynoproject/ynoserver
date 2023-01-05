@@ -1114,7 +1114,37 @@ func handleChatHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chatHistory, err := getChatMessageHistory(uuid, lastMsgId)
+	globalMsgLimitParam := r.URL.Query().Get("globalMsgLimit")
+	if globalMsgLimitParam == "" {
+		globalMsgLimitParam = "100"
+	}
+
+	partyMsgLimitParam := r.URL.Query().Get("partyMsgLimit")
+	if partyMsgLimitParam == "" {
+		partyMsgLimitParam = "250"
+	}
+
+	globalMsgLimit, err := strconv.Atoi(globalMsgLimitParam)
+	if err != nil {
+		handleError(w, r, "invalid globalMsgLimit value")
+		return
+	}
+
+	partyMsgLimit, err := strconv.Atoi(partyMsgLimitParam)
+	if err != nil {
+		handleError(w, r, "invalid partyMsgLimit value")
+		return
+	}
+
+	if globalMsgLimit <= 0 {
+		globalMsgLimit = 2500
+	}
+
+	if partyMsgLimit <= 0 {
+		partyMsgLimit = 2500
+	}
+
+	chatHistory, err := getChatMessageHistory(uuid, globalMsgLimit, partyMsgLimit, lastMsgId)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
