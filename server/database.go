@@ -835,6 +835,8 @@ func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) (err error)
 }
 
 func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastMsgId string) (chatHistory *ChatHistory, err error) {
+	chatHistory = &ChatHistory{}
+
 	reconnectAfterRestart := lastMsgId != "" && !msgSent
 	if reconnectAfterRestart {
 		// Assume empty results if reconnecting after a disconnect with the last global message as the last message ID
@@ -906,8 +908,6 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	}
 
 	defer messageResults.Close()
-
-	chatHistory = &ChatHistory{}
 
 	for messageResults.Next() {
 		chatMessage := &ChatMessage{}
