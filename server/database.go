@@ -897,7 +897,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	playersQuery += ")"
 
-	playerResults, err := db.Query(playersQuery, messageQueryArgs...)
+	playerResults, err := db.Query(playersQuery, playerQueryArgs...)
 	if err != nil {
 		return chatHistory, err
 	}
