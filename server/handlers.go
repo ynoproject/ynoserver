@@ -70,6 +70,7 @@ func (c *RoomClient) handleM(msg []string) (err error) {
 	if c.syncCoords {
 		c.checkRoomConditions("coords", "")
 	}
+
 	c.broadcast(buildMsg("m", c.sClient.id, msg[1:])) // user %id% moved to x y
 
 	return nil
