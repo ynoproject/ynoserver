@@ -808,40 +808,56 @@ func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) (err error)
 	return nil
 }
 
-func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err error) {
+func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastMsgId string) (chatHistory ChatHistory, err error) {
 	partyId, err := getPlayerPartyId(uuid)
 	if err != nil {
 		return chatHistory, err
 	}
 
-	query := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, CASE WHEN cm.partyId IS NULL THEN 0 ELSE 1 END FROM chatMessages cm JOIN players pd ON pd.uuid = cm.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = cm.game WHERE cm.game = ? AND "
-	whereClause := "pd.banned = 0 AND cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND (cm.partyId IS NULL OR (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId))) AND (cm.partyId IS NOT NULL OR (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId)))"
+	var query string
 
-	if partyId == 0 {
-		whereClause += " AND cm.partyId IS NULL"
-	} else {
-		whereClause += " AND (cm.partyId IS NULL OR cm.partyId = ?)"
-	}
+	selectClause := "SELECT cm.msgId, cm.uuid, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.contents, cm.timestamp, "
+	globalSelectClause := selectClause + "0"
+	partySelectClause := selectClause + "1"
+
+	fromClause := " FROM chatMessages cm JOIN players pd ON pd.uuid = cm.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = cm.game "
+
+	whereClause := "WHERE cm.game = ? AND cm.partyId IS NULL AND pd.banned = 0 AND cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)"
 
 	if lastMsgId != "" {
 		whereClause += " AND cm.timestamp > (SELECT cm2.timestamp FROM chatMessages cm2 WHERE cm2.msgId = ?)"
 	}
 
-	query += whereClause + " ORDER BY 9"
+	globalWhereClause := whereClause + " AND cm.partyId IS NULL AND (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId)) LIMIT ?"
+	partyWhereClause := whereClause + " AND cm.partyId = ? AND (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId)) LIMIT ?"
 
-	var queryArgs []interface{}
+	var messageQueryArgs []interface{}
 
-	queryArgs = append(queryArgs, serverConfig.GameName)
-
-	if partyId > 0 {
-		queryArgs = append(queryArgs, partyId)
-	}
+	messageQueryArgs = append(messageQueryArgs, serverConfig.GameName)
 
 	if lastMsgId != "" {
-		queryArgs = append(queryArgs, lastMsgId)
+		messageQueryArgs = append(messageQueryArgs, lastMsgId)
 	}
 
-	messageResults, err := db.Query(query, queryArgs...)
+	messageQueryArgs = append(messageQueryArgs, globalMsgLimit)
+
+	if partyId == 0 {
+		query = globalSelectClause + fromClause + globalWhereClause
+	} else {
+		messageQueryArgs = append(messageQueryArgs, serverConfig.GameName)
+
+		if lastMsgId != "" {
+			messageQueryArgs = append(messageQueryArgs, lastMsgId)
+		}
+
+		messageQueryArgs = append(messageQueryArgs, partyId, partyMsgLimit)
+
+		query = "(" + globalSelectClause + fromClause + globalWhereClause + ") UNION (" + partySelectClause + fromClause + partyWhereClause + ")"
+	}
+
+	query += " ORDER BY 9"
+
+	messageResults, err := db.Query(query, messageQueryArgs...)
 	if err != nil {
 		return chatHistory, err
 	}
@@ -857,9 +873,31 @@ func getChatMessageHistory(uuid, lastMsgId string) (chatHistory ChatHistory, err
 		chatHistory.Messages = append(chatHistory.Messages, chatMessage)
 	}
 
-	playersQuery := "SELECT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? AND EXISTS (SELECT * FROM chatMessages cm WHERE cm.uuid = pd.uuid AND cm.game = pgd.game AND " + whereClause + ")"
+	var firstTimestamp time.Time
+	var lastTimestamp time.Time
 
-	playerResults, err := db.Query(playersQuery, queryArgs...)
+	if len(chatHistory.Messages) > 0 {
+		firstTimestamp = chatHistory.Messages[0].Timestamp
+		lastTimestamp = chatHistory.Messages[len(chatHistory.Messages)-1].Timestamp
+	}
+
+	playersQuery := "SELECT DISTINCT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? AND EXISTS (SELECT cm.uuid FROM chatMessages cm WHERE cm.uuid = pd.uuid AND cm.game = pgd.game AND cm.timestamp BETWEEN ? AND ? "
+
+	var playerQueryArgs []interface{}
+
+	playerQueryArgs = append(playerQueryArgs, serverConfig.GameName, firstTimestamp, lastTimestamp)
+
+	if partyId == 0 {
+		playersQuery += "AND cm.partyId IS NULL"
+	} else {
+		playersQuery += "AND (cm.partyId IS NULL OR cm.partyId = ?)"
+
+		playerQueryArgs = append(playerQueryArgs, partyId)
+	}
+
+	playersQuery += ")"
+
+	playerResults, err := db.Query(playersQuery, messageQueryArgs...)
 	if err != nil {
 		return chatHistory, err
 	}
