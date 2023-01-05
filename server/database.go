@@ -822,7 +822,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	fromClause := " FROM chatMessages cm JOIN players pd ON pd.uuid = cm.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = cm.game "
 
-	whereClause := "WHERE cm.game = ? AND cm.partyId IS NULL AND pd.banned = 0 AND cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)"
+	whereClause := "WHERE cm.game = ? AND pd.banned = 0 AND cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)"
 
 	if lastMsgId != "" {
 		whereClause += " AND cm.timestamp > (SELECT cm2.timestamp FROM chatMessages cm2 WHERE cm2.msgId = ?)"
