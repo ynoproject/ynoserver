@@ -33,5 +33,10 @@ type ChatHistory struct {
 }
 
 var (
-	msgSent bool
+	msgSent    bool
+	lastMsgIds map[int]string
 )
+
+func initHistory() {
+	lastMsgIds, _ = getLastMessageIds()
+}

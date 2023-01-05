@@ -76,6 +76,7 @@ func Start() {
 	log.SetFlags(log.Ldate | log.Ltime)
 
 	initApi()
+	initHistory()
 	initEvents()
 	initBadges()
 	initSession()
@@ -204,7 +205,7 @@ func buildMsg(segments ...any) (message []byte) {
 			var strIdx int
 			for str := range segment {
 				message = append(message, []byte(str)...)
-				
+
 				if strIdx++; strIdx != len(segment) {
 					message = append(message, delimBytes...)
 				}
