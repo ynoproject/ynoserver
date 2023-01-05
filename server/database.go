@@ -844,7 +844,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	query += "("
 
 	if partyId == 0 {
-		query = globalSelectClause + fromClause + globalWhereClause + " LIMIT ?"
+		query += globalSelectClause + fromClause + globalWhereClause + " LIMIT ?"
 	} else {
 		messageQueryArgs = append(messageQueryArgs, serverConfig.GameName)
 
@@ -854,7 +854,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 		messageQueryArgs = append(messageQueryArgs, partyId, partyMsgLimit)
 
-		query = globalSelectClause + fromClause + globalWhereClause + " LIMIT ?) UNION (" + partySelectClause + fromClause + partyWhereClause + " LIMIT ?"
+		query += globalSelectClause + fromClause + globalWhereClause + " LIMIT ?) UNION (" + partySelectClause + fromClause + partyWhereClause + " LIMIT ?"
 	}
 
 	query += ") ORDER BY 9"
