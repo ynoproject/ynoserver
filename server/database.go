@@ -886,7 +886,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	var firstTimestamp time.Time
 	var lastTimestamp time.Time
 
-	if len(chatHistory.Messages) > 0 {
+	if len(chatHistory.Messages) != 0 {
 		firstTimestamp = chatHistory.Messages[0].Timestamp
 		lastTimestamp = chatHistory.Messages[len(chatHistory.Messages)-1].Timestamp
 	}
