@@ -828,8 +828,8 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 		whereClause += " AND cm.timestamp > (SELECT cm2.timestamp FROM chatMessages cm2 WHERE cm2.msgId = ?)"
 	}
 
-	globalWhereClause := whereClause + " AND cm.partyId IS NULL AND (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId)) LIMIT ?"
-	partyWhereClause := whereClause + " AND cm.partyId = ? AND (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId)) LIMIT ?"
+	globalWhereClause := whereClause + " AND cm.partyId IS NULL AND (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId))"
+	partyWhereClause := whereClause + " AND cm.partyId = ? AND (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId))"
 
 	var messageQueryArgs []interface{}
 
@@ -842,7 +842,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	messageQueryArgs = append(messageQueryArgs, globalMsgLimit)
 
 	if partyId == 0 {
-		query = globalSelectClause + fromClause + globalWhereClause
+		query = globalSelectClause + fromClause + globalWhereClause + " ORDER BY 9 LIMIT ?"
 	} else {
 		messageQueryArgs = append(messageQueryArgs, serverConfig.GameName)
 
@@ -852,10 +852,8 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 		messageQueryArgs = append(messageQueryArgs, partyId, partyMsgLimit)
 
-		query = "(" + globalSelectClause + fromClause + globalWhereClause + ") UNION (" + partySelectClause + fromClause + partyWhereClause + ")"
+		query = "(" + globalSelectClause + fromClause + globalWhereClause + " LIMIT ?) UNION (" + partySelectClause + fromClause + partyWhereClause + " LIMIT ?) ORDER BY 9"
 	}
-
-	query += " ORDER BY 9"
 
 	messageResults, err := db.Query(query, messageQueryArgs...)
 	if err != nil {
