@@ -828,8 +828,8 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 		whereClause += " AND cm.timestamp > (SELECT cm2.timestamp FROM chatMessages cm2 WHERE cm2.msgId = ?)"
 	}
 
-	globalWhereClause := whereClause + " AND cm.partyId IS NULL AND (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId))"
-	partyWhereClause := whereClause + " AND cm.partyId = ? AND (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId))"
+	globalWhereClause := whereClause + " AND cm.partyId IS NULL AND (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId)) ORDER BY 9 DESC"
+	partyWhereClause := whereClause + " AND cm.partyId = ? AND (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId)) ORDER BY 9 DESC"
 
 	var messageQueryArgs []interface{}
 
@@ -841,8 +841,10 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	messageQueryArgs = append(messageQueryArgs, globalMsgLimit)
 
+	query += "("
+
 	if partyId == 0 {
-		query = globalSelectClause + fromClause + globalWhereClause + " ORDER BY 9 LIMIT ?"
+		query = globalSelectClause + fromClause + globalWhereClause + " LIMIT ?"
 	} else {
 		messageQueryArgs = append(messageQueryArgs, serverConfig.GameName)
 
@@ -852,8 +854,10 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 		messageQueryArgs = append(messageQueryArgs, partyId, partyMsgLimit)
 
-		query = "(" + globalSelectClause + fromClause + globalWhereClause + " LIMIT ?) UNION (" + partySelectClause + fromClause + partyWhereClause + " LIMIT ?) ORDER BY 9"
+		query = globalSelectClause + fromClause + globalWhereClause + " LIMIT ?) UNION (" + partySelectClause + fromClause + partyWhereClause + " LIMIT ?"
 	}
+
+	query += ") ORDER BY 9"
 
 	messageResults, err := db.Query(query, messageQueryArgs...)
 	if err != nil {
