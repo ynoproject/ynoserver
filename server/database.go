@@ -777,6 +777,8 @@ func writeGlobalChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string,
 		return err
 	}
 
+	msgSent = true
+
 	return nil
 }
 
@@ -785,6 +787,8 @@ func writePartyChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, 
 	if err != nil {
 		return err
 	}
+
+	msgSent = true
 
 	return nil
 }
@@ -809,6 +813,10 @@ func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) (err error)
 }
 
 func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastMsgId string) (chatHistory ChatHistory, err error) {
+	if !msgSent && lastMsgId != "" {
+		return chatHistory, nil
+	}
+
 	partyId, err := getPlayerPartyId(uuid)
 	if err != nil {
 		return chatHistory, err

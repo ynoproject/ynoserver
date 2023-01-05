@@ -31,3 +31,7 @@ type ChatHistory struct {
 	Players  []ChatPlayer  `json:"players"`
 	Messages []ChatMessage `json:"messages"`
 }
+
+var (
+	msgSent bool
+)
