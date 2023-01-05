@@ -907,6 +907,8 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	defer messageResults.Close()
 
+	chatHistory = &ChatHistory{}
+
 	for messageResults.Next() {
 		chatMessage := &ChatMessage{}
 		err := messageResults.Scan(&chatMessage.MsgId, &chatMessage.Uuid, &chatMessage.MapId, &chatMessage.PrevMapId, &chatMessage.PrevLocations, &chatMessage.X, &chatMessage.Y, &chatMessage.Contents, &chatMessage.Timestamp, &chatMessage.Party)
