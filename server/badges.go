@@ -224,7 +224,7 @@ func updateActiveBadgesAndConditions() {
 	for game, gameBadges := range badges {
 		for _, gameBadge := range gameBadges {
 			if gameBadge.Batch == 0 {
-				return
+				continue
 			}
 			gameBadge.Dev = gameBadge.Batch > currentBatch
 			switch gameBadge.ReqType {
