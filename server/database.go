@@ -1445,11 +1445,6 @@ func writeGameBadges() (err error) {
 		return err
 	}
 
-	badgeUnlockPercentages, err = getBadgeUnlockPercentages()
-	if err != nil {
-		return err
-	}
-
 	for badgeGame := range badges {
 		for badgeId, badge := range badges[badgeGame] {
 			if _, ok := badges[serverConfig.GameName]; ok {

@@ -199,11 +199,14 @@ type TimeTrialRecord struct {
 
 func initBadges() {
 	// Use Yume 2kki server to update badge data
-	if len(badges) != 0 && serverConfig.GameName == "2kki" {
-		if _, ok := badges[serverConfig.GameName]; ok {
-			// Badge records needed for determining badge game
-			writeGameBadges()
-			updatePlayerBadgeSlotCounts("")
+	if len(badges) != 0 {
+		badgeUnlockPercentages, _ = getBadgeUnlockPercentages()
+		if serverConfig.GameName == "2kki" {
+			if _, ok := badges[serverConfig.GameName]; ok {
+				// Badge records needed for determining badge game
+				writeGameBadges()
+				updatePlayerBadgeSlotCounts("")
+			}
 		}
 	}
 
