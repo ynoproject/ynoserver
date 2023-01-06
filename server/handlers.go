@@ -154,6 +154,7 @@ func (c *RoomClient) handleSpr(msg []string) (err error) {
 			!strings.Contains(msg[1], "zenmaigaharaten_kisekae") &&
 			!strings.Contains(msg[1], "主人公") &&
 			msg[1] != "kodomo_04-1" &&
+			msg[1] != "RioCharset16" &&
 			msg[1] != "#null") ||
 		strings.Contains(msg[1], "zenmaigaharaten_kisekae") && c.room.id != 176 {
 		return err
