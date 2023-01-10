@@ -1136,12 +1136,12 @@ func handleChatHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if globalMsgLimit <= 0 {
-		globalMsgLimit = 2500
+	if globalMsgLimit <= 0 || globalMsgLimit > 100 {
+		globalMsgLimit = 100
 	}
 
-	if partyMsgLimit <= 0 {
-		partyMsgLimit = 2500
+	if partyMsgLimit <= 0 || partyMsgLimit > 250 {
+		partyMsgLimit = 250
 	}
 
 	chatHistory, err := getChatMessageHistory(uuid, globalMsgLimit, partyMsgLimit, lastMsgId)
