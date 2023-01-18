@@ -147,16 +147,7 @@ func (c *RoomClient) handleSpr(msg []string) (err error) {
 		return err
 	}
 
-	if serverConfig.GameName == "2kki" &&
-		(!strings.Contains(msg[1], "syujinkou") &&
-			!strings.Contains(msg[1], "effect") &&
-			!strings.Contains(msg[1], "yukihitsuji_game") &&
-			!strings.Contains(msg[1], "zenmaigaharaten_kisekae") &&
-			!strings.Contains(msg[1], "主人公") &&
-			msg[1] != "kodomo_04-1" &&
-			msg[1] != "RioCharset16" &&
-			msg[1] != "#null") ||
-		strings.Contains(msg[1], "zenmaigaharaten_kisekae") && c.room.id != 176 {
+	if serverConfig.GameName == "2kki" && !isValid2kkiSprite(msg[1], c.room.id) {
 		return err
 	}
 
