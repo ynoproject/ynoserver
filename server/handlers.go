@@ -147,7 +147,7 @@ func (c *RoomClient) handleSpr(msg []string) (err error) {
 		return err
 	}
 
-	if serverConfig.GameName == "2kki" && !isValid2kkiSprite(msg[1], c.room.id) {
+	if serverConfig.GameName == "2kki" && !gameAssets.IsValid2kkiSprite(msg[1], c.room.id) {
 		return err
 	}
 
