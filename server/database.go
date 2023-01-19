@@ -27,9 +27,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var (
-	db = getDatabaseConn()
-)
+var db = getDatabaseConn()
 
 func getDatabaseConn() *sql.DB {
 	conn, err := sql.Open("mysql", "yno@unix(/run/mysqld/mysqld.sock)/ynodb?parseTime=true")
