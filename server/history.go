@@ -39,4 +39,9 @@ var (
 
 func initHistory() {
 	lastMsgIds, _ = getLastMessageIds()
+
+	// Use Yume 2kki server to process chat message archiving task for all games
+	if serverConfig.GameName == "2kki" {
+		scheduler.Cron("0 * * * *").Do(archiveChatMessages)
+	}
 }

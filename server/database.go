@@ -863,7 +863,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	fromClause := " FROM chatMessages cm JOIN players pd ON pd.uuid = cm.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = cm.game "
 
-	whereClause := "WHERE cm.game = ? AND pd.banned = 0 AND cm.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)"
+	whereClause := "WHERE cm.game = ? AND pd.banned = 0"
 
 	if lastMsgId != "" {
 		whereClause += " AND cm.timestamp > (SELECT cm2.timestamp FROM chatMessages cm2 WHERE cm2.msgId = ?)"
@@ -957,6 +957,27 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	}
 
 	return chatHistory, nil
+}
+
+func archiveChatMessages() (err error) {
+	var threshold time.Time
+
+	err = db.QueryRow("SELECT DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)").Scan(&threshold)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("INSERT INTO chatMessagesArchive (msgId, game, uuid, contents, mapId, prevMapId, prevLocations, x, y, partyId, timestamp) (SELECT cm.msgId, cm.game, cm.uuid, cm.contents, cm.mapId, cm.prevMapId, cm.prevLocations, cm.x, cm.y, cm.partyId, cm.timestamp FROM chatMessages cm WHERE cm.timestamp < ?)", threshold)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("DELETE FROM chatMessages WHERE timestamp < ?", threshold)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func setCurrentEventPeriodId() (err error) {
