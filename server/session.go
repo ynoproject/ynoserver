@@ -157,7 +157,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 	case "psay": // party say
 		err = c.handlePSay(msgFields)
 	case "pt": // party update
-		if c.handlePt() != nil {
+		err = c.handlePt()
+		if err != nil {
 			c.send <- buildMsg("pt", "null")
 		}
 	case "ep": // event period
