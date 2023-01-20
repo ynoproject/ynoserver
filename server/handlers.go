@@ -788,7 +788,7 @@ func (c *RoomClient) handleSev(msg []string) (err error) {
 
 func (c *SessionClient) handleI() (err error) {
 	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(c.name)
-	playerInfo := PlayerInfo{
+	playerInfoJson, err := json.Marshal(PlayerInfo{
 		Uuid:          c.uuid,
 		Name:          c.name,
 		Rank:          c.rank,
@@ -796,8 +796,7 @@ func (c *SessionClient) handleI() (err error) {
 		BadgeSlotRows: badgeSlotRows,
 		BadgeSlotCols: badgeSlotCols,
 		Medals:        getPlayerMedals(c.uuid),
-	}
-	playerInfoJson, err := json.Marshal(playerInfo)
+	})
 	if err != nil {
 		return err
 	}
