@@ -853,7 +853,7 @@ func (c *SessionClient) handlePloc(msg []string) (err error) {
 
 func (c *SessionClient) handleGSay(msg []string) (err error) {
 	if c.muted {
-		return nil
+		return errors.New("player is muted")
 	}
 
 	if len(msg) != 3 {
@@ -903,7 +903,7 @@ func (c *SessionClient) handleGSay(msg []string) (err error) {
 
 func (c *SessionClient) handlePSay(msg []string) (err error) {
 	if c.muted {
-		return nil
+		return errors.New("player is muted")
 	}
 
 	if len(msg) != 2 {
