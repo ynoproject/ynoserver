@@ -942,7 +942,7 @@ func (c *SessionClient) handlePSay(msg []string) (err error) {
 
 	mapId := "0000"
 	prevMapId := "0000"
-	var prevLocations string
+	prevLocations := ""
 	x := -1
 	y := -1
 
