@@ -60,6 +60,19 @@ func (c *RoomClient) handleM(msg []string) (err error) {
 		return errconv
 	}
 
+	if msg[0] == "m" && !(c.y - y < 1 || c.x - x > 1 || c.y - y > 1 || c.x - x < 1) {
+		switch {
+		case c.y < y:
+			c.facing = 0 // up
+		case c.x > x:
+			c.facing = 1 // right
+		case c.y > y:
+			c.facing = 2 // down
+		case c.x < x:
+			c.facing = 3 // left
+		}
+	}
+
 	c.x = x
 	c.y = y
 
