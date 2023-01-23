@@ -18,11 +18,11 @@
 package server
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"flag"
 	"io"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -172,13 +172,16 @@ func writeErrLog(uuid string, location string, payload string) {
 	writeLog(uuid, location, payload, 400)
 }
 
-func randString(length int) string {
-	const runes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
-	const lenRunes = len(runes)
+const randRunes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+const lenRandRunes = len(randRunes)
 
+func randString(length int) string {
 	b := make([]byte, length)
+
+	rand.Read(b)
+
 	for i := range b {
-		b[i] = runes[rand.Intn(lenRunes)]
+		b[i] = randRunes[int(b[i]) % lenRandRunes]
 	}
 
 	return string(b)
