@@ -1094,6 +1094,9 @@ func getPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletio
 	// Relies on rankings but is much faster than calculating directly
 	err = db.QueryRow("SELECT FLOOR(valueFloat * 100) FROM rankingEntries WHERE uuid = ? AND categoryId = 'eventLocationCompletion' AND subCategoryId = 'all'", playerUuid).Scan(&eventLocationCompletion)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
 		return eventLocationCompletion, err
 	}
 
@@ -1856,6 +1859,28 @@ func writeGamePlayerCount(playerCount int) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func doCleanupQueries() error {
+	// Remove player records with no game activity
+	_, err := db.Exec("DELETE FROM players WHERE ip IS NOT NULL AND uuid NOT IN (SELECT uuid FROM playerGameData) AND uuid NOT IN (SELECT uuid FROM partyMembers) AND uuid NOT IN (SELECT uuid FROM playerGameSaves)")
+	if err != nil {
+		return err
+	}
+
+	// Remove player sessions that have expired
+	_, err = db.Exec("DELETE FROM playerSessions WHERE expiration < NOW()")
+	if err != nil {
+		return err
+	}
+
+	// Remove Yume 2kki Explorer API query cache records that have expired
+	_, err = db.Exec("DELETE FROM 2kkiApiQueries WHERE expiration < CURRENT_TIMESTAMP()")
+	if err != nil {
+		return err
 	}
 
 	return nil
