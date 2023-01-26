@@ -588,7 +588,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 						}
 					}
 				} else if len(condition.SwitchIds) != 0 {
-					if valid, s := condition.checkSwitch(switchId, value); valid {
+					if valid, _ := condition.checkSwitch(switchId, value); valid {
 						// check switch cache for existing switch states
                         var condSwitchesPass bool = true;
                         for _, otherCondSwId := range condition.SwitchIds {
@@ -596,7 +596,8 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
                                 // this is the same switch just received, so it must be correct
                                 continue
                             }
-                            if othCondSwVal, ok := c.switchCache[otherCondSwId]; !ok {
+                            othCondSwVal, ok = c.switchCache[otherCondSwId]
+                            if !ok {
                                 // state of switch unknown; request from client and break
                                 c.send <- buildMsg("ss", otherCondSwId, "0")
                                 condSwitchesPass = false;
@@ -743,7 +744,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 						}
 					}
 				} else if len(condition.VarIds) != 0 {
-					if valid, v := condition.checkVar(varId, value); valid {
+					if valid, _ := condition.checkVar(varId, value); valid {
                         // check var cache for existing var vals
                         var condVarsPass bool = true;
                         for _, otherCondVarId := range condition.VarIds {
@@ -751,7 +752,8 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
                                 // this is the same var just received, so it must be correct
                                 continue
                             }
-                            if othCondVarVal, ok := c.varCache[otherCondVarId]; !ok {
+                            othCondVarVal, ok = c.varCache[otherCondVarId]
+                            if !ok {
                                 // state of var unknown; request from client and break
                                 c.send <- buildMsg("sv", otherCondVarId, "0")
                                 condVarsPass = false;
