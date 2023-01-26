@@ -596,7 +596,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
                                 // this is the same switch just received, so it must be correct
                                 continue
                             }
-                            othCondSwVal, ok = c.switchCache[otherCondSwId]
+                            othCondSwVal, ok := c.switchCache[otherCondSwId]
                             if !ok {
                                 // state of switch unknown; request from client and break
                                 c.send <- buildMsg("ss", otherCondSwId, "0")
@@ -752,7 +752,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
                                 // this is the same var just received, so it must be correct
                                 continue
                             }
-                            othCondVarVal, ok = c.varCache[otherCondVarId]
+                            othCondVarVal, ok := c.varCache[otherCondVarId]
                             if !ok {
                                 // state of var unknown; request from client and break
                                 c.send <- buildMsg("sv", otherCondVarId, "0")
