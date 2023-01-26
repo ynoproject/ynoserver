@@ -518,7 +518,6 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 		value = true
 	}
 	c.switchCache[switchId] = value
-
 	if switchId == 1430 && serverConfig.GameName == "2kki" { // time trial mode
 		if value {
 			c.send <- buildMsg("sv", "88", "0") // time elapsed
