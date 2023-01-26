@@ -518,7 +518,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 		value = true
 	}
 	c.switchCache[switchId] = value
-    
+
 	if switchId == 1430 && serverConfig.GameName == "2kki" { // time trial mode
 		if value {
 			c.send <- buildMsg("sv", "88", "0") // time elapsed
@@ -590,30 +590,30 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 				} else if len(condition.SwitchIds) != 0 {
 					if valid, _ := condition.checkSwitch(switchId, value); valid {
 						// check switch cache for existing switch states
-                        var condSwitchesPass bool = true;
-                        for _, otherCondSwId := range condition.SwitchIds {
-                            if otherCondSwId == switchId {
-                                // this is the same switch just received, so it must be correct
-                                continue
-                            }
-                            othCondSwVal, ok := c.switchCache[otherCondSwId]
-                            if !ok {
-                                // state of switch unknown; request from client and break
-                                c.send <- buildMsg("ss", otherCondSwId, "0")
-                                condSwitchesPass = false;
-                                break
-                            }
-                            if valid, _ := condition.checkSwitch(otherCondSwId, othCondSwVal); !valid {
-                                // switch state isn't correct; break
-                                // if switch is set nearly at same time, it will have its own message handled
-                                condSwitchesPass = false;
-                                break
-                            }
-                        }
-                        
-                        // only continue if all switch states are correct
-                        if condSwitchesPass {
-                            if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
+						var condSwitchesPass bool = true;
+						for _, otherCondSwId := range condition.SwitchIds {
+							if otherCondSwId == switchId {
+								// this is the same switch just received, so it must be correct
+								continue
+							}
+							othCondSwVal, ok := c.switchCache[otherCondSwId]
+							if !ok {
+								// state of switch unknown; request from client and break
+								c.send <- buildMsg("ss", otherCondSwId, "0")
+								condSwitchesPass = false;
+								break
+							}
+							if valid, _ := condition.checkSwitch(otherCondSwId, othCondSwVal); !valid {
+								// switch state isn't correct; break
+								// if switch is set nearly at same time, it will have its own message handled
+								condSwitchesPass = false;
+								break
+							}
+						}
+
+						// only continue if all switch states are correct
+						if condSwitchesPass {
+							if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
 								if !condition.TimeTrial {
 									if c.checkConditionCoords(condition) {
 										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
@@ -634,7 +634,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 								}
 								c.send <- buildMsg("sv", varId, "0")
 							}
-                        }
+						}
 					}
 				}
 			}
@@ -745,31 +745,31 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 					}
 				} else if len(condition.VarIds) != 0 {
 					if valid, _ := condition.checkVar(varId, value); valid {
-                        // check var cache for existing var vals
-                        var condVarsPass bool = true;
-                        for _, otherCondVarId := range condition.VarIds {
-                            if otherCondVarId == varId {
-                                // this is the same var just received, so it must be correct
-                                continue
-                            }
-                            othCondVarVal, ok := c.varCache[otherCondVarId]
-                            if !ok {
-                                // state of var unknown; request from client and break
-                                c.send <- buildMsg("sv", otherCondVarId, "0")
-                                condVarsPass = false;
-                                break
-                            }
-                            if valid, _ := condition.checkVar(otherCondVarId, othCondVarVal); !valid {
-                                // var val isn't correct; break
-                                // if var is set nearly at same time, it will have its own message handled
-                                condVarsPass = false;
-                                break
-                            }
-                        }
-                        
-                        // only continue if all var vals are correct
-                        if condVarsPass {
-                            if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
+						// check var cache for existing var vals
+						var condVarsPass bool = true;
+						for _, otherCondVarId := range condition.VarIds {
+							if otherCondVarId == varId {
+								// this is the same var just received, so it must be correct
+								continue
+							}
+							othCondVarVal, ok := c.varCache[otherCondVarId]
+							if !ok {
+								// state of var unknown; request from client and break
+								c.send <- buildMsg("sv", otherCondVarId, "0")
+								condVarsPass = false;
+								break
+							}
+							if valid, _ := condition.checkVar(otherCondVarId, othCondVarVal); !valid {
+								// var val isn't correct; break
+								// if var is set nearly at same time, it will have its own message handled
+								condVarsPass = false;
+								break
+							}
+						}
+
+						// only continue if all var vals are correct
+						if condVarsPass {
+							if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
 								if !condition.TimeTrial {
 									if c.checkConditionCoords(condition) {
 										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
@@ -790,7 +790,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 								}
 								c.send <- buildMsg("ss", switchId, "0")
 							}
-                        }
+						}
 					}
 				}
 			}
