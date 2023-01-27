@@ -60,7 +60,7 @@ func (c *RoomClient) handleM(msg []string) (err error) {
 		return errconv
 	}
 
-	if msg[0] == "m" && !(c.y - y < 1 || c.x - x > 1 || c.y - y > 1 || c.x - x < 1) {
+	if msg[0] == "m" && !(c.y-y < 1 || c.x-x > 1 || c.y-y > 1 || c.x-x < 1) {
 		switch {
 		case c.y < y:
 			c.facing = 0 // up
@@ -1020,13 +1020,17 @@ func (c *SessionClient) handleE() (err error) {
 	}
 	var hasIncompleteEvent bool
 	for _, currentEventLocation := range currentEventLocationsData {
-		if !currentEventLocation.Complete {
+		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.GameName {
 			hasIncompleteEvent = true
 			break
 		}
 	}
-	if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
-		addPlayer2kkiEventLocation(-1, 2, 0, 0, c.uuid)
+	if !hasIncompleteEvent {
+		if serverConfig.GameName == "2kki" {
+			addPlayer2kkiEventLocation(-1, freeEventLocationMinDepth, 0, 0, c.uuid)
+		} else {
+			addPlayerEventLocation(-1, 0, gameFreeEventLocationPools[serverConfig.GameName], c.uuid)
+		}
 		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(c.uuid)
 		if err != nil {
 			return err
@@ -1054,7 +1058,7 @@ func (c *SessionClient) handleE() (err error) {
 }
 
 func (c *SessionClient) handleEexp() (err error) {
-	if serverConfig.GameName != "2kki" {
+	if currentGameEventPeriodId <= 0 {
 		return err
 	}
 
@@ -1073,7 +1077,7 @@ func (c *SessionClient) handleEexp() (err error) {
 }
 
 func (c *SessionClient) handleEec(msg []string) (err error) {
-	if serverConfig.GameName != "2kki" {
+	if currentGameEventPeriodId <= 0 {
 		c.send <- buildMsg("eec", 0, false)
 		return err
 	}

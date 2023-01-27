@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"math/rand"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -983,7 +985,7 @@ func archiveChatMessages() (err error) {
 func setCurrentEventPeriodId() (err error) {
 	var periodId int
 
-	err = db.QueryRow("SELECT id FROM eventPeriods WHERE game = ? AND UTC_DATE() >= startDate AND UTC_DATE() < endDate", serverConfig.GameName).Scan(&periodId)
+	err = db.QueryRow("SELECT id FROM eventPeriods WHERE UTC_DATE() >= startDate AND UTC_DATE() < endDate").Scan(&periodId)
 	if err != nil {
 		currentEventPeriodId = 0
 		if err == sql.ErrNoRows {
@@ -998,7 +1000,7 @@ func setCurrentEventPeriodId() (err error) {
 }
 
 func getCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
-	err = db.QueryRow("SELECT ep.periodOrdinal, ep.endDate, ep.enableVms FROM eventPeriods ep WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate AND EXISTS (SELECT * FROM gameEventPeriods gep WHERE gep.game = ? AND gep.periodId = ep.id)", serverConfig.GameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
+	err = db.QueryRow("SELECT ep.periodOrdinal, ep.endDate, gep.enableVms FROM eventPeriods ep JOIN gameEventPeriods gep ON gep.periodId = ep.id AND gep.game = ? WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate", serverConfig.GameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
 	if err != nil {
 		eventPeriod.PeriodOrdinal = -1
 		if err == sql.ErrNoRows {
@@ -1008,6 +1010,29 @@ func getCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 	}
 
 	return eventPeriod, nil
+}
+
+func getGameCurrentEventPeriodsData() (gameEventPeriods map[string]*EventPeriod, err error) {
+	results, err := db.Query("SELECT ep.periodOrdinal, ep.endDate, gep.enableVms, gep.game FROM eventPeriods ep JOIN gameEventPeriods gep ON gep.periodId = ep.id WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate")
+	if err != nil {
+		return gameEventPeriods, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var gameId string
+		eventPeriod := &EventPeriod{}
+
+		err = results.Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms, &gameId)
+		if err != nil {
+			return gameEventPeriods, err
+		}
+
+		gameEventPeriods[gameId] = eventPeriod
+	}
+
+	return gameEventPeriods, nil
 }
 
 func setCurrentGameEventPeriodId() (err error) {
@@ -1025,6 +1050,72 @@ func setCurrentGameEventPeriodId() (err error) {
 	currentGameEventPeriodId = gamePeriodId
 
 	return nil
+}
+
+func getRandomGameForEventLocation(pool map[string][]*EventLocationData) (gameId string, err error) {
+	results, err := db.Query("SELECT CEIL(AVG(gpc.playerCount)), gpc.game FROM gamePlayerCounts gpc JOIN gameEventPeriods gep ON gep.periodId = ? AND gep.game = gpc.game GROUP BY gpc.game", currentEventPeriodId)
+	if err != nil {
+		return "", err
+	}
+
+	defer results.Close()
+
+	var playerCounts []int
+	var gameIds []string
+	totalPlayerCount := 0
+
+	for results.Next() {
+		var currentPlayerCount int
+		var currentGameId string
+
+		err = results.Scan(&currentPlayerCount, &currentGameId)
+		if err != nil {
+			return "", err
+		}
+
+		// Ignore games with no event locations in the current pool
+		if eventLocations, ok := pool[currentGameId]; currentGameId != "2kki" && (!ok || len(eventLocations) == 0) {
+			continue
+		}
+
+		if currentPlayerCount == 0 {
+			currentPlayerCount = 1
+		}
+
+		totalPlayerCount += currentPlayerCount
+
+		playerCounts = append(playerCounts, currentPlayerCount)
+		gameIds = append(gameIds, currentGameId)
+	}
+
+	avgPlayerCount := int(math.Ceil(float64(totalPlayerCount) / float64(len(gameIds))))
+
+	var poolThresholds []int
+	gamePool := make(map[int]string)
+	totalPoolValue := 0
+
+	poolCommonValue := int(math.Ceil(float64(avgPlayerCount) * gameEventShareFactor))
+
+	for i, count := range playerCounts {
+		poolValue := int(math.Floor(float64(count)*(1-gameEventShareFactor))) + poolCommonValue
+		gamePool[poolValue] = gameIds[i]
+
+		totalPoolValue += poolValue
+
+		poolThresholds = append(poolThresholds, poolValue)
+	}
+
+	rand.Seed(time.Now().Unix())
+	randValue := rand.Intn(totalPoolValue)
+
+	for _, value := range poolThresholds {
+		if randValue < value {
+			gameId = gamePool[value]
+			break
+		}
+	}
+
+	return gameId, nil
 }
 
 func getPlayerEventExpData(playerUuid string) (eventExp EventExp, err error) {
@@ -1152,7 +1243,7 @@ func writePlayerEventLocationData(playerUuid string, title string, titleJP strin
 }
 
 func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*EventLocation, err error) {
-	results, err := db.Query("SELECT el.id, el.type, el.title, el.titleJP, el.depth, el.minDepth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.type = 0 AND ec.uuid = ? WHERE gep.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, currentEventPeriodId)
+	results, err := db.Query("SELECT el.id, el.type, gep.game, el.title, el.titleJP, el.depth, el.minDepth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.type = 0 AND ec.uuid = ? WHERE gep.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, currentEventPeriodId)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -1164,7 +1255,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 
 		var completeBin int
 
-		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.Exp, &eventLocation.EndDate, &completeBin)
+		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Game, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.Exp, &eventLocation.EndDate, &completeBin)
 		if err != nil {
 			return eventLocations, err
 		}
@@ -1180,7 +1271,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 		eventLocations = append(eventLocations, eventLocation)
 	}
 
-	results, err = db.Query("SELECT pel.id, pel.title, pel.titleJP, pel.depth, pel.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId)
+	results, err = db.Query("SELECT pel.id, gep.game, pel.title, pel.titleJP, pel.depth, pel.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -1190,7 +1281,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 	for results.Next() {
 		eventLocation := &EventLocation{}
 
-		err := results.Scan(&eventLocation.Id, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.EndDate)
+		err := results.Scan(&eventLocation.Id, &eventLocation.Game, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.EndDate)
 		if err != nil {
 			return eventLocations, err
 		}
@@ -1330,7 +1421,7 @@ func getPlayerEventVmCount(playerUuid string) (eventVmCount int, err error) {
 }
 
 func getCurrentPlayerEventVmsData(playerUuid string) (eventVms []*EventVm, err error) {
-	results, err := db.Query("SELECT ev.id, ev.exp, ev.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = ev.id AND ec.type = 2 AND ec.uuid = ? WHERE gep.periodId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2, 1", playerUuid, currentEventPeriodId)
+	results, err := db.Query("SELECT ev.id, gep.game, ev.exp, ev.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = ev.id AND ec.type = 2 AND ec.uuid = ? WHERE gep.periodId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2, 1", playerUuid, currentEventPeriodId)
 	if err != nil {
 		return eventVms, err
 	}
@@ -1342,7 +1433,7 @@ func getCurrentPlayerEventVmsData(playerUuid string) (eventVms []*EventVm, err e
 
 		var completeBin int
 
-		err := results.Scan(&eventVm.Id, &eventVm.Exp, &eventVm.EndDate, &completeBin)
+		err := results.Scan(&eventVm.Id, &eventVm.Game, &eventVm.Exp, &eventVm.EndDate, &completeBin)
 		if err != nil {
 			return eventVms, err
 		}

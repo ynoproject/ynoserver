@@ -20,16 +20,13 @@ package server
 import (
 	"encoding/json"
 	"io"
+	"math"
 	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-)
-
-var (
-	eventVms map[int][]int
 )
 
 type EventPeriod struct {
@@ -47,6 +44,7 @@ type EventExp struct {
 type EventLocation struct {
 	Id       int       `json:"id"`
 	Type     int       `json:"type"`
+	Game     string    `json:"game"`
 	Title    string    `json:"title"`
 	TitleJP  string    `json:"titleJP"`
 	Depth    int       `json:"depth"`
@@ -58,6 +56,7 @@ type EventLocation struct {
 
 type EventVm struct {
 	Id       int       `json:"id"`
+	Game     string    `json:"game"`
 	Exp      int       `json:"exp"`
 	EndDate  time.Time `json:"endDate"`
 	Complete bool      `json:"complete"`
@@ -70,32 +69,50 @@ type EventsData struct {
 
 type EventLocationData struct {
 	Title    string   `json:"title"`
-	TitleJP  string   `json:"titleJP"`
+	TitleJP  string   `json:"titleJP,omitempty"`
 	Depth    int      `json:"depth"`
 	MinDepth int      `json:"minDepth"`
 	MapIds   []string `json:"mapIds"`
 }
 
 const (
-	dailyEventLocationMinDepth = 3
-	dailyEventLocationMaxDepth = 5
+	dailyEventLocationMinDepth = 2
+	dailyEventLocationMaxDepth = 3
 	dailyEventLocationExp      = 1
 
-	dailyEventLocation2MinDepth = 5
-	dailyEventLocation2MaxDepth = 9
+	dailyEventLocation2MinDepth = 4
+	dailyEventLocation2MaxDepth = 6
 	dailyEventLocation2Exp      = 3
 
-	weeklyEventLocationMinDepth = 11
-	weeklyEventLocationMaxDepth = -1
+	weeklyEventLocationMinDepth = 7
+	weeklyEventLocationMaxDepth = 10
 	weeklyEventLocationExp      = 10
 
-	weekendEventLocationMinDepth = 9
-	weekendEventLocationMaxDepth = 14
+	weekendEventLocationMinDepth = 6
+	weekendEventLocationMaxDepth = 9
 	weekendEventLocationExp      = 5
+
+	freeEventLocationMinDepth = 2
 
 	eventVmExp = 4
 
 	weeklyExpCap = 50
+
+	gameEventShareFactor = 0.15
+)
+
+const (
+	daily2kkiEventLocationMinDepth = 3
+	daily2kkiEventLocationMaxDepth = 5
+
+	daily2kkiEventLocation2MinDepth = 5
+	daily2kkiEventLocation2MaxDepth = 9
+
+	weekly2kkiEventLocationMinDepth = 11
+	weekly2kkiEventLocationMaxDepth = -1
+
+	weekend2kkiEventLocationMinDepth = 9
+	weekend2kkiEventLocationMaxDepth = 14
 )
 
 var (
@@ -104,34 +121,71 @@ var (
 	currentEventVmMapId      int
 	currentEventVmEventId    int
 	eventsCount              int
+
+	gameCurrentEventPeriods       map[string]*EventPeriod
+	gameDailyEventLocationPools   map[string][]*EventLocationData
+	gameDailyEventLocation2Pools  map[string][]*EventLocationData
+	gameWeeklyEventLocationPools  map[string][]*EventLocationData
+	gameWeekendEventLocationPools map[string][]*EventLocationData
+	gameFreeEventLocationPools    map[string][]*EventLocationData
+	eventVms                      map[int][]int
 )
 
 func initEvents() {
-	if serverConfig.GameName != "2kki" {
+	err := setCurrentEventPeriodId()
+	if err != nil {
 		return
 	}
 
-	db.QueryRow("SELECT COUNT(*) FROM eventLocations").Scan(&eventsCount)
+	err = setCurrentGameEventPeriodId()
+	if err != nil {
+		return
+	}
 
-	setCurrentEventPeriodId()
-	setCurrentGameEventPeriodId()
+	if currentGameEventPeriodId == 0 || !isHostServer {
+		return
+	}
+
+	gameCurrentEventPeriods, err = getGameCurrentEventPeriodsData()
+	if err != nil {
+		return
+	}
+
+	setGameEventLocationPools()
+
+	db.QueryRow("SELECT COUNT(*) FROM eventLocations el").Scan(&eventsCount)
 
 	scheduler.Every(1).Day().At("00:00").Do(func() {
-		add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
-		add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
+		err := setCurrentEventPeriodId()
+		if err != nil {
+			return
+		}
+
+		err = setCurrentGameEventPeriodId()
+		if err != nil {
+			return
+		}
+
+		gameCurrentEventPeriods, err = getGameCurrentEventPeriodsData()
+		if err != nil {
+			return
+		}
+
+		addDailyEventLocation(false)
+		addDailyEventLocation(true)
 		eventsCount += 2
 
 		switch time.Now().UTC().Weekday() {
 		case time.Sunday:
-			add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
-			add2kkiEventVm()
+			addWeeklyEventLocation()
+			addEventVm()
 			eventsCount += 2
 		case time.Tuesday:
-			add2kkiEventVm()
+			addEventVm()
 			eventsCount++
 		case time.Friday:
-			add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
-			add2kkiEventVm()
+			addWeekendEventLocation()
+			addEventVm()
 			eventsCount += 2
 		}
 
@@ -147,28 +201,18 @@ func initEvents() {
 		}
 	})
 
-	err := setCurrentEventPeriodId()
-	if err != nil {
-		return
-	}
-
-	err = setCurrentGameEventPeriodId()
-	if err != nil {
-		return
-	}
-
 	var count int
 
 	// daily easy expedition
 	db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 1", currentEventPeriodId).Scan(&count)
 	if count == 0 {
-		add2kkiEventLocation(0, dailyEventLocationMinDepth, dailyEventLocationMaxDepth, dailyEventLocationExp)
+		addDailyEventLocation(false)
 	}
 
-	// daily hard expedition
+	// daily deeper expedition
 	db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE el.type = 0 AND ep.id = ? AND el.startDate = UTC_DATE() AND el.exp = 3", currentEventPeriodId).Scan(&count)
 	if count == 0 {
-		add2kkiEventLocation(0, dailyEventLocation2MinDepth, dailyEventLocation2MaxDepth, dailyEventLocation2Exp)
+		addDailyEventLocation(true)
 	}
 
 	weekday := time.Now().UTC().Weekday()
@@ -176,7 +220,7 @@ func initEvents() {
 	// weekly expedition
 	db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday)).Scan(&count)
 	if count == 0 {
-		add2kkiEventLocation(1, weeklyEventLocationMinDepth, weeklyEventLocationMaxDepth, weeklyEventLocationExp)
+		addWeeklyEventLocation()
 	}
 
 	var lastVmWeekday time.Weekday
@@ -190,7 +234,7 @@ func initEvents() {
 		// weekend expedition
 		db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday-time.Friday)).Scan(&count)
 		if count == 0 {
-			add2kkiEventLocation(2, weekendEventLocationMinDepth, weekendEventLocationMaxDepth, weekendEventLocationExp)
+			addWeekendEventLocation()
 		}
 
 		lastVmWeekday = time.Friday
@@ -199,7 +243,7 @@ func initEvents() {
 	// vending machine expedition
 	db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
 	if currentEventVmMapId == 0 && currentEventVmEventId == 0 {
-		add2kkiEventVm()
+		addEventVm()
 	}
 }
 
@@ -212,6 +256,83 @@ func sendEventsUpdate() {
 
 		return true
 	})
+}
+
+func addDailyEventLocation(deeper bool) {
+	var pool map[string][]*EventLocationData
+	if !deeper {
+		pool = gameDailyEventLocationPools
+	} else {
+		pool = gameDailyEventLocation2Pools
+	}
+
+	gameId, err := getRandomGameForEventLocation(pool)
+	if err != nil {
+		handleInternalEventError(0, err)
+		return
+	}
+
+	if gameId == "2kki" {
+		if !deeper {
+			add2kkiEventLocation(0, daily2kkiEventLocationMinDepth, daily2kkiEventLocationMaxDepth, dailyEventLocationExp)
+		} else {
+			add2kkiEventLocation(0, daily2kkiEventLocation2MinDepth, daily2kkiEventLocation2MaxDepth, dailyEventLocation2Exp)
+		}
+	} else {
+		if !deeper {
+			addEventLocation(0, dailyEventLocationExp, pool[gameId])
+		} else {
+			addEventLocation(0, dailyEventLocation2Exp, pool[gameId])
+		}
+	}
+}
+
+func addWeeklyEventLocation() {
+	gameId, err := getRandomGameForEventLocation(gameWeeklyEventLocationPools)
+	if err != nil {
+		handleInternalEventError(1, err)
+		return
+	}
+
+	if gameId == "2kki" {
+		add2kkiEventLocation(1, weekly2kkiEventLocationMinDepth, weekly2kkiEventLocationMaxDepth, weeklyEventLocationExp)
+	} else {
+		addEventLocation(1, weeklyEventLocationExp, gameWeeklyEventLocationPools[gameId])
+	}
+}
+
+func addWeekendEventLocation() {
+	gameId, err := getRandomGameForEventLocation(gameWeekendEventLocationPools)
+	if err != nil {
+		handleInternalEventError(2, err)
+		return
+	}
+
+	if gameId == "2kki" {
+		add2kkiEventLocation(2, weekend2kkiEventLocationMinDepth, weekend2kkiEventLocationMaxDepth, weekendEventLocationExp)
+	} else {
+		addEventLocation(2, weekendEventLocationExp, gameWeekendEventLocationPools[gameId])
+	}
+}
+
+func addEventLocation(eventType int, exp int, pool []*EventLocationData) {
+	addPlayerEventLocation(eventType, exp, pool, "")
+}
+
+// eventType: 0 - daily, 1 - weekly, 2 - weekend, 3 - manual
+func addPlayerEventLocation(eventType int, exp int, pool []*EventLocationData, playerUuid string) {
+	rand.Seed(time.Now().Unix())
+	eventLocation := pool[rand.Intn(len(pool))]
+
+	var err error
+	if playerUuid == "" {
+		err = writeEventLocationData(eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, exp, eventLocation.MapIds)
+	} else {
+		err = writePlayerEventLocationData(playerUuid, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, eventLocation.MapIds)
+	}
+	if err != nil {
+		handleInternalEventError(eventType, err)
+	}
 }
 
 func add2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int) {
@@ -281,7 +402,7 @@ func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp i
 	}
 }
 
-func add2kkiEventVm() {
+func addEventVm() {
 	mapIds := make([]int, 0, len(eventVms))
 	for k := range eventVms {
 		mapIds = append(mapIds, k)
@@ -312,7 +433,7 @@ func handleEventError(eventType int, payload string) {
 }
 
 func setEventVms() {
-	if serverConfig.GameName != "2kki" {
+	if !isHostServer {
 		return
 	}
 
@@ -335,5 +456,74 @@ func setEventVms() {
 		}
 
 		eventVms[mapIdInt] = append(eventVms[mapIdInt], eventIdInt)
+	}
+}
+
+func setGameEventLocationPools() {
+	gameDailyEventLocationPools = make(map[string][]*EventLocationData)
+	gameDailyEventLocation2Pools = make(map[string][]*EventLocationData)
+	gameWeeklyEventLocationPools = make(map[string][]*EventLocationData)
+	gameWeekendEventLocationPools = make(map[string][]*EventLocationData)
+	gameFreeEventLocationPools = make(map[string][]*EventLocationData)
+
+	gameEventLocations := make(map[string][]*EventLocationData)
+	gameMaxDepths := make(map[string]int)
+
+	configPath := "eventlocations/"
+
+	for gameId := range gameCurrentEventPeriods {
+		var eventLocations []*EventLocationData
+
+		data, err := os.ReadFile(configPath + gameId)
+		if err != nil {
+			continue
+		}
+
+		err = json.Unmarshal(data, &eventLocations)
+		if err != nil {
+			continue
+		}
+
+		if len(gameEventLocations[gameId]) > 0 {
+			gameEventLocations[gameId] = eventLocations
+			gameMaxDepths[gameId] = 0
+		}
+
+		for _, eventLocation := range eventLocations {
+			if eventLocation.Depth > gameMaxDepths[gameId] {
+				gameMaxDepths[gameId] = eventLocation.Depth
+			}
+		}
+	}
+
+	for gameId, eventLocations := range gameEventLocations {
+		gameMaxDepth := math.Min(float64(gameMaxDepths[gameId]), 15)
+
+		for _, eventLocation := range eventLocations {
+			adjustedDepth := eventLocation.Depth
+			adjustedMinDepth := eventLocation.MinDepth
+			if gameMaxDepth > 10 {
+				adjustedDepth = int(math.Floor(float64(adjustedDepth) / gameMaxDepth * 10))
+				adjustedMinDepth = int(math.Floor(float64(adjustedMinDepth) / gameMaxDepth * 10))
+			}
+			eventLocation.Depth = adjustedDepth
+			eventLocation.MinDepth = adjustedMinDepth
+
+			if adjustedDepth >= dailyEventLocationMinDepth && adjustedDepth <= dailyEventLocationMaxDepth {
+				gameDailyEventLocationPools[gameId] = append(gameDailyEventLocationPools[gameId], eventLocation)
+			}
+			if adjustedDepth >= dailyEventLocation2MinDepth && adjustedDepth <= dailyEventLocation2MaxDepth {
+				gameDailyEventLocation2Pools[gameId] = append(gameDailyEventLocation2Pools[gameId], eventLocation)
+			}
+			if adjustedDepth >= weeklyEventLocationMinDepth && adjustedDepth <= weeklyEventLocationMaxDepth {
+				gameWeeklyEventLocationPools[gameId] = append(gameWeeklyEventLocationPools[gameId], eventLocation)
+			}
+			if adjustedDepth >= weekendEventLocationMinDepth && adjustedDepth <= weekendEventLocationMaxDepth {
+				gameWeekendEventLocationPools[gameId] = append(gameWeekendEventLocationPools[gameId], eventLocation)
+			}
+			if adjustedDepth >= freeEventLocationMinDepth {
+				gameFreeEventLocationPools[gameId] = append(gameFreeEventLocationPools[gameId], eventLocation)
+			}
+		}
 	}
 }

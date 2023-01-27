@@ -38,12 +38,18 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+const (
+	hostGameId string = "2kki"
+)
+
 var (
 	scheduler = gocron.NewScheduler(time.UTC)
 
 	serverConfig   *config.Config
 	serverSecurity *security.Security
 	gameAssets     *assets.Assets
+
+	isHostServer bool
 )
 
 func Start() {
@@ -51,6 +57,9 @@ func Start() {
 	flag.Parse()
 
 	serverConfig = config.ParseConfigFile(*configFile)
+
+	isHostServer = serverConfig.GameName == hostGameId
+
 	serverSecurity = security.New(serverConfig.SignKey)
 	gameAssets = assets.GetAssets(serverConfig.GamePath)
 
@@ -181,7 +190,7 @@ func randString(length int) string {
 	rand.Read(b)
 
 	for i := range b {
-		b[i] = randRunes[int(b[i]) % lenRandRunes]
+		b[i] = randRunes[int(b[i])%lenRandRunes]
 	}
 
 	return string(b)
