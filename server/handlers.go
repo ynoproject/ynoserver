@@ -589,7 +589,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 				} else if len(condition.SwitchIds) != 0 {
 					if valid, _ := condition.checkSwitch(switchId, value); valid {
 						// check switch cache for existing switch states
-						var condSwitchesPass bool = true;
+						condSwitchesPass := true
 						for _, otherCondSwId := range condition.SwitchIds {
 							if otherCondSwId == switchId {
 								// this is the same switch just received, so it must be correct
@@ -599,13 +599,13 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 							if !ok {
 								// state of switch unknown; request from client and break
 								c.send <- buildMsg("ss", otherCondSwId, "0")
-								condSwitchesPass = false;
+								condSwitchesPass = false
 								break
 							}
 							if valid, _ := condition.checkSwitch(otherCondSwId, othCondSwVal); !valid {
 								// switch state isn't correct; break
 								// if switch is set nearly at same time, it will have its own message handled
-								condSwitchesPass = false;
+								condSwitchesPass = false
 								break
 							}
 						}
@@ -745,7 +745,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 				} else if len(condition.VarIds) != 0 {
 					if valid, _ := condition.checkVar(varId, value); valid {
 						// check var cache for existing var vals
-						var condVarsPass bool = true;
+						condVarsPass := true
 						for _, otherCondVarId := range condition.VarIds {
 							if otherCondVarId == varId {
 								// this is the same var just received, so it must be correct
@@ -755,13 +755,13 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 							if !ok {
 								// state of var unknown; request from client and break
 								c.send <- buildMsg("sv", otherCondVarId, "0")
-								condVarsPass = false;
+								condVarsPass = false
 								break
 							}
 							if valid, _ := condition.checkVar(otherCondVarId, othCondVarVal); !valid {
 								// var val isn't correct; break
 								// if var is set nearly at same time, it will have its own message handled
-								condVarsPass = false;
+								condVarsPass = false
 								break
 							}
 						}
