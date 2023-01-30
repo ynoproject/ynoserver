@@ -350,11 +350,17 @@ func addPlayerEventLocation(gameId string, eventType int, exp int, pool []*Event
 }
 
 func add2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int) {
-	addPlayer2kkiEventLocation(eventType, minDepth, maxDepth, exp, "")
+	var gameEventPeriodId int
+	if serverConfig.GameName == "2kki" {
+		gameEventPeriodId = currentGameEventPeriodId
+	} else {
+		gameEventPeriodId = gameCurrentEventPeriods["2kki"].Id
+	}
+	addPlayer2kkiEventLocation(gameEventPeriodId, eventType, minDepth, maxDepth, exp, "")
 }
 
 // eventType: 0 - daily, 1 - weekly, 2 - weekend, 3 - manual
-func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int, playerUuid string) {
+func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth int, maxDepth int, exp int, playerUuid string) {
 	url := "https://2kki.app/getRandomLocations?ignoreSecret=1&minDepth=" + strconv.Itoa(minDepth)
 	if maxDepth >= minDepth {
 		url += "&maxDepth=" + strconv.Itoa(maxDepth)
@@ -406,9 +412,9 @@ func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp i
 			}
 		}
 		if playerUuid == "" {
-			err = writeEventLocationData(gameCurrentEventPeriods["2kki"].Id, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
+			err = writeEventLocationData(gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
 		} else {
-			err = writePlayerEventLocationData(gameCurrentEventPeriods["2kki"].Id, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, eventLocation.MapIds)
+			err = writePlayerEventLocationData(gameEventPeriodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, eventLocation.MapIds)
 		}
 		if err != nil {
 			handleInternalEventError(eventType, err)
