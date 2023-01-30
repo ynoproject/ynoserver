@@ -143,16 +143,22 @@ func initEvents() {
 		return
 	}
 
-	if currentGameEventPeriodId == 0 || !isHostServer {
+	if currentGameEventPeriodId == 0 {
 		return
 	}
 
-	gameCurrentEventPeriods, err = getGameCurrentEventPeriodsData()
-	if err != nil {
-		return
+	if isHostServer {
+		gameCurrentEventPeriods, err = getGameCurrentEventPeriodsData()
+		if err != nil {
+			return
+		}
 	}
 
 	setGameEventLocationPools()
+
+	if !isHostServer {
+		return
+	}
 
 	db.QueryRow("SELECT COUNT(*) FROM eventLocations el").Scan(&eventsCount)
 
