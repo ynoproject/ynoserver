@@ -1273,7 +1273,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 		eventLocations = append(eventLocations, eventLocation)
 	}
 
-	results, err = db.Query("SELECT pel.id, gep.game, pel.title, pel.titleJP, pel.depth, pel.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId)
+	results, err = db.Query("SELECT pel.id, gep.game, pel.title, pel.titleJP, pel.depth, pel.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND gep.game = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId, serverConfig.GameName)
 	if err != nil {
 		return eventLocations, err
 	}

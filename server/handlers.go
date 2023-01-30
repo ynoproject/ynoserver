@@ -1020,7 +1020,7 @@ func (c *SessionClient) handleE() (err error) {
 	}
 	var hasIncompleteEvent bool
 	for _, currentEventLocation := range currentEventLocationsData {
-		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.GameName {
+		if !currentEventLocation.Complete {
 			hasIncompleteEvent = true
 			break
 		}
