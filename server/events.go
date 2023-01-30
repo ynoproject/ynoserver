@@ -128,7 +128,7 @@ var (
 	gameDailyEventLocation2Pools  map[string][]*EventLocationData
 	gameWeeklyEventLocationPools  map[string][]*EventLocationData
 	gameWeekendEventLocationPools map[string][]*EventLocationData
-	gameFreeEventLocationPools    map[string][]*EventLocationData
+	freeEventLocationPool         []*EventLocationData
 	eventVms                      map[int][]int
 )
 
@@ -317,19 +317,26 @@ func addWeekendEventLocation() {
 }
 
 func addEventLocation(gameId string, eventType int, exp int, pools map[string][]*EventLocationData) {
-	addPlayerEventLocation(gameId, eventType, exp, pools, "")
+	addPlayerEventLocation(gameId, eventType, exp, pools[gameId], "")
 }
 
 // eventType: 0 - daily, 1 - weekly, 2 - weekend, 3 - manual
-func addPlayerEventLocation(gameId string, eventType int, exp int, pools map[string][]*EventLocationData, playerUuid string) {
+func addPlayerEventLocation(gameId string, eventType int, exp int, pool []*EventLocationData, playerUuid string) {
 	rand.Seed(time.Now().Unix())
-	eventLocation := pools[gameId][rand.Intn(len(pools))]
+	eventLocation := pool[rand.Intn(len(pool))]
+
+	var gameEventPeriodId int
+	if gameId == serverConfig.GameName {
+		gameEventPeriodId = currentGameEventPeriodId
+	} else {
+		gameEventPeriodId = gameCurrentEventPeriods[gameId].Id
+	}
 
 	var err error
 	if playerUuid == "" {
-		err = writeEventLocationData(gameCurrentEventPeriods[gameId].Id, eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, exp, eventLocation.MapIds)
+		err = writeEventLocationData(gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, exp, eventLocation.MapIds)
 	} else {
-		err = writePlayerEventLocationData(gameCurrentEventPeriods[gameId].Id, playerUuid, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, eventLocation.MapIds)
+		err = writePlayerEventLocationData(gameEventPeriodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, eventLocation.MapIds)
 	}
 	if err != nil {
 		handleInternalEventError(eventType, err)
@@ -461,18 +468,28 @@ func setEventVms() {
 }
 
 func setGameEventLocationPools() {
-	gameDailyEventLocationPools = make(map[string][]*EventLocationData)
-	gameDailyEventLocation2Pools = make(map[string][]*EventLocationData)
-	gameWeeklyEventLocationPools = make(map[string][]*EventLocationData)
-	gameWeekendEventLocationPools = make(map[string][]*EventLocationData)
-	gameFreeEventLocationPools = make(map[string][]*EventLocationData)
+	if isHostServer {
+		gameDailyEventLocationPools = make(map[string][]*EventLocationData)
+		gameDailyEventLocation2Pools = make(map[string][]*EventLocationData)
+		gameWeeklyEventLocationPools = make(map[string][]*EventLocationData)
+		gameWeekendEventLocationPools = make(map[string][]*EventLocationData)
+	}
 
 	gameEventLocations := make(map[string][]*EventLocationData)
 	gameMaxDepths := make(map[string]int)
 
 	configPath := "eventlocations/"
 
-	for gameId := range gameCurrentEventPeriods {
+	var gameIds []string
+	if isHostServer {
+		for gameId := range gameCurrentEventPeriods {
+			gameIds = append(gameIds, gameId)
+		}
+	} else {
+		gameIds = append(gameIds, serverConfig.GameName)
+	}
+
+	for _, gameId := range gameIds {
 		var eventLocations []*EventLocationData
 
 		data, err := os.ReadFile(configPath + gameId + ".json")
@@ -510,20 +527,22 @@ func setGameEventLocationPools() {
 			eventLocation.Depth = adjustedDepth
 			eventLocation.MinDepth = adjustedMinDepth
 
-			if adjustedDepth >= dailyEventLocationMinDepth && adjustedDepth <= dailyEventLocationMaxDepth {
-				gameDailyEventLocationPools[gameId] = append(gameDailyEventLocationPools[gameId], eventLocation)
+			if isHostServer {
+				if adjustedDepth >= dailyEventLocationMinDepth && adjustedDepth <= dailyEventLocationMaxDepth {
+					gameDailyEventLocationPools[gameId] = append(gameDailyEventLocationPools[gameId], eventLocation)
+				}
+				if adjustedDepth >= dailyEventLocation2MinDepth && adjustedDepth <= dailyEventLocation2MaxDepth {
+					gameDailyEventLocation2Pools[gameId] = append(gameDailyEventLocation2Pools[gameId], eventLocation)
+				}
+				if adjustedDepth >= weeklyEventLocationMinDepth && adjustedDepth <= weeklyEventLocationMaxDepth {
+					gameWeeklyEventLocationPools[gameId] = append(gameWeeklyEventLocationPools[gameId], eventLocation)
+				}
+				if adjustedDepth >= weekendEventLocationMinDepth && adjustedDepth <= weekendEventLocationMaxDepth {
+					gameWeekendEventLocationPools[gameId] = append(gameWeekendEventLocationPools[gameId], eventLocation)
+				}
 			}
-			if adjustedDepth >= dailyEventLocation2MinDepth && adjustedDepth <= dailyEventLocation2MaxDepth {
-				gameDailyEventLocation2Pools[gameId] = append(gameDailyEventLocation2Pools[gameId], eventLocation)
-			}
-			if adjustedDepth >= weeklyEventLocationMinDepth && adjustedDepth <= weeklyEventLocationMaxDepth {
-				gameWeeklyEventLocationPools[gameId] = append(gameWeeklyEventLocationPools[gameId], eventLocation)
-			}
-			if adjustedDepth >= weekendEventLocationMinDepth && adjustedDepth <= weekendEventLocationMaxDepth {
-				gameWeekendEventLocationPools[gameId] = append(gameWeekendEventLocationPools[gameId], eventLocation)
-			}
-			if adjustedDepth >= freeEventLocationMinDepth {
-				gameFreeEventLocationPools[gameId] = append(gameFreeEventLocationPools[gameId], eventLocation)
+			if gameId == serverConfig.GameName && adjustedDepth >= freeEventLocationMinDepth {
+				freeEventLocationPool = append(freeEventLocationPool, eventLocation)
 			}
 		}
 	}

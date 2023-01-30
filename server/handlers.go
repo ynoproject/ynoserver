@@ -1028,8 +1028,8 @@ func (c *SessionClient) handleE() (err error) {
 	if !hasIncompleteEvent {
 		if serverConfig.GameName == "2kki" {
 			addPlayer2kkiEventLocation(-1, freeEventLocationMinDepth, 0, 0, c.uuid)
-		} else {
-			addPlayerEventLocation(serverConfig.GameName, -1, 0, gameFreeEventLocationPools, c.uuid)
+		} else if len(freeEventLocationPool) > 0 {
+			addPlayerEventLocation(serverConfig.GameName, -1, 0, freeEventLocationPool, c.uuid)
 		}
 		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(c.uuid)
 		if err != nil {
