@@ -1146,7 +1146,7 @@ func getPlayerEventExpData(playerUuid string) (eventExp EventExp, err error) {
 }
 
 func getPlayerTotalEventExp(playerUuid string) (totalEventExp int, err error) {
-	err = db.QueryRow("SELECT SUM(exp) FROM ((SELECT COALESCE(SUM(ec.exp), 0) exp FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ep.game = ? AND ec.uuid = ?) UNION ALL (SELECT COALESCE(SUM(ec.exp), 0) exp FROM eventCompletions ec JOIN eventVms ev ON ev.id = ec.eventId AND ec.type = 2 JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ep.game = ? AND ec.uuid = ?)) eventExp", serverConfig.GameName, playerUuid, serverConfig.GameName, playerUuid).Scan(&totalEventExp)
+	err = db.QueryRow("SELECT SUM(exp) FROM ((SELECT COALESCE(SUM(ec.exp), 0) exp FROM eventCompletions ec JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0 JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ec.uuid = ?) UNION ALL (SELECT COALESCE(SUM(ec.exp), 0) exp FROM eventCompletions ec JOIN eventVms ev ON ev.id = ec.eventId AND ec.type = 2 JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ec.uuid = ?)) eventExp", playerUuid, playerUuid).Scan(&totalEventExp)
 	if err != nil {
 		return totalEventExp, err
 	}
