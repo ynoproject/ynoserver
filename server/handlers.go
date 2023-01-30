@@ -1029,7 +1029,7 @@ func (c *SessionClient) handleE() (err error) {
 		if serverConfig.GameName == "2kki" {
 			addPlayer2kkiEventLocation(-1, freeEventLocationMinDepth, 0, 0, c.uuid)
 		} else {
-			addPlayerEventLocation(-1, 0, gameFreeEventLocationPools[serverConfig.GameName], c.uuid)
+			addPlayerEventLocation(serverConfig.GameName, -1, 0, gameFreeEventLocationPools, c.uuid)
 		}
 		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(c.uuid)
 		if err != nil {

@@ -30,6 +30,7 @@ import (
 )
 
 type EventPeriod struct {
+	Id            int       `json:"-"`
 	PeriodOrdinal int       `json:"periodOrdinal"`
 	EndDate       time.Time `json:"endDate"`
 	EnableVms     bool      `json:"enableVms"`
@@ -259,14 +260,14 @@ func sendEventsUpdate() {
 }
 
 func addDailyEventLocation(deeper bool) {
-	var pool map[string][]*EventLocationData
+	var pools map[string][]*EventLocationData
 	if !deeper {
-		pool = gameDailyEventLocationPools
+		pools = gameDailyEventLocationPools
 	} else {
-		pool = gameDailyEventLocation2Pools
+		pools = gameDailyEventLocation2Pools
 	}
 
-	gameId, err := getRandomGameForEventLocation(pool)
+	gameId, err := getRandomGameForEventLocation(pools)
 	if err != nil {
 		handleInternalEventError(0, err)
 		return
@@ -280,9 +281,9 @@ func addDailyEventLocation(deeper bool) {
 		}
 	} else {
 		if !deeper {
-			addEventLocation(0, dailyEventLocationExp, pool[gameId])
+			addEventLocation(gameId, 0, dailyEventLocationExp, pools)
 		} else {
-			addEventLocation(0, dailyEventLocation2Exp, pool[gameId])
+			addEventLocation(gameId, 0, dailyEventLocation2Exp, pools)
 		}
 	}
 }
@@ -297,7 +298,7 @@ func addWeeklyEventLocation() {
 	if gameId == "2kki" {
 		add2kkiEventLocation(1, weekly2kkiEventLocationMinDepth, weekly2kkiEventLocationMaxDepth, weeklyEventLocationExp)
 	} else {
-		addEventLocation(1, weeklyEventLocationExp, gameWeeklyEventLocationPools[gameId])
+		addEventLocation(gameId, 1, weeklyEventLocationExp, gameWeeklyEventLocationPools)
 	}
 }
 
@@ -311,24 +312,24 @@ func addWeekendEventLocation() {
 	if gameId == "2kki" {
 		add2kkiEventLocation(2, weekend2kkiEventLocationMinDepth, weekend2kkiEventLocationMaxDepth, weekendEventLocationExp)
 	} else {
-		addEventLocation(2, weekendEventLocationExp, gameWeekendEventLocationPools[gameId])
+		addEventLocation(gameId, 2, weekendEventLocationExp, gameWeekendEventLocationPools)
 	}
 }
 
-func addEventLocation(eventType int, exp int, pool []*EventLocationData) {
-	addPlayerEventLocation(eventType, exp, pool, "")
+func addEventLocation(gameId string, eventType int, exp int, pools map[string][]*EventLocationData) {
+	addPlayerEventLocation(gameId, eventType, exp, pools, "")
 }
 
 // eventType: 0 - daily, 1 - weekly, 2 - weekend, 3 - manual
-func addPlayerEventLocation(eventType int, exp int, pool []*EventLocationData, playerUuid string) {
+func addPlayerEventLocation(gameId string, eventType int, exp int, pools map[string][]*EventLocationData, playerUuid string) {
 	rand.Seed(time.Now().Unix())
-	eventLocation := pool[rand.Intn(len(pool))]
+	eventLocation := pools[gameId][rand.Intn(len(pools))]
 
 	var err error
 	if playerUuid == "" {
-		err = writeEventLocationData(eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, exp, eventLocation.MapIds)
+		err = writeEventLocationData(gameCurrentEventPeriods[gameId].Id, eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, exp, eventLocation.MapIds)
 	} else {
-		err = writePlayerEventLocationData(playerUuid, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, eventLocation.MapIds)
+		err = writePlayerEventLocationData(gameCurrentEventPeriods[gameId].Id, playerUuid, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, eventLocation.MapIds)
 	}
 	if err != nil {
 		handleInternalEventError(eventType, err)
@@ -392,9 +393,9 @@ func addPlayer2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp i
 			}
 		}
 		if playerUuid == "" {
-			err = writeEventLocationData(eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
+			err = writeEventLocationData(gameCurrentEventPeriods["2kki"].Id, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
 		} else {
-			err = writePlayerEventLocationData(playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, eventLocation.MapIds)
+			err = writePlayerEventLocationData(gameCurrentEventPeriods["2kki"].Id, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, eventLocation.MapIds)
 		}
 		if err != nil {
 			handleInternalEventError(eventType, err)
@@ -474,7 +475,7 @@ func setGameEventLocationPools() {
 	for gameId := range gameCurrentEventPeriods {
 		var eventLocations []*EventLocationData
 
-		data, err := os.ReadFile(configPath + gameId)
+		data, err := os.ReadFile(configPath + gameId + ".json")
 		if err != nil {
 			continue
 		}
@@ -484,7 +485,7 @@ func setGameEventLocationPools() {
 			continue
 		}
 
-		if len(gameEventLocations[gameId]) > 0 {
+		if len(eventLocations) > 0 {
 			gameEventLocations[gameId] = eventLocations
 			gameMaxDepths[gameId] = 0
 		}

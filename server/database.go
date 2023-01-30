@@ -1015,7 +1015,7 @@ func getCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 func getGameCurrentEventPeriodsData() (gameEventPeriods map[string]*EventPeriod, err error) {
 	gameEventPeriods = make(map[string]*EventPeriod)
 
-	results, err := db.Query("SELECT ep.periodOrdinal, ep.endDate, gep.enableVms, gep.game FROM eventPeriods ep JOIN gameEventPeriods gep ON gep.periodId = ep.id WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate")
+	results, err := db.Query("SELECT gep.id, ep.periodOrdinal, ep.endDate, gep.enableVms, gep.game FROM eventPeriods ep JOIN gameEventPeriods gep ON gep.periodId = ep.id WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate")
 	if err != nil {
 		return gameEventPeriods, err
 	}
@@ -1026,7 +1026,7 @@ func getGameCurrentEventPeriodsData() (gameEventPeriods map[string]*EventPeriod,
 		var gameId string
 		eventPeriod := &EventPeriod{}
 
-		err = results.Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms, &gameId)
+		err = results.Scan(&eventPeriod.Id, &eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms, &gameId)
 		if err != nil {
 			return gameEventPeriods, err
 		}
@@ -1196,7 +1196,7 @@ func getPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletio
 	return eventLocationCompletion, nil
 }
 
-func writeEventLocationData(eventType int, title string, titleJP string, depth int, minDepth int, exp int, mapIds []string) (err error) {
+func writeEventLocationData(gameEventPeriodId int, eventType int, title string, titleJP string, depth int, minDepth int, exp int, mapIds []string) (err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
 		return err
@@ -1222,7 +1222,7 @@ func writeEventLocationData(eventType int, title string, titleJP string, depth i
 
 	days -= offsetDays
 
-	_, err = db.Exec("INSERT INTO eventLocations (gamePeriodId, type, title, titleJP, depth, minDepth, exp, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", currentGameEventPeriodId, eventType, title, titleJP, depth, minDepth, exp, offsetDays, days, mapIdsJson)
+	_, err = db.Exec("INSERT INTO eventLocations (gamePeriodId, type, title, titleJP, depth, minDepth, exp, startDate, endDate, mapIds) VALUES (?, ?, ?, ?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY), ?)", gameEventPeriodId, eventType, title, titleJP, depth, minDepth, exp, offsetDays, days, mapIdsJson)
 	if err != nil {
 		return err
 	}
@@ -1230,13 +1230,13 @@ func writeEventLocationData(eventType int, title string, titleJP string, depth i
 	return nil
 }
 
-func writePlayerEventLocationData(playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (err error) {
+func writePlayerEventLocationData(gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO playerEventLocations (gamePeriodId, uuid, title, titleJP, depth, minDepth, startDate, endDate, mapIds) SELECT ?, ?, ?, ?, ?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL 1 DAY), ? WHERE NOT EXISTS(SELECT * FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.gamePeriodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate)", currentGameEventPeriodId, playerUuid, title, titleJP, depth, minDepth, mapIdsJson, playerUuid, currentGameEventPeriodId)
+	_, err = db.Exec("INSERT INTO playerEventLocations (gamePeriodId, uuid, title, titleJP, depth, minDepth, startDate, endDate, mapIds) SELECT ?, ?, ?, ?, ?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL 1 DAY), ? WHERE NOT EXISTS(SELECT * FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.gamePeriodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate)", gameEventPeriodId, playerUuid, title, titleJP, depth, minDepth, mapIdsJson, playerUuid, gameEventPeriodId)
 	if err != nil {
 		return err
 	}
