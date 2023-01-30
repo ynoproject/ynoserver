@@ -1013,6 +1013,8 @@ func getCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
 }
 
 func getGameCurrentEventPeriodsData() (gameEventPeriods map[string]*EventPeriod, err error) {
+	gameEventPeriods = make(map[string]*EventPeriod)
+
 	results, err := db.Query("SELECT ep.periodOrdinal, ep.endDate, gep.enableVms, gep.game FROM eventPeriods ep JOIN gameEventPeriods gep ON gep.periodId = ep.id WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate")
 	if err != nil {
 		return gameEventPeriods, err
