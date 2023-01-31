@@ -1124,13 +1124,17 @@ func (c *SessionClient) handleEec(msg []string) (err error) {
 	}
 	var hasIncompleteEvent bool
 	for _, currentEventLocation := range currentEventLocationsData {
-		if !currentEventLocation.Complete {
+		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.GameName {
 			hasIncompleteEvent = true
 			break
 		}
 	}
-	if !hasIncompleteEvent && serverConfig.GameName == "2kki" {
-		addPlayer2kkiEventLocation(-1, 2, 0, 0, c.uuid)
+	if !hasIncompleteEvent {
+		if serverConfig.GameName == "2kki" {
+			addPlayer2kkiEventLocation(currentGameEventPeriodId, -1, freeEventLocationMinDepth, 0, 0, c.uuid)
+		} else if len(freeEventLocationPool) > 0 {
+			addPlayerEventLocation(serverConfig.GameName, -1, 0, freeEventLocationPool, c.uuid)
+		}
 	}
 
 	c.send <- buildMsg("eec", ret, true)
