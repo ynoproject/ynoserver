@@ -1020,14 +1020,14 @@ func (c *SessionClient) handleE() (err error) {
 	}
 	var hasIncompleteEvent bool
 	for _, currentEventLocation := range currentEventLocationsData {
-		if !currentEventLocation.Complete {
+		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.GameName {
 			hasIncompleteEvent = true
 			break
 		}
 	}
 	if !hasIncompleteEvent {
 		if serverConfig.GameName == "2kki" {
-			addPlayer2kkiEventLocation(-1, freeEventLocationMinDepth, 0, 0, c.uuid)
+			addPlayer2kkiEventLocation(currentGameEventPeriodId, -1, freeEventLocationMinDepth, 0, 0, c.uuid)
 		} else if len(freeEventLocationPool) > 0 {
 			addPlayerEventLocation(serverConfig.GameName, -1, 0, freeEventLocationPool, c.uuid)
 		}
