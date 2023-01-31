@@ -588,6 +588,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 					}
 				} else if len(condition.SwitchIds) != 0 {
 					if valid, _ := condition.checkSwitch(switchId, value); valid {
+						/*
 						// check switch cache for existing switch states
 						condSwitchesPass := true
 						for _, otherCondSwId := range condition.SwitchIds {
@@ -610,6 +611,53 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 							}
 						}
 
+						// only continue if all switch states are correct
+						if condSwitchesPass {
+							if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
+								if !condition.TimeTrial {
+									if c.checkConditionCoords(condition) {
+										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
+										if err != nil {
+											return err
+										}
+										if success {
+											c.send <- buildMsg("b")
+										}
+									}
+								} else if serverConfig.GameName == "2kki" {
+									c.send <- buildMsg("ss", "1430", "0")
+								}
+							} else {
+								varId := condition.VarId
+								if len(condition.VarIds) != 0 {
+									varId = condition.VarIds[0]
+								}
+								c.send <- buildMsg("sv", varId, "0")
+							}
+						}
+						*/
+						var condSwitchesPass bool
+						if condition.Trigger == "" {
+							// map load trigger means all switches are pushed in client sync; cache can reliably be used
+							condSwitchesPass = true
+							for _, otherCondSwId := range condition.SwitchIds {
+								if otherCondSwId == switchId {
+									// this is the same switch just received, so it must be correct
+									continue
+								}
+								othCondSwVal, ok := c.switchCache[otherCondSwId]
+								if !(ok && (valid, _ := condition.checkSwitch(otherCondSwId, othCondSwVal); valid) {
+									// two cases:
+									//   switch state unknown; awaiting sync response; break for now
+									//   switch state is incorrect; break
+									condSwitchesPass = false
+									break
+								}
+							}
+						} else {
+							// other triggers only push first switch, creating a messaging chain until all switches are checked
+						}
+						
 						// only continue if all switch states are correct
 						if condSwitchesPass {
 							if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {

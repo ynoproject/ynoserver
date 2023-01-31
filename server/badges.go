@@ -36,6 +36,7 @@ var (
 	sortedBadgeIds         map[string][]string
 )
 
+/*
 type Condition struct {
 	ConditionId  string   `json:"conditionId"`
 	Map          int      `json:"map"`
@@ -62,6 +63,120 @@ type Condition struct {
 	Values       []string `json:"values"`
 	TimeTrial    bool     `json:"timeTrial"`
 	Disabled     bool     `json:"disabled"`
+}
+*/
+
+type ConditionCheckCoords struct {
+	XMin int `json:"xMin"`
+	YMin int `json:"yMin"`
+	XMax int `json:"xMax"`
+	YMax int `json:"yMax"`
+}
+
+type ConditionCheckSwitch struct {
+	Id    int  `json:"id"`
+	State bool `json:"state"`
+}
+
+type ConditionCheckVar struct {
+	Id      int    `json:"id"`
+	Op	    string `json:"op"`
+	Value   int    `json:"value"`
+}
+
+type ConditionTriggerSwOrVar struct {
+	Id           int  `json:"id"`
+	// instructs the client skip the sync trigger on map load
+	SkipLoadSync bool `json:"skipLoadSync"`
+}
+
+type ConditionTriggerEvent struct {
+	Id       int  `json:"id"`
+	// only trigger if event was fired by player using the action/decision key
+	OnAction bool `json:"onAction"`
+}
+
+type ConditionTriggers struct {
+	// activates sync coords and acts in place of coords check
+	Coords   *ConditionCheckCoords      `json:"coords"`
+	
+	// responds to teleport messages from client
+	Teleport *ConditionCheckCoords      `json:"teleport"`
+	
+	// messages client to keep general caches up to date
+	Switches []*ConditionTriggerSwOrVar `json:"switches"`
+	Vars     []*ConditionTriggerSwOrVar `json:"vars"`
+	
+	// responds to previous location messages from web client (forest orb)
+	PrevMap  int                        `json:"prevMap"`
+	
+	// messages client to trigger on RPGM picture appearance
+	Pictures []string                   `json:"pictures"`
+	
+	// messages client to trigger on RPGM event activation
+	Events   []*ConditionTriggerEvent   `json:"events"`
+}
+
+type ConditionChecks struct {
+	// [[OR logic]]
+	// by default, all fields must match for the condition to pass
+	// this allows splitting check logic into pieces, where if at least one matches, then the others don't matter
+	// checked from first to last; pieces after the one which matches are not checked (short circuiting)
+	Either    []*ConditionCheck       `json:"either"
+
+	// player must be within this coordinate range
+	Coords    *ConditionCheckCoords   `json:"coords"`
+
+	// these switches must have the correct respective states
+	Switches  []*ConditionCheckSwitch `json:"switches"`
+
+	// these vars must have the correct values compared to another
+	// the same var can be used more than once for compound comparisons, e.g. V >= a AND V <= b
+	Vars      []*ConditionCheckVar    `json:"vars"`
+}
+
+type Condition struct {
+	// not actually used in the JSON; generated from file name
+	ConditionId string
+
+	// the map in which this condition is relevant
+	Map         int                 `json:"map"`
+
+	// if time trial data should be saved upon condition completion
+	TimeTrial   bool                `json:"timeTrial"`
+
+	// if this condition should be disabled; used for archiving
+	Disabled    bool                `json:"disabled"`
+
+	// a chain of checks to determine if the condition is fulfilled
+	Checks      *ConditionChecks    `json:"checks"`
+
+	// triggers upon which to invoke checking the checks
+	Triggers    *ConditionsTriggers `json:"triggers"`
+
+	// DEPRECATED; DO NOT USE; TO BE REMOVED
+	// until removal, these are translated to newer system
+	MapX1        int      `json:"mapX1"`
+	MapY1        int      `json:"mapY1"`
+	MapX2        int      `json:"mapX2"`
+	MapY2        int      `json:"mapY2"`
+	SwitchId     int      `json:"switchId"`
+	SwitchValue  bool     `json:"switchValue"`
+	SwitchIds    []int    `json:"switchIds"`
+	SwitchValues []bool   `json:"switchValues"`
+	SwitchDelay  bool     `json:"switchDelay"`
+	VarId        int      `json:"varId"`
+	VarValue     int      `json:"varValue"`
+	VarValue2    int      `json:"varValue2"`
+	VarOp        string   `json:"varOp"`
+	VarIds       []int    `json:"varIds"`
+	VarValues    []int    `json:"varValues"`
+	VarOps       []string `json:"varOps"`
+	VarDelay     bool     `json:"varDelay"`
+	VarTrigger   bool     `json:"varTrigger"`
+	Trigger      string   `json:"trigger"`
+	Value        string   `json:"value"`
+	Values       []string `json:"values"`
 }
 
 func (c *Condition) checkSwitch(switchId int, value bool) (bool, int) {
@@ -310,7 +425,9 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 	}
 
 	if condition.Trigger == trigger && valueMatched {
-		if (condition.SwitchId > 0 || len(condition.SwitchIds) != 0) && !condition.VarTrigger {
+		var sentSync bool
+		if (condition.SwitchId > 0 || len(condition.SwitchIds) != 0) && (trigger == "" || !condition.VarTrigger) {
+			/*
 			switchId := condition.SwitchId
 			if len(condition.SwitchIds) != 0 {
 				switchId = condition.SwitchIds[0]
@@ -323,7 +440,30 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 				}
 			}
 			c.send <- buildMsg("ss", switchId, switchSyncType)
-		} else if condition.VarId > 0 || len(condition.VarIds) != 0 {
+			*/
+			var switchSyncType int
+			if trigger == "" {
+				switchSyncType = 2
+				if condition.SwitchDelay {
+					switchSyncType = 1
+				}
+			}
+			
+			switchesToSync := condition.SwitchIds
+			if len(switchesToSync) == 0 {
+				switchesToSync = []int{condition.SwitchId}
+			} else if switchSyncType == 0 {
+				// if no push, check one by one via handling ss messages
+				switchesToSync = []int{switchesToSync[0]}
+			}
+			for _, swToSync := range switchesToSync {
+				c.send <- buildMsg("ss", swToSync, switchSyncType)
+			}
+			sentSync = true
+		}
+		
+		if (condition.VarId > 0 || len(condition.VarIds) != 0) && (trigger == "" || condtion.VarTrigger) {
+			/*
 			varId := condition.VarId
 			if len(condition.VarIds) != 0 {
 				varId = condition.VarIds[0]
@@ -350,7 +490,43 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 				}
 			}
 			c.send <- buildMsg("sv", varId, varSyncType)
-		} else if c.checkConditionCoords(condition) {
+			*/
+			var varSyncType int
+			if trigger == "" {
+				varSyncType = 2
+				if condition.VarDelay {
+					varSyncType = 1
+				}
+			}
+			
+			varsToSync := condition.VarIds
+			if len(varsToSync) == 0 {
+				varsToSync = []int{condition.VarId}
+			} else if varSyncType == 0 {
+				// if no push, check one by one via handling sv messages
+				varsToSync = []int{varsToSync[0]}
+			}
+			
+			// check for minigame vars and remove them; they are handled in getRoomData
+			for _, minigame := range minigames {
+				for vtsIdx, varToSync := range varsToSync {
+					if minigame.VarId == varToSync {
+						// order shouldn't matter
+						// it's okay to modify/set this array while in this loop since it will break anyway
+						varsToSync[vtsIdx] = varsToSync[len(varsToSync) - 1]
+						varsToSync = varsToSync[:len(varsToSync) - 1]
+						break
+					}
+				}
+			}
+			
+			for _, varToSync := range varsToSync {
+				c.send <- buildMsg("ss", varToSync, varSyncType)
+			}
+			sentSync = true
+		}
+		
+		if !sentSync && c.checkConditionCoords(condition) {
 			timeTrial := condition.TimeTrial && serverConfig.GameName == "2kki"
 			if !timeTrial {
 				success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
