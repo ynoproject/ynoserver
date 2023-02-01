@@ -1222,7 +1222,7 @@ func writeEventLocationData(gameEventPeriodId int, eventType int, title string, 
 
 	days -= offsetDays
 
-	_, err = db.Exec("INSERT INTO locations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", gameEventPeriodId, title, titleJP, depth, minDepth, mapIdsJson)
+	_, err = db.Exec("INSERT INTO locations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", serverConfig.GameName, title, titleJP, depth, minDepth, mapIdsJson)
 	if err != nil {
 		return err
 	}
@@ -1244,7 +1244,7 @@ func writePlayerEventLocationData(gameEventPeriodId int, playerUuid string, titl
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO locations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", gameEventPeriodId, title, titleJP, depth, minDepth, mapIdsJson)
+	_, err = db.Exec("INSERT INTO locations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", serverConfig.GameName, title, titleJP, depth, minDepth, mapIdsJson)
 	if err != nil {
 		return err
 	}
