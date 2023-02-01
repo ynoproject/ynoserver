@@ -900,7 +900,7 @@ func (c *SessionClient) handleGSay(msg []string) (err error) {
 		y = c.rClient.y
 	}
 
-	msgId := randString(8)
+	msgId := randString(12)
 
 	c.broadcast(buildMsg("p", c.uuid, c.name, c.systemName, c.rank, c.account, c.badge, c.medals[:]))
 	c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
@@ -943,7 +943,7 @@ func (c *SessionClient) handlePSay(msg []string) (err error) {
 		return err
 	}
 
-	msgId := randString(8)
+	msgId := randString(12)
 
 	for _, uuid := range partyMemberUuids {
 		if client, ok := clients.Load(uuid); ok {
