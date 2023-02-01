@@ -1230,7 +1230,7 @@ func writeEventLocationData(gameEventPeriodId int, eventType int, title string, 
 	var locationId int
 	db.QueryRow("SELECT l.id FROM locations l JOIN gameEventPeriods gep ON gep.game = l.game WHERE gep.id = ? AND l.title = ?", gameEventPeriodId, title).Scan(&locationId)
 
-	_, err = db.Exec("INSERT INTO eventLocations (locationId, gamePeriodId, type, startDate, endDate) VALUES (?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY))", locationId, gameEventPeriodId, eventType, exp, offsetDays, days)
+	_, err = db.Exec("INSERT INTO eventLocations (locationId, gamePeriodId, type, exp, startDate, endDate) VALUES (?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY))", locationId, gameEventPeriodId, eventType, exp, offsetDays, days)
 	if err != nil {
 		return err
 	}
