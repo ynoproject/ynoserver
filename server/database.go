@@ -2020,6 +2020,12 @@ func doCleanupQueries() error {
 		return err
 	}
 
+	// Remove player event location queue for past dates
+	_, err = db.Exec("DELETE FROM playerEventLocationQueue WHERE UTC_DATE() > date")
+	if err != nil {
+		return err
+	}
+
 	// Remove Yume 2kki Explorer API query cache records that have expired
 	_, err = db.Exec("DELETE FROM 2kkiApiQueries WHERE expiration < CURRENT_TIMESTAMP()")
 	if err != nil {
