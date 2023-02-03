@@ -1221,7 +1221,7 @@ func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUui
 		db.QueryRow("SELECT COUNT(*) FROM eventCompletions ec JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 WHERE pel.gamePeriodId = ? AND pel.startDate = CURRENT_DATE() AND pel.uuid = ?", gameEventPeriodId, playerUuid).Scan(&currentPlayerEventLocationQueueLength)
 
 		if currentPlayerEventLocationQueueLength < playerEventLocationQueueLength {
-			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = CURRENT_DATE() AND index = ?", serverConfig.GameName, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
+			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = CURRENT_DATE() AND queueIndex = ?", serverConfig.GameName, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
 
 			return locationId, nil
 		}
@@ -1232,7 +1232,7 @@ func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUui
 		return locationId, err
 	}
 
-	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, index, locationId) VALUES (?, CURRENT_DATE(), ?, ?)", serverConfig.GameName, playerEventLocationQueueLength+1, locationId)
+	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, queueIndex, locationId) VALUES (?, CURRENT_DATE(), ?, ?)", serverConfig.GameName, playerEventLocationQueueLength+1, locationId)
 	if err != nil {
 		return locationId, err
 	}
