@@ -1214,14 +1214,14 @@ func getOrWriteLocationIdForEventLocation(gameEventPeriodId int, title string, t
 
 func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
 	var playerEventLocationQueueLength int
-	db.QueryRow("SELECT COUNT(*) FROM playerEventLocationQueue WHERE game = ? AND date = CURRENT_DATE()", serverConfig.GameName).Scan(&playerEventLocationQueueLength)
+	db.QueryRow("SELECT COUNT(*) FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE()", serverConfig.GameName).Scan(&playerEventLocationQueueLength)
 
 	if playerEventLocationQueueLength > 0 {
 		var currentPlayerEventLocationQueueLength int
-		db.QueryRow("SELECT COUNT(*) FROM eventCompletions ec JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 WHERE pel.gamePeriodId = ? AND pel.startDate = CURRENT_DATE() AND pel.uuid = ?", gameEventPeriodId, playerUuid).Scan(&currentPlayerEventLocationQueueLength)
+		db.QueryRow("SELECT COUNT(*) FROM eventCompletions ec JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 WHERE pel.gamePeriodId = ? AND pel.startDate = UTC_DATE() AND pel.uuid = ?", gameEventPeriodId, playerUuid).Scan(&currentPlayerEventLocationQueueLength)
 
 		if currentPlayerEventLocationQueueLength < playerEventLocationQueueLength {
-			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = CURRENT_DATE() AND queueIndex = ?", serverConfig.GameName, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
+			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE() AND queueIndex = ?", serverConfig.GameName, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
 
 			return locationId, nil
 		}
@@ -1232,7 +1232,7 @@ func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUui
 		return locationId, err
 	}
 
-	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, queueIndex, locationId) VALUES (?, CURRENT_DATE(), ?, ?)", serverConfig.GameName, playerEventLocationQueueLength+1, locationId)
+	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, queueIndex, locationId) VALUES (?, UTC_DATE(), ?, ?)", serverConfig.GameName, playerEventLocationQueueLength+1, locationId)
 	if err != nil {
 		return locationId, err
 	}
@@ -2010,6 +2010,12 @@ func doCleanupQueries() error {
 
 	// Remove player sessions that have expired
 	_, err = db.Exec("DELETE FROM playerSessions WHERE expiration < NOW()")
+	if err != nil {
+		return err
+	}
+
+	// Remove player expeditions that were never completed
+	_, err = db.Exec("DELETE FROM playerEventLocations pel WHERE UTC_DATE() > pel.endDate AND NOT EXISTS (SELECT ec.eventId FROM eventCompletions ec WHERE ec.eventId = pel.id AND ec.type = 1)")
 	if err != nil {
 		return err
 	}
