@@ -1196,12 +1196,51 @@ func getPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletio
 	return eventLocationCompletion, nil
 }
 
-func writeEventLocationData(gameEventPeriodId int, eventType int, title string, titleJP string, depth int, minDepth int, exp int, mapIds []string) (err error) {
+func getOrWriteLocationIdForEventLocation(gameEventPeriodId int, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
-		return err
+		return locationId, err
 	}
 
+	_, err = db.Exec("INSERT INTO locations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", serverConfig.GameName, title, titleJP, depth, minDepth, mapIdsJson)
+	if err != nil {
+		return locationId, err
+	}
+
+	db.QueryRow("SELECT l.id FROM locations l JOIN gameEventPeriods gep ON gep.game = l.game WHERE gep.id = ? AND l.title = ?", gameEventPeriodId, title).Scan(&locationId)
+
+	return locationId, nil
+}
+
+func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
+	var playerEventLocationQueueLength int
+	db.QueryRow("SELECT COUNT(*) FROM playerEventLocationQueue WHERE game = ? AND date = CURRENT_DATE()", serverConfig.GameName).Scan(&playerEventLocationQueueLength)
+
+	if playerEventLocationQueueLength > 0 {
+		var currentPlayerEventLocationQueueLength int
+		db.QueryRow("SELECT COUNT(*) FROM eventCompletions ec JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 WHERE pel.gamePeriodId = ? AND pel.startDate = CURRENT_DATE() AND pel.uuid = ?", gameEventPeriodId, playerUuid).Scan(&currentPlayerEventLocationQueueLength)
+
+		if currentPlayerEventLocationQueueLength < playerEventLocationQueueLength {
+			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = CURRENT_DATE() AND index = ?", serverConfig.GameName, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
+
+			return locationId, nil
+		}
+	}
+
+	locationId, err = getOrWriteLocationIdForEventLocation(gameEventPeriodId, title, titleJP, depth, minDepth, mapIds)
+	if err != nil {
+		return locationId, err
+	}
+
+	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, index, locationId) VALUES (?, CURRENT_DATE(), ?, ?)", serverConfig.GameName, playerEventLocationQueueLength+1, locationId)
+	if err != nil {
+		return locationId, err
+	}
+
+	return locationId, nil
+}
+
+func writeEventLocationData(gameEventPeriodId int, eventType int, title string, titleJP string, depth int, minDepth int, exp int, mapIds []string) (err error) {
 	var days int
 	var offsetDays int
 	weekday := time.Now().UTC().Weekday()
@@ -1222,13 +1261,10 @@ func writeEventLocationData(gameEventPeriodId int, eventType int, title string, 
 
 	days -= offsetDays
 
-	_, err = db.Exec("INSERT INTO locations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", serverConfig.GameName, title, titleJP, depth, minDepth, mapIdsJson)
+	locationId, err := getOrWriteLocationIdForEventLocation(gameEventPeriodId, title, titleJP, depth, minDepth, mapIds)
 	if err != nil {
 		return err
 	}
-
-	var locationId int
-	db.QueryRow("SELECT l.id FROM locations l JOIN gameEventPeriods gep ON gep.game = l.game WHERE gep.id = ? AND l.title = ?", gameEventPeriodId, title).Scan(&locationId)
 
 	_, err = db.Exec("INSERT INTO eventLocations (locationId, gamePeriodId, type, exp, startDate, endDate) VALUES (?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY))", locationId, gameEventPeriodId, eventType, exp, offsetDays, days)
 	if err != nil {
@@ -1239,18 +1275,10 @@ func writeEventLocationData(gameEventPeriodId int, eventType int, title string, 
 }
 
 func writePlayerEventLocationData(gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (err error) {
-	mapIdsJson, err := json.Marshal(mapIds)
+	locationId, err := getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId, playerUuid, title, titleJP, depth, minDepth, mapIds)
 	if err != nil {
 		return err
 	}
-
-	_, err = db.Exec("INSERT INTO locations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", serverConfig.GameName, title, titleJP, depth, minDepth, mapIdsJson)
-	if err != nil {
-		return err
-	}
-
-	var locationId int
-	db.QueryRow("SELECT l.id FROM locations l JOIN gameEventPeriods gep ON gep.game = l.game WHERE gep.id = ? AND l.title = ?", gameEventPeriodId, title).Scan(&locationId)
 
 	_, err = db.Exec("INSERT INTO playerEventLocations (locationId, gamePeriodId, uuid, startDate, endDate) SELECT ?, ?, ?, UTC_DATE(), DATE_ADD(UTC_DATE(), INTERVAL 1 DAY) WHERE NOT EXISTS(SELECT * FROM playerEventLocations pel LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND pel.gamePeriodId = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate)", locationId, gameEventPeriodId, playerUuid, playerUuid, gameEventPeriodId)
 	if err != nil {
