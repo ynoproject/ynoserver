@@ -163,6 +163,37 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { // called 
 	return nil
 }
 
+func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsername string) error { // called by api only
+	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
+		return errors.New("insufficient rank")
+	}
+
+	existingUuid, err := getUuidFromName(newUsername)
+	if err != nil {
+		return err
+	}
+	if existingUuid != "" {
+		return errors.New("user with new username already exists")
+	}
+
+	_, err = db.Exec("UPDATE players SET user = ? WHERE uuid = ?", newUsername, recipientUuid)
+	if err != nil {
+		return err
+	}
+
+	if client, ok := clients.Load(recipientUuid); ok { // change client username if they're connected
+		client := client.(*SessionClient)
+
+		client.name = newUsername
+
+		if client.rClient != nil {
+			client.rClient.broadcast(buildMsg("name", client.id, newUsername)) // broadcast name change to room if client is in one
+		}
+	}
+
+	return nil
+}
+
 func getPlayerMedals(uuid string) (medals [5]int) {
 	if client, ok := clients.Load(uuid); ok {
 		return client.(*SessionClient).medals // return medals from session if client is connected
@@ -1916,13 +1947,16 @@ func getModeratedPlayers(action int) (players []PlayerInfo) {
 	return players
 }
 
-func getUuidFromName(name string) (uuid string) {
-	err := db.QueryRow("SELECT uuid FROM accounts WHERE user = ?", name).Scan(&uuid)
+func getUuidFromName(name string) (uuid string, err error) {
+	err = db.QueryRow("SELECT uuid FROM accounts WHERE user = ?", name).Scan(&uuid)
 	if err != nil {
-		return ""
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
 	}
 
-	return uuid
+	return uuid, nil
 }
 
 func getNameFromUuid(uuid string) (name string) {

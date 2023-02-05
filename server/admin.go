@@ -96,7 +96,11 @@ func adminBan(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "uuid or user not specified")
 			return
 		}
-		uuidParam = getUuidFromName(userParam)
+		uuidParam, err := getUuidFromName(userParam)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 		if uuidParam == "" {
 			handleError(w, r, "invalid user specified")
 			return
@@ -126,7 +130,11 @@ func adminMute(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "uuid or user not specified")
 			return
 		}
-		uuidParam = getUuidFromName(userParam)
+		uuidParam, err := getUuidFromName(userParam)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 		if uuidParam == "" {
 			handleError(w, r, "invalid user specified")
 			return
@@ -156,7 +164,11 @@ func adminUnban(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "uuid or user not specified")
 			return
 		}
-		uuidParam = getUuidFromName(userParam)
+		uuidParam, err := getUuidFromName(userParam)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 		if uuidParam == "" {
 			handleError(w, r, "invalid user specified")
 			return
@@ -186,7 +198,11 @@ func adminUnmute(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "uuid or user not specified")
 			return
 		}
-		uuidParam = getUuidFromName(userParam)
+		uuidParam, err := getUuidFromName(userParam)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
 		if uuidParam == "" {
 			handleError(w, r, "invalid user specified")
 			return
@@ -194,6 +210,44 @@ func adminUnmute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := tryUnmutePlayer(uuid, uuidParam)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
+}
+
+func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
+	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank == 0 {
+		handleError(w, r, "access denied")
+		return
+	}
+
+	userParam, newUserParam := r.URL.Query().Get("user"), r.URL.Query().Get("newUser")
+
+	if userParam == "" {
+		handleError(w, r, "user not specified")
+		return
+	}
+
+	if newUserParam == "" {
+		handleError(w, r, "new username not specified")
+		return
+	}
+
+	userUuid, err := getUuidFromName(userParam)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+	if userUuid == "" {
+		handleError(w, r, "invalid user specified")
+		return
+	}
+
+	err = tryChangePlayerUsername(uuid, userUuid, newUserParam)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
