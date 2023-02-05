@@ -176,7 +176,7 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 		return errors.New("user with new username already exists")
 	}
 
-	_, err = db.Exec("UPDATE players SET user = ? WHERE uuid = ?", newUsername, recipientUuid)
+	_, err = db.Exec("UPDATE accounts SET user = ? WHERE uuid = ?", newUsername, recipientUuid)
 	if err != nil {
 		return err
 	}
