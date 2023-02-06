@@ -158,11 +158,15 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.send <- buildMsg("ri", c.room.id) // tell client they've switched rooms serverside
 
-	c.getRoomData()
-
-	room.clients = append(room.clients, c)
+	if c.sClient.account {
+		c.getRoomEventData()
+	}
 
 	if !c.room.singleplayer {
+		c.getRoomPlayerData()
+
+		room.clients = append(room.clients, c)
+
 		// tell everyone that a new client has connected
 		c.broadcast(buildMsg("c", c.sClient.id, c.sClient.uuid, c.sClient.rank, c.sClient.account, c.sClient.badge, c.sClient.medals[:])) // user %id% has connected message
 
@@ -190,10 +194,6 @@ func (c *RoomClient) leaveRoom() {
 }
 
 func (c *RoomClient) broadcast(msg []byte) {
-	if c.room.singleplayer {
-		return
-	}
-
 	for _, client := range c.room.clients {
 		if client == c && !(len(msg) > 3 && string(msg[:3]) == "say") {
 			continue
@@ -286,46 +286,41 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) getRoomData() {
-	if !c.room.singleplayer {
-		// send the new client info about the game state
-		for _, otherClient := range c.room.clients {
-			if otherClient == c {
-				continue
-			}
+func (c *RoomClient) getRoomPlayerData() {
+	// send the new client info about the game state
+	for _, otherClient := range c.room.clients {
+		if otherClient == c {
+			continue
+		}
 
-			c.send <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
-			c.send <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
-			if otherClient.facing > 0 {
-				c.send <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
-			}
-			c.send <- buildMsg("spd", otherClient.sClient.id, otherClient.spd)
-			if otherClient.sClient.name != "" {
-				c.send <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
-			}
-			if otherClient.sClient.spriteIndex >= 0 {
-				c.send <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
-			}
-			if otherClient.repeatingFlash {
-				c.send <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
-			}
-			if otherClient.hidden {
-				c.send <- buildMsg("h", otherClient.sClient.id, "1")
-			}
-			if otherClient.sClient.systemName != "" {
-				c.send <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
-			}
-			for picId, pic := range otherClient.pictures {
-				c.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
-			}
+		c.send <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
+		c.send <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
+		if otherClient.facing > 0 {
+			c.send <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
+		}
+		c.send <- buildMsg("spd", otherClient.sClient.id, otherClient.spd)
+		if otherClient.sClient.name != "" {
+			c.send <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
+		}
+		if otherClient.sClient.spriteIndex >= 0 {
+			c.send <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
+		}
+		if otherClient.repeatingFlash {
+			c.send <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
+		}
+		if otherClient.hidden {
+			c.send <- buildMsg("h", otherClient.sClient.id, "1")
+		}
+		if otherClient.sClient.systemName != "" {
+			c.send <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
+		}
+		for picId, pic := range otherClient.pictures {
+			c.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 		}
 	}
+}
 
-	// if you need an account to do the stuff after this, why bother?
-	if !c.sClient.account {
-		return
-	}
-
+func (c *RoomClient) getRoomEventData() {
 	c.checkRoomConditions("", "")
 
 	for _, minigame := range c.room.minigames {
