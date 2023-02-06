@@ -158,10 +158,6 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.send <- buildMsg("ri", c.room.id) // tell client they've switched rooms serverside
 
-	if c.sClient.account {
-		c.getRoomEventData()
-	}
-
 	if !c.room.singleplayer {
 		c.getRoomPlayerData()
 
@@ -174,6 +170,10 @@ func (c *RoomClient) joinRoom(room *Room) {
 		if c.sClient.name != "" {
 			c.broadcast(buildMsg("name", c.sClient.id, c.sClient.name))
 		}
+	}
+
+	if c.sClient.account {
+		c.getRoomEventData()
 	}
 }
 
