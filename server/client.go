@@ -187,7 +187,7 @@ type RoomClient struct {
 
 	key, counter uint32
 
-	x, y, facing, spd int
+	x, y, facing, speed int
 
 	flash          [5]int
 	repeatingFlash bool
@@ -311,7 +311,7 @@ func (c *RoomClient) reset() {
 	c.x = 0
 	c.y = 0
 	c.facing = 0
-	c.spd = 0
+	c.speed = 0
 
 	c.flash = [5]int{}
 	c.repeatingFlash = false

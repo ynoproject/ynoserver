@@ -144,7 +144,7 @@ func (c *RoomClient) handleSpd(msg []string) (err error) {
 		return errconv
 	}
 
-	c.spd = spd
+	c.speed = spd
 
 	c.broadcast(buildMsg("spd", c.sClient.id, msg[1]))
 

@@ -295,14 +295,16 @@ func (c *RoomClient) getRoomPlayerData() {
 
 		c.send <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
 		c.send <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
-		if otherClient.facing > 0 {
+		if otherClient.facing != 0 {
 			c.send <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
 		}
-		c.send <- buildMsg("spd", otherClient.sClient.id, otherClient.spd)
+		if otherClient.speed != 0 {
+			c.send <- buildMsg("spd", otherClient.sClient.id, otherClient.speed)
+		}
 		if otherClient.sClient.name != "" {
 			c.send <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
 		}
-		if otherClient.sClient.spriteIndex >= 0 {
+		if otherClient.sClient.spriteIndex != -1 {
 			c.send <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
 		}
 		if otherClient.repeatingFlash {
