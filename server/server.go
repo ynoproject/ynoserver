@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	"github.com/gorilla/websocket"
 	"github.com/ynoproject/ynoserver/server/assets"
 	"github.com/ynoproject/ynoserver/server/config"
 	"github.com/ynoproject/ynoserver/server/security"
@@ -39,7 +40,10 @@ import (
 )
 
 const (
-	hostGameId string = "2kki"
+	hostGameId = "2kki"
+
+	delim  = "\uffff"
+	mdelim = "\ufffe"
 )
 
 var (
@@ -50,6 +54,16 @@ var (
 	gameAssets     *assets.Assets
 
 	isHostServer bool
+
+	delimBytes = []byte("\uffff")
+
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 )
 
 func Start() {

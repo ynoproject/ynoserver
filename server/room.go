@@ -28,24 +28,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	delim  = "\uffff"
-	mdelim = "\ufffe"
-)
-
-var (
-	delimBytes = []byte("\uffff")
-
-	upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-
-	rooms = make(map[int]*Room)
-)
+var rooms = make(map[int]*Room)
 
 type Room struct {
 	id           int
