@@ -93,13 +93,17 @@ const (
 	weekendEventLocationMaxDepth = 9
 	weekendEventLocationExp      = 5
 
+	eventLocationCountDailyThreshold   = 8
+	eventLocationCountWeeklyThreshold  = 3
+	eventLocationCountWeekendThreshold = 5
+
 	freeEventLocationMinDepth = 2
 
 	eventVmExp = 4
 
 	weeklyExpCap = 50
 
-	gameEventShareFactor = 0.15
+	gameEventShareFactor = 0.25
 )
 
 const (
@@ -273,7 +277,7 @@ func addDailyEventLocation(deeper bool) {
 		pools = gameDailyEventLocation2Pools
 	}
 
-	gameId, err := getRandomGameForEventLocation(pools)
+	gameId, err := getRandomGameForEventLocation(pools, eventLocationCountDailyThreshold)
 	if err != nil {
 		handleInternalEventError(0, err)
 		return
@@ -295,7 +299,7 @@ func addDailyEventLocation(deeper bool) {
 }
 
 func addWeeklyEventLocation() {
-	gameId, err := getRandomGameForEventLocation(gameWeeklyEventLocationPools)
+	gameId, err := getRandomGameForEventLocation(gameWeeklyEventLocationPools, eventLocationCountWeeklyThreshold)
 	if err != nil {
 		handleInternalEventError(1, err)
 		return
@@ -309,7 +313,7 @@ func addWeeklyEventLocation() {
 }
 
 func addWeekendEventLocation() {
-	gameId, err := getRandomGameForEventLocation(gameWeekendEventLocationPools)
+	gameId, err := getRandomGameForEventLocation(gameWeekendEventLocationPools, eventLocationCountWeekendThreshold)
 	if err != nil {
 		handleInternalEventError(2, err)
 		return

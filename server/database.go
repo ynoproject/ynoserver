@@ -1085,7 +1085,7 @@ func setCurrentGameEventPeriodId() (err error) {
 	return nil
 }
 
-func getRandomGameForEventLocation(pool map[string][]*EventLocationData) (gameId string, err error) {
+func getRandomGameForEventLocation(pool map[string][]*EventLocationData, eventLocationCountThreshold int) (gameId string, err error) {
 	results, err := db.Query("SELECT CEIL(AVG(gpc.playerCount)), gpc.game FROM gamePlayerCounts gpc JOIN gameEventPeriods gep ON gep.periodId = ? AND gep.game = gpc.game GROUP BY gpc.game", currentEventPeriodId)
 	if err != nil {
 		return "", err
@@ -1107,7 +1107,7 @@ func getRandomGameForEventLocation(pool map[string][]*EventLocationData) (gameId
 		}
 
 		// Ignore games with no event locations in the current pool
-		if eventLocations, ok := pool[currentGameId]; currentGameId != "2kki" && (!ok || len(eventLocations) == 0) {
+		if eventLocations, ok := pool[currentGameId]; currentGameId != "2kki" && (!ok || len(eventLocations) < eventLocationCountThreshold) {
 			continue
 		}
 
@@ -1131,11 +1131,12 @@ func getRandomGameForEventLocation(pool map[string][]*EventLocationData) (gameId
 
 	for i, count := range playerCounts {
 		poolValue := int(math.Floor(float64(count)*(1-gameEventShareFactor))) + poolCommonValue
-		gamePool[poolValue] = gameIds[i]
+		poolThreshold := poolValue + totalPoolValue
+
+		gamePool[poolThreshold] = gameIds[i]
+		poolThresholds = append(poolThresholds, poolThreshold)
 
 		totalPoolValue += poolValue
-
-		poolThresholds = append(poolThresholds, poolValue)
 	}
 
 	rand.Seed(time.Now().Unix())
