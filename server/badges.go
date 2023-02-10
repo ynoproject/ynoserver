@@ -226,7 +226,9 @@ func updateActiveBadgesAndConditions() {
 			if gameBadge.Batch == 0 {
 				continue
 			}
-			gameBadge.Dev = gameBadge.Batch > currentBatch
+			if !gameBadge.Dev {
+				gameBadge.Dev = gameBadge.Batch > currentBatch
+			}
 			switch gameBadge.ReqType {
 			case "tag":
 				if condition, ok := conditions[game][gameBadge.ReqString]; ok {
