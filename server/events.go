@@ -73,7 +73,10 @@ type EventLocationData struct {
 	TitleJP  string   `json:"titleJP,omitempty"`
 	Depth    int      `json:"depth"`
 	MinDepth int      `json:"minDepth"`
+	FgColor  string   `json:"fgColor"`
+	BgColor  string   `json:"bgColor"`
 	MapIds   []string `json:"mapIds"`
+	Ignored  bool     `json:"ignored"`
 }
 
 const (
@@ -134,6 +137,8 @@ var (
 	gameWeekendEventLocationPools map[string][]*EventLocationData
 	freeEventLocationPool         []*EventLocationData
 	eventVms                      map[int][]int
+
+	gameLocationColors map[string][]string
 )
 
 func initEvents() {
@@ -158,7 +163,7 @@ func initEvents() {
 		}
 	}
 
-	setGameEventLocationPools()
+	setGameEventLocationPoolsAndLocationColors()
 
 	if !isHostServer {
 		return
@@ -483,7 +488,7 @@ func setEventVms() {
 	}
 }
 
-func setGameEventLocationPools() {
+func setGameEventLocationPoolsAndLocationColors() {
 	if isHostServer {
 		gameDailyEventLocationPools = make(map[string][]*EventLocationData)
 		gameDailyEventLocation2Pools = make(map[string][]*EventLocationData)
@@ -524,6 +529,9 @@ func setGameEventLocationPools() {
 		}
 
 		for _, eventLocation := range eventLocations {
+			if eventLocation.Ignored {
+				continue
+			}
 			if eventLocation.Depth > gameMaxDepths[gameId] {
 				gameMaxDepths[gameId] = eventLocation.Depth
 			}
@@ -534,6 +542,14 @@ func setGameEventLocationPools() {
 		gameMaxDepth := math.Min(float64(gameMaxDepths[gameId]), 15)
 
 		for _, eventLocation := range eventLocations {
+			if gameId == serverConfig.GameName {
+				var locationColors []string
+				locationColors = append(locationColors, eventLocation.FgColor, eventLocation.BgColor)
+				gameLocationColors[eventLocation.Title] = locationColors
+			}
+			if eventLocation.Ignored {
+				continue
+			}
 			adjustedDepth := eventLocation.Depth
 			adjustedMinDepth := eventLocation.MinDepth
 			if gameMaxDepth > 10 {

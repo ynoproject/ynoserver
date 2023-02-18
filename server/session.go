@@ -155,6 +155,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handleName(msgFields)
 	case "ploc": // previous location
 		err = c.handlePloc(msgFields)
+	case "lcol": // location colors
+		err = c.handleLcol(msgFields)
 	case "gsay": // global say
 		err = c.handleGSay(msgFields)
 	case "psay": // party say

@@ -863,6 +863,27 @@ func (c *SessionClient) handlePloc(msg []string) (err error) {
 	return nil
 }
 
+func (c *SessionClient) handleLcol(msg []string) (err error) {
+	if c.rClient == nil {
+		return err
+	}
+
+	if len(msg) != 2 {
+		return errors.New("command length mismatch")
+	}
+
+	locationName := msg[1]
+
+	if locationColors, ok := gameLocationColors[locationName]; ok {
+		c.send <- buildMsg("lcol", locationColors[0], locationColors[1])
+		return nil
+	}
+
+	c.send <- buildMsg("lcol", "", "")
+
+	return nil
+}
+
 func (c *SessionClient) handleGSay(msg []string) (err error) {
 	if c.muted {
 		return errors.New("player is muted")
