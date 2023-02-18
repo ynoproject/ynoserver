@@ -496,6 +496,8 @@ func setGameEventLocationPoolsAndLocationColors() {
 		gameWeekendEventLocationPools = make(map[string][]*EventLocationData)
 	}
 
+	gameLocationColors = make(map[string][]string)
+
 	gameEventLocations := make(map[string][]*EventLocationData)
 	gameMaxDepths := make(map[string]int)
 
