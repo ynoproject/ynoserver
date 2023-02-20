@@ -203,7 +203,8 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 				handleError(w, r, "uuid or user not specified")
 				return
 			}
-			uuidParam, err := getUuidFromName(userParam)
+			var err error
+			uuidParam, err = getUuidFromName(userParam)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -257,7 +258,8 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 				handleError(w, r, "uuid or user not specified")
 				return
 			}
-			uuidParam, err := getUuidFromName(userParam)
+			var err error
+			uuidParam, err = getUuidFromName(userParam)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
