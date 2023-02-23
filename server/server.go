@@ -122,7 +122,7 @@ func getListener() net.Listener {
 		log.Fatal(err)
 	}
 
-	// listen for connections to socket
+	// set socket file permissions
 	if err := os.Chmod("sockets/"+serverConfig.GameName+".sock", 0666); err != nil {
 		log.Fatal(err)
 	}
