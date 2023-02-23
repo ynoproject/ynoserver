@@ -35,7 +35,7 @@ const (
 type Picture struct {
 	name string
 
-	positionX, positionY int
+	posX, posY int
 	mapX, mapY           int
 	panX, panY           int
 

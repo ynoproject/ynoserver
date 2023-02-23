@@ -317,7 +317,7 @@ func (c *RoomClient) getRoomPlayerData() {
 			c.send <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
 		}
 		for picId, pic := range otherClient.pictures {
-			c.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.positionX, pic.positionY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
+			c.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 		}
 	}
 }

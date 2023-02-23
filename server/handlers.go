@@ -311,11 +311,11 @@ func (c *RoomClient) handleP(msg []string) (err error) {
 		return errconv
 	}
 
-	positionX, errconv := strconv.Atoi(msg[2])
+	posX, errconv := strconv.Atoi(msg[2])
 	if errconv != nil {
 		return errconv
 	}
-	positionY, errconv := strconv.Atoi(msg[3])
+	posY, errconv := strconv.Atoi(msg[3])
 	if errconv != nil {
 		return errconv
 	}
@@ -417,8 +417,8 @@ func (c *RoomClient) handleP(msg []string) (err error) {
 		}
 	}
 
-	pic.positionX = positionX
-	pic.positionY = positionY
+	pic.posX = posX
+	pic.posY = posY
 	pic.mapX = mapX
 	pic.mapY = mapY
 	pic.panX = panX
