@@ -36,8 +36,8 @@ type Picture struct {
 	name string
 
 	posX, posY int
-	mapX, mapY           int
-	panX, panY           int
+	mapX, mapY int
+	panX, panY int
 
 	magnify, topTrans, bottomTrans int
 
