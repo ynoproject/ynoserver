@@ -102,7 +102,6 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		key:       serverSecurity.NewClientKey(),
 	}
 
-	// use 0000 as a placeholder since client.mapId isn't set until later
 	if s, ok := clients.Load(uuid); ok {
 		session := s.(*SessionClient)
 		if session.rClient != nil {
@@ -112,6 +111,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		session.rClient = client
 		client.sClient = session
 	} else {
+		// use 0000 as a placeholder since client.mapId isn't set until later
 		writeErrLog(uuid, "0000", "player has no session")
 		return
 	}
