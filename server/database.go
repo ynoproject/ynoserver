@@ -50,7 +50,7 @@ func getOrCreatePlayerData(ip string) (uuid string, banned bool, muted bool) {
 		// create new guest account
 		uuid = randString(16)
 		banned = isVpn(ip)
-		createPlayerData(ip, uuid, 0, banned)
+		createPlayerData(ip, uuid, banned)
 
 		if !banned {
 			_, banned, muted, err := getPlayerData(uuid)
@@ -223,8 +223,8 @@ func getPlayerData(uuid string) (rank int, banned bool, muted bool, err error) {
 	return rank, banned, muted, nil
 }
 
-func createPlayerData(ip string, uuid string, rank int, banned bool) error {
-	_, err := db.Exec("INSERT INTO players (ip, uuid, rank, banned) VALUES (?, ?, ?, ?)", ip, uuid, rank, banned)
+func createPlayerData(ip string, uuid string, banned bool) error {
+	_, err := db.Exec("INSERT INTO players (ip, uuid, banned) VALUES (?, ?, ?)", ip, uuid, banned)
 	if err != nil {
 		return err
 	}
