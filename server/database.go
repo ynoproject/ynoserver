@@ -51,6 +51,13 @@ func getOrCreatePlayerData(ip string) (uuid string, banned bool, muted bool) {
 		uuid = randString(16)
 		banned = isVpn(ip)
 		createPlayerData(ip, uuid, 0, banned)
+
+		if !banned {
+			_, banned, muted, err := getPlayerData(uuid)
+			if err != nil {
+				return uuid, banned, muted
+			}
+		}
 	}
 
 	return uuid, banned, muted
@@ -205,6 +212,15 @@ func getPlayerMedals(uuid string) (medals [5]int) {
 	}
 
 	return medals
+}
+
+func getPlayerData(uuid string) (rank int, banned bool, muted bool, err error) {
+	err = db.QueryRow("SELECT rank, banned, muted FROM players WHERE uuid = ?", uuid).Scan(&rank, &banned, &muted)
+	if err != nil {
+		return 0, false, false, err
+	}
+
+	return rank, banned, muted, nil
 }
 
 func createPlayerData(ip string, uuid string, rank int, banned bool) error {
