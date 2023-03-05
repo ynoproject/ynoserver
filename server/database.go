@@ -52,11 +52,9 @@ func getOrCreatePlayerData(ip string) (uuid string, banned bool, muted bool) {
 		banned = isVpn(ip)
 		createPlayerData(ip, uuid, banned)
 
+		// recheck moderation status
 		if !banned {
-			_, banned, muted, err := getPlayerData(uuid)
-			if err != nil {
-				return uuid, banned, muted
-			}
+			banned, muted = getPlayerModerationStatus(uuid)
 		}
 	}
 
@@ -214,13 +212,13 @@ func getPlayerMedals(uuid string) (medals [5]int) {
 	return medals
 }
 
-func getPlayerData(uuid string) (rank int, banned bool, muted bool, err error) {
-	err = db.QueryRow("SELECT rank, banned, muted FROM players WHERE uuid = ?", uuid).Scan(&rank, &banned, &muted)
+func getPlayerModerationStatus(uuid string) (banned bool, muted bool) {
+	err := db.QueryRow("SELECT banned, muted FROM players WHERE uuid = ?", uuid).Scan(&banned, &muted)
 	if err != nil {
-		return 0, false, false, err
+		return false, false
 	}
 
-	return rank, banned, muted, nil
+	return banned, muted
 }
 
 func createPlayerData(ip string, uuid string, banned bool) error {
