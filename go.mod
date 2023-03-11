@@ -6,6 +6,7 @@ require (
 	github.com/go-co-op/gocron v1.17.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gorilla/websocket v1.5.0
+	github.com/klauspost/compress v1.16.0
 	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0

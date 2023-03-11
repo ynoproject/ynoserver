@@ -778,42 +778,6 @@ func deletePartyAndMembers(partyId int) error {
 	return nil
 }
 
-func getSaveDataTimestamp(playerUuid string) (timestamp time.Time, err error) { // called by api only
-	err = db.QueryRow("SELECT timestamp FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, serverConfig.GameName).Scan(&timestamp)
-	if err != nil {
-		return timestamp, err
-	}
-
-	return timestamp, nil
-}
-
-func getSaveData(playerUuid string) (saveData string, err error) { // called by api only
-	err = db.QueryRow("SELECT data FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, serverConfig.GameName).Scan(&saveData)
-	if err != nil {
-		return saveData, err
-	}
-
-	return saveData, nil
-}
-
-func createGameSaveData(playerUuid string, timestamp time.Time, data string) error { // called by api only
-	_, err := db.Exec("INSERT INTO playerGameSaves (uuid, game, timestamp, data) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = ?, data = ?", playerUuid, serverConfig.GameName, timestamp, data, timestamp, data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func clearGameSaveData(playerUuid string) error { // called by api only
-	_, err := db.Exec("DELETE FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, serverConfig.GameName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func writeGlobalChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, x, y int, contents string) error {
 	_, err := db.Exec("INSERT INTO chatMessages (msgId, game, uuid, mapId, prevMapId, prevLocations, x, y, contents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", msgId, serverConfig.GameName, uuid, mapId, prevMapId, prevLocations, x, y, contents)
 	if err != nil {

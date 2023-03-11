@@ -643,26 +643,16 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write([]byte(saveData))
+		w.Write(saveData)
 		return
 	case "push":
-		timestampParam := r.URL.Query().Get("timestamp")
-		if timestampParam == "" {
-			handleError(w, r, "timestamp not specified")
-			return
-		}
-		timestamp, err := time.Parse(time.RFC3339, timestampParam)
-		if err != nil {
-			handleError(w, r, "invalid timestamp value")
-			return
-		}
 		data, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil || len(data) > 1024*1024*8 {
 			handleError(w, r, "invalid data")
 			return
 		}
-		err = createGameSaveData(uuid, timestamp, string(data))
+		err = createGameSaveData(uuid, data)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
