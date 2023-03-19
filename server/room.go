@@ -240,10 +240,8 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 	switch msgFields := strings.Split(msgStr, delim); msgFields[0] {
 	case "sr": // switch room
 		err = c.handleSr(msgFields)
-	case "m", "tp": // moved / teleported to x y
+	case "m", "tp", "jmp": // moved / teleported / jumped to x y
 		err = c.handleM(msgFields)
-	case "jmp": // jumped to x y
-		err = c.handleJmp(msgFields)
 	case "f": // change facing direction
 		err = c.handleF(msgFields)
 	case "spd": // change my speed to spd

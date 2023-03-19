@@ -84,34 +84,11 @@ func (c *RoomClient) handleM(msg []string) (err error) {
 		c.checkRoomConditions("coords", "")
 	}
 
-	c.broadcast(buildMsg("m", c.sClient.id, msg[1:])) // user %id% moved to x y
-
-	return nil
-}
-
-func (c *RoomClient) handleJmp(msg []string) (err error) {
-	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+	if msg[0] == "jmp" {
+		c.broadcast(buildMsg("jmp", c.sClient.id, msg[1:])) // user %id% jumped to x y
+	} else {
+		c.broadcast(buildMsg("m", c.sClient.id, msg[1:])) // user %id% moved to x y
 	}
-
-	// check if the coordinates are valid
-	x, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || x < 0 {
-		return errconv
-	}
-	y, errconv := strconv.Atoi(msg[2])
-	if errconv != nil || y < 0 {
-		return errconv
-	}
-
-	c.x = x
-	c.y = y
-
-	if c.syncCoords {
-		c.checkRoomConditions("coords", "")
-	}
-
-	c.broadcast(buildMsg("jmp", c.sClient.id, msg[1:])) // user %id% jumped to x y
 
 	return nil
 }
