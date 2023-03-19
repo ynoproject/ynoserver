@@ -884,7 +884,7 @@ func (c *SessionClient) handleLcol(msg []string) (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleGSay(msg []string) (err error) {
+func (c *SessionClient) handleGPSay(msg []string, isParty bool) (err error) {
 	if c.muted {
 		return errors.New("player is muted")
 	}
@@ -902,9 +902,26 @@ func (c *SessionClient) handleGSay(msg []string) (err error) {
 		return errors.New("invalid message")
 	}
 
-	enableLocBin, errconv := strconv.Atoi(msg[2])
-	if errconv != nil || enableLocBin < 0 || enableLocBin > 1 {
-		return errconv
+	enableLocBin := 1
+	var partyId int
+	var partyMemberUuids []string
+	if !isParty {
+		enableLocBin, err = strconv.Atoi(msg[2])
+		if err != nil || enableLocBin < 0 || enableLocBin > 1 {
+			return err
+		}
+	} else {
+		partyId, err = getPlayerPartyId(c.uuid)
+		if err != nil {
+			return err
+		}
+		if partyId == 0 {
+			return errors.New("player not in a party")
+		}
+		partyMemberUuids, err = getPartyMemberUuids(partyId)
+		if err != nil {
+			return err
+		}
 	}
 
 	mapId := "0000"
@@ -923,70 +940,20 @@ func (c *SessionClient) handleGSay(msg []string) (err error) {
 
 	msgId := randString(12)
 
-	c.broadcast(buildMsg("p", c.uuid, c.name, c.systemName, c.rank, c.account, c.badge, c.medals[:]))
-	c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
+	if !isParty {
+		c.broadcast(buildMsg("p", c.uuid, c.name, c.systemName, c.rank, c.account, c.badge, c.medals[:]))
+		c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
 
-	err = writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *SessionClient) handlePSay(msg []string) (err error) {
-	if c.muted {
-		return errors.New("player is muted")
-	}
-
-	if len(msg) != 2 {
-		return errors.New("command length mismatch")
-	}
-
-	if c.name == "" || c.systemName == "" {
-		return errors.New("no name or system graphic set")
-	}
-
-	msgContents := strings.TrimSpace(msg[1])
-	if msgContents == "" || len(msgContents) > 150 {
-		return errors.New("invalid message")
-	}
-
-	partyId, err := getPlayerPartyId(c.uuid)
-	if err != nil {
-		return err
-	}
-	if partyId == 0 {
-		return errors.New("player not in a party")
-	}
-	partyMemberUuids, err := getPartyMemberUuids(partyId)
-	if err != nil {
-		return err
-	}
-
-	msgId := randString(12)
-
-	for _, uuid := range partyMemberUuids {
-		if client, ok := clients.Load(uuid); ok {
-			client.(*SessionClient).send <- buildMsg("psay", c.uuid, msgContents, msgId)
+		err = writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
+	} else {
+		for _, uuid := range partyMemberUuids {
+			if client, ok := clients.Load(uuid); ok {
+				client.(*SessionClient).send <- buildMsg("psay", c.uuid, msgContents, msgId)
+			}
 		}
+
+		err = writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, partyId)
 	}
-
-	mapId := "0000"
-	prevMapId := "0000"
-	prevLocations := ""
-	x := -1
-	y := -1
-
-	if c.rClient != nil {
-		mapId = c.rClient.mapId
-		prevMapId = c.rClient.prevMapId
-		prevLocations = c.rClient.prevLocations
-		x = c.rClient.x
-		y = c.rClient.y
-	}
-
-	err = writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, partyId)
 	if err != nil {
 		return err
 	}

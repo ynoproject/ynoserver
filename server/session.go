@@ -157,10 +157,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handlePloc(msgFields)
 	case "lcol": // location colors
 		err = c.handleLcol(msgFields)
-	case "gsay": // global say
-		err = c.handleGSay(msgFields)
-	case "psay": // party say
-		err = c.handlePSay(msgFields)
+	case "gsay", "psay": // global say and party say
+		err = c.handleGPSay(msgFields, msgFields[0] == "psay")
 	case "pt": // party update
 		err = c.handlePt()
 		if err != nil {
