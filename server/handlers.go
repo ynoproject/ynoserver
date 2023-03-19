@@ -861,7 +861,7 @@ func (c *SessionClient) handleLcol(msg []string) (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleGPSay(msg []string, isParty bool) (err error) {
+func (c *SessionClient) handleGPSay(msg []string) (err error) {
 	if c.muted {
 		return errors.New("player is muted")
 	}
@@ -882,7 +882,7 @@ func (c *SessionClient) handleGPSay(msg []string, isParty bool) (err error) {
 	enableLocBin := 1
 	var partyId int
 	var partyMemberUuids []string
-	if !isParty {
+	if msg[0] == "gsay" {
 		enableLocBin, err = strconv.Atoi(msg[2])
 		if err != nil || enableLocBin < 0 || enableLocBin > 1 {
 			return err
@@ -917,7 +917,7 @@ func (c *SessionClient) handleGPSay(msg []string, isParty bool) (err error) {
 
 	msgId := randString(12)
 
-	if !isParty {
+	if msg[0] == "gsay" {
 		c.broadcast(buildMsg("p", c.uuid, c.name, c.systemName, c.rank, c.account, c.badge, c.medals[:]))
 		c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
 
