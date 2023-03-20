@@ -18,7 +18,6 @@
 package server
 
 import (
-	"errors"
 	"os"
 	"time"
 
@@ -28,16 +27,7 @@ import (
 func getSaveDataTimestamp(playerUuid string) (time.Time, error) { // called by api only
 	info, err := os.Stat("saves/" + serverConfig.GameName + "/" + playerUuid + ".osd")
 	if err != nil {
-		//return time.UnixMilli(0), nil // HACK: no error return because it breaks forest-orb
-
-		// remove this later
-		var timestamp time.Time
-		err = db.QueryRow("SELECT timestamp FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, serverConfig.GameName).Scan(&timestamp)
-		if err != nil {
-			return timestamp, err
-		}
-
-		return timestamp, nil
+		return time.UnixMilli(0), nil // HACK: no error return because it breaks forest-orb
 	}
 
 	return info.ModTime(), nil
@@ -46,16 +36,7 @@ func getSaveDataTimestamp(playerUuid string) (time.Time, error) { // called by a
 func getSaveData(playerUuid string) ([]byte, error) { // called by api only
 	file, err := os.ReadFile("saves/" + serverConfig.GameName + "/" + playerUuid + ".osd")
 	if err != nil {
-		//return nil, err
-
-		// remove this later
-		var saveData string
-		err = db.QueryRow("SELECT data FROM playerGameSaves WHERE uuid = ? AND game = ?", playerUuid, serverConfig.GameName).Scan(&saveData)
-		if err != nil {
-			return nil, err
-		}
-
-		return []byte(saveData), nil
+		return nil, err
 	}
 
 	dec, err := zstd.NewReader(nil)
@@ -74,11 +55,6 @@ func getSaveData(playerUuid string) ([]byte, error) { // called by api only
 }
 
 func createGameSaveData(playerUuid string, data []byte) error { // called by api only
-	// remove this later
-	if len(data) > 1 && data[0] == '{' {
-		return errors.New("old format save data is no longer supported")
-	}
-
 	enc, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
 	if err != nil {
 		return err
