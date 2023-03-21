@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-func (c *RoomClient) handleSr(msg []string) (err error) {
+func (c *RoomClient) handleSr(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")
 	}
@@ -36,7 +36,7 @@ func (c *RoomClient) handleSr(msg []string) (err error) {
 
 	room, ok := rooms[roomId]
 	if !ok {
-		return err
+		return errors.New("invalid room id")
 	}
 
 	c.leaveRoom()
@@ -45,7 +45,7 @@ func (c *RoomClient) handleSr(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleM(msg []string) (err error) {
+func (c *RoomClient) handleM(msg []string) error {
 	if len(msg) != 3 {
 		return errors.New("segment count mismatch")
 	}
@@ -93,7 +93,7 @@ func (c *RoomClient) handleM(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleF(msg []string) (err error) {
+func (c *RoomClient) handleF(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")
 	}
@@ -111,7 +111,7 @@ func (c *RoomClient) handleF(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleSpd(msg []string) (err error) {
+func (c *RoomClient) handleSpd(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")
 	}
@@ -128,17 +128,17 @@ func (c *RoomClient) handleSpd(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleSpr(msg []string) (err error) {
+func (c *RoomClient) handleSpr(msg []string) error {
 	if len(msg) != 3 {
 		return errors.New("segment count mismatch")
 	}
 
 	if !gameAssets.IsValidSprite(msg[1]) {
-		return err
+		return errors.New("invalid sprite")
 	}
 
 	if serverConfig.GameName == "2kki" && !gameAssets.IsValid2kkiSprite(msg[1], c.room.id) {
-		return err
+		return errors.New("invalid 2kki sprite")
 	}
 
 	index, errconv := strconv.Atoi(msg[2])
@@ -154,7 +154,7 @@ func (c *RoomClient) handleSpr(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleFl(msg []string) (err error) {
+func (c *RoomClient) handleFl(msg []string) error {
 	if len(msg) != 6 {
 		return errors.New("segment count mismatch")
 	}
@@ -206,7 +206,7 @@ func (c *RoomClient) handleRrfl() (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleH(msg []string) (err error) {
+func (c *RoomClient) handleH(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")
 	}
@@ -239,13 +239,13 @@ func (c *RoomClient) handleSys(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleSe(msg []string) (err error) {
+func (c *RoomClient) handleSe(msg []string) error {
 	if len(msg) != 5 {
 		return errors.New("segment count mismatch")
 	}
 
 	if !gameAssets.IsValidSound(msg[1]) {
-		return err
+		return errors.New("invalid sound")
 	}
 
 	volume, errconv := strconv.Atoi(msg[2])
@@ -266,7 +266,7 @@ func (c *RoomClient) handleSe(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleP(msg []string) (err error) {
+func (c *RoomClient) handleP(msg []string) error {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
@@ -279,7 +279,7 @@ func (c *RoomClient) handleP(msg []string) (err error) {
 	if isShow {
 		c.checkRoomConditions("picture", msg[17])
 		if !gameAssets.IsValidPicture(msg[17]) {
-			return err
+			return errors.New("invalid picture")
 		}
 	}
 
@@ -356,7 +356,7 @@ func (c *RoomClient) handleP(msg []string) (err error) {
 	if isShow {
 		picName := msg[17]
 		if picName == "" {
-			return err
+			return errors.New("no pic name")
 		}
 
 		useTransparentColorBin, errconv := strconv.Atoi(msg[18])
@@ -417,7 +417,7 @@ func (c *RoomClient) handleP(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleRp(msg []string) (err error) {
+func (c *RoomClient) handleRp(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")
 	}
@@ -434,7 +434,7 @@ func (c *RoomClient) handleRp(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleBa(msg []string) (err error) {
+func (c *RoomClient) handleBa(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")
 	}
@@ -445,7 +445,7 @@ func (c *RoomClient) handleBa(msg []string) (err error) {
 	}
 
 	if !gameAssets.BattleAnimIds[id] {
-		return err
+		return errors.New("invalid battle animation id")
 	}
 
 	c.broadcast(buildMsg("ba", c.sClient.id, msg[1]))
@@ -453,7 +453,7 @@ func (c *RoomClient) handleBa(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleSay(msg []string) (err error) {
+func (c *RoomClient) handleSay(msg []string) error {
 	if c.sClient.muted {
 		return nil
 	}
@@ -476,7 +476,7 @@ func (c *RoomClient) handleSay(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleSs(msg []string) (err error) {
+func (c *RoomClient) handleSs(msg []string) error {
 	if len(msg) != 3 {
 		return errors.New("segment count mismatch")
 	}
@@ -599,7 +599,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleSv(msg []string) (err error) {
+func (c *RoomClient) handleSv(msg []string) error {
 	if len(msg) != 3 {
 		return errors.New("segment count mismatch")
 	}
@@ -734,7 +734,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 	return nil
 }
 
-func (c *RoomClient) handleSev(msg []string) (err error) {
+func (c *RoomClient) handleSev(msg []string) error {
 	if len(msg) != 3 {
 		return errors.New("segment count mismatch")
 	}
@@ -751,7 +751,7 @@ func (c *RoomClient) handleSev(msg []string) (err error) {
 	c.checkRoomConditions(triggerType, msg[1])
 
 	if c.room.id != currentEventVmMapId {
-		return err
+		return errors.New("event vm room id mismatch")
 	}
 
 	eventIdInt, err := strconv.Atoi(msg[1])
@@ -760,7 +760,7 @@ func (c *RoomClient) handleSev(msg []string) (err error) {
 	}
 
 	if currentEventVmEventId != eventIdInt {
-		return err
+		return errors.New("event vm id mismatch")
 	}
 
 	exp, err := tryCompleteEventVm(c.sClient.uuid, currentEventVmMapId, currentEventVmEventId)
@@ -776,7 +776,7 @@ func (c *RoomClient) handleSev(msg []string) (err error) {
 
 // SESSION
 
-func (c *SessionClient) handleI() (err error) {
+func (c *SessionClient) handleI() error {
 	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(c.name)
 	playerInfoJson, err := json.Marshal(PlayerInfo{
 		Uuid:          c.uuid,
@@ -796,7 +796,7 @@ func (c *SessionClient) handleI() (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleName(msg []string) (err error) {
+func (c *SessionClient) handleName(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")
 	}
@@ -807,7 +807,7 @@ func (c *SessionClient) handleName(msg []string) (err error) {
 	}
 
 	if c.name != "" || !isOkString(msg[1]) || len(msg[1]) > maxNameLength {
-		return err
+		return errors.New("invalid name")
 	}
 
 	c.name = msg[1]
@@ -819,9 +819,9 @@ func (c *SessionClient) handleName(msg []string) (err error) {
 	return nil
 }
 
-func (c *SessionClient) handlePloc(msg []string) (err error) {
+func (c *SessionClient) handlePloc(msg []string) error {
 	if c.rClient == nil {
-		return err
+		return errors.New("room client does not exist")
 	}
 
 	if len(msg) != 3 {
@@ -840,9 +840,9 @@ func (c *SessionClient) handlePloc(msg []string) (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleLcol(msg []string) (err error) {
+func (c *SessionClient) handleLcol(msg []string) error {
 	if c.rClient == nil {
-		return err
+		return errors.New("room client does not exist")
 	}
 
 	if len(msg) != 2 {
@@ -861,7 +861,7 @@ func (c *SessionClient) handleLcol(msg []string) (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleGPSay(msg []string) (err error) {
+func (c *SessionClient) handleGPSay(msg []string) error {
 	if c.muted {
 		return errors.New("player is muted")
 	}
@@ -883,22 +883,29 @@ func (c *SessionClient) handleGPSay(msg []string) (err error) {
 	var partyId int
 	var partyMemberUuids []string
 	if msg[0] == "gsay" {
-		enableLocBin, err = strconv.Atoi(msg[2])
-		if err != nil || enableLocBin < 0 || enableLocBin > 1 {
+		enableLocBinV, err := strconv.Atoi(msg[2])
+		if err != nil || enableLocBinV < 0 || enableLocBinV > 1 {
 			return err
 		}
+
+		enableLocBin = enableLocBinV
 	} else {
-		partyId, err = getPlayerPartyId(c.uuid)
+		partyIdV, err := getPlayerPartyId(c.uuid)
 		if err != nil {
 			return err
 		}
-		if partyId == 0 {
+		if partyIdV == 0 {
 			return errors.New("player not in a party")
 		}
-		partyMemberUuids, err = getPartyMemberUuids(partyId)
+
+		partyId = partyIdV
+	
+		partyMemberUuidsV, err := getPartyMemberUuids(partyId)
 		if err != nil {
 			return err
 		}
+
+		partyMemberUuids = partyMemberUuidsV
 	}
 
 	mapId := "0000"
@@ -921,7 +928,10 @@ func (c *SessionClient) handleGPSay(msg []string) (err error) {
 		c.broadcast(buildMsg("p", c.uuid, c.name, c.systemName, c.rank, c.account, c.badge, c.medals[:]))
 		c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
 
-		err = writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
+		err := writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
+		if err != nil {
+			return err
+		}
 	} else {
 		for _, uuid := range partyMemberUuids {
 			if client, ok := clients.Load(uuid); ok {
@@ -929,16 +939,17 @@ func (c *SessionClient) handleGPSay(msg []string) (err error) {
 			}
 		}
 
-		err = writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, partyId)
+		err := writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, partyId)
+		if err != nil {
+			return err
+		}
 	}
-	if err != nil {
-		return err
-	}
+
 
 	return nil
 }
 
-func (c *SessionClient) handlePt() (err error) {
+func (c *SessionClient) handlePt() error {
 	partyId, err := getPlayerPartyId(c.uuid)
 	if err != nil {
 		return err
@@ -963,7 +974,7 @@ func (c *SessionClient) handlePt() (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleEp() (err error) {
+func (c *SessionClient) handleEp() error {
 	period, err := getCurrentEventPeriodData()
 	if err != nil {
 		return err
@@ -978,7 +989,7 @@ func (c *SessionClient) handleEp() (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleE() (err error) {
+func (c *SessionClient) handleE() error {
 	currentEventLocationsData, err := getCurrentPlayerEventLocationsData(c.uuid)
 	if err != nil {
 		return err
@@ -1022,9 +1033,9 @@ func (c *SessionClient) handleE() (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleEexp() (err error) {
+func (c *SessionClient) handleEexp() error {
 	if currentGameEventPeriodId <= 0 {
-		return err
+		return errors.New("events are disabled")
 	}
 
 	playerEventExpData, err := getPlayerEventExpData(c.uuid)
@@ -1041,10 +1052,10 @@ func (c *SessionClient) handleEexp() (err error) {
 	return nil
 }
 
-func (c *SessionClient) handleEec(msg []string) (err error) {
+func (c *SessionClient) handleEec(msg []string) error {
 	if currentGameEventPeriodId <= 0 {
 		c.send <- buildMsg("eec", 0, false)
-		return err
+		return errors.New("events are disabled")
 	}
 
 	if len(msg) < 3 {
@@ -1055,7 +1066,7 @@ func (c *SessionClient) handleEec(msg []string) (err error) {
 	location := msg[1]
 	if len(location) == 0 {
 		c.send <- buildMsg("eec", 0, false)
-		return err // location not specified
+		return errors.New("location not specified")
 	}
 
 	ret := -1
@@ -1068,7 +1079,7 @@ func (c *SessionClient) handleEec(msg []string) (err error) {
 			}
 			if exp < 0 {
 				c.send <- buildMsg("eec", 0, false)
-				return err // unexpected state
+				return errors.New("unexpected state")
 			}
 			ret = exp
 		} else { // free expedition
