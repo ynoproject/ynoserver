@@ -60,7 +60,7 @@ func (c *RoomClient) handleM(msg []string) error {
 		return errconv
 	}
 
-	if msg[0] == "m" && !(c.y-y < 1 || c.x-x > 1 || c.y-y > 1 || c.x-x < 1) {
+	if msg[0] == "m" {
 		switch {
 		case c.y < y:
 			c.facing = 0 // up
@@ -899,7 +899,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		}
 
 		partyId = partyIdV
-	
+
 		partyMemberUuidsV, err := getPartyMemberUuids(partyId)
 		if err != nil {
 			return err
@@ -944,7 +944,6 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 			return err
 		}
 	}
-
 
 	return nil
 }
