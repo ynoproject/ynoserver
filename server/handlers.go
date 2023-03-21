@@ -1068,19 +1068,19 @@ func (c *SessionClient) handleEec(msg []string) error {
 		return errors.New("location not specified")
 	}
 
-	ret := -1
+	exp := -1
 	if c.rClient != nil {
 		if msg[2] != "1" { // not free expedition
-			exp, err := tryCompleteEventLocation(c.uuid, location)
+			expV, err := tryCompleteEventLocation(c.uuid, location)
 			if err != nil {
 				c.send <- buildMsg("eec", 0, false)
 				return err
 			}
-			if exp < 0 {
+			if expV < 0 {
 				c.send <- buildMsg("eec", 0, false)
 				return errors.New("unexpected state")
 			}
-			ret = exp
+			exp = expV
 		} else { // free expedition
 			complete, err := tryCompletePlayerEventLocation(c.uuid, location)
 			if err != nil {
@@ -1088,7 +1088,7 @@ func (c *SessionClient) handleEec(msg []string) error {
 				return err
 			}
 			if complete {
-				ret = 0
+				exp = 0
 			}
 		}
 	}
@@ -1112,7 +1112,7 @@ func (c *SessionClient) handleEec(msg []string) error {
 		}
 	}
 
-	c.send <- buildMsg("eec", ret, true)
+	c.send <- buildMsg("eec", exp, true)
 
 	return nil
 }
