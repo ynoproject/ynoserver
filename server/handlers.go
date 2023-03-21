@@ -866,7 +866,7 @@ func (c *SessionClient) handleGPSay(msg []string) (err error) {
 		return errors.New("player is muted")
 	}
 
-	if len(msg) != 3 {
+	if (msg[0] == "gsay" && len(msg) != 3) || (msg[0] == "psay" && len(msg) != 2) {
 		return errors.New("command length mismatch")
 	}
 
