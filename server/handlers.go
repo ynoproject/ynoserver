@@ -26,7 +26,7 @@ import (
 
 func (c *RoomClient) handleSr(msg []string) (err error) {
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	roomId, errconv := strconv.Atoi(msg[1])
@@ -47,7 +47,7 @@ func (c *RoomClient) handleSr(msg []string) (err error) {
 
 func (c *RoomClient) handleM(msg []string) (err error) {
 	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	// check if the coordinates are valid
@@ -95,7 +95,7 @@ func (c *RoomClient) handleM(msg []string) (err error) {
 
 func (c *RoomClient) handleF(msg []string) (err error) {
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	// check if direction is valid
@@ -113,7 +113,7 @@ func (c *RoomClient) handleF(msg []string) (err error) {
 
 func (c *RoomClient) handleSpd(msg []string) (err error) {
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	spd, errconv := strconv.Atoi(msg[1])
@@ -130,7 +130,7 @@ func (c *RoomClient) handleSpd(msg []string) (err error) {
 
 func (c *RoomClient) handleSpr(msg []string) (err error) {
 	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	if !gameAssets.IsValidSprite(msg[1]) {
@@ -156,7 +156,7 @@ func (c *RoomClient) handleSpr(msg []string) (err error) {
 
 func (c *RoomClient) handleFl(msg []string) (err error) {
 	if len(msg) != 6 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	red, errconv := strconv.Atoi(msg[1])
@@ -208,7 +208,7 @@ func (c *RoomClient) handleRrfl() (err error) {
 
 func (c *RoomClient) handleH(msg []string) (err error) {
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	hiddenBin, errconv := strconv.Atoi(msg[1])
@@ -225,7 +225,7 @@ func (c *RoomClient) handleH(msg []string) (err error) {
 
 func (c *RoomClient) handleSys(msg []string) (err error) {
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	if !gameAssets.IsValidSystem(msg[1], false) {
@@ -241,7 +241,7 @@ func (c *RoomClient) handleSys(msg []string) (err error) {
 
 func (c *RoomClient) handleSe(msg []string) (err error) {
 	if len(msg) != 5 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	if !gameAssets.IsValidSound(msg[1]) {
@@ -273,7 +273,7 @@ func (c *RoomClient) handleP(msg []string) (err error) {
 		msgLength = 20
 	}
 	if len(msg) != msgLength {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	if isShow {
@@ -419,7 +419,7 @@ func (c *RoomClient) handleP(msg []string) (err error) {
 
 func (c *RoomClient) handleRp(msg []string) (err error) {
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	picId, errconv := strconv.Atoi(msg[1])
@@ -436,7 +436,7 @@ func (c *RoomClient) handleRp(msg []string) (err error) {
 
 func (c *RoomClient) handleBa(msg []string) (err error) {
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	id, errconv := strconv.Atoi(msg[1])
@@ -459,7 +459,7 @@ func (c *RoomClient) handleSay(msg []string) (err error) {
 	}
 
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	if c.sClient.name == "" || c.sClient.systemName == "" {
@@ -478,7 +478,7 @@ func (c *RoomClient) handleSay(msg []string) (err error) {
 
 func (c *RoomClient) handleSs(msg []string) (err error) {
 	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	switchId, errconv := strconv.Atoi(msg[1])
@@ -601,7 +601,7 @@ func (c *RoomClient) handleSs(msg []string) (err error) {
 
 func (c *RoomClient) handleSv(msg []string) (err error) {
 	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	varId, errconv := strconv.Atoi(msg[1])
@@ -736,7 +736,7 @@ func (c *RoomClient) handleSv(msg []string) (err error) {
 
 func (c *RoomClient) handleSev(msg []string) (err error) {
 	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	actionBin, errconv := strconv.Atoi(msg[2])
@@ -798,7 +798,7 @@ func (c *SessionClient) handleI() (err error) {
 
 func (c *SessionClient) handleName(msg []string) (err error) {
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	maxNameLength := 10
@@ -825,7 +825,7 @@ func (c *SessionClient) handlePloc(msg []string) (err error) {
 	}
 
 	if len(msg) != 3 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	if len(msg[1]) != 4 {
@@ -846,7 +846,7 @@ func (c *SessionClient) handleLcol(msg []string) (err error) {
 	}
 
 	if len(msg) != 2 {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	locationName := msg[1]
@@ -867,7 +867,7 @@ func (c *SessionClient) handleGPSay(msg []string) (err error) {
 	}
 
 	if (msg[0] == "gsay" && len(msg) != 3) || (msg[0] == "psay" && len(msg) != 2) {
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	if c.name == "" || c.systemName == "" {
@@ -1049,7 +1049,7 @@ func (c *SessionClient) handleEec(msg []string) (err error) {
 
 	if len(msg) < 3 {
 		c.send <- buildMsg("eec", 0, false)
-		return errors.New("command length mismatch")
+		return errors.New("segment count mismatch")
 	}
 
 	location := msg[1]
