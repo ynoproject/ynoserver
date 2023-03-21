@@ -2013,7 +2013,7 @@ func writeGamePlayerCount(playerCount int) error {
 
 func doCleanupQueries() error {
 	// Remove player records with no game activity
-	_, err := db.Exec("DELETE FROM players WHERE ip IS NOT NULL AND uuid NOT IN (SELECT uuid FROM playerGameData) AND uuid NOT IN (SELECT uuid FROM partyMembers) AND uuid NOT IN (SELECT uuid FROM playerGameSaves)")
+	_, err := db.Exec("DELETE FROM players WHERE ip IS NOT NULL AND uuid NOT IN (SELECT uuid FROM playerGameData) AND uuid NOT IN (SELECT uuid FROM partyMembers)")
 	if err != nil {
 		return err
 	}
@@ -2025,7 +2025,7 @@ func doCleanupQueries() error {
 	}
 
 	// Remove player expeditions that were never completed
-	_, err = db.Exec("DELETE FROM playerEventLocations pel WHERE UTC_DATE() > pel.endDate AND NOT EXISTS (SELECT ec.eventId FROM eventCompletions ec WHERE ec.eventId = pel.id AND ec.type = 1)")
+	_, err = db.Exec("DELETE pel FROM playerEventLocations pel WHERE UTC_DATE() > pel.endDate AND NOT EXISTS (SELECT ec.eventId FROM eventCompletions ec WHERE ec.eventId = pel.id AND ec.type = 1)")
 	if err != nil {
 		return err
 	}
@@ -2037,7 +2037,7 @@ func doCleanupQueries() error {
 	}
 
 	// Remove Yume 2kki Explorer API query cache records that have expired
-	_, err = db.Exec("DELETE FROM 2kkiApiQueries WHERE expiration < CURRENT_TIMESTAMP()")
+	_, err = db.Exec("DELETE FROM 2kkiApiQueries WHERE timestampExpired < CURRENT_TIMESTAMP()")
 	if err != nil {
 		return err
 	}
