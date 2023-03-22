@@ -272,8 +272,10 @@ func updatePartyData(partyId int, name string, public bool, pass string, theme s
 		return errors.New("party id not in cache")
 	}
 
+	party.OwnerUuid = playerUuid
 	party.Name = name
 	party.Public = public
+	party.Pass = pass
 	party.SystemName = theme
 	party.Description = description
 
