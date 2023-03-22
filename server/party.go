@@ -303,7 +303,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 	return nil
 }
 
-func clearPlayerParty(playerUuid string) error {
+func leavePlayerParty(playerUuid string) error {
 	partyId, err := getPlayerPartyId(playerUuid) // get party id for later
 	if err != nil {
 		return err

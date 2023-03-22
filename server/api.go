@@ -533,7 +533,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if kick {
-			err = clearPlayerParty(playerParam)
+			err = leavePlayerParty(playerParam)
 		} else {
 			err = setPartyOwner(partyId, playerParam)
 		}
@@ -574,7 +574,7 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 		return err
 	}
 
-	err = clearPlayerParty(playerUuid)
+	err = leavePlayerParty(playerUuid)
 	if err != nil {
 		return err
 	}
