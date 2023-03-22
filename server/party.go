@@ -29,6 +29,7 @@ type Party struct {
 	Id          int            `json:"id"`
 	Name        string         `json:"name"`
 	Public      bool           `json:"public"`
+	Pass        string         `json:"-"`
 	SystemName  string         `json:"systemName"`
 	Description string         `json:"description"`
 	OwnerUuid   string         `json:"ownerUuid"`
@@ -166,7 +167,7 @@ func getAllPartyData() ([]Party, error) {
 }
 
 func getPartyDataFromDatabase(playerUuid string) (party Party, err error) {
-	err = db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.theme, p.description FROM parties p JOIN partyMembers pm ON pm.partyId = p.id JOIN playerGameData pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", serverConfig.GameName, playerUuid).Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.SystemName, &party.Description)
+	err = db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM parties p JOIN partyMembers pm ON pm.partyId = p.id JOIN playerGameData pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", serverConfig.GameName, playerUuid).Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
 	if err != nil {
 		return party, err
 	}
@@ -234,13 +235,12 @@ func getPartyPublic(partyId int) (public bool, err error) { // called by api onl
 }
 
 func getPartyPass(partyId int) (pass string, err error) { // called by api only
-	// we can't get password from the cache
-	err = db.QueryRow("SELECT pass FROM parties WHERE id = ?", partyId).Scan(&pass)
-	if err != nil {
-		return pass, err
+	party, ok := parties[partyId]
+	if !ok {
+		return "", errors.New("party id not in cache")
 	}
 
-	return pass, nil
+	return party.Pass, nil
 }
 
 func createPartyData(name string, public bool, pass string, theme string, description string, playerUuid string) (partyId int, err error) {
