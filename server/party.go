@@ -22,9 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 )
-
-var parties = make(map[int]*Party)
-
 type Party struct {
 	Id          int            `json:"id"`
 	Name        string         `json:"name"`
@@ -53,6 +50,8 @@ type PartyMember struct {
 	Y             int    `json:"y"`
 	Online        bool   `json:"online"`
 }
+
+var parties = make(map[int]*Party)
 
 func sendPartyUpdate() {
 	parties, err := getAllPartyData()
@@ -303,7 +302,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 
 		parties[partyId] = &party
 
-		return nil // just return now so we don't do the members thing after this
+		return nil
 	}
 
 	client, ok := clients.Load(playerUuid)
@@ -411,7 +410,6 @@ func assumeNextPartyOwner(partyId int) error {
 			return err
 		}
 	} else {
-		// HACK: if nobody is online then it's ok for the cache to not be updated
 		_, err := db.Exec("UPDATE parties p SET p.owner = (SELECT pm.uuid FROM partyMembers pm JOIN players pd ON pd.uuid = pm.uuid WHERE pm.partyId = p.id ORDER BY pd.rank DESC, pm.id LIMIT 1) WHERE p.id = ?", partyId)
 		if err != nil {
 			return err
