@@ -109,15 +109,13 @@ func getPlayerPartyId(uuid string) (partyId int, err error) {
 	return partyId, nil
 }
 
-func getPartyData(partyId int) (Party, error) {
+func getPartyData(partyId int) (*Party, error) {
 	party, ok := parties[partyId]
 	if !ok {
-		return Party{}, errors.New("party id not in cache")
+		return &Party{}, errors.New("party id not in cache")
 	}
 
-	partyDeref := *party // dereference party so we don't edit the cached one
-
-	for _, member := range partyDeref.Members {
+	for _, member := range party.Members {
 		client, ok := clients.Load(member.Uuid)
 		if !ok {
 			continue
@@ -147,15 +145,15 @@ func getPartyData(partyId int) (Party, error) {
 		member.Online = true
 	}
 
-	return partyDeref, nil
+	return party, nil
 }
 
-func getAllPartyData() ([]Party, error) {
-	var partyData []Party
+func getAllPartyData() ([]*Party, error) {
+	var partyData []*Party
 	for partyId := range parties {
 		party, err := getPartyData(partyId)
 		if err != nil {
-			return []Party{}, nil
+			return []*Party{}, nil
 		}
 
 		partyData = append(partyData, party)
