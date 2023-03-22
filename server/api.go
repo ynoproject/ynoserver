@@ -356,7 +356,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		}
 		create := commandParam == "create"
 		if create {
-			if partyId > 0 {
+			if partyId != 0 {
 				handleError(w, r, "player already in a party")
 				return
 			}
@@ -466,7 +466,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		if playerPartyId > 0 {
+		if playerPartyId != 0 {
 			handleError(w, r, "player already in a party")
 			return
 		}

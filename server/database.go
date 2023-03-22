@@ -466,7 +466,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 		return chatHistory, err
 	}
 
-	if reconnectAfterRestart && partyId > 0 {
+	if reconnectAfterRestart && partyId != 0 {
 		// Assume empty results if reconnecting after a disconnect with the last party message in the user's party as the last message ID
 		if lastPartyMsgId, ok := lastMsgIds[partyId]; ok && lastPartyMsgId == lastMsgId {
 			return chatHistory, nil
