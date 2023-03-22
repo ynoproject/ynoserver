@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 )
+
 type Party struct {
 	Id          int            `json:"id"`
 	Name        string         `json:"name"`
@@ -100,9 +101,9 @@ func getPlayerPartyId(uuid string) (partyId int, err error) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
-		} else {
-			return 0, err
 		}
+
+		return 0, err
 	}
 
 	return partyId, nil
