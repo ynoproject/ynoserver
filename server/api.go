@@ -342,12 +342,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid partyId value")
 			return
 		}
-		description, err := getPartyDescription(partyId)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
+		party, ok := parties[partyId]
+		if !ok {
+			handleInternalError(w, r, errors.New("party id not in cache"))
 		}
-		w.Write([]byte(description))
+		w.Write([]byte(party.Description))
 		return
 	case "create", "update":
 		partyId, err := getPlayerPartyId(uuid)
@@ -445,22 +444,18 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if rank == 0 {
-			public, err := getPartyPublic(partyId)
-			if err != nil {
-				handleInternalError(w, r, err)
+			party, ok := parties[partyId]
+			if !ok {
+				handleInternalError(w, r, errors.New("party id not in cache"))
 				return
 			}
-			if !public {
+			if !party.Public {
 				passParam := r.URL.Query().Get("pass")
 				if passParam == "" {
 					handleError(w, r, "pass not specified")
 					return
 				}
-				partyPass, err := getPartyPass(partyId)
-				if err != nil {
-					handleInternalError(w, r, err)
-				}
-				if partyPass != "" && passParam != partyPass {
+				if party.Pass != "" && passParam != party.Pass {
 					http.Error(w, "401 - Unauthorized", http.StatusUnauthorized)
 					return
 				}

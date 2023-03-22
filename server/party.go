@@ -215,33 +215,6 @@ func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PartyMember, e
 	return partyMembers, nil
 }
 
-func getPartyDescription(partyId int) (description string, err error) { // called by api only
-	party, ok := parties[partyId]
-	if !ok {
-		return "", errors.New("party id not in cache")
-	}
-
-	return party.Description, nil
-}
-
-func getPartyPublic(partyId int) (public bool, err error) { // called by api only
-	party, ok := parties[partyId]
-	if !ok {
-		return false, errors.New("party id not in cache")
-	}
-
-	return party.Public, nil
-}
-
-func getPartyPass(partyId int) (pass string, err error) { // called by api only
-	party, ok := parties[partyId]
-	if !ok {
-		return "", errors.New("party id not in cache")
-	}
-
-	return party.Pass, nil
-}
-
 func createPartyData(name string, public bool, pass string, theme string, description string, playerUuid string) (partyId int, err error) {
 	results, err := db.Exec("INSERT INTO parties (game, owner, name, public, pass, theme, description) VALUES (?, ?, ?, ?, ?, ?, ?)", serverConfig.GameName, playerUuid, name, public, pass, theme, description)
 	if err != nil {
