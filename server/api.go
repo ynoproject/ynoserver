@@ -319,7 +319,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(strconv.Itoa(partyId)))
 		return
 	case "list":
-		partyListData, err := getAllPartyData(true)
+		partyListData, err := getAllPartyData()
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -425,7 +425,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if create {
-			err = createPlayerParty(partyId, uuid)
+			err = joinPlayerParty(partyId, uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -475,7 +475,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "player already in a party")
 			return
 		}
-		err = createPlayerParty(partyId, uuid)
+		err = joinPlayerParty(partyId, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return

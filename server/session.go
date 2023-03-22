@@ -94,6 +94,8 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		return
 	}
 
+	client.cacheParty() // don't log error because player is probably not in a party
+
 	if client, ok := clients.Load(client.uuid); ok {
 		client.(*SessionClient).disconnect()
 	}

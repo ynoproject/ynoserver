@@ -956,12 +956,9 @@ func (c *SessionClient) handlePt() error {
 	if partyId == 0 {
 		return errors.New("player not in a party")
 	}
-	partyData, err := getPartyData(c.uuid)
+	partyData, err := getPartyData(partyId)
 	if err != nil {
 		return err
-	}
-	if c.uuid != partyData.OwnerUuid {
-		partyData.Pass = ""
 	}
 	partyDataJson, err := json.Marshal(partyData)
 	if err != nil {

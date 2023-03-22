@@ -162,6 +162,24 @@ func (c *SessionClient) disconnect() {
 
 		c.updatePlayerGameData()
 
+		// remove party from cache if empty
+		partyId, err := getPlayerPartyId(c.uuid)
+		if err != nil {
+			if party, ok := parties[partyId]; ok {
+				var hasOnlineMember bool
+				for _, member := range party.Members {
+					if member.Online {
+						hasOnlineMember = true
+						break
+					}
+				}
+
+				if !hasOnlineMember {
+					delete(parties, partyId)
+				}
+			}
+		}
+
 		writeLog(c.uuid, "sess", "disconnect", 200)
 
 		// disconnect rClient if connected
