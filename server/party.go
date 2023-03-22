@@ -172,7 +172,7 @@ func getPartyDataFromDatabase(playerUuid string) (party Party, err error) {
 		return party, err
 	}
 
-	partyMembers, err := getPartyMemberData(party.Id)
+	partyMembers, err := getPartyMemberDataFromDatabase(party.Id)
 	if err != nil {
 		return party, err
 	}
@@ -182,7 +182,7 @@ func getPartyDataFromDatabase(playerUuid string) (party Party, err error) {
 	return party, nil
 }
 
-func getPartyMemberData(partyId int) (partyMembers []*PartyMember, err error) {
+func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PartyMember, err error) {
 	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, serverConfig.GameName)
 	if err != nil {
 		return partyMembers, err
