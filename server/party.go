@@ -304,12 +304,26 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		return nil // just return now so we don't do the members thing after this
 	}
 
-	members, err := getPartyMemberData(partyId)
-	if err != nil {
-		return err
+	client, ok := clients.Load(playerUuid)
+	if !ok {
+		return errors.New("client not online")
 	}
 
-	party.Members = members // TODO: make sam turn this into a separate function for one member's data
+	session := client.(*SessionClient)
+
+	party.Members = append(party.Members, &PartyMember{
+		Uuid:        session.uuid,
+		Name:        session.name,
+		Rank:        session.rank,
+		Account:     session.account,
+		Badge:       session.badge,
+		SystemName:  session.systemName,
+		SpriteName:  session.spriteName,
+		SpriteIndex: session.spriteIndex,
+		Medals:      session.medals,
+		MapId:       "0000", // initial value
+		PrevMapId:   "0000", // initial value
+	})
 
 	return nil
 }
