@@ -935,7 +935,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	} else {
 		for _, uuid := range partyMemberUuids {
 			if client, ok := clients.Load(uuid); ok {
-				client.(*SessionClient).send <- buildMsg("psay", c.uuid, msgContents, msgId)
+				client.send <- buildMsg("psay", c.uuid, msgContents, msgId)
 			}
 		}
 

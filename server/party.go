@@ -69,7 +69,7 @@ func sendPartyUpdate() {
 		for _, member := range party.Members { // for every member
 			if member.Online {
 				if client, ok := clients.Load(member.Uuid); ok {
-					client.(*SessionClient).send <- buildMsg("pt", partyDataJson) // send JSON to client
+					client.send <- buildMsg("pt", partyDataJson) // send JSON to client
 				}
 			}
 		}
@@ -123,27 +123,25 @@ func getPartyData(partyId int) (Party, error) {
 			continue
 		}
 
-		session := client.(*SessionClient)
-
-		if session.name != "" {
-			member.Name = session.name
+		if client.name != "" {
+			member.Name = client.name
 		}
-		if session.systemName != "" {
-			member.SystemName = session.systemName
+		if client.systemName != "" {
+			member.SystemName = client.systemName
 		}
-		if session.spriteName != "" {
-			member.SpriteName = session.spriteName
+		if client.spriteName != "" {
+			member.SpriteName = client.spriteName
 		}
-		if session.spriteIndex > -1 {
-			member.SpriteIndex = session.spriteIndex
+		if client.spriteIndex > -1 {
+			member.SpriteIndex = client.spriteIndex
 		}
 
-		if session.rClient != nil {
-			member.MapId = session.rClient.mapId
-			member.PrevMapId = session.rClient.prevMapId
-			member.PrevLocations = session.rClient.prevLocations
-			member.X = session.rClient.x
-			member.Y = session.rClient.y
+		if client.rClient != nil {
+			member.MapId = client.rClient.mapId
+			member.PrevMapId = client.rClient.prevMapId
+			member.PrevLocations = client.rClient.prevLocations
+			member.X = client.rClient.x
+			member.Y = client.rClient.y
 		}
 
 		member.Online = true
@@ -284,18 +282,16 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		return errors.New("client not online")
 	}
 
-	session := client.(*SessionClient)
-
 	party.Members = append(party.Members, &PartyMember{
-		Uuid:        session.uuid,
-		Name:        session.name,
-		Rank:        session.rank,
-		Account:     session.account,
-		Badge:       session.badge,
-		SystemName:  session.systemName,
-		SpriteName:  session.spriteName,
-		SpriteIndex: session.spriteIndex,
-		Medals:      session.medals,
+		Uuid:        client.uuid,
+		Name:        client.name,
+		Rank:        client.rank,
+		Account:     client.account,
+		Badge:       client.badge,
+		SystemName:  client.systemName,
+		SpriteName:  client.spriteName,
+		SpriteIndex: client.spriteIndex,
+		Medals:      client.medals,
 		MapId:       "0000", // initial value
 		PrevMapId:   "0000", // initial value
 	})
@@ -371,7 +367,7 @@ func assumeNextPartyOwner(partyId int) error {
 
 	for _, uuid := range partyMemberUuids {
 		if client, ok := clients.Load(uuid); ok {
-			if client.(*SessionClient).rClient != nil {
+			if client.rClient != nil {
 				nextOnlinePlayerUuid = uuid
 				break
 			}

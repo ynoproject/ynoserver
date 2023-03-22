@@ -22,14 +22,13 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
 )
 
 var (
-	clients sync.Map
+	clients = NewSCMap()
 	session = &Session{}
 )
 
@@ -42,12 +41,12 @@ func initSession() {
 	sender := SessionClient{}
 
 	scheduler.Every(5).Seconds().Do(func() {
-		sender.broadcast(buildMsg("pc", getPlayerCount()))
+		sender.broadcast(buildMsg("pc", clients.GetAmount()))
 		sendPartyUpdate()
 	})
 
 	scheduler.Cron("0 2,8,14,20 * * *").Do(func() {
-		writeGamePlayerCount(getPlayerCount())
+		writeGamePlayerCount(clients.GetAmount())
 	})
 	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
 	scheduler.Every(1).Thursday().At("04:00").Do(doCleanupQueries)
@@ -97,17 +96,15 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	client.cacheParty() // don't log error because player is probably not in a party
 
 	if client, ok := clients.Load(client.uuid); ok {
-		client.(*SessionClient).disconnect()
+		client.disconnect()
 	}
 
 	var sameIp int
-	clients.Range(func(_, v any) bool {
-		if v.(*SessionClient).ip == ip {
+	for _, client := range clients.Get() {
+		if client.ip == ip {
 			sameIp++
 		}
-
-		return true
-	})
+	}
 	if sameIp > 3 {
 		writeErrLog(client.uuid, "sess", "too many connections from ip")
 		return
@@ -134,15 +131,13 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 }
 
 func (c *SessionClient) broadcast(msg []byte) {
-	clients.Range(func(_, v any) bool {
+	for _, client := range clients.Get() {
 		select {
-		case v.(*SessionClient).send <- buildMsg(msg):
+		case client.send <- buildMsg(msg):
 		default:
 			writeErrLog(c.uuid, "sess", "send channel is full")
 		}
-
-		return true
-	})
+	}
 }
 
 func (c *SessionClient) processMsg(msg []byte) (err error) {
@@ -184,14 +179,4 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 	writeLog(c.uuid, "sess", string(msg), 200)
 
 	return nil
-}
-
-func getPlayerCount() (length int) {
-	clients.Range(func(_, _ any) bool {
-		length++
-
-		return true
-	})
-
-	return length
 }

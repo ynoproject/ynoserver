@@ -30,9 +30,7 @@ func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response []PlayerInfo
-	clients.Range(func(_, v any) bool {
-		client := v.(*SessionClient)
-
+	for _, client := range clients.Get() {
 		player := PlayerInfo{
 			Uuid: client.uuid,
 			Name: client.name,
@@ -40,9 +38,7 @@ func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 		}
 
 		response = append(response, player)
-
-		return true
-	})
+	}
 
 	responseJson, err := json.Marshal(response)
 	if err != nil {

@@ -72,7 +72,7 @@ func getPlayerDataFromToken(token string) (uuid string, name string, rank int, b
 
 func getPlayerRank(uuid string) (rank int) {
 	if client, ok := clients.Load(uuid); ok {
-		return client.(*SessionClient).rank // return rank from session if client is connected
+		return client.rank // return rank from session if client is connected
 	}
 
 	err := db.QueryRow("SELECT rank FROM players WHERE uuid = ?", uuid).Scan(&rank)
@@ -98,7 +98,6 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok {
-		client := client.(*SessionClient)
 		if client.rClient != nil {
 			client.rClient.disconnect()
 		}
@@ -141,7 +140,7 @@ func tryMutePlayer(senderUuid string, recipientUuid string) error { // called by
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok { // mute client if they're connected
-		client.(*SessionClient).muted = true
+		client.muted = true
 	}
 
 	return nil
@@ -162,7 +161,7 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { // called 
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok { // unmute client if they're connected
-		client.(*SessionClient).muted = false
+		client.muted = false
 	}
 
 	return nil
@@ -187,8 +186,6 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok { // change client username if they're connected
-		client := client.(*SessionClient)
-
 		client.name = newUsername
 
 		if client.rClient != nil {
@@ -201,7 +198,7 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 
 func getPlayerMedals(uuid string) (medals [5]int) {
 	if client, ok := clients.Load(uuid); ok {
-		return client.(*SessionClient).medals // return medals from session if client is connected
+		return client.medals // return medals from session if client is connected
 	}
 
 	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, serverConfig.GameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3], &medals[4])
@@ -301,7 +298,7 @@ func updatePlayerActivity() error {
 
 func setPlayerBadge(uuid string, badge string) error {
 	if client, ok := clients.Load(uuid); ok {
-		client.(*SessionClient).badge = badge
+		client.badge = badge
 	}
 
 	_, err := db.Exec("UPDATE accounts SET badge = ? WHERE uuid = ?", badge, uuid)
@@ -963,7 +960,6 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 
 func tryCompleteEventLocation(playerUuid string, location string) (exp int, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
-		client := client.(*SessionClient)
 		if client.rClient == nil {
 			return -1, err
 		}
@@ -1026,8 +1022,7 @@ func tryCompleteEventLocation(playerUuid string, location string) (exp int, err 
 
 func tryCompletePlayerEventLocation(playerUuid string, location string) (success bool, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
-		client := client.(*SessionClient).rClient
-		if client == nil {
+		if client.rClient == nil {
 			return false, err
 		}
 
@@ -1054,7 +1049,7 @@ func tryCompletePlayerEventLocation(playerUuid string, location string) (success
 			}
 
 			for _, mapId := range mapIds {
-				if client.mapId != mapId {
+				if client.rClient.mapId != mapId {
 					continue
 				}
 
@@ -1149,8 +1144,7 @@ func writeEventVmData(mapId int, eventId int, exp int) error {
 
 func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
-		client := client.(*SessionClient).rClient
-		if client == nil {
+		if client.rClient == nil {
 			return -1, err
 		}
 
@@ -1191,7 +1185,7 @@ func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err
 				}
 			}
 
-			if client.mapId != fmt.Sprintf("%04d", eventMapId) {
+			if client.rClient.mapId != fmt.Sprintf("%04d", eventMapId) {
 				continue
 			}
 			if weekEventExp >= weeklyExpCap {
@@ -1345,14 +1339,13 @@ func getPlayerTags(playerUuid string) (tags []string, err error) {
 
 func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
 	if client, ok := clients.Load(playerUuid); ok { // Player must be online to add a tag
-		client := client.(*SessionClient).rClient
-		if client == nil {
+		if client.rClient == nil {
 			return false, nil
 		}
 
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
 		var tagExists bool
-		for _, tag := range client.tags {
+		for _, tag := range client.rClient.tags {
 			if tag == name {
 				tagExists = true
 				break
@@ -1547,7 +1540,7 @@ func getUuidFromName(name string) (uuid string, err error) {
 func getNameFromUuid(uuid string) (name string) {
 	// get name from sessionClients if they're connected
 	if client, ok := clients.Load(uuid); ok {
-		return client.(*SessionClient).name
+		return client.name
 	}
 
 	// otherwise check accounts

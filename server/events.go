@@ -264,14 +264,11 @@ func initEvents() {
 }
 
 func sendEventsUpdate() {
-	clients.Range(func(_, v any) bool {
-		client := v.(*SessionClient)
+	for _, client := range clients.Get() {
 		if client.account {
 			client.handleE()
 		}
-
-		return true
-	})
+	}
 }
 
 func addDailyEventLocation(deeper bool) {
