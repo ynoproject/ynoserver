@@ -201,10 +201,7 @@ func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PartyMember, e
 		}
 
 		partyMember.Account = accountBin == 1
-
-		if _, ok := clients.Load(partyMember.Uuid); ok {
-			partyMember.Online = true
-		}
+		partyMember.Online = clients.Exists(partyMember.Uuid)
 
 		partyMembers = append(partyMembers, partyMember)
 	}

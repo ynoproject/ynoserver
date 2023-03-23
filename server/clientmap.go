@@ -75,3 +75,13 @@ func (m *ClientMap) GetAmount() int {
 
 	return len(m.clients)
 }
+
+func (m *ClientMap) Exists(uuid string) bool {
+	m.mutex.RLock()
+
+	_, ok := m.clients[uuid]
+
+	m.mutex.RUnlock()
+
+	return ok
+}
