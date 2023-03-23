@@ -1026,6 +1026,10 @@ func tryCompletePlayerEventLocation(playerUuid string, location string) (success
 			return false, err
 		}
 
+		// HACK: workaround for strange race condition
+		// it's possible for a player to disconnect before the query finishes, causing a nil ptr
+		clientMapId := client.rClient.mapId
+
 		results, err := db.Query("SELECT pel.id, pl.mapIds FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId WHERE pel.gamePeriodId = ? AND pl.title = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", currentGameEventPeriodId, location, playerUuid)
 		if err != nil {
 			return false, err
@@ -1049,7 +1053,7 @@ func tryCompletePlayerEventLocation(playerUuid string, location string) (success
 			}
 
 			for _, mapId := range mapIds {
-				if client.rClient.mapId != mapId {
+				if clientMapId != mapId {
 					continue
 				}
 
