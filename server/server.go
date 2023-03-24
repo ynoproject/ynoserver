@@ -21,6 +21,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -67,10 +68,14 @@ var (
 )
 
 func Start() {
+	fmt.Println("Now starting YNOserver...")
+
 	configFile := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
 	serverConfig = config.ParseConfigFile(*configFile)
+
+	fmt.Printf("Current game ID is \"%s\".\n", serverConfig.GameName)
 
 	isHostServer = serverConfig.GameName == hostGameId
 
@@ -82,9 +87,17 @@ func Start() {
 	gameAssets.PicturePrefixes = serverConfig.PicturePrefixes
 	gameAssets.BattleAnimIds = serverConfig.BattleAnimIds
 
+	fmt.Print("Setting conditions...\n")
 	setConditions()
+	fmt.Print("Done.\n")
+
+	fmt.Print("Setting badges...\n")
 	setBadges()
+	fmt.Print("Done.\n")
+
+	fmt.Print("Setting event VMs...\n")
 	setEventVms()
+	fmt.Print("Done.\n")
 
 	globalConditions = getGlobalConditions()
 
@@ -98,16 +111,32 @@ func Start() {
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
+	fmt.Print("Initializing API...\n")
 	initApi()
+	fmt.Print("Done.\n")
+
+	fmt.Print("Initializing chat history...\n")
 	initHistory()
+	fmt.Print("Done.\n")
+
+	fmt.Print("Initializing events...\n")
 	initEvents()
+	fmt.Print("Done.\n")
+
+	fmt.Print("Initializing badges...\n")
 	initBadges()
+	fmt.Print("Done.\n")
+
+	fmt.Print("Initializing session...\n")
 	initSession()
+	fmt.Print("Done.\n")
 
 	scheduler.StartAsync()
 
 	http.HandleFunc("/room", handleRoom)
 	http.HandleFunc("/session", handleSession)
+
+	fmt.Print("Now serving requests.\n")
 
 	http.Serve(getListener(), nil)
 }

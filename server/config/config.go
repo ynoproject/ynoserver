@@ -18,7 +18,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -143,8 +142,6 @@ func ParseConfigFile(filename string) (config *Config) {
 	} else {
 		config.Logging.MaxAge = 28 // Days
 	}
-
-	fmt.Printf("%+v\n", config)
 
 	return config
 }
