@@ -118,6 +118,7 @@ func getPartyData(partyId int) (*Party, error) {
 	for _, member := range party.Members {
 		client, ok := clients.Load(member.Uuid)
 		if !ok {
+			member.Online = false
 			continue
 		}
 
