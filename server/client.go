@@ -55,7 +55,7 @@ type SessionClient struct {
 	conn *websocket.Conn
 	ip   string
 
-	dcOnce sync.Once
+	disconnecting bool
 
 	writerEnd chan bool
 	writerWg  sync.WaitGroup
@@ -147,46 +147,50 @@ func (c *SessionClient) msgProcessor() {
 }
 
 func (c *SessionClient) disconnect() {
-	c.dcOnce.Do(func() {
-		// unregister
-		clients.Delete(c.uuid)
+	if c.disconnecting {
+		return
+	}
 
-		// send terminate signal to writer
-		close(c.writerEnd)
+	c.disconnecting = true
 
-		// wait for writer to end
-		c.writerWg.Wait()
+	// unregister
+	clients.Delete(c.uuid)
 
-		// close conn, ends reader and processor
-		c.conn.Close()
+	// send terminate signal to writer
+	close(c.writerEnd)
 
-		c.updatePlayerGameData()
+	// wait for writer to end
+	c.writerWg.Wait()
 
-		// remove party from cache if empty
-		partyId, err := getPlayerPartyId(c.uuid)
-		if err != nil {
-			if party, ok := parties[partyId]; ok {
-				var hasOnlineMember bool
-				for _, member := range party.Members {
-					if member.Online && member.Uuid != c.uuid{
-						hasOnlineMember = true
-						break
-					}
-				}
+	// close conn, ends reader and processor
+	c.conn.Close()
 
-				if !hasOnlineMember {
-					delete(parties, partyId)
+	c.updatePlayerGameData()
+
+	// remove party from cache if empty
+	partyId, err := getPlayerPartyId(c.uuid)
+	if err != nil {
+		if party, ok := parties[partyId]; ok {
+			var hasOnlineMember bool
+			for _, member := range party.Members {
+				if member.Online && member.Uuid != c.uuid {
+					hasOnlineMember = true
+					break
 				}
 			}
-		}
 
-		writeLog(c.uuid, "sess", "disconnect", 200)
-
-		// disconnect rClient if connected
-		if c.rClient != nil {
-			c.rClient.disconnect()
+			if !hasOnlineMember {
+				delete(parties, partyId)
+			}
 		}
-	})
+	}
+
+	writeLog(c.uuid, "sess", "disconnect", 200)
+
+	// disconnect rClient if connected
+	if c.rClient != nil {
+		c.rClient.disconnect()
+	}
 }
 
 // RoomClient
@@ -196,7 +200,7 @@ type RoomClient struct {
 
 	conn *websocket.Conn
 
-	dcOnce sync.Once
+	disconnecting bool
 
 	writerEnd chan bool
 	writerWg  sync.WaitGroup
@@ -305,24 +309,28 @@ func (c *RoomClient) msgProcessor() {
 }
 
 func (c *RoomClient) disconnect() {
-	c.dcOnce.Do(func() {
-		// unbind rClient from session
-		c.sClient.rClient = nil
+	if c.disconnecting {
+		return
+	}
 
-		// unregister
-		c.leaveRoom()
+	c.disconnecting = true
 
-		// send terminate signal to writer
-		close(c.writerEnd)
+	// unbind rClient from session
+	c.sClient.rClient = nil
 
-		// wait for writer to end
-		c.writerWg.Wait()
+	// unregister
+	c.leaveRoom()
 
-		// close conn, ends reader and processor
-		c.conn.Close()
+	// send terminate signal to writer
+	close(c.writerEnd)
 
-		writeLog(c.sClient.uuid, c.mapId, "disconnect", 200)
-	})
+	// wait for writer to end
+	c.writerWg.Wait()
+
+	// close conn, ends reader and processor
+	c.conn.Close()
+
+	writeLog(c.sClient.uuid, c.mapId, "disconnect", 200)
 }
 
 func (c *RoomClient) reset() {
