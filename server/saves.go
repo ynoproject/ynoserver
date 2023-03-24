@@ -44,12 +44,12 @@ func getSaveData(playerUuid string) ([]byte, error) { // called by api only
 		return nil, err
 	}
 
+	defer dec.Close()
+
 	decompressed, err := dec.DecodeAll(file, []byte{})
 	if err != nil {
 		return nil, err
 	}
-
-	defer dec.Close()
 
 	return decompressed, nil
 }
