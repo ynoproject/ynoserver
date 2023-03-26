@@ -288,7 +288,7 @@ func updatePlayerBadgeSlotCounts(uuid string) (err error) {
 }
 
 func updatePlayerActivity() error {
-	_, err := db.Exec("UPDATE accounts SET inactive = CASE WHEN timestampLoggedIn < DATE_ADD(NOW(), INTERVAL -3 MONTH) THEN 1 ELSE 0 END")
+	_, err := db.Exec("UPDATE accounts SET inactive = CASE WHEN timestampLoggedIn IS NULL OR timestampLoggedIn < DATE_ADD(NOW(), INTERVAL -3 MONTH) THEN 1 ELSE 0 END")
 	if err != nil {
 		return err
 	}
