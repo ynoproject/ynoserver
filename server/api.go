@@ -965,7 +965,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, ?, ?, ?, ?)", ip, time.Now(), uuid, user, hashedPassword)
+	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, NOW(), ?, ?, ?)", ip, uuid, user, hashedPassword)
 
 	w.Write([]byte("ok"))
 }
@@ -988,7 +988,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	token := randString(32)
 	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", token, user)
-	db.Exec("UPDATE accounts SET timestampLoggedIn = CURRENT_TIMESTAMP() WHERE user = ?", user)
+	db.Exec("UPDATE accounts SET timestampLoggedIn = NOW() WHERE user = ?", user)
 
 	w.Write([]byte(token))
 }
