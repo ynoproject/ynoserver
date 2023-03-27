@@ -119,6 +119,13 @@ func getPartyData(partyId int) (*Party, error) {
 		client, ok := clients.Load(member.Uuid)
 		if !ok {
 			member.Online = false
+
+			member.MapId = "0000"
+			member.PrevMapId = "0000"
+			member.PrevLocations = ""
+			member.X = 0
+			member.Y = 0
+
 			continue
 		}
 

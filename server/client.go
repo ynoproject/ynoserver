@@ -173,7 +173,7 @@ func (c *SessionClient) disconnect() {
 		if party, ok := parties[partyId]; ok {
 			var hasOnlineMember bool
 			for _, member := range party.Members {
-				if member.Online && member.Uuid != c.uuid {
+				if member.Online {
 					hasOnlineMember = true
 					break
 				}
