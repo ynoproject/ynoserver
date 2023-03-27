@@ -62,7 +62,7 @@ func createGameSaveData(playerUuid string, data []byte) error { // called by api
 
 	defer enc.Close()
 
-	os.WriteFile("saves/" + serverConfig.GameName + "/" + playerUuid + ".osd", enc.EncodeAll(data, []byte{}), 0644)
+	os.WriteFile("saves/"+serverConfig.GameName+"/"+playerUuid+".osd", enc.EncodeAll(data, []byte{}), 0644)
 
 	return nil
 }

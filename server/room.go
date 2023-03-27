@@ -33,7 +33,7 @@ var rooms = make(map[int]*Room)
 type Room struct {
 	id           int
 	singleplayer bool
-	
+
 	clients []*RoomClient
 
 	conditions []*Condition

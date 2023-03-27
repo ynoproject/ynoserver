@@ -21,7 +21,7 @@ import "sync"
 
 type ClientMap struct {
 	clients map[string]*SessionClient
-	mutex sync.RWMutex
+	mutex   sync.RWMutex
 }
 
 func NewSCMap() *ClientMap {
