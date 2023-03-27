@@ -1367,27 +1367,6 @@ func tryWritePlayerTag(playerUuid string, name string) (success bool, err error)
 	return false, nil
 }
 
-/*func getTimeTrialMapIds() (mapIds []int, err error) {
-	results, err := db.Query("SELECT mapId FROM playerTimeTrials GROUP BY mapId ORDER BY MIN(seconds)")
-	if err != nil {
-		return mapIds, err
-	}
-
-	defer results.Close()
-
-	for results.Next() {
-		var mapId int
-		err := results.Scan(&mapId)
-		if err != nil {
-			return mapIds, err
-		}
-
-		mapIds = append(mapIds, mapId)
-	}
-
-	return mapIds, nil
-}*/
-
 func getPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTrialRecord, err error) {
 	results, err := db.Query("SELECT mapId, MIN(seconds) FROM playerTimeTrials WHERE uuid = ? GROUP BY mapId", playerUuid)
 	if err != nil {
