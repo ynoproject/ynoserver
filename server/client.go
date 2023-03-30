@@ -170,7 +170,8 @@ func (c *SessionClient) disconnect() {
 	// remove party from cache if empty
 	partyId, err := getPlayerPartyId(c.uuid)
 	if err != nil {
-		if party, ok := parties[partyId]; ok {
+		party, err := getPartyData(partyId)
+		if err != nil {
 			var hasOnlineMember bool
 			for _, member := range party.Members {
 				if member.Online {
@@ -178,7 +179,7 @@ func (c *SessionClient) disconnect() {
 					break
 				}
 			}
-
+	
 			if !hasOnlineMember {
 				delete(parties, partyId)
 			}
