@@ -296,6 +296,10 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		uuid, banned, _ = getOrCreatePlayerData(getIp(r))
 	} else {
 		uuid, _, rank, _, banned, _ = getPlayerDataFromToken(token)
+		if uuid == "" {
+			handleError(w, r, "invalid token")
+			return
+		}
 	}
 
 	if banned {
@@ -609,6 +613,10 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
+		if uuid == "" {
+			handleError(w, r, "invalid token")
+			return
+		}
 	}
 
 	if banned {
@@ -726,6 +734,10 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		uuid, name, rank, badge, banned, _ = getPlayerDataFromToken(token)
+		if uuid == "" {
+			handleError(w, r, "invalid token")
+			return
+		}
 	}
 
 	if banned {

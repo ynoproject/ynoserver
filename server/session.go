@@ -81,7 +81,9 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	var banned bool
 	if token != "" {
 		client.uuid, client.name, client.rank, client.badge, banned, client.muted = getPlayerDataFromToken(token)
-		client.medals = getPlayerMedals(client.uuid)
+		if client.uuid != "" {
+			client.medals = getPlayerMedals(client.uuid)
+		}
 	}
 
 	if client.uuid != "" {
