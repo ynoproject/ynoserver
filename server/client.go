@@ -179,13 +179,13 @@ func (c *SessionClient) disconnect() {
 					delete(parties, partyId)
 				}
 			}
+		}
 
-			writeLog(c.uuid, "sess", "disconnect", 200)
+		writeLog(c.uuid, "sess", "disconnect", 200)
 
-			// disconnect rClient if connected
-			if c.rClient != nil {
-				c.rClient.disconnect()
-			}
+		// disconnect rClient if connected
+		if c.rClient != nil {
+			c.rClient.disconnect()
 		}
 	})
 }
