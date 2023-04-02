@@ -30,7 +30,7 @@ func getSaveDataTimestamp(playerUuid string) (time.Time, error) { // called by a
 		return time.UnixMilli(0), nil // HACK: no error return because it breaks forest-orb
 	}
 
-	return info.ModTime(), nil
+	return info.ModTime().UTC(), nil
 }
 
 func getSaveData(playerUuid string) ([]byte, error) { // called by api only
