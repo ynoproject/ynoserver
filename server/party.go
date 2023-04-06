@@ -115,6 +115,7 @@ func getPartyData(partyId int) (*Party, error) {
 		return &Party{}, errors.New("party id not in cache")
 	}
 
+	var hasOnlineMember bool
 	for _, member := range party.Members {
 		client, ok := clients.Load(member.Uuid)
 		if !ok {
@@ -128,6 +129,8 @@ func getPartyData(partyId int) (*Party, error) {
 
 			continue
 		}
+
+		hasOnlineMember = true
 
 		if client.name != "" {
 			member.Name = client.name
@@ -153,6 +156,11 @@ func getPartyData(partyId int) (*Party, error) {
 		member.Online = true
 	}
 
+	if !hasOnlineMember {
+		delete(parties, partyId)
+		return nil, errors.New("no members online")
+	}
+
 	return party, nil
 }
 
@@ -161,7 +169,7 @@ func getAllPartyData() ([]*Party, error) {
 	for partyId := range parties {
 		party, err := getPartyData(partyId)
 		if err != nil {
-			return []*Party{}, nil
+			continue
 		}
 
 		partyData = append(partyData, party)
