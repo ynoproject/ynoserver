@@ -503,7 +503,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 	c.switchCache[switchId] = value
 	if switchId == 1430 && config.gameName == "2kki" { // time trial mode
 		if value {
-			c.send <- buildMsg("sv", "88", "0") // time elapsed
+			c.send <- buildMsg("sv", 88, 0) // time elapsed
 		}
 	} else {
 		if len(c.room.minigames) != 0 {
@@ -559,14 +559,14 @@ func (c *RoomClient) handleSs(msg []string) error {
 									}
 								}
 							} else if config.gameName == "2kki" {
-								c.send <- buildMsg("ss", "1430", "0")
+								c.send <- buildMsg("ss", 1430, 0)
 							}
 						} else {
 							varId := condition.VarId
 							if len(condition.VarIds) != 0 {
 								varId = condition.VarIds[0]
 							}
-							c.send <- buildMsg("sv", varId, "0")
+							c.send <- buildMsg("sv", varId, 0)
 						}
 					}
 				} else if len(condition.SwitchIds) != 0 {
@@ -584,17 +584,17 @@ func (c *RoomClient) handleSs(msg []string) error {
 										}
 									}
 								} else if config.gameName == "2kki" {
-									c.send <- buildMsg("ss", "1430", "0")
+									c.send <- buildMsg("ss", 1430, 0)
 								}
 							} else {
 								varId := condition.VarId
 								if len(condition.VarIds) != 0 {
 									varId = condition.VarIds[0]
 								}
-								c.send <- buildMsg("sv", varId, "0")
+								c.send <- buildMsg("sv", varId, 0)
 							}
 						} else {
-							c.send <- buildMsg("ss", condition.SwitchIds[s+1], "0")
+							c.send <- buildMsg("ss", condition.SwitchIds[s+1], 0)
 						}
 					}
 				}
@@ -644,7 +644,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 				}
 				if minigame.VarId == varId && c.minigameScores[m] < value {
 					if minigame.SwitchId > 0 {
-						c.send <- buildMsg("ss", minigame.SwitchId, "0")
+						c.send <- buildMsg("ss", minigame.SwitchId, 0)
 					} else {
 						tryWritePlayerMinigameScore(c.sClient.uuid, minigame.Id, value)
 					}
@@ -694,14 +694,14 @@ func (c *RoomClient) handleSv(msg []string) error {
 									}
 								}
 							} else if config.gameName == "2kki" {
-								c.send <- buildMsg("ss", "1430", "0")
+								c.send <- buildMsg("ss", 1430, 0)
 							}
 						} else {
 							switchId := condition.SwitchId
 							if len(condition.SwitchIds) != 0 {
 								switchId = condition.SwitchIds[0]
 							}
-							c.send <- buildMsg("ss", switchId, "0")
+							c.send <- buildMsg("ss", switchId, 0)
 						}
 					}
 				} else if len(condition.VarIds) != 0 {
@@ -719,17 +719,17 @@ func (c *RoomClient) handleSv(msg []string) error {
 										}
 									}
 								} else if config.gameName == "2kki" {
-									c.send <- buildMsg("ss", "1430", "0")
+									c.send <- buildMsg("ss", 1430, 0)
 								}
 							} else {
 								switchId := condition.SwitchId
 								if len(condition.SwitchIds) != 0 {
 									switchId = condition.SwitchIds[0]
 								}
-								c.send <- buildMsg("ss", switchId, "0")
+								c.send <- buildMsg("ss", switchId, 0)
 							}
 						} else {
-							c.send <- buildMsg("sv", condition.VarIds[v+1], "0")
+							c.send <- buildMsg("sv", condition.VarIds[v+1], 0)
 						}
 					}
 				}

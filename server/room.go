@@ -312,7 +312,7 @@ func (c *RoomClient) getRoomPlayerData() {
 			c.send <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
 		}
 		if otherClient.hidden {
-			c.send <- buildMsg("h", otherClient.sClient.id, "1")
+			c.send <- buildMsg("h", otherClient.sClient.id, 1)
 		}
 		if otherClient.sClient.systemName != "" {
 			c.send <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
@@ -352,7 +352,7 @@ func (c *RoomClient) getRoomEventData() {
 			if eventId != currentEventVmEventId {
 				continue
 			}
-			c.send <- buildMsg("sev", eventId, "1")
+			c.send <- buildMsg("sev", eventId, 1)
 		}
 	}
 }

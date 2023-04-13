@@ -363,7 +363,7 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 					c.send <- buildMsg("b")
 				}
 			} else {
-				c.send <- buildMsg("ss", "1430", "0")
+				c.send <- buildMsg("ss", 1430, 0)
 			}
 		}
 	} else if trigger == "" {
