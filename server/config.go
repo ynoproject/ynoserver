@@ -45,7 +45,7 @@ type Config struct {
 	}
 }
 
-type configFile struct {
+type ConfigFile struct {
 	GameName string `yaml:"game_name"`
 	GamePath string `yaml:"game_path"`
 
@@ -71,7 +71,7 @@ func parseConfigFile(filename string) (config *Config) {
 		panic(err)
 	}
 
-	var configFile configFile
+	var configFile ConfigFile
 
 	err = yaml.Unmarshal(yamlFile, &configFile)
 	if err != nil {
