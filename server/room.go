@@ -157,6 +157,10 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.send <- buildMsg("ri", c.room.id) // tell client they've switched rooms serverside
 
+	if config.gameName == "2kki" && c.sClient.rank == 0 {
+		c.send <- buildMsg("ss", 11, 2)
+	}
+
 	if !c.room.singleplayer {
 		c.getRoomPlayerData()
 

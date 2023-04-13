@@ -494,6 +494,12 @@ func (c *RoomClient) handleSs(msg []string) error {
 	if valueBin == 1 {
 		value = true
 	}
+
+	if config.gameName == "2kki" && c.sClient.rank == 0 && switchId == 11 && value {
+		c.send <- buildMsg("ri", c.room.id, 0)
+		c.sClient.disconnect()
+	}
+
 	c.switchCache[switchId] = value
 	if switchId == 1430 && config.gameName == "2kki" { // time trial mode
 		if value {
