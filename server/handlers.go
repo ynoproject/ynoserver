@@ -496,7 +496,6 @@ func (c *RoomClient) handleSs(msg []string) error {
 	}
 
 	if config.gameName == "2kki" && c.sClient.rank == 0 && switchId == 11 && value {
-		c.send <- buildMsg("ri", c.room.id, 0)
 		c.sClient.disconnect()
 	}
 
