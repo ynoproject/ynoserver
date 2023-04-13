@@ -485,15 +485,8 @@ func (c *RoomClient) handleSs(msg []string) error {
 	if errconv != nil {
 		return errconv
 	}
-	valueBin, errconv := strconv.Atoi(msg[2])
-	if errconv != nil || valueBin < 0 || valueBin > 1 {
-		return errconv
-	}
 
-	var value bool
-	if valueBin == 1 {
-		value = true
-	}
+	value := msg[2] == "1"
 
 	if config.gameName == "2kki" && c.sClient.rank == 0 && switchId == 11 && value {
 		c.sClient.disconnect()
