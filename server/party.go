@@ -270,7 +270,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		return err
 	}
 
-	_, err = db.Exec("UPDATE playerGameData pgd SET pgd.lastPartyMsgId = (SELECT MAX(cm.timestamp) FROM chatMessages cm WHERE cm.game = pgd.game AND cm.partyId = ?) WHERE pgd.uuid = ? AND pgd.game = ?", partyId, playerUuid, config.gameName)
+	_, err = db.Exec("UPDATE playerGameData pgd SET pgd.lastPartyMsgId = (SELECT cm.msgId FROM chatMessages cm WHERE cm.game = pgd.game AND cm.partyId = ? AND cm.timestamp = (SELECT MAX(timestamp) FROM chatMessages WHERE game = cm.game AND partyId = cm.partyId) LIMIT 1) WHERE pgd.uuid = ? AND pgd.game = ?", partyId, playerUuid, config.gameName)
 	if err != nil {
 		return err
 	}
