@@ -35,7 +35,6 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/gorilla/websocket"
 	"github.com/ynoproject/ynoserver/server/assets"
-	"github.com/ynoproject/ynoserver/server/config"
 	"github.com/ynoproject/ynoserver/server/security"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -50,7 +49,7 @@ const (
 var (
 	scheduler = gocron.NewScheduler(time.UTC)
 
-	serverConfig   *config.Config
+	serverConfig  *Config
 	serverSecurity *security.Security
 	gameAssets     *assets.Assets
 
@@ -73,7 +72,7 @@ func Start() {
 	configFile := flag.String("config", "config.yml", "Path to the configuration file")
 	flag.Parse()
 
-	serverConfig = config.ParseConfigFile(*configFile)
+	serverConfig = parseConfigFile(*configFile)
 
 	fmt.Printf("Current game ID is \"%s\".\n", serverConfig.GameName)
 

@@ -15,7 +15,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package config
+package server
 
 import (
 	"os"
@@ -65,7 +65,7 @@ type configFile struct {
 	} `yaml:"logging"`
 }
 
-func ParseConfigFile(filename string) (config *Config) {
+func parseConfigFile(filename string) (config *Config) {
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
