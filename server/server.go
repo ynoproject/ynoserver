@@ -74,17 +74,17 @@ func Start() {
 
 	serverConfig = parseConfigFile(*configFile)
 
-	fmt.Printf("Current game ID is \"%s\".\n", serverConfig.GameName)
+	fmt.Printf("Current game ID is \"%s\".\n", serverConfig.gameName)
 
-	isHostServer = serverConfig.GameName == hostGameId
+	isHostServer = serverConfig.gameName == hostGameId
 
-	serverSecurity = security.New(serverConfig.SignKey)
-	gameAssets = assets.GetAssets(serverConfig.GamePath)
+	serverSecurity = security.New(serverConfig.signKey)
+	gameAssets = assets.GetAssets(serverConfig.gamePath)
 
-	gameAssets.IgnoredSoundNames = serverConfig.BadSounds
-	gameAssets.PictureNames = serverConfig.PictureNames
-	gameAssets.PicturePrefixes = serverConfig.PicturePrefixes
-	gameAssets.BattleAnimIds = serverConfig.BattleAnimIds
+	gameAssets.IgnoredSoundNames = serverConfig.badSounds
+	gameAssets.PictureNames = serverConfig.pictureNames
+	gameAssets.PicturePrefixes = serverConfig.picturePrefixes
+	gameAssets.BattleAnimIds = serverConfig.battleAnimIds
 
 	fmt.Print("Setting conditions...\n")
 	setConditions()
@@ -100,13 +100,13 @@ func Start() {
 
 	globalConditions = getGlobalConditions()
 
-	createRooms(gameAssets.MapIds, serverConfig.SpRooms)
+	createRooms(gameAssets.MapIds, serverConfig.spRooms)
 
 	log.SetOutput(&lumberjack.Logger{
-		Filename:   "logs/" + serverConfig.GameName + "/ynoserver.log",
-		MaxSize:    serverConfig.Logging.MaxSize,
-		MaxBackups: serverConfig.Logging.MaxBackups,
-		MaxAge:     serverConfig.Logging.MaxAge,
+		Filename:   "logs/" + serverConfig.gameName + "/ynoserver.log",
+		MaxSize:    serverConfig.logging.maxSize,
+		MaxBackups: serverConfig.logging.maxBackups,
+		MaxAge:     serverConfig.logging.maxAge,
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
@@ -142,16 +142,16 @@ func Start() {
 
 func getListener() net.Listener {
 	// remove socket file
-	os.Remove("sockets/" + serverConfig.GameName + ".sock")
+	os.Remove("sockets/" + serverConfig.gameName + ".sock")
 
 	// create unix socket at sockets/<game>.sock
-	listener, err := net.Listen("unix", "sockets/"+serverConfig.GameName+".sock")
+	listener, err := net.Listen("unix", "sockets/"+serverConfig.gameName+".sock")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// set socket file permissions
-	if err := os.Chmod("sockets/"+serverConfig.GameName+".sock", 0666); err != nil {
+	if err := os.Chmod("sockets/"+serverConfig.gameName+".sock", 0666); err != nil {
 		log.Fatal(err)
 	}
 
@@ -177,7 +177,7 @@ type IpHubResponse struct {
 }
 
 func isVpn(ip string) (vpn bool) {
-	if serverConfig.IpHubKey == "" {
+	if serverConfig.ipHubKey == "" {
 		return false // VPN checking is not available
 	}
 
@@ -186,7 +186,7 @@ func isVpn(ip string) (vpn bool) {
 		return false
 	}
 
-	req.Header.Set("X-Key", serverConfig.IpHubKey)
+	req.Header.Set("X-Key", serverConfig.ipHubKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

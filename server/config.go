@@ -26,22 +26,22 @@ import (
 )
 
 type Config struct {
-	GameName string
-	GamePath string
+	gameName string
+	gamePath string
 
-	SpRooms         []int
-	BadSounds       map[string]bool
-	PictureNames    map[string]bool
-	PicturePrefixes []string
-	BattleAnimIds   map[int]bool
+	spRooms         []int
+	badSounds       map[string]bool
+	pictureNames    map[string]bool
+	picturePrefixes []string
+	battleAnimIds   map[int]bool
 
-	SignKey  []byte
-	IpHubKey string
+	signKey  []byte
+	ipHubKey string
 
-	Logging struct {
-		MaxSize    int
-		MaxBackups int
-		MaxAge     int
+	logging struct {
+		maxSize    int
+		maxBackups int
+		maxAge     int
 	}
 }
 
@@ -80,8 +80,8 @@ func parseConfigFile(filename string) (config *Config) {
 
 	config = &Config{}
 
-	config.GameName = configFile.GameName
-	config.GamePath = configFile.GamePath
+	config.gameName = configFile.GameName
+	config.gamePath = configFile.GamePath
 
 	if configFile.SpRooms != "" {
 		for _, str := range strings.Split(configFile.SpRooms, ",") {
@@ -90,29 +90,29 @@ func parseConfigFile(filename string) (config *Config) {
 				continue
 			}
 
-			config.SpRooms = append(config.SpRooms, num)
+			config.spRooms = append(config.spRooms, num)
 		}
 	}
 
-	config.BadSounds = make(map[string]bool)
+	config.badSounds = make(map[string]bool)
 	if configFile.BadSounds != "" {
 		for _, name := range strings.Split(configFile.BadSounds, ",") {
-			config.BadSounds[name] = true
+			config.badSounds[name] = true
 		}
 	}
 
-	config.PictureNames = make(map[string]bool)
+	config.pictureNames = make(map[string]bool)
 	if configFile.PictureNames != "" {
 		for _, name := range strings.Split(configFile.PictureNames, ",") {
-			config.PictureNames[name] = true
+			config.pictureNames[name] = true
 		}
 	}
 
 	if configFile.PicturePrefixes != "" {
-		config.PicturePrefixes = strings.Split(strings.ToLower(configFile.PicturePrefixes), ",")
+		config.picturePrefixes = strings.Split(strings.ToLower(configFile.PicturePrefixes), ",")
 	}
 
-	config.BattleAnimIds = make(map[int]bool)
+	config.battleAnimIds = make(map[int]bool)
 	if configFile.BattleAnimIds != "" {
 		for _, id := range strings.Split(configFile.BattleAnimIds, ",") {
 			idInt, errconv := strconv.Atoi(id)
@@ -120,27 +120,27 @@ func parseConfigFile(filename string) (config *Config) {
 				continue
 			}
 
-			config.BattleAnimIds[idInt] = true
+			config.battleAnimIds[idInt] = true
 		}
 	}
 
-	config.SignKey = []byte(configFile.SignKey)
-	config.IpHubKey = configFile.IpHubKey
+	config.signKey = []byte(configFile.SignKey)
+	config.ipHubKey = configFile.IpHubKey
 
 	if configFile.Logging.MaxSize != 0 {
-		config.Logging.MaxSize = configFile.Logging.MaxSize
+		config.logging.maxSize = configFile.Logging.MaxSize
 	} else {
-		config.Logging.MaxSize = 50 // MB
+		config.logging.maxSize = 50 // MB
 	}
 	if configFile.Logging.MaxBackups != 0 {
-		config.Logging.MaxBackups = configFile.Logging.MaxBackups
+		config.logging.maxBackups = configFile.Logging.MaxBackups
 	} else {
-		config.Logging.MaxBackups = 6
+		config.logging.maxBackups = 6
 	}
 	if configFile.Logging.MaxAge != 0 {
-		config.Logging.MaxAge = configFile.Logging.MaxAge
+		config.logging.maxAge = configFile.Logging.MaxAge
 	} else {
-		config.Logging.MaxAge = 28 // Days
+		config.logging.maxAge = 28 // Days
 	}
 
 	return config

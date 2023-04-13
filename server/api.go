@@ -67,7 +67,7 @@ func initApi() {
 	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
 
 	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
-		if serverConfig.GameName != "2kki" {
+		if serverConfig.gameName != "2kki" {
 			handleError(w, r, "endpoint not supported")
 			return
 		}

@@ -25,7 +25,7 @@ import (
 )
 
 func getSaveDataTimestamp(playerUuid string) (time.Time, error) { // called by api only
-	info, err := os.Stat("saves/" + serverConfig.GameName + "/" + playerUuid + ".osd")
+	info, err := os.Stat("saves/" + serverConfig.gameName + "/" + playerUuid + ".osd")
 	if err != nil {
 		return time.UnixMilli(0), nil // HACK: no error return because it breaks forest-orb
 	}
@@ -34,7 +34,7 @@ func getSaveDataTimestamp(playerUuid string) (time.Time, error) { // called by a
 }
 
 func getSaveData(playerUuid string) ([]byte, error) { // called by api only
-	file, err := os.ReadFile("saves/" + serverConfig.GameName + "/" + playerUuid + ".osd")
+	file, err := os.ReadFile("saves/" + serverConfig.gameName + "/" + playerUuid + ".osd")
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +62,11 @@ func createGameSaveData(playerUuid string, data []byte) error { // called by api
 
 	defer enc.Close()
 
-	os.WriteFile("saves/"+serverConfig.GameName+"/"+playerUuid+".osd", enc.EncodeAll(data, []byte{}), 0644)
+	os.WriteFile("saves/"+serverConfig.gameName+"/"+playerUuid+".osd", enc.EncodeAll(data, []byte{}), 0644)
 
 	return nil
 }
 
 func clearGameSaveData(playerUuid string) error { // called by api only
-	return os.Remove("saves/" + serverConfig.GameName + "/" + playerUuid + ".osd")
+	return os.Remove("saves/" + serverConfig.gameName + "/" + playerUuid + ".osd")
 }

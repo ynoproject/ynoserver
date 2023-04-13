@@ -137,7 +137,7 @@ func (c *RoomClient) handleSpr(msg []string) error {
 		return errors.New("invalid sprite")
 	}
 
-	if serverConfig.GameName == "2kki" && !gameAssets.IsValid2kkiSprite(msg[1], c.room.id) {
+	if serverConfig.gameName == "2kki" && !gameAssets.IsValid2kkiSprite(msg[1], c.room.id) {
 		return errors.New("invalid 2kki sprite")
 	}
 
@@ -495,7 +495,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 		value = true
 	}
 	c.switchCache[switchId] = value
-	if switchId == 1430 && serverConfig.GameName == "2kki" { // time trial mode
+	if switchId == 1430 && serverConfig.gameName == "2kki" { // time trial mode
 		if value {
 			c.send <- buildMsg("sv", "88", "0") // time elapsed
 		}
@@ -552,7 +552,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 										c.send <- buildMsg("b")
 									}
 								}
-							} else if serverConfig.GameName == "2kki" {
+							} else if serverConfig.gameName == "2kki" {
 								c.send <- buildMsg("ss", "1430", "0")
 							}
 						} else {
@@ -577,7 +577,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 											c.send <- buildMsg("b")
 										}
 									}
-								} else if serverConfig.GameName == "2kki" {
+								} else if serverConfig.gameName == "2kki" {
 									c.send <- buildMsg("ss", "1430", "0")
 								}
 							} else {
@@ -616,7 +616,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 
 	conditions := append(globalConditions, c.room.conditions...)
 
-	if varId == 88 && serverConfig.GameName == "2kki" {
+	if varId == 88 && serverConfig.gameName == "2kki" {
 		for _, condition := range conditions {
 			if condition.TimeTrial && value < 3600 {
 				if c.checkConditionCoords(condition) {
@@ -687,7 +687,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 										c.send <- buildMsg("b")
 									}
 								}
-							} else if serverConfig.GameName == "2kki" {
+							} else if serverConfig.gameName == "2kki" {
 								c.send <- buildMsg("ss", "1430", "0")
 							}
 						} else {
@@ -712,7 +712,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 											c.send <- buildMsg("b")
 										}
 									}
-								} else if serverConfig.GameName == "2kki" {
+								} else if serverConfig.gameName == "2kki" {
 									c.send <- buildMsg("ss", "1430", "0")
 								}
 							} else {
@@ -992,16 +992,16 @@ func (c *SessionClient) handleE() error {
 	}
 	var hasIncompleteEvent bool
 	for _, currentEventLocation := range currentEventLocationsData {
-		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.GameName {
+		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.gameName {
 			hasIncompleteEvent = true
 			break
 		}
 	}
 	if !hasIncompleteEvent {
-		if serverConfig.GameName == "2kki" {
+		if serverConfig.gameName == "2kki" {
 			addPlayer2kkiEventLocation(currentGameEventPeriodId, -1, freeEventLocationMinDepth, 0, 0, c.uuid)
 		} else if len(freeEventLocationPool) > 0 {
-			addPlayerEventLocation(serverConfig.GameName, -1, 0, freeEventLocationPool, c.uuid)
+			addPlayerEventLocation(serverConfig.gameName, -1, 0, freeEventLocationPool, c.uuid)
 		}
 		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(c.uuid)
 		if err != nil {
@@ -1096,16 +1096,16 @@ func (c *SessionClient) handleEec(msg []string) error {
 	}
 	var hasIncompleteEvent bool
 	for _, currentEventLocation := range currentEventLocationsData {
-		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.GameName {
+		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.gameName {
 			hasIncompleteEvent = true
 			break
 		}
 	}
 	if !hasIncompleteEvent {
-		if serverConfig.GameName == "2kki" {
+		if serverConfig.gameName == "2kki" {
 			addPlayer2kkiEventLocation(currentGameEventPeriodId, -1, freeEventLocationMinDepth, 0, 0, c.uuid)
 		} else if len(freeEventLocationPool) > 0 {
-			addPlayerEventLocation(serverConfig.GameName, -1, 0, freeEventLocationPool, c.uuid)
+			addPlayerEventLocation(serverConfig.gameName, -1, 0, freeEventLocationPool, c.uuid)
 		}
 	}
 
