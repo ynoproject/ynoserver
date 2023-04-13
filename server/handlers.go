@@ -133,11 +133,11 @@ func (c *RoomClient) handleSpr(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	if !gameAssets.IsValidSprite(msg[1]) {
+	if !assets.IsValidSprite(msg[1]) {
 		return errors.New("invalid sprite")
 	}
 
-	if serverConfig.gameName == "2kki" && !gameAssets.IsValid2kkiSprite(msg[1], c.room.id) {
+	if config.gameName == "2kki" && !isValid2kkiSprite(msg[1], c.room.id) {
 		return errors.New("invalid 2kki sprite")
 	}
 
@@ -228,7 +228,7 @@ func (c *RoomClient) handleSys(msg []string) (err error) {
 		return errors.New("segment count mismatch")
 	}
 
-	if !gameAssets.IsValidSystem(msg[1], false) {
+	if !assets.IsValidSystem(msg[1], false) {
 		return err
 	}
 
@@ -244,7 +244,7 @@ func (c *RoomClient) handleSe(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	if !gameAssets.IsValidSound(msg[1]) {
+	if !assets.IsValidSound(msg[1]) {
 		return errors.New("invalid sound")
 	}
 
@@ -278,7 +278,7 @@ func (c *RoomClient) handleP(msg []string) error {
 
 	if isShow {
 		c.checkRoomConditions("picture", msg[17])
-		if !gameAssets.IsValidPicture(msg[17]) {
+		if !assets.IsValidPicture(msg[17]) {
 			return errors.New("invalid picture")
 		}
 	}
@@ -444,7 +444,7 @@ func (c *RoomClient) handleBa(msg []string) error {
 		return errconv
 	}
 
-	if !gameAssets.BattleAnimIds[id] {
+	if !assets.battleAnimIds[id] {
 		return errors.New("invalid battle animation id")
 	}
 
@@ -495,7 +495,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 		value = true
 	}
 	c.switchCache[switchId] = value
-	if switchId == 1430 && serverConfig.gameName == "2kki" { // time trial mode
+	if switchId == 1430 && config.gameName == "2kki" { // time trial mode
 		if value {
 			c.send <- buildMsg("sv", "88", "0") // time elapsed
 		}
@@ -552,7 +552,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 										c.send <- buildMsg("b")
 									}
 								}
-							} else if serverConfig.gameName == "2kki" {
+							} else if config.gameName == "2kki" {
 								c.send <- buildMsg("ss", "1430", "0")
 							}
 						} else {
@@ -577,7 +577,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 											c.send <- buildMsg("b")
 										}
 									}
-								} else if serverConfig.gameName == "2kki" {
+								} else if config.gameName == "2kki" {
 									c.send <- buildMsg("ss", "1430", "0")
 								}
 							} else {
@@ -616,7 +616,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 
 	conditions := append(globalConditions, c.room.conditions...)
 
-	if varId == 88 && serverConfig.gameName == "2kki" {
+	if varId == 88 && config.gameName == "2kki" {
 		for _, condition := range conditions {
 			if condition.TimeTrial && value < 3600 {
 				if c.checkConditionCoords(condition) {
@@ -687,7 +687,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 										c.send <- buildMsg("b")
 									}
 								}
-							} else if serverConfig.gameName == "2kki" {
+							} else if config.gameName == "2kki" {
 								c.send <- buildMsg("ss", "1430", "0")
 							}
 						} else {
@@ -712,7 +712,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 											c.send <- buildMsg("b")
 										}
 									}
-								} else if serverConfig.gameName == "2kki" {
+								} else if config.gameName == "2kki" {
 									c.send <- buildMsg("ss", "1430", "0")
 								}
 							} else {
@@ -992,16 +992,16 @@ func (c *SessionClient) handleE() error {
 	}
 	var hasIncompleteEvent bool
 	for _, currentEventLocation := range currentEventLocationsData {
-		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.gameName {
+		if !currentEventLocation.Complete && currentEventLocation.Game == config.gameName {
 			hasIncompleteEvent = true
 			break
 		}
 	}
 	if !hasIncompleteEvent {
-		if serverConfig.gameName == "2kki" {
+		if config.gameName == "2kki" {
 			addPlayer2kkiEventLocation(currentGameEventPeriodId, -1, freeEventLocationMinDepth, 0, 0, c.uuid)
 		} else if len(freeEventLocationPool) > 0 {
-			addPlayerEventLocation(serverConfig.gameName, -1, 0, freeEventLocationPool, c.uuid)
+			addPlayerEventLocation(config.gameName, -1, 0, freeEventLocationPool, c.uuid)
 		}
 		currentEventLocationsData, err = getCurrentPlayerEventLocationsData(c.uuid)
 		if err != nil {
@@ -1096,16 +1096,16 @@ func (c *SessionClient) handleEec(msg []string) error {
 	}
 	var hasIncompleteEvent bool
 	for _, currentEventLocation := range currentEventLocationsData {
-		if !currentEventLocation.Complete && currentEventLocation.Game == serverConfig.gameName {
+		if !currentEventLocation.Complete && currentEventLocation.Game == config.gameName {
 			hasIncompleteEvent = true
 			break
 		}
 	}
 	if !hasIncompleteEvent {
-		if serverConfig.gameName == "2kki" {
+		if config.gameName == "2kki" {
 			addPlayer2kkiEventLocation(currentGameEventPeriodId, -1, freeEventLocationMinDepth, 0, 0, c.uuid)
 		} else if len(freeEventLocationPool) > 0 {
-			addPlayerEventLocation(serverConfig.gameName, -1, 0, freeEventLocationPool, c.uuid)
+			addPlayerEventLocation(config.gameName, -1, 0, freeEventLocationPool, c.uuid)
 		}
 	}
 

@@ -67,7 +67,7 @@ func initApi() {
 	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
 
 	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
-		if serverConfig.gameName != "2kki" {
+		if config.gameName != "2kki" {
 			handleError(w, r, "endpoint not supported")
 			return
 		}
@@ -415,7 +415,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "theme not specified")
 			return
 		}
-		if !gameAssets.IsValidSystem(themeParam, true) {
+		if !assets.IsValidSystem(themeParam, true) {
 			handleError(w, r, "invalid system name for theme")
 			return
 		}

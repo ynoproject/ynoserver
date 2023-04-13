@@ -202,7 +202,7 @@ func initBadges() {
 	if len(badges) != 0 {
 		badgeUnlockPercentages, _ = getBadgeUnlockPercentages()
 		if isHostServer {
-			if _, ok := badges[serverConfig.gameName]; ok {
+			if _, ok := badges[config.gameName]; ok {
 				// Badge records needed for determining badge game
 				writeGameBadges()
 				updatePlayerBadgeSlotCounts("")
@@ -254,7 +254,7 @@ func updateActiveBadgesAndConditions() {
 }
 
 func getGlobalConditions() (globalConditions []*Condition) {
-	if gameConditions, ok := conditions[serverConfig.gameName]; ok {
+	if gameConditions, ok := conditions[config.gameName]; ok {
 		for _, condition := range gameConditions {
 			if condition.Map == 0 {
 				globalConditions = append(globalConditions, condition)
@@ -265,7 +265,7 @@ func getGlobalConditions() (globalConditions []*Condition) {
 }
 
 func getRoomConditions(roomId int) (roomConditions []*Condition) {
-	if gameConditions, ok := conditions[serverConfig.gameName]; ok {
+	if gameConditions, ok := conditions[config.gameName]; ok {
 		for _, condition := range gameConditions {
 			if condition.Map == roomId {
 				roomConditions = append(roomConditions, condition)
@@ -353,7 +353,7 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 			}
 			c.send <- buildMsg("sv", varId, varSyncType)
 		} else if c.checkConditionCoords(condition) {
-			timeTrial := condition.TimeTrial && serverConfig.gameName == "2kki"
+			timeTrial := condition.TimeTrial && config.gameName == "2kki"
 			if !timeTrial {
 				success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
 				if err != nil {

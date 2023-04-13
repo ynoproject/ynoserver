@@ -201,7 +201,7 @@ func getPlayerMedals(uuid string) (medals [5]int) {
 		return client.medals // return medals from session if client is connected
 	}
 
-	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, serverConfig.gameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3], &medals[4])
+	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3], &medals[4])
 	if err != nil {
 		return [5]int{}
 	}
@@ -228,7 +228,7 @@ func createPlayerData(ip string, uuid string, banned bool) error {
 }
 
 func getPlayerGameData(uuid string) (spriteName string, spriteIndex int, systemName string) {
-	err := db.QueryRow("SELECT pgd.spriteName, pgd.spriteIndex, pgd.systemName FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, serverConfig.gameName).Scan(&spriteName, &spriteIndex, &systemName)
+	err := db.QueryRow("SELECT pgd.spriteName, pgd.spriteIndex, pgd.systemName FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&spriteName, &spriteIndex, &systemName)
 	if err != nil {
 		return "", 0, ""
 	}
@@ -237,7 +237,7 @@ func getPlayerGameData(uuid string) (spriteName string, spriteIndex int, systemN
 }
 
 func (c *SessionClient) updatePlayerGameData() error {
-	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", c.uuid, serverConfig.gameName, c.name, c.systemName, c.spriteName, c.spriteIndex, c.name, c.systemName, c.spriteName, c.spriteIndex)
+	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", c.uuid, config.gameName, c.name, c.systemName, c.spriteName, c.spriteIndex, c.name, c.systemName, c.spriteName, c.spriteIndex)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (c *SessionClient) updatePlayerGameData() error {
 }
 
 func getPlayerInfo(ip string) (uuid string, name string, rank int) {
-	err := db.QueryRow("SELECT pd.uuid, pgd.name, pd.rank FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.ip = ? AND (pgd.uuid IS NULL OR pgd.game = ?)", ip, serverConfig.gameName).Scan(&uuid, &name, &rank)
+	err := db.QueryRow("SELECT pd.uuid, pgd.name, pd.rank FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.ip = ? AND (pgd.uuid IS NULL OR pgd.game = ?)", ip, config.gameName).Scan(&uuid, &name, &rank)
 	if err != nil {
 		return "", "", 0
 	}
@@ -396,7 +396,7 @@ func setPlayerBadgeSlot(uuid string, badgeId string, slotRow int, slotCol int) e
 }
 
 func writeGlobalChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, x, y int, contents string) error {
-	_, err := db.Exec("INSERT INTO chatMessages (msgId, game, uuid, mapId, prevMapId, prevLocations, x, y, contents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", msgId, serverConfig.gameName, uuid, mapId, prevMapId, prevLocations, x, y, contents)
+	_, err := db.Exec("INSERT INTO chatMessages (msgId, game, uuid, mapId, prevMapId, prevLocations, x, y, contents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", msgId, config.gameName, uuid, mapId, prevMapId, prevLocations, x, y, contents)
 	if err != nil {
 		return err
 	}
@@ -409,7 +409,7 @@ func writeGlobalChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string,
 func getLastMessageIds() (lastMsgIds map[int]string, err error) {
 	lastMsgIds = make(map[int]string)
 
-	results, err := db.Query("SELECT COALESCE(cm.partyId, 0), cm.msgId FROM chatMessages cm WHERE cm.timestamp = (SELECT MAX(cm2.timestamp) FROM chatMessages cm2 JOIN players pd ON pd.uuid = cm2.uuid WHERE cm2.game = ? AND pd.banned = 0 AND cm2.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND ((cm.partyId IS NULL AND cm2.partyId IS NULL) OR (cm2.partyId = cm.partyId))) GROUP BY COALESCE(cm.partyId, 0)", serverConfig.gameName)
+	results, err := db.Query("SELECT COALESCE(cm.partyId, 0), cm.msgId FROM chatMessages cm WHERE cm.timestamp = (SELECT MAX(cm2.timestamp) FROM chatMessages cm2 JOIN players pd ON pd.uuid = cm2.uuid WHERE cm2.game = ? AND pd.banned = 0 AND cm2.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND ((cm.partyId IS NULL AND cm2.partyId IS NULL) OR (cm2.partyId = cm.partyId))) GROUP BY COALESCE(cm.partyId, 0)", config.gameName)
 	if err != nil {
 		return lastMsgIds, nil
 	}
@@ -439,7 +439,7 @@ func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) error {
 
 	query += " = ? WHERE uuid = ? AND game = ?"
 
-	_, err := db.Exec(query, lastMsgId, uuid, serverConfig.gameName)
+	_, err := db.Exec(query, lastMsgId, uuid, config.gameName)
 	if err != nil {
 		return err
 	}
@@ -489,7 +489,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	var messageQueryArgs []interface{}
 
-	messageQueryArgs = append(messageQueryArgs, serverConfig.gameName)
+	messageQueryArgs = append(messageQueryArgs, config.gameName)
 
 	if lastMsgId != "" {
 		messageQueryArgs = append(messageQueryArgs, lastMsgId)
@@ -502,7 +502,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	if partyId == 0 {
 		query += globalSelectClause + fromClause + globalWhereClause + " LIMIT ?"
 	} else {
-		messageQueryArgs = append(messageQueryArgs, serverConfig.gameName)
+		messageQueryArgs = append(messageQueryArgs, config.gameName)
 
 		if lastMsgId != "" {
 			messageQueryArgs = append(messageQueryArgs, lastMsgId)
@@ -543,7 +543,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	var playerQueryArgs []interface{}
 
-	playerQueryArgs = append(playerQueryArgs, serverConfig.gameName, firstTimestamp, lastTimestamp)
+	playerQueryArgs = append(playerQueryArgs, config.gameName, firstTimestamp, lastTimestamp)
 
 	if partyId == 0 {
 		playersQuery += "AND cm.partyId IS NULL"
@@ -613,7 +613,7 @@ func setCurrentEventPeriodId() error {
 }
 
 func getCurrentEventPeriodData() (eventPeriod EventPeriod, err error) {
-	err = db.QueryRow("SELECT ep.periodOrdinal, ep.endDate, gep.enableVms FROM eventPeriods ep JOIN gameEventPeriods gep ON gep.periodId = ep.id AND gep.game = ? WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate", serverConfig.gameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
+	err = db.QueryRow("SELECT ep.periodOrdinal, ep.endDate, gep.enableVms FROM eventPeriods ep JOIN gameEventPeriods gep ON gep.periodId = ep.id AND gep.game = ? WHERE UTC_DATE() >= ep.startDate AND UTC_DATE() < ep.endDate", config.gameName).Scan(&eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms)
 	if err != nil {
 		eventPeriod.PeriodOrdinal = -1
 		if err == sql.ErrNoRows {
@@ -653,7 +653,7 @@ func getGameCurrentEventPeriodsData() (gameEventPeriods map[string]*EventPeriod,
 func setCurrentGameEventPeriodId() error {
 	var gamePeriodId int
 
-	err := db.QueryRow("SELECT id FROM gameEventPeriods WHERE game = ? AND periodId = ?", serverConfig.gameName, currentEventPeriodId).Scan(&gamePeriodId)
+	err := db.QueryRow("SELECT id FROM gameEventPeriods WHERE game = ? AND periodId = ?", config.gameName, currentEventPeriodId).Scan(&gamePeriodId)
 	if err != nil {
 		currentGameEventPeriodId = 0
 		if err == sql.ErrNoRows {
@@ -816,7 +816,7 @@ func getOrWriteLocationIdForEventLocation(gameEventPeriodId int, title string, t
 		return locationId, err
 	}
 
-	_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", serverConfig.gameName, title, titleJP, depth, minDepth, mapIdsJson)
+	_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", config.gameName, title, titleJP, depth, minDepth, mapIdsJson)
 	if err != nil {
 		return locationId, err
 	}
@@ -828,14 +828,14 @@ func getOrWriteLocationIdForEventLocation(gameEventPeriodId int, title string, t
 
 func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
 	var playerEventLocationQueueLength int
-	db.QueryRow("SELECT COUNT(*) FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE()", serverConfig.gameName).Scan(&playerEventLocationQueueLength)
+	db.QueryRow("SELECT COUNT(*) FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE()", config.gameName).Scan(&playerEventLocationQueueLength)
 
 	if playerEventLocationQueueLength > 0 {
 		var currentPlayerEventLocationQueueLength int
 		db.QueryRow("SELECT COUNT(*) FROM eventCompletions ec JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 WHERE pel.gamePeriodId = ? AND pel.startDate = UTC_DATE() AND pel.uuid = ?", gameEventPeriodId, playerUuid).Scan(&currentPlayerEventLocationQueueLength)
 
 		if currentPlayerEventLocationQueueLength < playerEventLocationQueueLength {
-			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE() AND queueIndex = ?", serverConfig.gameName, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
+			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE() AND queueIndex = ?", config.gameName, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
 
 			return locationId, nil
 		}
@@ -846,7 +846,7 @@ func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUui
 		return locationId, err
 	}
 
-	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, queueIndex, locationId) VALUES (?, UTC_DATE(), ?, ?)", serverConfig.gameName, playerEventLocationQueueLength+1, locationId)
+	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, queueIndex, locationId) VALUES (?, UTC_DATE(), ?, ?)", config.gameName, playerEventLocationQueueLength+1, locationId)
 	if err != nil {
 		return locationId, err
 	}
@@ -931,7 +931,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 		eventLocations = append(eventLocations, eventLocation)
 	}
 
-	results, err = db.Query("SELECT pel.id, gep.game, pl.title, pl.titleJP, pl.depth, pl.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND gep.game = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId, serverConfig.gameName)
+	results, err = db.Query("SELECT pel.id, gep.game, pl.title, pl.titleJP, pl.depth, pl.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND gep.game = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId, config.gameName)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -1221,7 +1221,7 @@ func writeGameBadges() error {
 
 	for badgeGame := range badges {
 		for badgeId, badge := range badges[badgeGame] {
-			if _, ok := badges[serverConfig.gameName]; ok {
+			if _, ok := badges[config.gameName]; ok {
 				badgeUnlockPercentage := badgeUnlockPercentages[badgeId]
 				_, err = db.Exec("INSERT INTO badges (badgeId, game, bp, hidden, percentUnlocked) VALUES (?, ?, ?, ?, ?)", badgeId, badgeGame, badge.Bp, badge.Hidden || badge.Dev, badgeUnlockPercentage)
 				if err != nil {
@@ -1458,14 +1458,14 @@ func tryWritePlayerMinigameScore(playerUuid string, minigameId string, score int
 	} else if score <= prevScore {
 		return false, nil
 	} else if prevScore > 0 {
-		_, err = db.Exec("UPDATE playerMinigameScores SET score = ?, timestampCompleted = ? WHERE uuid = ? AND game = ? AND minigameId = ?", score, time.Now(), playerUuid, serverConfig.gameName, minigameId)
+		_, err = db.Exec("UPDATE playerMinigameScores SET score = ?, timestampCompleted = ? WHERE uuid = ? AND game = ? AND minigameId = ?", score, time.Now(), playerUuid, config.gameName, minigameId)
 		if err != nil {
 			return false, err
 		}
 		return true, nil
 	}
 
-	_, err = db.Exec("INSERT INTO playerMinigameScores (uuid, game, minigameId, score, timestampCompleted) VALUES (?, ?, ?, ?, ?)", playerUuid, serverConfig.gameName, minigameId, score, time.Now())
+	_, err = db.Exec("INSERT INTO playerMinigameScores (uuid, game, minigameId, score, timestampCompleted) VALUES (?, ?, ?, ?, ?)", playerUuid, config.gameName, minigameId, score, time.Now())
 	if err != nil {
 		return false, err
 	}
@@ -1575,19 +1575,19 @@ func getUuidFromToken(token string) (uuid string) {
 }
 
 func writeGamePlayerCount(playerCount int) error {
-	_, err := db.Exec("INSERT INTO gamePlayerCounts (game, playerCount) VALUES (?, ?)", serverConfig.gameName, playerCount)
+	_, err := db.Exec("INSERT INTO gamePlayerCounts (game, playerCount) VALUES (?, ?)", config.gameName, playerCount)
 	if err != nil {
 		return err
 	}
 
 	var playerCounts int
-	err = db.QueryRow("SELECT COUNT(*) FROM gamePlayerCounts WHERE game = ?", serverConfig.gameName).Scan(&playerCounts)
+	err = db.QueryRow("SELECT COUNT(*) FROM gamePlayerCounts WHERE game = ?", config.gameName).Scan(&playerCounts)
 	if err != nil {
 		return err
 	}
 
 	if playerCounts > 28 {
-		_, err = db.Exec("DELETE FROM gamePlayerCounts WHERE game = ? ORDER BY id LIMIT ?", serverConfig.gameName, playerCounts-28)
+		_, err = db.Exec("DELETE FROM gamePlayerCounts WHERE game = ? ORDER BY id LIMIT ?", config.gameName, playerCounts-28)
 		if err != nil {
 			return err
 		}

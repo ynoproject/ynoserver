@@ -1,8 +1,8 @@
-package assets
+package server
 
 import "strings"
 
-func (a *Assets) IsValid2kkiSprite(name string, room int) bool {
+func isValid2kkiSprite(name string, room int) bool {
 	if (allowed2kkiSprites[name] ||
 		(strings.Contains(name, "syujinkou") ||
 			strings.Contains(name, "effect") ||

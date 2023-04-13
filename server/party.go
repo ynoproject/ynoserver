@@ -97,7 +97,7 @@ func (c *SessionClient) cacheParty() error {
 }
 
 func getPlayerPartyId(uuid string) (partyId int, err error) {
-	err = db.QueryRow("SELECT pm.partyId FROM partyMembers pm JOIN parties p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", uuid, serverConfig.gameName).Scan(&partyId)
+	err = db.QueryRow("SELECT pm.partyId FROM partyMembers pm JOIN parties p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", uuid, config.gameName).Scan(&partyId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
@@ -179,7 +179,7 @@ func getAllPartyData() ([]*Party, error) {
 }
 
 func getPartyDataFromDatabase(playerUuid string) (party Party, err error) {
-	err = db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM parties p JOIN partyMembers pm ON pm.partyId = p.id JOIN playerGameData pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", serverConfig.gameName, playerUuid).Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
+	err = db.QueryRow("SELECT p.id, p.owner, p.name, p.public, p.pass, p.theme, p.description FROM parties p JOIN partyMembers pm ON pm.partyId = p.id JOIN playerGameData pgd ON pgd.uuid = pm.uuid AND pgd.game = p.game WHERE p.game = ? AND pm.uuid = ?", config.gameName, playerUuid).Scan(&party.Id, &party.OwnerUuid, &party.Name, &party.Public, &party.Pass, &party.SystemName, &party.Description)
 	if err != nil {
 		return party, err
 	}
@@ -195,7 +195,7 @@ func getPartyDataFromDatabase(playerUuid string) (party Party, err error) {
 }
 
 func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PartyMember, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, serverConfig.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}
@@ -226,7 +226,7 @@ func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PartyMember, e
 }
 
 func createPartyData(name string, public bool, pass string, theme string, description string, playerUuid string) (partyId int, err error) {
-	results, err := db.Exec("INSERT INTO parties (game, owner, name, public, pass, theme, description) VALUES (?, ?, ?, ?, ?, ?, ?)", serverConfig.gameName, playerUuid, name, public, pass, theme, description)
+	results, err := db.Exec("INSERT INTO parties (game, owner, name, public, pass, theme, description) VALUES (?, ?, ?, ?, ?, ?, ?)", config.gameName, playerUuid, name, public, pass, theme, description)
 	if err != nil {
 		return 0, err
 	}
@@ -244,7 +244,7 @@ func createPartyData(name string, public bool, pass string, theme string, descri
 }
 
 func updatePartyData(partyId int, name string, public bool, pass string, theme string, description string, playerUuid string) error {
-	_, err := db.Exec("UPDATE parties SET game = ?, owner = ?, name = ?, public = ?, pass = ?, theme = ?, description = ? WHERE id = ?", serverConfig.gameName, playerUuid, name, public, pass, theme, description, partyId)
+	_, err := db.Exec("UPDATE parties SET game = ?, owner = ?, name = ?, public = ?, pass = ?, theme = ?, description = ? WHERE id = ?", config.gameName, playerUuid, name, public, pass, theme, description, partyId)
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		return err
 	}
 
-	_, err = db.Exec("UPDATE playerGameData pgd SET pgd.lastPartyMsgId = (SELECT MAX(cm.timestamp) FROM chatMessages cm WHERE cm.game = pgd.game AND cm.partyId = ?) WHERE pgd.uuid = ? AND pgd.game = ?", partyId, playerUuid, serverConfig.gameName)
+	_, err = db.Exec("UPDATE playerGameData pgd SET pgd.lastPartyMsgId = (SELECT MAX(cm.timestamp) FROM chatMessages cm WHERE cm.game = pgd.game AND cm.partyId = ?) WHERE pgd.uuid = ? AND pgd.game = ?", partyId, playerUuid, config.gameName)
 	if err != nil {
 		return err
 	}
@@ -316,12 +316,12 @@ func leavePlayerParty(playerUuid string) error {
 		return err
 	}
 
-	_, err = db.Exec("DELETE pm FROM partyMembers pm JOIN parties p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", playerUuid, serverConfig.gameName)
+	_, err = db.Exec("DELETE pm FROM partyMembers pm JOIN parties p ON p.id = pm.partyId WHERE pm.uuid = ? AND p.game = ?", playerUuid, config.gameName)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("UPDATE playerGameData SET lastPartyMsgId = NULL WHERE uuid = ? AND game = ?", playerUuid, serverConfig.gameName)
+	_, err = db.Exec("UPDATE playerGameData SET lastPartyMsgId = NULL WHERE uuid = ? AND game = ?", playerUuid, config.gameName)
 	if err != nil {
 		return err
 	}
@@ -453,7 +453,7 @@ func deletePartyAndMembers(partyId int) error {
 }
 
 func writePartyChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, x, y int, contents string, partyId int) error {
-	_, err := db.Exec("INSERT INTO chatMessages (msgId, game, uuid, mapId, prevMapId, prevLocations, x, y, contents, partyId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", msgId, serverConfig.gameName, uuid, mapId, prevMapId, prevLocations, x, y, contents, partyId)
+	_, err := db.Exec("INSERT INTO chatMessages (msgId, game, uuid, mapId, prevMapId, prevLocations, x, y, contents, partyId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", msgId, config.gameName, uuid, mapId, prevMapId, prevLocations, x, y, contents, partyId)
 	if err != nil {
 		return err
 	}

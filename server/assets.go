@@ -15,7 +15,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package assets
+package server
 
 import (
 	"os"
@@ -25,24 +25,24 @@ import (
 )
 
 type Assets struct {
-	MapIds []int
+	mapIds []int
 
-	SpriteNames       map[string]bool
-	SystemNames       map[string]bool
-	SoundNames        map[string]bool
-	IgnoredSoundNames map[string]bool
-	PictureNames      map[string]bool
-	PicturePrefixes   []string
-	BattleAnimIds     map[int]bool
+	spriteNames       map[string]bool
+	systemNames       map[string]bool
+	soundNames        map[string]bool
+	ignoredSoundNames map[string]bool
+	pictureNames      map[string]bool
+	picturePrefixes   []string
+	battleAnimIds     map[int]bool
 }
 
-func GetAssets(gamePath string) *Assets {
+func getAssets(gamePath string) *Assets {
 	return &Assets{
-		MapIds: getMaps(gamePath),
+		mapIds: getMaps(gamePath),
 
-		SpriteNames: getCharSets(gamePath),
-		SystemNames: getSystems(gamePath),
-		SoundNames:  getSounds(gamePath),
+		spriteNames: getCharSets(gamePath),
+		systemNames: getSystems(gamePath),
+		soundNames:  getSounds(gamePath),
 	}
 }
 
@@ -117,7 +117,7 @@ func (a *Assets) IsValidSprite(name string) bool {
 		return false
 	}
 
-	return a.SpriteNames[name]
+	return a.spriteNames[name]
 }
 
 func (a *Assets) IsValidSystem(name string, ignoreSingleQuotes bool) bool {
@@ -125,7 +125,7 @@ func (a *Assets) IsValidSystem(name string, ignoreSingleQuotes bool) bool {
 		name = strings.ReplaceAll(name, "'", "")
 	}
 
-	return a.SystemNames[name]
+	return a.systemNames[name]
 }
 
 func (a *Assets) IsValidSound(name string) bool {
@@ -133,11 +133,11 @@ func (a *Assets) IsValidSound(name string) bool {
 		return false
 	}
 
-	if a.IgnoredSoundNames[name] {
+	if a.ignoredSoundNames[name] {
 		return false
 	}
 
-	return a.SoundNames[name]
+	return a.soundNames[name]
 }
 
 func (a *Assets) IsValidPicture(name string) bool {
@@ -145,11 +145,11 @@ func (a *Assets) IsValidPicture(name string) bool {
 		return false
 	}
 
-	if a.PictureNames[name] {
+	if a.pictureNames[name] {
 		return true
 	}
 
-	for _, prefix := range a.PicturePrefixes {
+	for _, prefix := range a.picturePrefixes {
 		if strings.HasPrefix(strings.ToLower(name), prefix) {
 			return true
 		}

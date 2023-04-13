@@ -338,7 +338,7 @@ func addPlayerEventLocation(gameId string, eventType int, exp int, pool []*Event
 	eventLocation := pool[rand.Intn(len(pool))]
 
 	var gameEventPeriodId int
-	if gameId == serverConfig.gameName {
+	if gameId == config.gameName {
 		gameEventPeriodId = currentGameEventPeriodId
 	} else {
 		gameEventPeriodId = gameCurrentEventPeriods[gameId].Id
@@ -357,7 +357,7 @@ func addPlayerEventLocation(gameId string, eventType int, exp int, pool []*Event
 
 func add2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int) {
 	var gameEventPeriodId int
-	if serverConfig.gameName == "2kki" {
+	if config.gameName == "2kki" {
 		gameEventPeriodId = currentGameEventPeriodId
 	} else {
 		gameEventPeriodId = gameCurrentEventPeriods["2kki"].Id
@@ -506,7 +506,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 			gameIds = append(gameIds, gameId)
 		}
 	} else {
-		gameIds = append(gameIds, serverConfig.gameName)
+		gameIds = append(gameIds, config.gameName)
 	}
 
 	for _, gameId := range gameIds {
@@ -541,7 +541,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 		gameMaxDepth := math.Min(float64(gameMaxDepths[gameId]), 15)
 
 		for _, eventLocation := range eventLocations {
-			if gameId == serverConfig.gameName {
+			if gameId == config.gameName {
 				var locationColors []string
 				locationColors = append(locationColors, eventLocation.FgColor, eventLocation.BgColor)
 				gameLocationColors[eventLocation.Title] = locationColors
@@ -572,7 +572,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 					gameWeekendEventLocationPools[gameId] = append(gameWeekendEventLocationPools[gameId], eventLocation)
 				}
 			}
-			if gameId == serverConfig.gameName && adjustedDepth >= freeEventLocationMinDepth {
+			if gameId == config.gameName && adjustedDepth >= freeEventLocationMinDepth {
 				freeEventLocationPool = append(freeEventLocationPool, eventLocation)
 			}
 		}
