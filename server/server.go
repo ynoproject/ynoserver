@@ -54,8 +54,6 @@ var (
 
 	isHostServer bool
 
-	delimBytes = []byte("\uffff")
-
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -251,7 +249,7 @@ func buildMsg(segments ...any) (message []byte) {
 				message = append(message, []byte(str)...)
 
 				if strIdx+1 != len(segment) {
-					message = append(message, delimBytes...)
+					message = append(message, []byte(delim)...)
 				}
 			}
 		case map[string]bool:
@@ -260,7 +258,7 @@ func buildMsg(segments ...any) (message []byte) {
 				message = append(message, []byte(str)...)
 
 				if strIdx++; strIdx != len(segment) {
-					message = append(message, delimBytes...)
+					message = append(message, []byte(delim)...)
 				}
 			}
 		case int:
@@ -270,7 +268,7 @@ func buildMsg(segments ...any) (message []byte) {
 				message = append(message, []byte(strconv.Itoa(num))...)
 
 				if numIdx+1 != len(segment) {
-					message = append(message, delimBytes...)
+					message = append(message, []byte(delim)...)
 				}
 			}
 		case map[int]bool:
@@ -279,7 +277,7 @@ func buildMsg(segments ...any) (message []byte) {
 				message = append(message, []byte(strconv.Itoa(num))...)
 
 				if numIdx++; numIdx != len(segment) {
-					message = append(message, delimBytes...)
+					message = append(message, []byte(delim)...)
 				}
 			}
 		case bool:
@@ -294,7 +292,7 @@ func buildMsg(segments ...any) (message []byte) {
 		}
 
 		if idx != len(segments)-1 {
-			message = append(message, delimBytes...)
+			message = append(message, []byte(delim)...)
 		}
 	}
 
