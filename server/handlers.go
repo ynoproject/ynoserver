@@ -877,16 +877,17 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("invalid message")
 	}
 
-	enableLocBin := 1
+	enableLoc := true
 	var partyId int
 	var partyMemberUuids []string
+
 	if msg[0] == "gsay" {
 		enableLocBinV, err := strconv.Atoi(msg[2])
-		if err != nil || enableLocBinV < 0 || enableLocBinV > 1 {
+		if err != nil {
 			return err
 		}
 
-		enableLocBin = enableLocBinV
+		enableLoc = enableLocBinV == 1
 	} else {
 		partyIdV, err := getPlayerPartyId(c.uuid)
 		if err != nil {
@@ -912,7 +913,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	x := -1
 	y := -1
 
-	if c.rClient != nil && enableLocBin == 1 {
+	if c.rClient != nil && enableLoc {
 		mapId = c.rClient.mapId
 		prevMapId = c.rClient.prevMapId
 		prevLocations = c.rClient.prevLocations
