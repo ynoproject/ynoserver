@@ -196,10 +196,7 @@ func (c *RoomClient) handleFl(msg []string) error {
 
 func (c *RoomClient) handleRrfl() (err error) {
 	c.repeatingFlash = false
-
-	for i := 0; i < 5; i++ {
-		c.flash[i] = 0
-	}
+	c.flash = [5]int{}
 
 	c.broadcast(buildMsg("rrfl", c.sClient.id))
 
