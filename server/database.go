@@ -816,7 +816,7 @@ func getOrWriteLocationIdForEventLocation(gameEventPeriodId int, title string, t
 		return locationId, err
 	}
 
-	_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = titleJP, depth = depth, minDepth = minDepth, mapIds = mapIds", config.gameName, title, titleJP, depth, minDepth, mapIdsJson)
+	_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = ?, depth = ?, minDepth = ?, mapIds = ?", config.gameName, title, titleJP, depth, minDepth, mapIdsJson, titleJP, depth, minDepth, mapIdsJson)
 	if err != nil {
 		return locationId, err
 	}
