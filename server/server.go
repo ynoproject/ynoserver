@@ -32,8 +32,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fasthttp/websocket"
 	"github.com/go-co-op/gocron"
-	"github.com/gorilla/websocket"
 	"github.com/ynoproject/ynoserver/server/security"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -48,9 +48,9 @@ const (
 var (
 	scheduler = gocron.NewScheduler(time.UTC)
 
-	config  *Config
+	config         *Config
 	serverSecurity *security.Security
-	assets     *Assets
+	assets         *Assets
 
 	isHostServer bool
 
