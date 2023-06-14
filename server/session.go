@@ -74,8 +74,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		conn:      conn,
 		ip:        ip,
 		writerEnd: make(chan bool, 1),
-		send:      make(chan []byte, 8),
-		receive:   make(chan []byte, 4),
+		outbox:      make(chan []byte, 8),
 	}
 
 	var banned bool
@@ -128,7 +127,6 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	// register client to the clients list
 	clients.Store(client.uuid, client)
 
-	go client.msgProcessor()
 	go client.msgReader()
 
 	writeLog(client.uuid, "sess", "connect", 200)
@@ -137,7 +135,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 func (c *SessionClient) broadcast(msg []byte) {
 	for _, client := range clients.Get() {
 		select {
-		case client.send <- buildMsg(msg):
+		case client.outbox <- buildMsg(msg):
 		default:
 			writeErrLog(c.uuid, "sess", "send channel is full")
 		}
@@ -163,7 +161,7 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 	case "pt": // party update
 		err = c.handlePt()
 		if err != nil {
-			c.send <- buildMsg("pt", "null")
+			c.outbox <- buildMsg("pt", "null")
 		}
 	case "ep": // event period
 		err = c.handleEp()

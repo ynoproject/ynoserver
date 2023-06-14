@@ -69,7 +69,7 @@ func sendPartyUpdate() {
 		for _, member := range party.Members { // for every member
 			if member.Online {
 				if client, ok := clients.Load(member.Uuid); ok {
-					client.send <- buildMsg("pt", partyDataJson) // send JSON to client
+					client.outbox <- buildMsg("pt", partyDataJson) // send JSON to client
 				}
 			}
 		}

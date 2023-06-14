@@ -97,8 +97,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	client := &RoomClient{
 		conn:      conn,
 		writerEnd: make(chan bool, 1),
-		send:      make(chan []byte, 256),
-		receive:   make(chan []byte, 8),
+		outbox:      make(chan []byte, 256),
 		key:       serverSecurity.NewClientKey(),
 	}
 
@@ -121,30 +120,25 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		client.tags = tags
 	}
 
-	// start msgWriter first otherwise the call to syncRoomState in joinRoom
-	// will make the send channel full and start blocking the goroutine
 	go client.msgWriter()
 
 	// send client info about itself
-	client.send <- buildMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:])
+	client.outbox <- buildMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:])
 
 	// register client to room
 	client.joinRoom(room)
 
-	// start msgProcessor and msgReader after so a client can't send packets
-	// before they're in a room and try to crash the server
-	go client.msgProcessor()
 	go client.msgReader()
 
 	// send synced picture names, picture prefixes, and battle animation ids
 	if len(assets.pictureNames) != 0 {
-		client.send <- buildMsg("pns", 0, assets.pictureNames)
+		client.outbox <- buildMsg("pns", 0, assets.pictureNames)
 	}
 	if len(assets.picturePrefixes) != 0 {
-		client.send <- buildMsg("pns", 1, assets.picturePrefixes)
+		client.outbox <- buildMsg("pns", 1, assets.picturePrefixes)
 	}
 	if len(assets.battleAnimIds) != 0 {
-		client.send <- buildMsg("bas", assets.battleAnimIds)
+		client.outbox <- buildMsg("bas", assets.battleAnimIds)
 	}
 
 	writeLog(client.sClient.uuid, client.mapId, "connect", 200)
@@ -155,10 +149,10 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.reset()
 
-	c.send <- buildMsg("ri", c.room.id) // tell client they've switched rooms serverside
+	c.outbox <- buildMsg("ri", c.room.id) // tell client they've switched rooms serverside
 
 	if config.gameName == "2kki" && c.sClient.rank == 0 {
-		c.send <- buildMsg("ss", 11, 2)
+		c.outbox <- buildMsg("ss", 11, 2)
 	}
 
 	if !c.room.singleplayer {
@@ -203,7 +197,7 @@ func (c *RoomClient) broadcast(msg []byte) {
 		}
 
 		select {
-		case client.send <- msg:
+		case client.outbox <- msg:
 		default:
 			writeErrLog(c.sClient.uuid, c.mapId, "send channel is full")
 		}
@@ -294,31 +288,31 @@ func (c *RoomClient) getRoomPlayerData() {
 			continue
 		}
 
-		c.send <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
-		c.send <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
+		c.outbox <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
+		c.outbox <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
 		if otherClient.facing != 0 {
-			c.send <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
+			c.outbox <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
 		}
 		if otherClient.speed != 0 {
-			c.send <- buildMsg("spd", otherClient.sClient.id, otherClient.speed)
+			c.outbox <- buildMsg("spd", otherClient.sClient.id, otherClient.speed)
 		}
 		if otherClient.sClient.name != "" {
-			c.send <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
+			c.outbox <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
 		}
 		if otherClient.sClient.spriteIndex != -1 {
-			c.send <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
+			c.outbox <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
 		}
 		if otherClient.repeatingFlash {
-			c.send <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
+			c.outbox <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
 		}
 		if otherClient.hidden {
-			c.send <- buildMsg("h", otherClient.sClient.id, 1)
+			c.outbox <- buildMsg("h", otherClient.sClient.id, 1)
 		}
 		if otherClient.sClient.systemName != "" {
-			c.send <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
+			c.outbox <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
 		}
 		for picId, pic := range otherClient.pictures {
-			c.send <- buildMsg("ap", otherClient.sClient.id, picId, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
+			c.outbox <- buildMsg("ap", otherClient.sClient.id, picId, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 		}
 	}
 }
@@ -339,7 +333,7 @@ func (c *RoomClient) getRoomEventData() {
 		if minigame.InitialVarSync {
 			varSyncType = 2
 		}
-		c.send <- buildMsg("sv", minigame.VarId, varSyncType)
+		c.outbox <- buildMsg("sv", minigame.VarId, varSyncType)
 	}
 
 	// send variable sync request for vending machine expeditions
@@ -352,7 +346,7 @@ func (c *RoomClient) getRoomEventData() {
 			if eventId != currentEventVmEventId {
 				continue
 			}
-			c.send <- buildMsg("sev", eventId, 1)
+			c.outbox <- buildMsg("sev", eventId, 1)
 		}
 	}
 }

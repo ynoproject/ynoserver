@@ -60,7 +60,7 @@ type SessionClient struct {
 	writerEnd chan bool
 	writerWg  sync.WaitGroup
 
-	send, receive chan []byte
+	outbox chan []byte
 
 	id int
 
@@ -80,10 +80,7 @@ type SessionClient struct {
 }
 
 func (c *SessionClient) msgReader() {
-	defer func() {
-		close(c.receive)
-		c.disconnect()
-	}()
+	defer c.disconnect()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -95,7 +92,10 @@ func (c *SessionClient) msgReader() {
 			break
 		}
 
-		c.receive <- message
+		err = c.processMsg(message)
+		if err != nil {
+			writeErrLog(c.uuid, "sess", err.Error())
+		}
 	}
 }
 
@@ -116,7 +116,7 @@ func (c *SessionClient) msgWriter() {
 			c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
 			return
-		case message := <-c.send:
+		case message := <-c.outbox:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			err := c.conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
@@ -128,20 +128,6 @@ func (c *SessionClient) msgWriter() {
 			if err != nil {
 				return
 			}
-		}
-	}
-}
-
-func (c *SessionClient) msgProcessor() {
-	for {
-		message, ok := <-c.receive
-		if !ok {
-			return
-		}
-
-		err := c.processMsg(message)
-		if err != nil {
-			writeErrLog(c.uuid, "sess", err.Error())
 		}
 	}
 }
@@ -183,7 +169,7 @@ type RoomClient struct {
 	writerEnd chan bool
 	writerWg  sync.WaitGroup
 
-	send, receive chan []byte
+	outbox chan []byte
 
 	key, counter uint32
 
@@ -209,10 +195,7 @@ type RoomClient struct {
 }
 
 func (c *RoomClient) msgReader() {
-	defer func() {
-		close(c.receive)
-		c.disconnect()
-	}()
+	defer c.disconnect()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -224,7 +207,12 @@ func (c *RoomClient) msgReader() {
 			break
 		}
 
-		c.receive <- message
+		errs := c.processMsgs(message)
+		if len(errs) != 0 {
+			for _, err := range errs {
+				writeErrLog(c.sClient.uuid, c.mapId, err.Error())
+			}
+		}
 	}
 }
 
@@ -245,14 +233,14 @@ func (c *RoomClient) msgWriter() {
 			c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
 			return
-		case message := <-c.send:
-			for len(c.send) != 0 { // for each extra message in the channel
+		case message := <-c.outbox:
+			for len(c.outbox) != 0 { // for each extra message in the channel
 				if len(message) > maxMessageSize-256 { // stop if we're close to the message size limit
 					break
 				}
 
 				message = append(message, []byte(mdelim)...) // add message delimiter
-				message = append(message, <-c.send...)       // write next message contents
+				message = append(message, <-c.outbox...)       // write next message contents
 			}
 
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
@@ -265,22 +253,6 @@ func (c *RoomClient) msgWriter() {
 			err := c.conn.WriteMessage(websocket.PingMessage, nil)
 			if err != nil {
 				return
-			}
-		}
-	}
-}
-
-func (c *RoomClient) msgProcessor() {
-	for {
-		message, ok := <-c.receive
-		if !ok {
-			return
-		}
-
-		errs := c.processMsgs(message)
-		if len(errs) != 0 {
-			for _, err := range errs {
-				writeErrLog(c.sClient.uuid, c.mapId, err.Error())
 			}
 		}
 	}
