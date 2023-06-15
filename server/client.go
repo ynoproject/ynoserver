@@ -18,6 +18,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -55,10 +56,10 @@ type SessionClient struct {
 	conn *websocket.Conn
 	ip   string
 
-	dcOnce sync.Once
+	ctx    context.Context
+	cancel context.CancelFunc
 
-	writerEnd chan bool
-	writerWg  sync.WaitGroup
+	dcOnce sync.Once
 
 	outbox chan []byte
 
@@ -80,38 +81,46 @@ type SessionClient struct {
 }
 
 func (c *SessionClient) msgReader() {
-	defer c.disconnect()
+	defer func() {
+		c.cancel()
+		c.disconnect()
+	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			break
-		}
+		select {
+		case <-c.ctx.Done():
+			return
+		default:
+			_, message, err := c.conn.ReadMessage()
+			if err != nil {
+				return
+			}
 
-		err = c.processMsg(message)
-		if err != nil {
-			writeErrLog(c.uuid, "sess", err.Error())
+			err = c.processMsg(message)
+			if err != nil {
+				writeErrLog(c.uuid, "sess", err.Error())
+			}
 		}
 	}
 }
 
 func (c *SessionClient) msgWriter() {
-	c.writerWg.Add(1)
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
 		ticker.Stop()
-		c.writerWg.Done()
+
+		c.cancel()
 		c.disconnect()
 	}()
 
 	for {
 		select {
-		case <-c.writerEnd:
+		case <-c.ctx.Done():
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
@@ -137,23 +146,12 @@ func (c *SessionClient) disconnect() {
 		// unregister
 		clients.Delete(c.uuid)
 
-		// send terminate signal to writer
-		close(c.writerEnd)
-
-		// wait for writer to end
-		c.writerWg.Wait()
-
 		// close conn, ends reader and processor
 		c.conn.Close()
 
 		c.updatePlayerGameData()
 
 		writeLog(c.uuid, "sess", "disconnect", 200)
-
-		// disconnect rClient if connected
-		if c.rClient != nil {
-			c.rClient.disconnect()
-		}
 	})
 }
 
@@ -164,10 +162,10 @@ type RoomClient struct {
 
 	conn *websocket.Conn
 
-	dcOnce sync.Once
+	ctx    context.Context
+	cancel context.CancelFunc
 
-	writerEnd chan bool
-	writerWg  sync.WaitGroup
+	dcOnce sync.Once
 
 	outbox chan []byte
 
@@ -195,40 +193,48 @@ type RoomClient struct {
 }
 
 func (c *RoomClient) msgReader() {
-	defer c.disconnect()
+	defer func() {
+		c.cancel()
+		c.disconnect()
+	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			break
-		}
+		select {
+		case <-c.ctx.Done():
+			return
+		default:
+			_, message, err := c.conn.ReadMessage()
+			if err != nil {
+				return
+			}
 
-		errs := c.processMsgs(message)
-		if len(errs) != 0 {
-			for _, err := range errs {
-				writeErrLog(c.sClient.uuid, c.mapId, err.Error())
+			errs := c.processMsgs(message)
+			if len(errs) != 0 {
+				for _, err := range errs {
+					writeErrLog(c.sClient.uuid, c.mapId, err.Error())
+				}
 			}
 		}
 	}
 }
 
 func (c *RoomClient) msgWriter() {
-	c.writerWg.Add(1)
 	ticker := time.NewTicker(pingPeriod)
 
 	defer func() {
 		ticker.Stop()
-		c.writerWg.Done()
+
+		c.cancel()
 		c.disconnect()
 	}()
 
 	for {
 		select {
-		case <-c.writerEnd:
+		case <-c.ctx.Done():
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1028, ""))
 
@@ -240,7 +246,7 @@ func (c *RoomClient) msgWriter() {
 				}
 
 				message = append(message, []byte(mdelim)...) // add message delimiter
-				message = append(message, <-c.outbox...)       // write next message contents
+				message = append(message, <-c.outbox...)     // write next message contents
 			}
 
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
@@ -260,17 +266,13 @@ func (c *RoomClient) msgWriter() {
 
 func (c *RoomClient) disconnect() {
 	c.dcOnce.Do(func() {
+		c.cancel()
+
 		// unbind rClient from session
 		c.sClient.rClient = nil
 
 		// unregister
 		c.leaveRoom()
-
-		// send terminate signal to writer
-		close(c.writerEnd)
-
-		// wait for writer to end
-		c.writerWg.Wait()
 
 		// close conn, ends reader and processor
 		c.conn.Close()

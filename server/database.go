@@ -99,10 +99,10 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 
 	if client, ok := clients.Load(recipientUuid); ok {
 		if client.rClient != nil {
-			client.rClient.disconnect()
+			client.rClient.cancel()
 		}
 
-		client.disconnect()
+		client.cancel()
 	}
 
 	return nil

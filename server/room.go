@@ -18,6 +18,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
@@ -95,15 +96,14 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	}
 
 	client := &RoomClient{
-		conn:      conn,
-		writerEnd: make(chan bool, 1),
-		outbox:      make(chan []byte, 256),
-		key:       serverSecurity.NewClientKey(),
+		conn:   conn,
+		outbox: make(chan []byte, 256),
+		key:    serverSecurity.NewClientKey(),
 	}
 
 	if session, ok := clients.Load(uuid); ok {
 		if session.rClient != nil {
-			session.rClient.disconnect()
+			session.rClient.cancel()
 		}
 
 		session.rClient = client
@@ -113,6 +113,8 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		writeErrLog(uuid, "0000", "player has no session")
 		return
 	}
+
+	client.ctx, client.cancel = context.WithCancel(client.sClient.ctx)
 
 	if tags, err := getPlayerTags(uuid); err != nil {
 		writeErrLog(uuid, "0000", "failed to read player tags")

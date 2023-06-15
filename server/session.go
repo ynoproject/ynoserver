@@ -18,6 +18,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
@@ -71,11 +72,12 @@ func handleSession(w http.ResponseWriter, r *http.Request) {
 
 func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	client := &SessionClient{
-		conn:      conn,
-		ip:        ip,
-		writerEnd: make(chan bool, 1),
-		outbox:      make(chan []byte, 8),
+		conn:   conn,
+		ip:     ip,
+		outbox: make(chan []byte, 8),
 	}
+
+	client.ctx, client.cancel = context.WithCancel(context.Background())
 
 	var banned bool
 	if token != "" {
@@ -99,7 +101,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	client.cacheParty() // don't log error because player is probably not in a party
 
 	if client, ok := clients.Load(client.uuid); ok {
-		client.disconnect()
+		client.cancel()
 	}
 
 	var sameIp int

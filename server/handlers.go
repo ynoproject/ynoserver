@@ -486,7 +486,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 	value := msg[2] == "1"
 
 	if config.gameName == "2kki" && c.sClient.rank == 0 && switchId == 11 && value {
-		c.sClient.disconnect()
+		c.sClient.cancel()
 	}
 
 	c.switchCache[switchId] = value
