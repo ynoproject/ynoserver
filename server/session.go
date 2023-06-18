@@ -30,12 +30,7 @@ import (
 
 var (
 	clients = NewSCMap()
-	session = &Session{}
 )
-
-type Session struct {
-	lastId int
-}
 
 func initSession() {
 	// we need a sender
@@ -119,8 +114,19 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		client.badge = "null"
 	}
 
-	client.id = session.lastId
-	session.lastId++
+	for i := 0; i < 0xFFFF; i++ {
+		var used bool
+		for _, otherClient := range clients.Get() {
+			if otherClient.id == i  {
+				used = true
+			}
+		}
+
+		if !used {
+			client.id = i
+			break
+		}
+	}
 
 	client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
 
