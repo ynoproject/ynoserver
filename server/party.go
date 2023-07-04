@@ -145,6 +145,9 @@ func getPartyData(partyId int) (*Party, error) {
 			member.SpriteIndex = client.spriteIndex
 		}
 
+		member.Badge = client.badge
+		member.Medals = client.medals
+
 		if client.rClient != nil {
 			member.MapId = client.rClient.mapId
 			member.PrevMapId = client.rClient.prevMapId
