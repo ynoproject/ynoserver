@@ -288,7 +288,7 @@ func updatePlayerBadgeSlotCounts(uuid string) (err error) {
 }
 
 func updatePlayerActivity() error {
-	_, err := db.Exec("UPDATE accounts SET inactive = CASE WHEN timestampLoggedIn IS NULL OR timestampLoggedIn < DATE_ADD(NOW(), INTERVAL -3 MONTH) THEN 1 ELSE 0 END")
+	_, err := db.Exec("UPDATE accounts SET inactive = CASE WHEN timestampLoggedIn IS NULL OR timestampLoggedIn < DATE_SUB(NOW(), INTERVAL 3 MONTH) THEN 1 ELSE 0 END")
 	if err != nil {
 		return err
 	}
@@ -409,7 +409,7 @@ func writeGlobalChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string,
 func getLastMessageIds() (lastMsgIds map[int]string, err error) {
 	lastMsgIds = make(map[int]string)
 
-	results, err := db.Query("SELECT COALESCE(cm.partyId, 0), cm.msgId FROM chatMessages cm WHERE cm.timestamp = (SELECT MAX(cm2.timestamp) FROM chatMessages cm2 JOIN players pd ON pd.uuid = cm2.uuid WHERE cm2.game = ? AND pd.banned = 0 AND cm2.timestamp > DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY) AND ((cm.partyId IS NULL AND cm2.partyId IS NULL) OR (cm2.partyId = cm.partyId))) GROUP BY COALESCE(cm.partyId, 0)", config.gameName)
+	results, err := db.Query("SELECT COALESCE(cm.partyId, 0), cm.msgId FROM chatMessages cm WHERE cm.timestamp = (SELECT MAX(cm2.timestamp) FROM chatMessages cm2 JOIN players pd ON pd.uuid = cm2.uuid WHERE cm2.game = ? AND pd.banned = 0 AND cm2.timestamp > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY) AND ((cm.partyId IS NULL AND cm2.partyId IS NULL) OR (cm2.partyId = cm.partyId))) GROUP BY COALESCE(cm.partyId, 0)", config.gameName)
 	if err != nil {
 		return lastMsgIds, nil
 	}
@@ -577,7 +577,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 func archiveChatMessages() error {
 	var threshold time.Time
 
-	err := db.QueryRow("SELECT DATE_ADD(UTC_TIMESTAMP(), INTERVAL -1 DAY)").Scan(&threshold)
+	err := db.QueryRow("SELECT DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)").Scan(&threshold)
 	if err != nil {
 		return err
 	}
