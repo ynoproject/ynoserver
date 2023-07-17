@@ -351,20 +351,10 @@ func (c *RoomClient) handleP(msg []string) error {
 			return errors.New("no pic name")
 		}
 
-		useTransparentColorBin, errconv := strconv.Atoi(msg[18])
-		if errconv != nil || useTransparentColorBin < 0 || useTransparentColorBin > 1 {
-			return errconv
-		}
-
-		fixedToMapBin, errconv := strconv.Atoi(msg[19])
-		if errconv != nil || fixedToMapBin < 0 || fixedToMapBin > 1 {
-			return errconv
-		}
-
 		pic = &Picture{
 			name:                picName,
-			useTransparentColor: useTransparentColorBin == 1,
-			fixedToMap:          fixedToMapBin == 1,
+			useTransparentColor: msg[18] != "0",
+			fixedToMap:          msg[19] != "0",
 		}
 
 		if _, found := c.pictures[picId]; found {
@@ -729,13 +719,8 @@ func (c *RoomClient) handleSev(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	actionBin, errconv := strconv.Atoi(msg[2])
-	if errconv != nil || actionBin < 0 || actionBin > 1 {
-		return errconv
-	}
-
 	triggerType := "event"
-	if actionBin == 1 {
+	if msg[2] != "0" {
 		triggerType = "eventAction"
 	}
 	c.checkRoomConditions(triggerType, msg[1])
@@ -874,12 +859,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	var partyMemberUuids []string
 
 	if msg[0] == "gsay" {
-		enableLocBinV, err := strconv.Atoi(msg[2])
-		if err != nil {
-			return err
-		}
-
-		enableLoc = enableLocBinV == 1
+		enableLoc = msg[2] != "0"
 	} else {
 		partyIdV, err := getPlayerPartyId(c.uuid)
 		if err != nil {
