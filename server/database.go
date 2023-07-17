@@ -575,9 +575,14 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 }
 
 func archiveChatMessages() error {
+	_, err := db.Exec("DELETE FROM chatMessagesArchive WHERE timestamp < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MONTH)")
+	if err != nil {
+		return err
+	}
+
 	var threshold time.Time
 
-	err := db.QueryRow("SELECT DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)").Scan(&threshold)
+	err = db.QueryRow("SELECT DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)").Scan(&threshold)
 	if err != nil {
 		return err
 	}
