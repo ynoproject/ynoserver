@@ -20,7 +20,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/fasthttp/websocket"
@@ -59,8 +58,6 @@ type SessionClient struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	dcOnce sync.Once
-
 	outbox chan []byte
 
 	id int
@@ -81,10 +78,7 @@ type SessionClient struct {
 }
 
 func (c *SessionClient) msgReader() {
-	defer func() {
-		c.cancel()
-		c.disconnect()
-	}()
+	defer c.cancel()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -142,17 +136,15 @@ func (c *SessionClient) msgWriter() {
 }
 
 func (c *SessionClient) disconnect() {
-	c.dcOnce.Do(func() {
-		// unregister
-		clients.Delete(c.uuid)
+	// unregister
+	clients.Delete(c.uuid)
 
-		// close conn, ends reader and processor
-		c.conn.Close()
+	// close conn, ends reader and processor
+	c.conn.Close()
 
-		c.updatePlayerGameData()
+	c.updatePlayerGameData()
 
-		writeLog(c.uuid, "sess", "disconnect", 200)
-	})
+	writeLog(c.uuid, "sess", "disconnect", 200)
 }
 
 // RoomClient
@@ -164,8 +156,6 @@ type RoomClient struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
-
-	dcOnce sync.Once
 
 	outbox chan []byte
 
@@ -193,10 +183,7 @@ type RoomClient struct {
 }
 
 func (c *RoomClient) msgReader() {
-	defer func() {
-		c.cancel()
-		c.disconnect()
-	}()
+	defer c.cancel()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -265,20 +252,18 @@ func (c *RoomClient) msgWriter() {
 }
 
 func (c *RoomClient) disconnect() {
-	c.dcOnce.Do(func() {
-		c.cancel()
+	c.cancel()
 
-		// unbind rClient from session
-		c.sClient.rClient = nil
+	// unbind rClient from session
+	c.sClient.rClient = nil
 
-		// unregister
-		c.leaveRoom()
+	// unregister
+	c.leaveRoom()
 
-		// close conn, ends reader and processor
-		c.conn.Close()
+	// close conn, ends reader and processor
+	c.conn.Close()
 
-		writeLog(c.sClient.uuid, c.mapId, "disconnect", 200)
-	})
+	writeLog(c.sClient.uuid, c.mapId, "disconnect", 200)
 }
 
 func (c *RoomClient) reset() {
