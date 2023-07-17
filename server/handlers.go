@@ -208,12 +208,7 @@ func (c *RoomClient) handleH(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	hiddenBin, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || hiddenBin < 0 || hiddenBin > 1 {
-		return errconv
-	}
-
-	c.hidden = hiddenBin == 1
+	c.hidden = msg[1] != "0"
 
 	c.broadcast(buildMsg(msg[0], c.sClient.id, msg[1]))
 
