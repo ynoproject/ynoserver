@@ -726,7 +726,7 @@ func getRandomGameForEventLocation(pool map[string][]*EventLocationData, eventLo
 		totalPoolValue += poolValue
 	}
 
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UnixNano())
 	randValue := rand.Intn(totalPoolValue)
 
 	for _, value := range poolThresholds {

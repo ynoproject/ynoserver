@@ -334,7 +334,7 @@ func addEventLocation(gameId string, eventType int, exp int, pools map[string][]
 
 // eventType: 0 - daily, 1 - weekly, 2 - weekend, 3 - manual
 func addPlayerEventLocation(gameId string, eventType int, exp int, pool []*EventLocationData, playerUuid string) {
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UnixNano())
 	eventLocation := pool[rand.Intn(len(pool))]
 
 	var gameEventPeriodId int
@@ -437,7 +437,7 @@ func addEventVm() {
 		return
 	}
 
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UnixNano())
 	mapId := mapIds[rand.Intn(len(mapIds))]
 	eventId := eventVms[mapId][rand.Intn(len(eventVms[mapId]))]
 
