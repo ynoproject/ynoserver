@@ -1164,7 +1164,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 
 				for i, hiddenLocationName := range hiddenLocationNames {
 					if i > 0 {
-						retUrl += ", "
+						retUrl += "|"
 					}
 					retUrl += url.QueryEscape(hiddenLocationName)
 				}
