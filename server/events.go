@@ -411,7 +411,7 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 	}
 }
 
-func get2kkiEventLocationData(locationName string) (ret *EventLocationData, err error) {
+func get2kkiEventLocationData(locationName string) (*EventLocationData, error) {
 	resp, err := http.Get("https://2kki.app/getLocationInfo?locationName=" + url.QueryEscape(locationName) + "&ignoreRemoved=1")
 	if err != nil {
 		return nil, err
@@ -427,12 +427,13 @@ func get2kkiEventLocationData(locationName string) (ret *EventLocationData, err 
 		return nil, nil
 	}
 
-	err = json.Unmarshal(body, ret)
+	var locationData EventLocationData
+	err = json.Unmarshal(body, &locationData)
 	if err != nil {
 		return nil, err
 	}
 
-	return ret, nil
+	return &locationData, nil
 }
 
 func get2kkiEventLocationAdjustedDepths(eventLocation *EventLocationData) (int, int) {

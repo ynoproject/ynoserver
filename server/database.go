@@ -601,7 +601,7 @@ func archiveChatMessages() error {
 }
 
 func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
-	var mapIdsJson string
+	var mapIdsJson []byte
 	err = db.QueryRow("SELECT mapIds FROM gameLocations WHERE title = ? AND game = ?", locationName, config.gameName).Scan(&mapIdsJson)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -622,7 +622,12 @@ func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
 			}
 
 			if matchingEventLocation != nil {
-				_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, matchingEventLocation.MapIds)
+				mapIdsJson, err = json.Marshal(matchingEventLocation.MapIds)
+				if err != nil {
+					return mapIds, err
+				}
+
+				_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson)
 				if err != nil {
 					return mapIds, err
 				}
