@@ -946,6 +946,7 @@ func (c *SessionClient) handleL(msg []string) error {
 
 		if matchedLocationMap {
 			writePlayerGameLocation(c.uuid, locationName)
+			c.rClient.locations = append(c.rClient.locations, locationName)
 		}
 	}
 

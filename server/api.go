@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -133,6 +134,7 @@ func initApi() {
 
 		w.Write([]byte(response))
 	})
+	http.HandleFunc("/api/explorer", handleExplorer)
 
 	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
 		var uuid string
@@ -1097,6 +1099,97 @@ func handleResetPw(uuid string) (newPassword string, err error) {
 	db.Exec("UPDATE accounts SET pass = ? WHERE uuid = ?", hashedPassword, uuid)
 
 	return newPassword, nil
+}
+
+func handleExplorer(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+
+	if token == "" {
+		handleError(w, r, "token not specified")
+		return
+	}
+
+	uuid := getUuidFromToken(token)
+
+	// GET params user, new password
+	if client, ok := clients.Load(uuid); ok {
+		if client.rClient != nil {
+			var allConnLocationNames []string
+			retUrl := "https://2kki.app/location?locations="
+
+			for i, locationName := range client.rClient.locations {
+				var connLocationNames []string
+
+				if i > 0 {
+					retUrl += ","
+				}
+				retUrl += url.QueryEscape(locationName)
+
+				getConnectionsUrl := "https://2kki.app/getConnectedLocations?locationName=" + url.QueryEscape(locationName)
+				resp, err := http.Get(getConnectionsUrl)
+				if err != nil {
+					writeErrLog(getIp(r), r.URL.Path, err.Error())
+					continue
+				}
+				defer resp.Body.Close()
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					writeErrLog(getIp(r), r.URL.Path, err.Error())
+					continue
+				}
+
+				if strings.HasPrefix(string(body), "{\"error\"") {
+					writeErrLog(getIp(r), r.URL.Path, "Invalid 2kki location info: "+string(body))
+					continue
+				}
+
+				err = json.Unmarshal(body, &connLocationNames)
+				if err != nil {
+					writeErrLog(getIp(r), r.URL.Path, err.Error())
+					continue
+				}
+
+				for _, connLocationName := range connLocationNames {
+					allConnLocationNames = append(allConnLocationNames, connLocationName)
+				}
+			}
+
+			hiddenLocationNames, err := getPlayerMissingGameLocationNames(uuid, allConnLocationNames)
+			if err != nil {
+				handleError(w, r, err.Error())
+				return
+			}
+
+			if len(hiddenLocationNames) > 0 {
+				retUrl += "&hiddenConnLocations="
+
+				for i, hiddenLocationName := range hiddenLocationNames {
+					if i > 0 {
+						retUrl += ", "
+					}
+					retUrl += url.QueryEscape(hiddenLocationName)
+				}
+			}
+
+			retUrl += "&lang=" + r.URL.Query().Get("lang")
+
+			resp, err := http.Get(retUrl)
+			if err != nil {
+				handleError(w, r, err.Error())
+				return
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				handleError(w, r, err.Error())
+				return
+			}
+
+			w.Write(body)
+		}
+	}
+
+	w.Write([]byte(""))
 }
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {

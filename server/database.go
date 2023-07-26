@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -654,6 +655,42 @@ func writePlayerGameLocation(uuid string, locationName string) error {
 	}
 
 	return nil
+}
+
+func getPlayerMissingGameLocationNames(uuid string, locationNames []string) ([]string, error) {
+	var missingGameLocationNames []string
+
+	if len(locationNames) == 0 {
+		return missingGameLocationNames, nil
+	}
+
+	var queryArgs []any
+	queryArgs = append(queryArgs, config.gameName)
+
+	for _, locationName := range locationNames {
+		queryArgs = append(queryArgs, locationName)
+	}
+
+	queryArgs = append(queryArgs, uuid)
+
+	results, err := db.Query("SELECT gl.title FROM gameLocations gl WHERE gl.game = ? AND gl.title IN (?" + strings.Repeat(", ?", len(locationNames)-1) + ") AND NOT EXISTS (SELECT * FROM playerGameLocations pgl WHERE pgl.uuid = ? AND pgl.locationId = gl.id)")
+	if err != nil {
+		return missingGameLocationNames, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var locationName string
+		err = results.Scan(&locationName)
+		if err != nil {
+			return missingGameLocationNames, err
+		}
+
+		missingGameLocationNames = append(missingGameLocationNames, locationName)
+	}
+
+	return missingGameLocationNames, nil
 }
 
 func setCurrentEventPeriodId() error {

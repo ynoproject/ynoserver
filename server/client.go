@@ -172,6 +172,8 @@ type RoomClient struct {
 
 	mapId, prevMapId, prevLocations string
 
+	locations []string
+
 	tags []string
 
 	syncCoords bool
@@ -282,6 +284,8 @@ func (c *RoomClient) reset() {
 	c.mapId = fmt.Sprintf("%04d", c.room.id)
 	c.prevMapId = ""
 	c.prevLocations = ""
+
+	c.locations = nil
 
 	// don't clear tags
 
