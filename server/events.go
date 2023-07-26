@@ -410,25 +410,25 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 	}
 }
 
-func get2kkiEventLocationData(locationName string) (ret EventLocationData, err error) {
+func get2kkiEventLocationData(locationName string) (ret *EventLocationData, err error) {
 	resp, err := http.Get("https://2kki.app/getLocationInfo?locationName=" + locationName + "&ignoreRemoved=1")
 	if err != nil {
-		return ret, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return ret, err
+		return nil, err
 	}
 
 	if strings.HasPrefix(string(body), "{\"error\"") {
 		writeErrLog("SERVER", locationName, "Invalid 2kki location info: "+string(body))
-		return ret, nil
+		return nil, nil
 	}
 
-	err = json.Unmarshal(body, &ret)
+	err = json.Unmarshal(body, ret)
 	if err != nil {
-		return ret, err
+		return nil, err
 	}
 
 	return ret, nil

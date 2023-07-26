@@ -608,7 +608,7 @@ func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
 			var matchingEventLocation *EventLocationData
 
 			if config.gameName == "2kki" {
-				*matchingEventLocation, err = get2kkiEventLocationData(locationName)
+				matchingEventLocation, err = get2kkiEventLocationData(locationName)
 				if err != nil {
 					return mapIds, err
 				}
