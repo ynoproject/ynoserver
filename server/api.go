@@ -1111,7 +1111,6 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 
 	uuid := getUuidFromToken(token)
 
-	// GET params user, new password
 	if client, ok := clients.Load(uuid); ok {
 		if client.rClient != nil {
 			var allConnLocationNames []string
