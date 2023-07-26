@@ -920,6 +920,10 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 }
 
 func (c *SessionClient) handleL(msg []string) error {
+	if c.rClient == nil {
+		return errors.New("room client does not exist")
+	}
+
 	for i, locationName := range msg {
 		if i == 0 {
 			continue
