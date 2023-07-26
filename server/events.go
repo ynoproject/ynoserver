@@ -23,6 +23,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -411,7 +412,7 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 }
 
 func get2kkiEventLocationData(locationName string) (ret *EventLocationData, err error) {
-	resp, err := http.Get("https://2kki.app/getLocationInfo?locationName=" + locationName + "&ignoreRemoved=1")
+	resp, err := http.Get("https://2kki.app/getLocationInfo?locationName=" + url.QueryEscape(locationName) + "&ignoreRemoved=1")
 	if err != nil {
 		return nil, err
 	}
