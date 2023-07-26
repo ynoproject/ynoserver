@@ -138,6 +138,7 @@ var (
 	freeEventLocationPool         []*EventLocationData
 	eventVms                      map[int][]int
 
+	gameEventLocations map[string][]*EventLocationData
 	gameLocationColors map[string][]string
 )
 
@@ -397,26 +398,7 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 	}
 
 	for _, eventLocation := range eventLocations {
-		adjustedDepth := (eventLocation.Depth / 3) * 2
-		if eventLocation.Depth%3 == 2 {
-			adjustedDepth++
-		}
-		if adjustedDepth > 10 {
-			adjustedDepth = 10
-		}
-
-		var adjustedMinDepth int
-		if eventLocation.MinDepth == eventLocation.Depth {
-			adjustedMinDepth = adjustedDepth
-		} else {
-			adjustedMinDepth = (eventLocation.MinDepth / 3) * 2
-			if eventLocation.MinDepth%3 == 2 {
-				adjustedMinDepth++
-			}
-			if adjustedMinDepth > 10 {
-				adjustedMinDepth = 10
-			}
-		}
+		adjustedDepth, adjustedMinDepth := get2kkiEventLocationAdjustedDepths(&eventLocation)
 		if playerUuid == "" {
 			err = writeEventLocationData(gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
 		} else {
@@ -426,6 +408,55 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 			handleInternalEventError(eventType, err)
 		}
 	}
+}
+
+func get2kkiEventLocationData(locationName string) (ret EventLocationData, err error) {
+	resp, err := http.Get("https://2kki.app/getLocationInfo?locationName=" + locationName + "&ignoreRemoved=1")
+	if err != nil {
+		return ret, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ret, err
+	}
+
+	if strings.HasPrefix(string(body), "{\"error\"") {
+		writeErrLog("SERVER", locationName, "Invalid 2kki location info: "+string(body))
+		return ret, nil
+	}
+
+	err = json.Unmarshal(body, &ret)
+	if err != nil {
+		return ret, err
+	}
+
+	return ret, nil
+}
+
+func get2kkiEventLocationAdjustedDepths(eventLocation *EventLocationData) (int, int) {
+	adjustedDepth := (eventLocation.Depth / 3) * 2
+	if eventLocation.Depth%3 == 2 {
+		adjustedDepth++
+	}
+	if adjustedDepth > 10 {
+		adjustedDepth = 10
+	}
+
+	var adjustedMinDepth int
+	if eventLocation.MinDepth == eventLocation.Depth {
+		adjustedMinDepth = adjustedDepth
+	} else {
+		adjustedMinDepth = (eventLocation.MinDepth / 3) * 2
+		if eventLocation.MinDepth%3 == 2 {
+			adjustedMinDepth++
+		}
+		if adjustedMinDepth > 10 {
+			adjustedMinDepth = 10
+		}
+	}
+
+	return adjustedDepth, adjustedMinDepth
 }
 
 func addEventVm() {
@@ -495,7 +526,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 
 	gameLocationColors = make(map[string][]string)
 
-	gameEventLocations := make(map[string][]*EventLocationData)
+	gameEventLocations = make(map[string][]*EventLocationData)
 	gameMaxDepths := make(map[string]int)
 
 	configPath := "eventlocations/"
@@ -546,9 +577,6 @@ func setGameEventLocationPoolsAndLocationColors() {
 				locationColors = append(locationColors, eventLocation.FgColor, eventLocation.BgColor)
 				gameLocationColors[eventLocation.Title] = locationColors
 			}
-			if eventLocation.Ignored {
-				continue
-			}
 			adjustedDepth := eventLocation.Depth
 			adjustedMinDepth := eventLocation.MinDepth
 			if gameMaxDepth > 10 {
@@ -557,6 +585,10 @@ func setGameEventLocationPoolsAndLocationColors() {
 			}
 			eventLocation.Depth = adjustedDepth
 			eventLocation.MinDepth = adjustedMinDepth
+
+			if eventLocation.Ignored {
+				continue
+			}
 
 			if isHostServer {
 				if adjustedDepth >= dailyEventLocationMinDepth && adjustedDepth <= dailyEventLocationMaxDepth {

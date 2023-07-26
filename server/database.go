@@ -600,6 +600,57 @@ func archiveChatMessages() error {
 	return nil
 }
 
+func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
+	var mapIdsJson string
+	err = db.QueryRow("SELECT mapIds FROM gameLocations WHERE title = ? AND game = ?", locationName, config.gameName).Scan(&mapIdsJson)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			var matchingEventLocation *EventLocationData
+
+			if config.gameName == "2kki" {
+				*matchingEventLocation, err = get2kkiEventLocationData(locationName)
+				if err != nil {
+					return mapIds, err
+				}
+			} else {
+				for _, eventLocation := range gameEventLocations[config.gameName] {
+					if eventLocation.Title == locationName {
+						matchingEventLocation = eventLocation
+						break
+					}
+				}
+			}
+
+			if matchingEventLocation != nil {
+				_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, matchingEventLocation.MapIds)
+				if err != nil {
+					return mapIds, err
+				}
+
+				return matchingEventLocation.MapIds, nil
+			}
+		}
+
+		return mapIds, err
+	}
+
+	err = json.Unmarshal([]byte(mapIdsJson), &mapIds)
+	if err != nil {
+		return mapIds, err
+	}
+
+	return mapIds, nil
+}
+
+func writePlayerGameLocation(uuid string, locationName string) error {
+	_, err := db.Exec("INSERT IGNORE INTO playerGameLocations (uuid, locationId, timestamp) (SELECT ?, gl.id, UTC_TIMESTAMP() FROM gameLocations gl WHERE gl.title = ? AND gl.game = ? LIMIT 1)", uuid, locationName, config.gameName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func setCurrentEventPeriodId() error {
 	var periodId int
 

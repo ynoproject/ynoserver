@@ -919,6 +919,32 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	return nil
 }
 
+func (c *SessionClient) handleL(msg []string) error {
+	for _, locationName := range msg {
+		mapIds, err := getGameLocationMapIds(locationName)
+		if err != nil {
+			continue
+		}
+
+		matchedLocationMap := false
+
+		for _, mapId := range mapIds {
+			if mapId == c.rClient.mapId {
+				matchedLocationMap = true
+				break
+			}
+		}
+
+		if matchedLocationMap {
+			writePlayerGameLocation(c.uuid, locationName)
+		}
+	}
+
+	c.outbox <- buildMsg("l")
+
+	return nil
+}
+
 func (c *SessionClient) handlePt() error {
 	partyId, err := getPlayerPartyId(c.uuid)
 	if err != nil {

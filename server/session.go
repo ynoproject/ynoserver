@@ -117,7 +117,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	for i := 0; i < 0xFFFF; i++ {
 		var used bool
 		for _, otherClient := range clients.Get() {
-			if otherClient.id == i  {
+			if otherClient.id == i {
 				used = true
 			}
 		}
@@ -166,6 +166,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handleLcol(msgFields)
 	case "gsay", "psay": // global say and party say
 		err = c.handleGPSay(msgFields)
+	case "l": // enter location(s)
+		err = c.handleL(msgFields)
 	case "pt": // party update
 		err = c.handlePt()
 		if err != nil {
