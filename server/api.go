@@ -1171,21 +1171,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			retUrl += "&lang=" + r.URL.Query().Get("lang")
-
-			resp, err := http.Get(retUrl)
-			if err != nil {
-				handleError(w, r, err.Error())
-				return
-			}
-			defer resp.Body.Close()
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				handleError(w, r, err.Error())
-				return
-			}
-
-			w.Write(body)
+			w.Write([]byte(retUrl))
 		}
 	}
 
