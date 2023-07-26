@@ -920,9 +920,14 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 }
 
 func (c *SessionClient) handleL(msg []string) error {
-	for _, locationName := range msg {
+	for i, locationName := range msg {
+		if i == 0 {
+			continue
+		}
+
 		mapIds, err := getGameLocationMapIds(locationName)
 		if err != nil {
+			writeLog(c.uuid, "sess", err.Error(), 200)
 			continue
 		}
 
