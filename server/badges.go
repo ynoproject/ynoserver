@@ -211,7 +211,10 @@ func initBadges() {
 	}
 
 	scheduler.Every(1).Tuesday().At("20:00").Do(updateActiveBadgesAndConditions)
-	scheduler.Every(1).Friday().At("20:00").Do(updateActiveBadgesAndConditions)
+	scheduler.Every(1).Friday().At("20:00").Do(func() {
+		setBadges()
+		updateActiveBadgesAndConditions()
+	})
 
 	updateActiveBadgesAndConditions()
 }
