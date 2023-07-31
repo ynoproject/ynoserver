@@ -117,7 +117,7 @@ func initApi() {
 			} else {
 				var interval string
 				// Shorter expiration for map queries returning unknown location in case of new maps that haven't yet been added to the wiki
-				if actionParam == "getMapLocationNames" && response == "[]" {
+				if actionParam == "getMapLocationNames" && string(body) == "[]" {
 					interval = "1 HOUR"
 				} else {
 					interval = "7 DAY"
