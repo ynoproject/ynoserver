@@ -432,6 +432,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 	var playerEventLocationCompletion int
 	var playerEventVmCount int
 	var playerBadgeCount int
+	var yume2kkiLocationCompletion int
 	var timeTrialRecords []*TimeTrialRecord
 	var medalCounts [5]int
 
@@ -449,6 +450,10 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 			return playerBadges, err
 		}
 		playerEventVmCount, err = getPlayerEventVmCount(playerUuid)
+		if err != nil {
+			return playerBadges, err
+		}
+		yume2kkiLocationCompletion, err = getPlayerGameLocationCompletion(playerUuid, "2kki")
 		if err != nil {
 			return playerBadges, err
 		}
@@ -540,6 +545,12 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 					playerBadge.GoalsTotal = gameBadge.ReqInt
 				case "badgeCount":
 					badgeCountPlayerBadges = append(badgeCountPlayerBadges, playerBadge)
+				case "locationCompletion":
+					switch game {
+					case "2kki":
+						playerBadge.Goals = yume2kkiLocationCompletion
+						playerBadge.GoalsTotal = gameBadge.ReqInt
+					}
 				case "timeTrial":
 					playerBadge.Seconds = gameBadge.ReqInt
 					for _, record := range timeTrialRecords {
