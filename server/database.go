@@ -658,7 +658,7 @@ func writePlayerGameLocation(uuid string, locationName string) error {
 }
 
 func getPlayerGameLocationCompletion(uuid string, gameId string) (gameLocationCompletion int, err error) {
-	err = db.QueryRow("SELECT FLOOR(COUNT(*) / (SELECT COUNT(*) FROM gameLocations WHERE game = ? AND secret = 0)) FROM playerGameLocations pgl JOIN gameLocations gl ON gl.id = pgl.locationId WHERE gl.game = ? and gl.secret = 0 AND pgl.uuid = ?", gameId, gameId, uuid).Scan(&gameLocationCompletion)
+	err = db.QueryRow("SELECT FLOOR(COUNT(*) / (SELECT COUNT(*) FROM gameLocations WHERE game = ? AND secret = 0) * 100) FROM playerGameLocations pgl JOIN gameLocations gl ON gl.id = pgl.locationId WHERE gl.game = ? and gl.secret = 0 AND pgl.uuid = ?", gameId, gameId, uuid).Scan(&gameLocationCompletion)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
