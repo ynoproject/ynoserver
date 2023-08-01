@@ -43,6 +43,19 @@ type PlayerInfo struct {
 	Medals        [5]int `json:"medals"`
 }
 
+type PlayerListData struct {
+	Uuid       string `json:"uuid"`
+	Name       string `json:"name"`
+	SystemName string `json:"systemName"`
+	Rank       int    `json:"rank"`
+	Account    bool   `json:"account"`
+	Badge      string `json:"badge"`
+	Medals     [5]int `json:"medals"`
+
+	SpriteName  string `json:"spriteName"`
+	SpriteIndex int    `json:"spriteIndex"`
+}
+
 func initApi() {
 	http.HandleFunc("/admin/getplayers", adminGetPlayers)
 	http.HandleFunc("/admin/getbans", adminGetBans)
@@ -63,6 +76,10 @@ func initApi() {
 	http.HandleFunc("/api/login", handleLogin)
 	http.HandleFunc("/api/logout", handleLogout)
 	http.HandleFunc("/api/changepw", handleChangePw)
+
+	http.HandleFunc("/api/blockplayer", handleBlockPlayer)
+	http.HandleFunc("/api/unblockplayer", handleUnblockPlayer)
+	http.HandleFunc("/api/blocklist", handleBlockList)
 
 	http.HandleFunc("/api/chathistory", handleChatHistory)
 	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
@@ -1099,6 +1116,116 @@ func handleResetPw(uuid string) (newPassword string, err error) {
 	db.Exec("UPDATE accounts SET pass = ? WHERE uuid = ?", hashedPassword, uuid)
 
 	return newPassword, nil
+}
+
+func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+
+	var uuid string
+
+	if token == "" {
+		uuid, _, _ = getPlayerInfo(getIp(r))
+	} else {
+		uuid = getUuidFromToken(token)
+	}
+
+	targetUuid := r.URL.Query().Get("uuid")
+	if targetUuid == "" {
+		user := r.URL.Query().Get("user")
+		if user == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
+
+		uuid, err := getUuidFromName(user)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		if uuid == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
+
+		targetUuid = uuid
+	}
+
+	err := tryBlockPlayer(uuid, targetUuid)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
+}
+
+func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+
+	var uuid string
+
+	if token == "" {
+		uuid, _, _ = getPlayerInfo(getIp(r))
+	} else {
+		uuid = getUuidFromToken(token)
+	}
+
+	targetUuid := r.URL.Query().Get("uuid")
+	if targetUuid == "" {
+		user := r.URL.Query().Get("user")
+		if user == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
+
+		uuid, err := getUuidFromName(user)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		if uuid == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
+
+		targetUuid = uuid
+	}
+
+	err := tryUnblockPlayer(uuid, targetUuid)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
+}
+
+func handleBlockList(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+
+	var uuid string
+
+	if token == "" {
+		uuid, _, _ = getPlayerInfo(getIp(r))
+	} else {
+		uuid = getUuidFromToken(token)
+	}
+
+	blockedPlayers, err := getBlockedPlayerData(uuid)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	blockedPlayersJson, err := json.Marshal(blockedPlayers)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write(blockedPlayersJson)
 }
 
 func handleExplorer(w http.ResponseWriter, r *http.Request) {

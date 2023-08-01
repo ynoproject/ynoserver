@@ -219,6 +219,54 @@ func getPlayerModerationStatus(uuid string) (banned bool, muted bool) {
 	return banned, muted
 }
 
+func tryBlockPlayer(uuid string, targetUuid string) error { // called by api only
+	if getPlayerRank(uuid) <= getPlayerRank(targetUuid) {
+		return errors.New("insufficient rank")
+	}
+
+	if uuid == targetUuid {
+		return errors.New("attempted self-block")
+	}
+
+	_, err := db.Exec("INSERT IGNORE INTO playerBlocks (uuid, targetUuid, timestamp) VALUES (?, ?, UTC_TIMESTAMP())", uuid, targetUuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func tryUnblockPlayer(uuid string, targetUuid string) error { // called by api only
+	_, err := db.Exec("DELETE FROM playerBlocks WHERE uuid = ? AND targetUuid = ?", uuid, targetUuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getBlockedPlayerData(uuid string) ([]*PlayerListData, error) {
+	var blockedPlayers []*PlayerListData
+
+	results, err := db.Query("SELECT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerBlocks pb ON pb.targetUuid = pd.uuid AND pb.uuid = ? JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? ORDER BY pb.timestamp", uuid, config.gameName)
+	if err != nil {
+		return blockedPlayers, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		blockedPlayer := &PlayerListData{}
+		err := results.Scan(&blockedPlayer.Uuid, &blockedPlayer.Name, &blockedPlayer.Rank, &blockedPlayer.Account, &blockedPlayer.Badge, &blockedPlayer.SystemName, &blockedPlayer.SpriteName, &blockedPlayer.SpriteIndex, &blockedPlayer.Medals[0], &blockedPlayer.Medals[1], &blockedPlayer.Medals[2], &blockedPlayer.Medals[3], &blockedPlayer.Medals[4])
+		if err != nil {
+			return blockedPlayers, err
+		}
+		blockedPlayers = append(blockedPlayers, blockedPlayer)
+	}
+
+	return blockedPlayers, nil
+}
+
 func createPlayerData(ip string, uuid string, banned bool) error {
 	_, err := db.Exec("INSERT INTO players (ip, uuid, banned) VALUES (?, ?, ?)", ip, uuid, banned)
 	if err != nil {
