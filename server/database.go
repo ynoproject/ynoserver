@@ -220,7 +220,7 @@ func getPlayerModerationStatus(uuid string) (banned bool, muted bool) {
 }
 
 func tryBlockPlayer(uuid string, targetUuid string) error { // called by api only
-	if getPlayerRank(uuid) <= getPlayerRank(targetUuid) {
+	if getPlayerRank(uuid) < getPlayerRank(targetUuid) {
 		return errors.New("insufficient rank")
 	}
 
