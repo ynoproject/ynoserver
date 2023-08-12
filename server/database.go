@@ -756,7 +756,7 @@ func getPlayerMissingGameLocationNames(uuid string, locationNames []string) ([]s
 func getPlayerAllMissingGameLocationNames(uuid string) ([]string, error) {
 	var missingGameLocationNames []string
 
-	results, err := db.Query("SELECT gl.title FROM gameLocations gl WHERE gl.game = ? AND NOT EXISTS (SELECT * FROM playerGameLocations pgl WHERE pgl.uuid = ? AND pgl.locationId = gl.id)", config.gameName, uuid)
+	results, err := db.Query("SELECT gl.title FROM gameLocations gl WHERE gl.game = ? AND gl.secret = 0 AND NOT EXISTS (SELECT * FROM playerGameLocations pgl WHERE pgl.uuid = ? AND pgl.locationId = gl.id)", config.gameName, uuid)
 	if err != nil {
 		return missingGameLocationNames, err
 	}
