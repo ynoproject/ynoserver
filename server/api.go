@@ -152,6 +152,7 @@ func initApi() {
 		w.Write([]byte(response))
 	})
 	http.HandleFunc("/api/explorer", handleExplorer)
+	http.HandleFunc("/api/explorerlocations", handleExplorerLocations)
 
 	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
 		var uuid string
@@ -1229,6 +1230,11 @@ func handleBlockList(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleExplorer(w http.ResponseWriter, r *http.Request) {
+	if config.gameName != "2kki" {
+		handleError(w, r, "explorer is only available for Yume 2kki")
+		return
+	}
+
 	token := r.Header.Get("Authorization")
 
 	if token == "" {
@@ -1302,6 +1308,31 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(""))
+}
+
+func handleExplorerLocations(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+
+	if token == "" {
+		handleError(w, r, "token not specified")
+		return
+	}
+
+	uuid := getUuidFromToken(token)
+
+	missingLocationNames, err := getPlayerAllMissingGameLocationNames(uuid)
+	if err != nil {
+		handleError(w, r, err.Error())
+		return
+	}
+
+	missingLocationNamesJson, err := json.Marshal(missingLocationNames)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte(missingLocationNamesJson))
 }
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {

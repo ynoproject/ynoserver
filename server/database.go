@@ -753,6 +753,29 @@ func getPlayerMissingGameLocationNames(uuid string, locationNames []string) ([]s
 	return missingGameLocationNames, nil
 }
 
+func getPlayerAllMissingGameLocationNames(uuid string) ([]string, error) {
+	var missingGameLocationNames []string
+
+	results, err := db.Query("SELECT gl.title FROM gameLocations gl WHERE gl.game = ? AND NOT EXISTS (SELECT * FROM playerGameLocations pgl WHERE pgl.uuid = ? AND pgl.locationId = gl.id)", config.gameName, uuid)
+	if err != nil {
+		return missingGameLocationNames, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var locationName string
+		err = results.Scan(&locationName)
+		if err != nil {
+			return missingGameLocationNames, err
+		}
+
+		missingGameLocationNames = append(missingGameLocationNames, locationName)
+	}
+
+	return missingGameLocationNames, nil
+}
+
 func setCurrentEventPeriodId() error {
 	var periodId int
 
