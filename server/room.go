@@ -42,6 +42,8 @@ type Room struct {
 }
 
 func createRooms(roomIds []int, spRooms []int) {
+	logInitTask("rooms")
+
 	for _, roomId := range roomIds {
 		rooms[roomId] = &Room{
 			id:           roomId,
@@ -50,6 +52,8 @@ func createRooms(roomIds []int, spRooms []int) {
 			minigames:    getRoomMinigames(roomId),
 		}
 	}
+
+	logTaskComplete()
 }
 
 func handleRoom(w http.ResponseWriter, r *http.Request) {

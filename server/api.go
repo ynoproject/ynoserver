@@ -57,6 +57,8 @@ type PlayerListData struct {
 }
 
 func initApi() {
+	logInitTask("API")
+
 	http.HandleFunc("/admin/getplayers", adminGetPlayers)
 	http.HandleFunc("/admin/getbans", adminGetBans)
 	http.HandleFunc("/admin/getmutes", adminGetMutes)
@@ -197,6 +199,8 @@ func initApi() {
 	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte(strconv.Itoa(clients.GetAmount())))
 	})
+
+	logTaskComplete()
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {

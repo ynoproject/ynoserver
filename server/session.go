@@ -33,6 +33,8 @@ var (
 )
 
 func initSession() {
+	logInitTask("session")
+
 	// we need a sender
 	sender := SessionClient{}
 
@@ -48,6 +50,8 @@ func initSession() {
 	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
 
 	scheduler.Every(1).Thursday().At("04:00").Do(doCleanupQueries)
+
+	logTaskComplete()
 }
 
 func handleSession(w http.ResponseWriter, r *http.Request) {

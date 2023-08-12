@@ -83,17 +83,9 @@ func Start() {
 	assets.picturePrefixes = config.picturePrefixes
 	assets.battleAnimIds = config.battleAnimIds
 
-	fmt.Print("Setting conditions...\n")
 	setConditions()
-	fmt.Print("Done.\n")
-
-	fmt.Print("Setting badges...\n")
 	setBadges()
-	fmt.Print("Done.\n")
-
-	fmt.Print("Setting event VMs...\n")
 	setEventVms()
-	fmt.Print("Done.\n")
 
 	globalConditions = getGlobalConditions()
 
@@ -107,25 +99,11 @@ func Start() {
 	})
 	log.SetFlags(log.Ldate | log.Ltime)
 
-	fmt.Print("Initializing API...\n")
 	initApi()
-	fmt.Print("Done.\n")
-
-	fmt.Print("Initializing chat history...\n")
 	initHistory()
-	fmt.Print("Done.\n")
-
-	fmt.Print("Initializing events...\n")
 	initEvents()
-	fmt.Print("Done.\n")
-
-	fmt.Print("Initializing badges...\n")
 	initBadges()
-	fmt.Print("Done.\n")
-
-	fmt.Print("Initializing session...\n")
 	initSession()
-	fmt.Print("Done.\n")
 
 	scheduler.StartAsync()
 
@@ -135,6 +113,18 @@ func Start() {
 	fmt.Print("Now serving requests.\n")
 
 	http.Serve(getListener(), nil)
+}
+
+func logInitTask(taskName string) {
+	fmt.Print("Initializing " + taskName + "...\n")
+}
+
+func logUpdateTask(taskName string) {
+	fmt.Print("Updating " + taskName + "...\n")
+}
+
+func logTaskComplete() {
+	fmt.Print("Done.\n")
 }
 
 func getListener() net.Listener {

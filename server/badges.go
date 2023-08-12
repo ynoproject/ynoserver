@@ -198,9 +198,30 @@ type TimeTrialRecord struct {
 }
 
 func initBadges() {
-	// Use host server to update badge data
+
+	setBadgeData()
+
+	scheduler.Every(1).Tuesday().At("20:00").Do(updateActiveBadgesAndConditions)
+	scheduler.Every(1).Friday().At("20:00").Do(func() {
+		setConditions()
+		setBadges()
+		globalConditions = getGlobalConditions()
+		for _, roomId := range assets.mapIds {
+			rooms[roomId].conditions = getRoomConditions(roomId)
+		}
+		setBadgeData()
+		updateActiveBadgesAndConditions()
+	})
+
+	updateActiveBadgesAndConditions()
+}
+
+func setBadgeData() {
 	if len(badges) != 0 {
+		logUpdateTask("badge data")
+
 		badgeUnlockPercentages, _ = getBadgeUnlockPercentages()
+		// Use host server to update badge data
 		if isHostServer {
 			if _, ok := badges[config.gameName]; ok {
 				// Badge records needed for determining badge game
@@ -208,18 +229,14 @@ func initBadges() {
 				updatePlayerBadgeSlotCounts("")
 			}
 		}
+
+		logTaskComplete()
 	}
-
-	scheduler.Every(1).Tuesday().At("20:00").Do(updateActiveBadgesAndConditions)
-	scheduler.Every(1).Friday().At("20:00").Do(func() {
-		setBadges()
-		updateActiveBadgesAndConditions()
-	})
-
-	updateActiveBadgesAndConditions()
 }
 
 func updateActiveBadgesAndConditions() {
+	logUpdateTask("badge visibility")
+
 	firstBatchDate := time.Date(2022, time.April, 15, 20, 0, 0, 0, time.UTC)
 	days := time.Now().UTC().Sub(firstBatchDate).Hours() / 24
 	currentBatch := int(math.Floor(days/7)) + 1
@@ -254,6 +271,8 @@ func updateActiveBadgesAndConditions() {
 			}
 		}
 	}
+
+	logTaskComplete()
 }
 
 func getGlobalConditions() (globalConditions []*Condition) {
@@ -695,6 +714,8 @@ func getPlayerNewUnlockedBadgeIds(playerUuid string, playerRank int, playerTags 
 }
 
 func setConditions() {
+	logUpdateTask("conditions")
+
 	conditionConfig := make(map[string]map[string]*Condition)
 
 	gameConditionDirs, err := os.ReadDir("badges/conditions/")
@@ -744,9 +765,13 @@ func setConditions() {
 	}
 
 	conditions = conditionConfig
+
+	logTaskComplete()
 }
 
 func setBadges() {
+	logUpdateTask("badges")
+
 	badgeConfig := make(map[string]map[string]*Badge)
 	sortedBadgeIds = make(map[string][]string)
 
@@ -813,4 +838,6 @@ func setBadges() {
 	}
 
 	badges = badgeConfig
+
+	logTaskComplete()
 }

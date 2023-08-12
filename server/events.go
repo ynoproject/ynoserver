@@ -144,6 +144,8 @@ var (
 )
 
 func initEvents() {
+	logInitTask("events")
+
 	err := setCurrentEventPeriodId()
 	if err != nil {
 		return
@@ -263,6 +265,8 @@ func initEvents() {
 	if currentEventVmMapId == 0 && currentEventVmEventId == 0 {
 		addEventVm()
 	}
+
+	logTaskComplete()
 }
 
 func sendEventsUpdate() {
@@ -497,6 +501,8 @@ func setEventVms() {
 		return
 	}
 
+	logUpdateTask("event VMs")
+
 	vmsDir, err := os.ReadDir("vms/")
 	if err != nil {
 		return
@@ -517,6 +523,8 @@ func setEventVms() {
 
 		eventVms[mapIdInt] = append(eventVms[mapIdInt], eventIdInt)
 	}
+
+	logTaskComplete()
 }
 
 func setGameEventLocationPoolsAndLocationColors() {
