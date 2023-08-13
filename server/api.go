@@ -154,6 +154,7 @@ func initApi() {
 		w.Write([]byte(response))
 	})
 	http.HandleFunc("/api/explorer", handleExplorer)
+	http.HandleFunc("/api/explorercompletion", handleExplorerCompletion)
 	http.HandleFunc("/api/explorerlocations", handleExplorerLocations)
 
 	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
@@ -1312,6 +1313,25 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(""))
+}
+
+func handleExplorerCompletion(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+
+	if token == "" {
+		handleError(w, r, "token not specified")
+		return
+	}
+
+	uuid := getUuidFromToken(token)
+
+	locationCompletion, err := getPlayerGameLocationCompletion(uuid, config.gameName)
+	if err != nil {
+		handleError(w, r, err.Error())
+		return
+	}
+
+	w.Write([]byte(strconv.Itoa(locationCompletion)))
 }
 
 func handleExplorerLocations(w http.ResponseWriter, r *http.Request) {
