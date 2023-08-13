@@ -991,13 +991,13 @@ func getPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletio
 	return eventLocationCompletion, nil
 }
 
-func getOrWriteLocationIdForEventLocation(gameEventPeriodId int, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
+func getOrWriteLocationIdForEventLocation(gameId string, gameEventPeriodId int, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
 		return locationId, err
 	}
 
-	_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = ?, depth = ?, minDepth = ?, mapIds = ?", config.gameName, title, titleJP, depth, minDepth, mapIdsJson, titleJP, depth, minDepth, mapIdsJson)
+	_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE titleJP = ?, depth = ?, minDepth = ?, mapIds = ?", gameId, title, titleJP, depth, minDepth, mapIdsJson, titleJP, depth, minDepth, mapIdsJson)
 	if err != nil {
 		return locationId, err
 	}
@@ -1007,27 +1007,27 @@ func getOrWriteLocationIdForEventLocation(gameEventPeriodId int, title string, t
 	return locationId, nil
 }
 
-func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
+func getOrWriteLocationIdForPlayerEventLocation(gameId string, gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
 	var playerEventLocationQueueLength int
-	db.QueryRow("SELECT COUNT(*) FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE()", config.gameName).Scan(&playerEventLocationQueueLength)
+	db.QueryRow("SELECT COUNT(*) FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE()", gameId).Scan(&playerEventLocationQueueLength)
 
 	if playerEventLocationQueueLength > 0 {
 		var currentPlayerEventLocationQueueLength int
 		db.QueryRow("SELECT COUNT(*) FROM eventCompletions ec JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1 WHERE pel.gamePeriodId = ? AND pel.startDate = UTC_DATE() AND pel.uuid = ?", gameEventPeriodId, playerUuid).Scan(&currentPlayerEventLocationQueueLength)
 
 		if currentPlayerEventLocationQueueLength < playerEventLocationQueueLength {
-			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE() AND queueIndex = ?", config.gameName, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
+			db.QueryRow("SELECT locationId FROM playerEventLocationQueue WHERE game = ? AND date = UTC_DATE() AND queueIndex = ?", gameId, currentPlayerEventLocationQueueLength+1).Scan(&locationId)
 
 			return locationId, nil
 		}
 	}
 
-	locationId, err = getOrWriteLocationIdForEventLocation(gameEventPeriodId, title, titleJP, depth, minDepth, mapIds)
+	locationId, err = getOrWriteLocationIdForEventLocation(gameId, gameEventPeriodId, title, titleJP, depth, minDepth, mapIds)
 	if err != nil {
 		return locationId, err
 	}
 
-	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, queueIndex, locationId) VALUES (?, UTC_DATE(), ?, ?)", config.gameName, playerEventLocationQueueLength+1, locationId)
+	_, err = db.Exec("INSERT INTO playerEventLocationQueue (game, date, queueIndex, locationId) VALUES (?, UTC_DATE(), ?, ?)", gameId, playerEventLocationQueueLength+1, locationId)
 	if err != nil {
 		return locationId, err
 	}
@@ -1035,7 +1035,7 @@ func getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId int, playerUui
 	return locationId, nil
 }
 
-func writeEventLocationData(gameEventPeriodId int, eventType int, title string, titleJP string, depth int, minDepth int, exp int, mapIds []string) error {
+func writeEventLocationData(gameId string, gameEventPeriodId int, eventType int, title string, titleJP string, depth int, minDepth int, exp int, mapIds []string) error {
 	var days int
 	var offsetDays int
 	weekday := time.Now().UTC().Weekday()
@@ -1056,7 +1056,7 @@ func writeEventLocationData(gameEventPeriodId int, eventType int, title string, 
 
 	days -= offsetDays
 
-	locationId, err := getOrWriteLocationIdForEventLocation(gameEventPeriodId, title, titleJP, depth, minDepth, mapIds)
+	locationId, err := getOrWriteLocationIdForEventLocation(gameId, gameEventPeriodId, title, titleJP, depth, minDepth, mapIds)
 	if err != nil {
 		return err
 	}
@@ -1069,8 +1069,8 @@ func writeEventLocationData(gameEventPeriodId int, eventType int, title string, 
 	return nil
 }
 
-func writePlayerEventLocationData(gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) error {
-	locationId, err := getOrWriteLocationIdForPlayerEventLocation(gameEventPeriodId, playerUuid, title, titleJP, depth, minDepth, mapIds)
+func writePlayerEventLocationData(gameId string, gameEventPeriodId int, playerUuid string, title string, titleJP string, depth int, minDepth int, mapIds []string) error {
+	locationId, err := getOrWriteLocationIdForPlayerEventLocation(gameId, gameEventPeriodId, playerUuid, title, titleJP, depth, minDepth, mapIds)
 	if err != nil {
 		return err
 	}

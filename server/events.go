@@ -352,9 +352,9 @@ func addPlayerEventLocation(gameId string, eventType int, exp int, pool []*Event
 
 	var err error
 	if playerUuid == "" {
-		err = writeEventLocationData(gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, exp, eventLocation.MapIds)
+		err = writeEventLocationData(gameId, gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, exp, eventLocation.MapIds)
 	} else {
-		err = writePlayerEventLocationData(gameEventPeriodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, eventLocation.MapIds)
+		err = writePlayerEventLocationData(gameId, gameEventPeriodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, eventLocation.MapIds)
 	}
 	if err != nil {
 		handleInternalEventError(eventType, err)
@@ -405,9 +405,9 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 	for _, eventLocation := range eventLocations {
 		adjustedDepth, adjustedMinDepth := get2kkiEventLocationAdjustedDepths(&eventLocation)
 		if playerUuid == "" {
-			err = writeEventLocationData(gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
+			err = writeEventLocationData("2kki", gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
 		} else {
-			err = writePlayerEventLocationData(gameEventPeriodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, eventLocation.MapIds)
+			err = writePlayerEventLocationData("2kki", gameEventPeriodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, eventLocation.MapIds)
 		}
 		if err != nil {
 			handleInternalEventError(eventType, err)
