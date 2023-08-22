@@ -1337,6 +1337,16 @@ func handleExplorerLocations(w http.ResponseWriter, r *http.Request) {
 
 	uuid := getUuidFromToken(token)
 
+	locationCompletion, err := getPlayerGameLocationCompletion(uuid, config.gameName)
+	if err != nil {
+		handleError(w, r, err.Error())
+		return
+	}
+
+	if locationCompletion < 95 {
+		return
+	}
+
 	missingLocationNames, err := getPlayerAllMissingGameLocationNames(uuid)
 	if err != nil {
 		handleError(w, r, err.Error())
