@@ -1279,9 +1279,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
-				for _, connLocationName := range connLocationNames {
-					allConnLocationNames = append(allConnLocationNames, connLocationName)
-				}
+				allConnLocationNames = append(allConnLocationNames, connLocationNames...)
 			}
 
 			hiddenLocationNames, err := getPlayerMissingGameLocationNames(uuid, allConnLocationNames)
