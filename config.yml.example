@@ -19,9 +19,6 @@
 ## Battle Animation IDs to sync in multiplayer
 #battle_anim_ids: ""
 
-## YNOclient signature key
-#sign_key: ""
-
 ## IPHub API key, leave blank to disable VPN check
 #iphub_key: ""
 

@@ -75,7 +75,12 @@ func Start() {
 
 	isHostServer = config.gameName == hostGameId
 
-	serverSecurity = security.New(config.signKey)
+	key, err := os.ReadFile("key.bin")
+	if err != nil {
+		log.Fatalf("failed to read key file!")
+	}
+
+	serverSecurity = security.New(key)
 	assets = getAssets(config.gamePath)
 
 	assets.ignoredSoundNames = config.badSounds

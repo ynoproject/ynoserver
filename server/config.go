@@ -35,7 +35,6 @@ type Config struct {
 	picturePrefixes []string
 	battleAnimIds   map[int]bool
 
-	signKey  []byte
 	ipHubKey string
 
 	logging struct {
@@ -124,7 +123,6 @@ func parseConfigFile(filename string) (config *Config) {
 		}
 	}
 
-	config.signKey = []byte(configFile.SignKey)
 	config.ipHubKey = configFile.IpHubKey
 
 	if configFile.Logging.MaxSize != 0 {
