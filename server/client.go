@@ -285,7 +285,7 @@ func (c *RoomClient) reset() {
 	c.prevMapId = ""
 	c.prevLocations = ""
 
-	c.locations = nil
+	c.locations = []string{}
 
 	// don't clear tags
 
