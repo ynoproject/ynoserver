@@ -426,7 +426,7 @@ func (c *RoomClient) handleBa(msg []string) error {
 		return errconv
 	}
 
-	if !assets.battleAnimIds[id] {
+	if !assets.battleAnims[id] {
 		return errors.New("invalid battle animation id")
 	}
 

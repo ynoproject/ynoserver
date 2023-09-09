@@ -206,7 +206,7 @@ func initBadges() {
 		setConditions()
 		setBadges()
 		globalConditions = getGlobalConditions()
-		for _, roomId := range assets.mapIds {
+		for _, roomId := range assets.maps {
 			rooms[roomId].conditions = getRoomConditions(roomId)
 		}
 		setBadgeData()

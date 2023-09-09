@@ -83,10 +83,10 @@ func Start() {
 	serverSecurity = security.New(key)
 	assets = getAssets(config.gamePath)
 
-	assets.ignoredSoundNames = config.badSounds
-	assets.allowedPictureNames = config.pictures
+	assets.ignoredSounds = config.badSounds
+	assets.allowedPictures = config.pictures
 	assets.allowedPicturePrefixes = config.picturePrefixes
-	assets.battleAnimIds = config.battleAnimIds
+	assets.battleAnims = config.battleAnimIds
 
 	setConditions()
 	setBadges()
@@ -94,7 +94,7 @@ func Start() {
 
 	globalConditions = getGlobalConditions()
 
-	createRooms(assets.mapIds, config.spRooms)
+	createRooms(assets.maps, config.spRooms)
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   "logs/" + config.gameName + "/ynoserver.log",

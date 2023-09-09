@@ -25,26 +25,26 @@ import (
 )
 
 type Assets struct {
-	mapIds []int
+	maps []int
 
-	spriteNames            map[string]bool
-	systemNames            map[string]bool
-	soundNames             map[string]bool
-	ignoredSoundNames      map[string]bool
-	pictureNames           map[string]bool
-	allowedPictureNames    map[string]bool
+	sprites                map[string]bool
+	systems                map[string]bool
+	sounds                 map[string]bool
+	ignoredSounds          map[string]bool
+	pictures               map[string]bool
+	allowedPictures        map[string]bool
 	allowedPicturePrefixes []string
-	battleAnimIds          map[int]bool
+	battleAnims            map[int]bool
 }
 
 func getAssets(gamePath string) *Assets {
 	return &Assets{
-		mapIds: getMaps(gamePath),
+		maps: getMaps(gamePath),
 
-		spriteNames:  getCharSets(gamePath),
-		systemNames:  getSystems(gamePath),
-		soundNames:   getSounds(gamePath),
-		pictureNames: getPictures(gamePath),
+		sprites:  getCharSets(gamePath),
+		systems:  getSystems(gamePath),
+		sounds:   getSounds(gamePath),
+		pictures: getPictures(gamePath),
 	}
 }
 
@@ -133,7 +133,7 @@ func (a *Assets) IsValidSprite(name string) bool {
 		return false
 	}
 
-	return a.spriteNames[name]
+	return a.sprites[name]
 }
 
 func (a *Assets) IsValidSystem(name string, ignoreSingleQuotes bool) bool {
@@ -141,7 +141,7 @@ func (a *Assets) IsValidSystem(name string, ignoreSingleQuotes bool) bool {
 		name = strings.ReplaceAll(name, "'", "")
 	}
 
-	return a.systemNames[name]
+	return a.systems[name]
 }
 
 func (a *Assets) IsValidSound(name string) bool {
@@ -149,11 +149,11 @@ func (a *Assets) IsValidSound(name string) bool {
 		return false
 	}
 
-	if a.ignoredSoundNames[name] {
+	if a.ignoredSounds[name] {
 		return false
 	}
 
-	return a.soundNames[name]
+	return a.sounds[name]
 }
 
 func (a *Assets) IsValidPicture(name string) bool {
@@ -161,11 +161,11 @@ func (a *Assets) IsValidPicture(name string) bool {
 		return false
 	}
 
-	if !a.pictureNames[name] {
+	if !a.pictures[name] {
 		return false
 	}
 
-	if a.allowedPictureNames[name] {
+	if a.allowedPictures[name] {
 		return true
 	}
 
