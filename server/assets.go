@@ -27,22 +27,24 @@ import (
 type Assets struct {
 	mapIds []int
 
-	spriteNames       map[string]bool
-	systemNames       map[string]bool
-	soundNames        map[string]bool
-	ignoredSoundNames map[string]bool
-	pictureNames      map[string]bool
-	picturePrefixes   []string
-	battleAnimIds     map[int]bool
+	spriteNames            map[string]bool
+	systemNames            map[string]bool
+	soundNames             map[string]bool
+	ignoredSoundNames      map[string]bool
+	pictureNames           map[string]bool
+	allowedPictureNames    map[string]bool
+	allowedPicturePrefixes []string
+	battleAnimIds          map[int]bool
 }
 
 func getAssets(gamePath string) *Assets {
 	return &Assets{
 		mapIds: getMaps(gamePath),
 
-		spriteNames: getCharSets(gamePath),
-		systemNames: getSystems(gamePath),
-		soundNames:  getSounds(gamePath),
+		spriteNames:  getCharSets(gamePath),
+		systemNames:  getSystems(gamePath),
+		soundNames:   getSounds(gamePath),
+		pictureNames: getPictures(gamePath),
 	}
 }
 
@@ -86,6 +88,20 @@ func getSystems(gamePath string) map[string]bool {
 	}
 
 	return systems
+}
+
+func getPictures(gamePath string) map[string]bool {
+	files, err := os.ReadDir(gamePath + "/Picture")
+	if err != nil {
+		panic(err)
+	}
+
+	pictures := make(map[string]bool)
+	for _, file := range files {
+		pictures[file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))]] = true
+	}
+
+	return pictures
 }
 
 func getMaps(gamePath string) []int {
@@ -145,11 +161,15 @@ func (a *Assets) IsValidPicture(name string) bool {
 		return false
 	}
 
-	if a.pictureNames[name] {
+	if !a.pictureNames[name] {
+		return false
+	}
+
+	if a.allowedPictureNames[name] {
 		return true
 	}
 
-	for _, prefix := range a.picturePrefixes {
+	for _, prefix := range a.allowedPicturePrefixes {
 		if strings.HasPrefix(strings.ToLower(name), prefix) {
 			return true
 		}

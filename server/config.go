@@ -31,7 +31,7 @@ type Config struct {
 
 	spRooms         []int
 	badSounds       map[string]bool
-	pictureNames    map[string]bool
+	pictures        map[string]bool
 	picturePrefixes []string
 	battleAnimIds   map[int]bool
 
@@ -100,10 +100,10 @@ func parseConfigFile(filename string) (config *Config) {
 		}
 	}
 
-	config.pictureNames = make(map[string]bool)
+	config.pictures = make(map[string]bool)
 	if configFile.PictureNames != "" {
 		for _, name := range strings.Split(configFile.PictureNames, ",") {
-			config.pictureNames[name] = true
+			config.pictures[name] = true
 		}
 	}
 

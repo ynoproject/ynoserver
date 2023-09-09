@@ -84,8 +84,8 @@ func Start() {
 	assets = getAssets(config.gamePath)
 
 	assets.ignoredSoundNames = config.badSounds
-	assets.pictureNames = config.pictureNames
-	assets.picturePrefixes = config.picturePrefixes
+	assets.allowedPictureNames = config.pictures
+	assets.allowedPicturePrefixes = config.picturePrefixes
 	assets.battleAnimIds = config.battleAnimIds
 
 	setConditions()
