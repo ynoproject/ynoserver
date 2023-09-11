@@ -22,7 +22,7 @@ import "net/http"
 func initScreenshots() {
 	logInitTask("screenshots")
 
-	http.Handle("./screenshots", http.StripPrefix("/screenshots", http.FileServer(http.Dir("."))))
+	http.Handle("/screenshots", http.StripPrefix("/screenshots", http.FileServer(http.Dir("./screenshots"))))
 
 	logTaskComplete()
 }
