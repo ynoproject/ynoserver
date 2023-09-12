@@ -19,6 +19,7 @@ package server
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -293,4 +294,19 @@ func buildMsg(segments ...any) (message []byte) {
 	}
 
 	return message
+}
+
+func getNanoId() string {
+	timestamp := time.Now().UTC().UnixNano()
+
+	return hex.EncodeToString([]byte{
+		byte(timestamp >> 56),
+		byte(timestamp >> 48),
+		byte(timestamp >> 40),
+		byte(timestamp >> 32),
+		byte(timestamp >> 24),
+		byte(timestamp >> 16),
+		byte(timestamp >> 8),
+		byte(timestamp),
+	})
 }

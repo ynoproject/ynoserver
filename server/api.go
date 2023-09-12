@@ -86,7 +86,7 @@ func initApi() {
 	http.HandleFunc("/api/chathistory", handleChatHistory)
 	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
 
-	http.HandleFunc("/api/getplayerscreenshots", handleGetPlayerScreenshots)
+	http.HandleFunc("/api/screenshot", handleScreenshot)
 
 	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
 		if config.gameName != "2kki" {
@@ -1390,6 +1390,7 @@ func handleChatHistory(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 
 	token := r.Header.Get("Authorization")
+
 	if token == "" {
 		uuid, _, _ = getOrCreatePlayerData(getIp(r))
 	} else {
@@ -1452,6 +1453,7 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 
 	token := r.Header.Get("Authorization")
+
 	if token == "" {
 		uuid, _, _ = getOrCreatePlayerData(getIp(r))
 	} else {
@@ -1479,38 +1481,4 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("ok"))
-}
-
-func handleGetPlayerScreenshots(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		handleError(w, r, "token not specified")
-		return
-	}
-
-	uuid := getUuidFromToken(token)
-	if uuid == "" {
-		handleError(w, r, "invalid token")
-		return
-	}
-
-	uuidParam := r.URL.Query().Get("uuid")
-	if uuidParam == "" {
-		uuidParam = uuid
-	}
-
-	playerScreenshots, err := getPlayerScreenshots(uuidParam)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
-	playerScreenshotsJson, err := json.Marshal(playerScreenshots)
-	if err != nil {
-		handleError(w, r, "error while marshaling")
-		return
-	}
-
-	w.Write(playerScreenshotsJson)
 }

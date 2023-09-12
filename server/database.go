@@ -652,7 +652,7 @@ func archiveChatMessages() error {
 func getPlayerScreenshots(uuid string) ([]*ScreenshotData, error) {
 	var playerScreenshots []*ScreenshotData
 
-	results, err := db.Query("SELECT uuid, ownerUuid, game, timestamp FROM playerScreenshots WHERE ownerUuid = ? ORDER BY 4 DESC", uuid)
+	results, err := db.Query("SELECT id, uuid, game, timestamp FROM playerScreenshots WHERE uuid = ? ORDER BY 4 DESC", uuid)
 	if err != nil {
 		return playerScreenshots, err
 	}
@@ -661,7 +661,7 @@ func getPlayerScreenshots(uuid string) ([]*ScreenshotData, error) {
 
 	for results.Next() {
 		screenshot := &ScreenshotData{}
-		err := results.Scan(&screenshot.Uuid, &screenshot.OwnerUuid, &screenshot.Game, &screenshot.Timestamp)
+		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.Timestamp)
 		if err != nil {
 			return playerScreenshots, err
 		}
@@ -669,6 +669,37 @@ func getPlayerScreenshots(uuid string) ([]*ScreenshotData, error) {
 	}
 
 	return playerScreenshots, nil
+}
+
+func writeScreenshotData(id string, uuid string, game string) error {
+	var playerScreenshotCount int
+	err := db.QueryRow("SELECT COUNT(*) FROM playerScreenshots WHERE uuid = ?", uuid).Scan(&playerScreenshotCount)
+	if err != nil {
+		return err
+	} else if playerScreenshotCount > playerScreenshotLimit {
+		return errors.New("screenshot limit exceeded")
+	}
+
+	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game) VALUES (?, ?, ?)", id, uuid, game)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deleteScreenshot(id string, uuid string) (bool, error) {
+	results, err := db.Exec("DELETE FROM playerScreenshots WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	deletedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return deletedRows > 0, nil
 }
 
 func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
