@@ -54,21 +54,23 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var token string
+	token := r.Header.Get("Authorization")
+	accountRequired := commandParam != "getPlayerScreenshots"
 
-	if commandParam != "getPlayerScreenshots" {
-		token = r.Header.Get("Authorization")
-
-		if token == "" {
-			handleError(w, r, "token not specified")
-			return
-		}
+	if token == "" && accountRequired {
+		handleError(w, r, "token not specified")
+		return
 	}
 
 	var uuid string
 
 	if token != "" {
 		uuid = getUuidFromToken(token)
+
+		if uuid == "" && accountRequired {
+			handleError(w, r, "invalid token")
+			return
+		}
 	}
 
 	switch commandParam {
@@ -139,7 +141,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		
+
 		success, err := deleteScreenshot(idParam, uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
