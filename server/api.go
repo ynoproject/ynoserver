@@ -961,8 +961,15 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
-	// GET params user, password
-	user, password := r.URL.Query().Get("user"), r.URL.Query().Get("password")
+	var user, password string // keep this for now
+
+	if r.URL.Query().Has("user") { // so people don't complain saying we broke login
+		user, password = r.URL.Query().Get("user"), r.URL.Query().Get("password")
+	} else {
+		r.ParseForm()
+		user, password = r.Form.Get("user"), r.Form.Get("password")
+	}
+
 	if user == "" || len(user) > 12 || !isOkString(user) || password == "" || len(password) > 72 {
 		handleError(w, r, "bad response")
 		return
@@ -1007,8 +1014,15 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
-	// GET params user, password
-	user, password := r.URL.Query().Get("user"), r.URL.Query().Get("password")
+	var user, password string // keep this for now
+
+	if r.URL.Query().Has("user") { // so people don't complain saying we broke login
+		user, password = r.URL.Query().Get("user"), r.URL.Query().Get("password")
+	} else {
+		r.ParseForm()
+		user, password = r.Form.Get("user"), r.Form.Get("password")
+	}
+
 	if user == "" || !isOkString(user) || password == "" || len(password) > 72 {
 		handleError(w, r, "bad response")
 		return
