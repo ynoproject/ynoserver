@@ -34,13 +34,14 @@ import (
 )
 
 type PlayerInfo struct {
-	Uuid          string `json:"uuid"`
-	Name          string `json:"name"`
-	Rank          int    `json:"rank"`
-	Badge         string `json:"badge"`
-	BadgeSlotRows int    `json:"badgeSlotRows"`
-	BadgeSlotCols int    `json:"badgeSlotCols"`
-	Medals        [5]int `json:"medals"`
+	Uuid            string `json:"uuid"`
+	Name            string `json:"name"`
+	Rank            int    `json:"rank"`
+	Badge           string `json:"badge"`
+	BadgeSlotRows   int    `json:"badgeSlotRows"`
+	BadgeSlotCols   int    `json:"badgeSlotCols"`
+	ScreenshotLimit int    `json:"screenshotLimit"`
+	Medals          [5]int `json:"medals"`
 }
 
 type PlayerListData struct {
@@ -159,13 +160,14 @@ func initApi() {
 		var badge string
 		var badgeSlotRows int
 		var badgeSlotCols int
+		var screenshotLimit int
 		var medals [5]int
 
 		token := r.Header.Get("Authorization")
 		if token == "" {
 			uuid, name, rank = getPlayerInfo(getIp(r))
 		} else {
-			uuid, name, rank, badge, badgeSlotRows, badgeSlotCols = getPlayerInfoFromToken(token)
+			uuid, name, rank, badge, badgeSlotRows, badgeSlotCols, screenshotLimit = getPlayerInfoFromToken(token)
 			medals = getPlayerMedals(uuid)
 		}
 
@@ -176,13 +178,14 @@ func initApi() {
 		}
 
 		playerInfo := PlayerInfo{
-			Uuid:          uuid,
-			Name:          name,
-			Rank:          rank,
-			Badge:         badge,
-			BadgeSlotRows: badgeSlotRows,
-			BadgeSlotCols: badgeSlotCols,
-			Medals:        medals,
+			Uuid:            uuid,
+			Name:            name,
+			Rank:            rank,
+			Badge:           badge,
+			BadgeSlotRows:   badgeSlotRows,
+			BadgeSlotCols:   badgeSlotCols,
+			ScreenshotLimit: screenshotLimit,
+			Medals:          medals,
 		}
 		playerInfoJson, err := json.Marshal(playerInfo)
 		if err != nil {

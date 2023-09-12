@@ -36,7 +36,7 @@ type ScreenshotData struct {
 }
 
 const (
-	playerScreenshotLimit = 10
+	defaultPlayerScreenshotLimit = 10
 )
 
 func initScreenshots() {

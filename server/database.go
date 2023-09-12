@@ -303,13 +303,13 @@ func getPlayerInfo(ip string) (uuid string, name string, rank int) {
 	return uuid, name, rank
 }
 
-func getPlayerInfoFromToken(token string) (uuid string, name string, rank int, badge string, badgeSlotRows int, badgeSlotCols int) {
-	err := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, a.badgeSlotRows, a.badgeSlotCols FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token).Scan(&uuid, &name, &rank, &badge, &badgeSlotRows, &badgeSlotCols)
+func getPlayerInfoFromToken(token string) (uuid string, name string, rank int, badge string, badgeSlotRows int, badgeSlotCols int, screenshotLimit int) {
+	err := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, a.badgeSlotRows, a.badgeSlotCols, a.screenshotLimit FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token).Scan(&uuid, &name, &rank, &badge, &badgeSlotRows, &badgeSlotCols)
 	if err != nil {
-		return "", "", 0, "", 0, 0
+		return "", "", 0, "", 0, 0, 0
 	}
 
-	return uuid, name, rank, badge, badgeSlotRows, badgeSlotCols
+	return uuid, name, rank, badge, badgeSlotRows, badgeSlotCols, screenshotLimit
 }
 
 func getPlayerBadgeSlotCounts(playerName string) (badgeSlotRows int, badgeSlotCols int) {
@@ -334,6 +334,15 @@ func updatePlayerBadgeSlotCounts(uuid string) (err error) {
 	}
 
 	return nil
+}
+
+func getPlayerScreenshotLimit(uuid string) (screenshotLimit int) {
+	err := db.QueryRow("SELECT screenshotLimit FROM accounts WHERE uuid = ?", uuid).Scan(&screenshotLimit)
+	if err != nil {
+		return defaultPlayerScreenshotLimit
+	}
+
+	return screenshotLimit
 }
 
 func updatePlayerActivity() error {
@@ -676,8 +685,11 @@ func writeScreenshotData(id string, uuid string, game string) error {
 	err := db.QueryRow("SELECT COUNT(*) FROM playerScreenshots WHERE uuid = ?", uuid).Scan(&playerScreenshotCount)
 	if err != nil {
 		return err
-	} else if playerScreenshotCount > playerScreenshotLimit {
-		return errors.New("screenshot limit exceeded")
+	} else {
+		playerScreenshotLimit := getPlayerScreenshotLimit(uuid)
+		if playerScreenshotCount > playerScreenshotLimit {
+			return errors.New("screenshot limit exceeded")
+		}
 	}
 
 	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game) VALUES (?, ?, ?)", id, uuid, game)

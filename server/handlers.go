@@ -753,14 +753,16 @@ func (c *RoomClient) handleSev(msg []string) error {
 
 func (c *SessionClient) handleI() error {
 	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(c.name)
+	screenshotLimit := getPlayerScreenshotLimit(c.name)
 	playerInfoJson, err := json.Marshal(PlayerInfo{
-		Uuid:          c.uuid,
-		Name:          c.name,
-		Rank:          c.rank,
-		Badge:         c.badge,
-		BadgeSlotRows: badgeSlotRows,
-		BadgeSlotCols: badgeSlotCols,
-		Medals:        getPlayerMedals(c.uuid),
+		Uuid:            c.uuid,
+		Name:            c.name,
+		Rank:            c.rank,
+		Badge:           c.badge,
+		BadgeSlotRows:   badgeSlotRows,
+		BadgeSlotCols:   badgeSlotCols,
+		ScreenshotLimit: screenshotLimit,
+		Medals:          getPlayerMedals(c.uuid),
 	})
 	if err != nil {
 		return err
