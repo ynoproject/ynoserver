@@ -1072,7 +1072,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, loginUser, rank, _, _, _ := getPlayerInfoFromToken(token)
+	_, loginUser, rank, _, _, _, _ := getPlayerInfoFromToken(token)
 
 	// GET params user, new password
 	user, newPassword := r.URL.Query().Get("user"), r.URL.Query().Get("newPassword")
