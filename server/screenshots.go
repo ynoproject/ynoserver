@@ -129,6 +129,8 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+
+		break
 	case "deleteScreenshot":
 		idParam := r.URL.Query().Get("id")
 		if idParam == "" || !regexp.MustCompile("[0-9a-f]{16}").MatchString(idParam) {
@@ -136,7 +138,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err := os.Remove("screenshots/" + idParam + ".png")
+		err := os.Remove("screenshots/" + uuid + "/" + idParam + ".png")
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -152,6 +154,11 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "failed to delete screenshot")
 			return
 		}
+
+		break
+	default:
+		handleError(w, r, "unknown command")
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
