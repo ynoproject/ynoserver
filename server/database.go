@@ -687,7 +687,7 @@ func writeScreenshotData(id string, uuid string, game string) error {
 		return err
 	} else {
 		playerScreenshotLimit := getPlayerScreenshotLimit(uuid)
-		if playerScreenshotCount > playerScreenshotLimit {
+		if playerScreenshotCount >= playerScreenshotLimit {
 			return errors.New("screenshot limit exceeded")
 		}
 	}

@@ -124,6 +124,8 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		os.Mkdir("screenshots/"+uuid, 0755)
+
 		err = os.WriteFile("screenshots/"+uuid+"/"+id+".png", body, 0644)
 		if err != nil {
 			handleInternalError(w, r, err)
