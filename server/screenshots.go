@@ -29,8 +29,8 @@ import (
 )
 
 type ScreenshotData struct {
-	Id        string    `json:"uuid"`
-	Uuid      string    `json:"ownerUuid"`
+	Id        string    `json:"id"`
+	Uuid      string    `json:"uuid"`
 	Game      string    `json:"game"`
 	Timestamp time.Time `json:"timestamp"`
 }
