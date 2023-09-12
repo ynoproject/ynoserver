@@ -652,7 +652,7 @@ func archiveChatMessages() error {
 func getPlayerScreenshots(uuid string) ([]*ScreenshotData, error) {
 	var playerScreenshots []*ScreenshotData
 
-	results, err := db.Query("SELECT uuid, ownerUuid, game, timestamp FROM playerScreenshots ORDER BY 4 DESC", uuid, config.gameName)
+	results, err := db.Query("SELECT uuid, ownerUuid, game, timestamp FROM playerScreenshots WHERE ownerUuid = ? ORDER BY 4 DESC", uuid)
 	if err != nil {
 		return playerScreenshots, err
 	}
