@@ -17,7 +17,17 @@
 
 package server
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
+
+type ScreenshotData struct {
+	Uuid      string    `json:"uuid"`
+	OwnerUuid string    `json:"ownerUuid"`
+	Game      string    `json:"game"`
+	Timestamp time.Time `json:"timestamp"`
+}
 
 func initScreenshots() {
 	logInitTask("screenshots")

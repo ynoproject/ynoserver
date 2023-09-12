@@ -649,6 +649,28 @@ func archiveChatMessages() error {
 	return nil
 }
 
+func getPlayerScreenshots(uuid string) ([]*ScreenshotData, error) {
+	var playerScreenshots []*ScreenshotData
+
+	results, err := db.Query("SELECT uuid, ownerUuid, game, timestamp FROM playerScreenshots ORDER BY 4 DESC", uuid, config.gameName)
+	if err != nil {
+		return playerScreenshots, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		screenshot := &ScreenshotData{}
+		err := results.Scan(&screenshot.Uuid, &screenshot.OwnerUuid, &screenshot.Game, &screenshot.Timestamp)
+		if err != nil {
+			return playerScreenshots, err
+		}
+		playerScreenshots = append(playerScreenshots, screenshot)
+	}
+
+	return playerScreenshots, nil
+}
+
 func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
 	var mapIdsJson []byte
 	err = db.QueryRow("SELECT mapIds FROM gameLocations WHERE title = ? AND game = ?", locationName, config.gameName).Scan(&mapIdsJson)
