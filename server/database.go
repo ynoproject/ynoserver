@@ -663,8 +663,14 @@ func getScreenshotFeed(limit int, offset int, offsetId string, game string, sort
 
 	var queryArgs []any
 
-	query := "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), COALESCE(opgd.systemName, ''), ps.game, ps.publicTimestamp FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid LEFT JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ? WHERE ps.public = 1 "
-	queryArgs = append(queryArgs, config.gameName)
+	query := "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.publicTimestamp FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game "
+
+	if offsetId != "" {
+		query = "WITH offsetScreenshot AS (SELECT publicTimestamp FROM playerScreenshots WHERE id = ?) " + query + "JOIN offsetScreenshot ops ON ops.publicTimestamp <= ps.publicTimestamp"
+		queryArgs = append(queryArgs, offsetId)
+	}
+
+	query += "WHERE ps.public = 1 "
 
 	if game != "" {
 		query += "AND ps.game = ? "
