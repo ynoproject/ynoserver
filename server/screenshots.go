@@ -25,14 +25,31 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"time"
 )
 
-type ScreenshotData struct {
+type PlayerScreenshotData struct {
 	Id        string    `json:"id"`
 	Uuid      string    `json:"uuid"`
 	Game      string    `json:"game"`
 	Timestamp time.Time `json:"timestamp"`
+	Public    bool      `json:"public"`
+}
+
+type ScreenshotOwner struct {
+	Uuid       string `json:"uuid"`
+	Name       string `json:"name"`
+	Rank       int    `json:"rank"`
+	Badge      string `json:"badge"`
+	SystemName string `json:"systemName"`
+}
+
+type ScreenshotData struct {
+	Id        string           `json:"id"`
+	Owner     *ScreenshotOwner `json:"owner"`
+	Game      string           `json:"game"`
+	Timestamp time.Time        `json:"timestamp"`
 }
 
 const (
@@ -55,7 +72,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := r.Header.Get("Authorization")
-	accountRequired := commandParam != "getPlayerScreenshots"
+	accountRequired := commandParam != "getScreenshotFeed" && commandParam != "getPlayerScreenshots"
 
 	if token == "" && accountRequired {
 		handleError(w, r, "token not specified")
@@ -74,6 +91,59 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch commandParam {
+	case "getScreenshotFeed":
+		var (
+			limit  int
+			offset int
+			err    error
+		)
+
+		limitParam := r.URL.Query().Get("limit")
+		if limitParam != "" {
+			limit, err = strconv.Atoi(limitParam)
+			if err != nil {
+				handleError(w, r, "invalid limit")
+				return
+			}
+			if limit > 50 {
+				limit = 50
+			}
+		} else {
+			limit = 10
+		}
+
+		offsetParam := r.URL.Query().Get("offset")
+		if offsetParam != "" {
+			offset, err = strconv.Atoi(offsetParam)
+			if err != nil {
+				handleError(w, r, "invalid offset")
+				return
+			}
+		} else {
+			offset = 0
+		}
+
+		offsetIdParam := r.URL.Query().Get("offsetId")
+		if offsetIdParam != "" && !regexp.MustCompile("[0-9a-f]{16}").MatchString(offsetIdParam) {
+			offsetIdParam = ""
+		}
+
+		gameParam := r.URL.Query().Get("game")
+
+		// TODO: Sort by and sort order
+		screenshots, err := getScreenshotFeed(limit, offset, offsetIdParam, gameParam, "", false)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		screenshotsJson, err := json.Marshal(screenshots)
+		if err != nil {
+			handleError(w, r, "error while marshaling")
+			return
+		}
+
+		w.Write(screenshotsJson)
 	case "getPlayerScreenshots":
 		uuidParam := r.URL.Query().Get("uuid")
 		if uuidParam == "" {
@@ -98,6 +168,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 
 		w.Write(playerScreenshotsJson)
 		return
+	case "upload":
 	case "uploadScreenshot":
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -135,6 +206,8 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+	case "setPublic":
+	case "delete":
 	case "deleteScreenshot":
 		idParam := r.URL.Query().Get("id")
 		if idParam == "" || !regexp.MustCompile("[0-9a-f]{16}").MatchString(idParam) {
@@ -142,21 +215,38 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err := os.Remove("screenshots/" + uuid + "/" + idParam + ".png")
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
+		if commandParam == "setPublic" {
+			valueParam := r.URL.Query().Get("value")
 
-		success, err := deleteScreenshot(idParam, uuid)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
+			value := valueParam == "1"
 
-		if !success {
-			handleError(w, r, "failed to delete screenshot")
-			return
+			success, err := setPlayerScreenshotPublic(idParam, uuid, value)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			if !success {
+				handleError(w, r, "failed to update screenshot")
+				return
+			}
+		} else {
+			err := os.Remove("screenshots/" + uuid + "/" + idParam + ".png")
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			success, err := deleteScreenshot(idParam, uuid)
+			if err != nil {
+				handleInternalError(w, r, err)
+				return
+			}
+
+			if !success {
+				handleError(w, r, "failed to delete screenshot")
+				return
+			}
 		}
 	default:
 		handleError(w, r, "unknown command")

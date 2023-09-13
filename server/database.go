@@ -658,10 +658,50 @@ func archiveChatMessages() error {
 	return nil
 }
 
-func getPlayerScreenshots(uuid string) ([]*ScreenshotData, error) {
-	var playerScreenshots []*ScreenshotData
+func getScreenshotFeed(limit int, offset int, offsetId string, game string, sortBy string, sortAsc bool) ([]*ScreenshotData, error) {
+	var screenshots []*ScreenshotData
 
-	results, err := db.Query("SELECT id, uuid, game, timestamp FROM playerScreenshots WHERE uuid = ? ORDER BY 4 DESC", uuid)
+	var queryArgs []any
+
+	query := "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), COALESCE(opgd.systemName, ''), ps.game, ps.publicTimestamp FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid LEFT JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ? WHERE ps.public = 1 "
+	queryArgs = append(queryArgs, config.gameName)
+
+	if game != "" {
+		query += "AND ps.game = ? "
+		queryArgs = append(queryArgs, game)
+	}
+
+	query += "ORDER BY "
+
+	query += "4 DESC LIMIT ?, ?"
+
+	queryArgs = append(queryArgs, offset, limit)
+
+	results, err := db.Query(query, queryArgs...)
+	if err != nil {
+		return screenshots, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		screenshot := &ScreenshotData{}
+		owner := &ScreenshotOwner{}
+		err := results.Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.Timestamp)
+		if err != nil {
+			return screenshots, err
+		}
+		screenshot.Owner = owner
+		screenshots = append(screenshots, screenshot)
+	}
+
+	return screenshots, nil
+}
+
+func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
+	var playerScreenshots []*PlayerScreenshotData
+
+	results, err := db.Query("SELECT id, uuid, game, timestamp, public FROM playerScreenshots WHERE uuid = ? ORDER BY 4 DESC", uuid)
 	if err != nil {
 		return playerScreenshots, err
 	}
@@ -669,8 +709,8 @@ func getPlayerScreenshots(uuid string) ([]*ScreenshotData, error) {
 	defer results.Close()
 
 	for results.Next() {
-		screenshot := &ScreenshotData{}
-		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.Timestamp)
+		screenshot := &PlayerScreenshotData{}
+		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.Timestamp, &screenshot.Public)
 		if err != nil {
 			return playerScreenshots, err
 		}
@@ -698,6 +738,20 @@ func writeScreenshotData(id string, uuid string, game string) error {
 	}
 
 	return nil
+}
+
+func setPlayerScreenshotPublic(id string, uuid string, value bool) (bool, error) {
+	results, err := db.Exec("UPDATE playerScreenshots SET public = ? WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	updatedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return updatedRows > 0, nil
 }
 
 func deleteScreenshot(id string, uuid string) (bool, error) {
