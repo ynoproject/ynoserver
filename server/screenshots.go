@@ -169,6 +169,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		w.Write(playerScreenshotsJson)
 		return
 	case "upload":
+		fallthrough
 	case "uploadScreenshot":
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -207,7 +208,9 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "setPublic":
+		fallthrough
 	case "delete":
+		fallthrough
 	case "deleteScreenshot":
 		idParam := r.URL.Query().Get("id")
 		if idParam == "" || !regexp.MustCompile("[0-9a-f]{16}").MatchString(idParam) {
