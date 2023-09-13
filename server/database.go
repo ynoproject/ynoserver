@@ -679,7 +679,7 @@ func getScreenshotFeed(limit int, offset int, offsetId string, game string, sort
 
 	query += "ORDER BY "
 
-	query += "4 DESC LIMIT ?, ?"
+	query += "8 DESC LIMIT ?, ?"
 
 	queryArgs = append(queryArgs, offset, limit)
 
