@@ -22,7 +22,6 @@ import (
 	"crypto/sha1"
 	"encoding/binary"
 	"math/rand"
-	"time"
 )
 
 type Security struct {
@@ -34,7 +33,6 @@ func New(signKey []byte) *Security {
 }
 
 func (s *Security) NewClientKey() uint32 {
-	rand.Seed(time.Now().UnixNano())
 	return rand.Uint32()
 }
 
