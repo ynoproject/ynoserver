@@ -222,8 +222,8 @@ func setBadgeData() {
 		logUpdateTask("badge data")
 
 		badgeUnlockPercentages, _ = getBadgeUnlockPercentages()
-		// Use host server to update badge data
-		if isHostServer {
+		// Use main server to update badge data
+		if isMainServer {
 			if _, ok := badges[config.gameName]; ok {
 				// Badge records needed for determining badge game
 				writeGameBadges()

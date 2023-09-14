@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	hostGameId = "2kki"
+	mainGameId = "2kki"
 
 	delim  = "\uffff"
 	mdelim = "\ufffe"
@@ -53,7 +53,7 @@ var (
 	serverSecurity *security.Security
 	assets         *Assets
 
-	isHostServer bool
+	isMainServer bool
 
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -74,7 +74,7 @@ func Start() {
 
 	fmt.Printf("Current game ID is \"%s\".\n", config.gameName)
 
-	isHostServer = config.gameName == hostGameId
+	isMainServer = config.gameName == mainGameId
 
 	key, err := os.ReadFile("key.bin")
 	if err != nil {

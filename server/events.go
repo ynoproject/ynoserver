@@ -160,7 +160,7 @@ func initEvents() {
 		return
 	}
 
-	if isHostServer {
+	if isMainServer {
 		gameCurrentEventPeriods, err = getGameCurrentEventPeriodsData()
 		if err != nil {
 			return
@@ -169,7 +169,7 @@ func initEvents() {
 
 	setGameEventLocationPoolsAndLocationColors()
 
-	if !isHostServer {
+	if !isMainServer {
 		return
 	}
 
@@ -495,7 +495,7 @@ func handleEventError(eventType int, payload string) {
 }
 
 func setEventVms() {
-	if !isHostServer {
+	if !isMainServer {
 		return
 	}
 
@@ -526,7 +526,7 @@ func setEventVms() {
 }
 
 func setGameEventLocationPoolsAndLocationColors() {
-	if isHostServer {
+	if isMainServer {
 		gameDailyEventLocationPools = make(map[string][]*EventLocationData)
 		gameDailyEventLocation2Pools = make(map[string][]*EventLocationData)
 		gameWeeklyEventLocationPools = make(map[string][]*EventLocationData)
@@ -541,7 +541,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 	configPath := "eventlocations/"
 
 	var gameIds []string
-	if isHostServer {
+	if isMainServer {
 		for gameId := range gameCurrentEventPeriods {
 			gameIds = append(gameIds, gameId)
 		}
@@ -599,7 +599,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 				continue
 			}
 
-			if isHostServer {
+			if isMainServer {
 				if adjustedDepth >= dailyEventLocationMinDepth && adjustedDepth <= dailyEventLocationMaxDepth {
 					gameDailyEventLocationPools[gameId] = append(gameDailyEventLocationPools[gameId], eventLocation)
 				}
