@@ -281,9 +281,9 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				var err error
 				var success bool
 				if value {
-					err, success = writeScreenshotLike(uuid, idParam)
+					success, err = writePlayerScreenshotLike(uuid, idParam)
 				} else {
-					err, success = deleteScreenshotLike(uuid, idParam)
+					success, err = deletePlayerScreenshotLike(uuid, idParam)
 				}
 				if err != nil {
 					handleInternalError(w, r, err)
