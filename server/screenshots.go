@@ -250,6 +250,8 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		}
 	case "setPublic":
 		fallthrough
+	case "setSpoiler":
+		fallthrough
 	case "setLike":
 		fallthrough
 	case "delete":
@@ -261,13 +263,19 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if commandParam == "setPublic" || commandParam == "setLike" {
+		if commandParam == "setPublic" || commandParam == "setSpoiler" || commandParam == "setLike" {
 			valueParam := r.URL.Query().Get("value")
 
 			value := valueParam == "1"
 
-			if commandParam == "setPublic" {
-				success, err := setPlayerScreenshotPublic(idParam, uuid, value)
+			if commandParam == "setPublic" || commandParam == "setSpoiler" {
+				var success bool
+				var err error
+				if commandParam == "setPublic" {
+					success, err = setPlayerScreenshotPublic(idParam, uuid, value)
+				} else {
+					success, err = setPlayerScreenshotSpoiler(idParam, uuid, value)
+				}
 				if err != nil {
 					handleInternalError(w, r, err)
 					return

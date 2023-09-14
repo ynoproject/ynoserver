@@ -808,6 +808,20 @@ func setPlayerScreenshotPublic(id string, uuid string, value bool) (bool, error)
 	return updatedRows > 0, nil
 }
 
+func setPlayerScreenshotSpoiler(id string, uuid string, value bool) (bool, error) {
+	results, err := db.Exec("UPDATE playerScreenshots SET spoiler = ? WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", value, id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	updatedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return updatedRows > 0, nil
+}
+
 func writePlayerScreenshotLike(id string, uuid string) (bool, error) {
 	results, err := db.Exec("INSERT IGNORE INTO playerScreenshotLikes (screenshotId, uuid) VALUES (?, ?)", id, uuid)
 	if err != nil {
