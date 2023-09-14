@@ -296,10 +296,13 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else {
-			err := os.Remove("screenshots/" + uuid + "/" + idParam + ".png")
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
+			var ownerUuid string
+
+			uuidParam := r.URL.Query().Get("uuid")
+			if uuidParam == "" {
+				ownerUuid = uuid
+			} else {
+				ownerUuid = uuidParam
 			}
 
 			success, err := deleteScreenshot(idParam, uuid)
@@ -308,7 +311,13 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if !success {
+			if success {
+				err := os.Remove("screenshots/" + ownerUuid + "/" + idParam + ".png")
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
+			} else {
 				handleError(w, r, "failed to delete screenshot")
 				return
 			}
