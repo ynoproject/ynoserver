@@ -30,6 +30,8 @@ const (
 	pongWait       = 60 * time.Second
 	pingPeriod     = (pongWait * 9) / 10
 	maxMessageSize = 4096
+
+	maxPictures = 50
 )
 
 type Picture struct {
@@ -168,7 +170,7 @@ type RoomClient struct {
 
 	hidden bool
 
-	pictures map[int]*Picture
+	pictures [maxPictures]*Picture
 
 	mapId, prevMapId, prevLocations string
 
@@ -279,7 +281,7 @@ func (c *RoomClient) reset() {
 
 	c.hidden = false
 
-	c.pictures = make(map[int]*Picture)
+	c.pictures = [maxPictures]*Picture{}
 
 	c.mapId = fmt.Sprintf("%04d", c.room.id)
 	c.prevMapId = ""

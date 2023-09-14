@@ -275,8 +275,8 @@ func (c *RoomClient) handleP(msg []string) error {
 		}
 	}
 
-	picId, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || picId == 0 {
+	id, errconv := strconv.Atoi(msg[1])
+	if errconv != nil || id == 0 || id > maxPictures {
 		return errconv
 	}
 
@@ -357,20 +357,20 @@ func (c *RoomClient) handleP(msg []string) error {
 			fixedToMap:          msg[19] != "0",
 		}
 
-		if _, found := c.pictures[picId]; found {
-			rpErr := c.processMsg("rp" + delim + msg[1])
-			if rpErr != nil {
-				return rpErr
+		if ptr := c.pictures[id-1]; ptr != nil {
+			err := c.processMsg("rp" + delim + msg[1])
+			if err != nil {
+				return err
 			}
 		}
 	} else {
-		if _, found := c.pictures[picId]; found {
+		if ptr := c.pictures[id-1]; ptr != nil {
 			duration, errconv := strconv.Atoi(msg[17])
 			if errconv != nil || duration < 0 {
 				return errconv
 			}
 
-			pic = c.pictures[picId]
+			pic = c.pictures[id-1]
 		} else {
 			return nil
 		}
@@ -392,7 +392,7 @@ func (c *RoomClient) handleP(msg []string) error {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	c.pictures[picId] = pic
+	c.pictures[id-1] = pic
 
 	c.broadcast(buildMsg(msg[0], c.sClient.id, msg[1:]))
 
@@ -404,12 +404,12 @@ func (c *RoomClient) handleRp(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	picId, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || picId == 0 {
+	id, errconv := strconv.Atoi(msg[1])
+	if errconv != nil || id == 0 {
 		return errconv
 	}
 
-	delete(c.pictures, picId)
+	c.pictures[id-1] = nil
 
 	c.broadcast(buildMsg("rp", c.sClient.id, msg[1]))
 
