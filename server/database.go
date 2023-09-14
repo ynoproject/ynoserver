@@ -689,7 +689,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 		query += "9 DESC, "
 	}
 
-	query += "8 DESC LIMIT ?, ?"
+	query += "8 DESC, 2, 1 LIMIT ?, ?"
 
 	queryArgs = append(queryArgs, offset, limit)
 
@@ -717,7 +717,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
 	var playerScreenshots []*PlayerScreenshotData
 
-	results, err := db.Query("SELECT ps.id, ps.uuid, ps.game, opgd.systemName, ps.timestamp, ps.public, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? ORDER BY 5 DESC", uuid)
+	results, err := db.Query("SELECT ps.id, ps.uuid, ps.game, opgd.systemName, ps.timestamp, ps.public, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? ORDER BY 5 DESC, 1", uuid)
 	if err != nil {
 		return playerScreenshots, err
 	}
