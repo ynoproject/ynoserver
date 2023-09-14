@@ -779,7 +779,7 @@ func writeScreenshotData(id string, uuid string, game string) error {
 }
 
 func setPlayerScreenshotPublic(id string, uuid string, value bool) (bool, error) {
-	results, err := db.Exec("UPDATE playerScreenshots SET public = ? WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", id, uuid)
+	results, err := db.Exec("UPDATE playerScreenshots SET public = ? WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", value, id, uuid)
 	if err != nil {
 		return false, err
 	}
