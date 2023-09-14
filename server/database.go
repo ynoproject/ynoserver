@@ -663,33 +663,53 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 
 	var queryArgs []any
 
-	query := "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.publicTimestamp, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? "
+	var cteClause string
+	var selectClause string
+	var fromJoinClause string
+	var whereClause string
+	var orderByClause string
+
+	selectClause = "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.publicTimestamp, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END"
+
+	if sortOrder == "likes" && intervalType != "all" {
+		selectClause += ", (SELECT COUNT(*) FROM playerScreenshotLikes ipsl WHERE ipsl.screenshotId = ps.id WHERE ipsl.timestamp >= DATE_SUB(NOW(), INTERVAL 1 " + intervalType + ")) AS intervalLikeCount"
+	}
+
+	fromJoinClause = " FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? "
 
 	if offsetId != "" {
-		query = "WITH offsetScreenshot AS (SELECT publicTimestamp FROM playerScreenshots WHERE id = ?) " + query + "JOIN offsetScreenshot ops ON ops.publicTimestamp >= ps.publicTimestamp "
+		cteClause = "WITH offsetScreenshot AS (SELECT publicTimestamp FROM playerScreenshots WHERE id = ?) "
+		fromJoinClause += "JOIN offsetScreenshot ops ON ops.publicTimestamp >= ps.publicTimestamp "
 		queryArgs = append(queryArgs, offsetId)
 	}
 
 	queryArgs = append(queryArgs, uuid)
 
-	query += "WHERE ps.public = 1 "
+	whereClause = "WHERE ps.public = 1 AND op.banned = 0 "
 
 	if game != "" {
-		query += "AND ps.game = ? "
+		whereClause += "AND ps.game = ? "
 		queryArgs = append(queryArgs, game)
 	}
 
 	if intervalType != "all" {
-		query += "AND ps.publicTimestamp >= DATE_SUB(NOW(), INTERVAL 1 " + intervalType + ") "
+		whereClause += "AND ps.publicTimestamp >= DATE_SUB(NOW(), INTERVAL 1 " + intervalType + ") "
 	}
 
-	query += "ORDER BY "
+	orderByClause = "ORDER BY "
 
 	if sortOrder == "likes" {
-		query += "9 DESC, "
+		if intervalType == "all" {
+			orderByClause += "likeCount"
+		} else {
+			orderByClause += "intervalLikeCount"
+		}
+		orderByClause += " DESC, "
 	}
 
-	query += "8 DESC, 2, 1 LIMIT ?, ?"
+	orderByClause += "ps.publicTimestamp DESC, op.uuid, ps.id DESC "
+
+	query := cteClause + selectClause + fromJoinClause + whereClause + orderByClause + "LIMIT ?, ?"
 
 	queryArgs = append(queryArgs, offset, limit)
 
@@ -779,7 +799,7 @@ func writeScreenshotData(id string, uuid string, game string) error {
 }
 
 func setPlayerScreenshotPublic(id string, uuid string, value bool) (bool, error) {
-	results, err := db.Exec("UPDATE playerScreenshots SET public = ? WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", value, id, uuid)
+	results, err := db.Exec("UPDATE playerScreenshots SET public = ?, publicTimestamp = COALESCE(publicTimestamp, NOW()) WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", value, id, uuid)
 	if err != nil {
 		return false, err
 	}
