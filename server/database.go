@@ -658,17 +658,19 @@ func archiveChatMessages() error {
 	return nil
 }
 
-func getScreenshotFeed(limit int, offset int, offsetId string, game string, sortBy string, sortAsc bool) ([]*ScreenshotData, error) {
+func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game string, sortOrder string, intervalType string) ([]*ScreenshotData, error) {
 	var screenshots []*ScreenshotData
 
 	var queryArgs []any
 
-	query := "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.publicTimestamp FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game "
+	query := "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.publicTimestamp, (SELECT COUNT(*) FROM playerScreenshotLikes psl ON psl.screenshotId = ps.id), CASE WHEN upsl.id IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? "
 
 	if offsetId != "" {
 		query = "WITH offsetScreenshot AS (SELECT publicTimestamp FROM playerScreenshots WHERE id = ?) " + query + "JOIN offsetScreenshot ops ON ops.publicTimestamp >= ps.publicTimestamp "
 		queryArgs = append(queryArgs, offsetId)
 	}
+
+	queryArgs = append(queryArgs, uuid)
 
 	query += "WHERE ps.public = 1 "
 
@@ -677,7 +679,15 @@ func getScreenshotFeed(limit int, offset int, offsetId string, game string, sort
 		queryArgs = append(queryArgs, game)
 	}
 
+	if intervalType != "all" {
+		query += "AND ps.publicTimestamp >= DATE_SUB(NOW(), INTERVAL 1 " + intervalType + ") "
+	}
+
 	query += "ORDER BY "
+
+	if sortOrder == "likes" {
+		query += "9 DESC, "
+	}
 
 	query += "8 DESC LIMIT ?, ?"
 
@@ -693,7 +703,7 @@ func getScreenshotFeed(limit int, offset int, offsetId string, game string, sort
 	for results.Next() {
 		screenshot := &ScreenshotData{}
 		owner := &ScreenshotOwner{}
-		err := results.Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.Timestamp)
+		err := results.Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.Timestamp, &screenshot.LikeCount, &screenshot.Liked)
 		if err != nil {
 			return screenshots, err
 		}
@@ -707,7 +717,7 @@ func getScreenshotFeed(limit int, offset int, offsetId string, game string, sort
 func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
 	var playerScreenshots []*PlayerScreenshotData
 
-	results, err := db.Query("SELECT id, uuid, game, timestamp, public FROM playerScreenshots WHERE uuid = ? ORDER BY 4 DESC", uuid)
+	results, err := db.Query("SELECT ps.id, ps.uuid, ps.game, opgd.systemName, ps.timestamp, ps.public, (SELECT COUNT(*) FROM playerScreenshotLikes psl ON psl.screenshotId = ps.id), CASE WHEN upsl.id IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? ORDER BY 5 DESC", uuid)
 	if err != nil {
 		return playerScreenshots, err
 	}
@@ -716,7 +726,7 @@ func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
 
 	for results.Next() {
 		screenshot := &PlayerScreenshotData{}
-		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.Timestamp, &screenshot.Public)
+		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.LikeCount, &screenshot.Liked)
 		if err != nil {
 			return playerScreenshots, err
 		}
@@ -724,6 +734,28 @@ func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
 	}
 
 	return playerScreenshots, nil
+}
+
+func getScreenshotGames() ([]string, error) {
+	var screenshotGames []string
+
+	results, err := db.Query("SELECT DISTINCT game FROM playerScreenshots")
+	if err != nil {
+		return screenshotGames, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var game string
+		err := results.Scan(&game)
+		if err != nil {
+			return screenshotGames, err
+		}
+		screenshotGames = append(screenshotGames, game)
+	}
+
+	return screenshotGames, nil
 }
 
 func writeScreenshotData(id string, uuid string, game string) error {
@@ -758,6 +790,34 @@ func setPlayerScreenshotPublic(id string, uuid string, value bool) (bool, error)
 	}
 
 	return updatedRows > 0, nil
+}
+
+func writePlayerScreenshotLike(id string, uuid string) (bool, error) {
+	results, err := db.Exec("INSERT IGNORE INTO playerScreenshotLikes (screenshotId, uuid) VALUES (?, ?)", id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	insertedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return insertedRows > 0, nil
+}
+
+func deletePlayerScreenshotLike(id string, uuid string) (bool, error) {
+	results, err := db.Exec("DELETE FROM playerScreenshotLikes WHERE screenshotId = ? AND uuid = ?", id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	deletedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return deletedRows > 0, nil
 }
 
 func deleteScreenshot(id string, uuid string) (bool, error) {

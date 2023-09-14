@@ -30,11 +30,14 @@ import (
 )
 
 type PlayerScreenshotData struct {
-	Id        string    `json:"id"`
-	Uuid      string    `json:"uuid"`
-	Game      string    `json:"game"`
-	Timestamp time.Time `json:"timestamp"`
-	Public    bool      `json:"public"`
+	Id         string    `json:"id"`
+	Uuid       string    `json:"uuid"`
+	Game       string    `json:"game"`
+	SystemName string    `json:"systemName"`
+	Timestamp  time.Time `json:"timestamp"`
+	Public     bool      `json:"public"`
+	LikeCount  int       `json:"likeCount"`
+	Liked      bool      `json:"liked"`
 }
 
 type ScreenshotOwner struct {
@@ -50,6 +53,8 @@ type ScreenshotData struct {
 	Owner     *ScreenshotOwner `json:"owner"`
 	Game      string           `json:"game"`
 	Timestamp time.Time        `json:"timestamp"`
+	LikeCount int              `json:"likeCount"`
+	Liked     bool             `json:"liked"`
 }
 
 const (
@@ -72,7 +77,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := r.Header.Get("Authorization")
-	accountRequired := commandParam != "getScreenshotFeed" && commandParam != "getPlayerScreenshots"
+	accountRequired := commandParam != "getScreenshotFeed" && commandParam != "getPlayerScreenshots" && commandParam != "getScreenshotGames"
 
 	if token == "" && accountRequired {
 		handleError(w, r, "token not specified")
@@ -130,8 +135,30 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 
 		gameParam := r.URL.Query().Get("game")
 
-		// TODO: Sort by and sort order
-		screenshots, err := getScreenshotFeed(limit, offset, offsetIdParam, gameParam, "", false)
+		sortOrderParam := r.URL.Query().Get("sortOrder")
+		switch sortOrderParam {
+		case "recent":
+		case "likes":
+		default:
+			sortOrderParam = "recent"
+		}
+
+		intervalParam := r.URL.Query().Get("interval")
+		switch intervalParam {
+		case "day":
+			fallthrough
+		case "week":
+			fallthrough
+		case "month":
+			fallthrough
+		case "year":
+		case "":
+			intervalParam = "all"
+		default:
+			intervalParam = "day"
+		}
+
+		screenshots, err := getScreenshotFeed(uuid, limit, offset, offsetIdParam, gameParam, sortOrderParam, intervalParam)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -168,6 +195,20 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 
 		w.Write(playerScreenshotsJson)
 		return
+	case "getScreenshotGames":
+		screenshotGames, err := getScreenshotGames()
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		screenshotGamesJson, err := json.Marshal(screenshotGames)
+		if err != nil {
+			handleError(w, r, "error while marshaling")
+			return
+		}
+
+		w.Write(screenshotGamesJson)
 	case "upload":
 		fallthrough
 	case "uploadScreenshot":
@@ -209,6 +250,8 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		}
 	case "setPublic":
 		fallthrough
+	case "setLike":
+		fallthrough
 	case "delete":
 		fallthrough
 	case "deleteScreenshot":
@@ -218,20 +261,39 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if commandParam == "setPublic" {
+		if commandParam == "setPublic" || commandParam == "setLike" {
 			valueParam := r.URL.Query().Get("value")
 
 			value := valueParam == "1"
 
-			success, err := setPlayerScreenshotPublic(idParam, uuid, value)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
+			if commandParam == "setPublic" {
+				success, err := setPlayerScreenshotPublic(idParam, uuid, value)
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
 
-			if !success {
-				handleError(w, r, "failed to update screenshot")
-				return
+				if !success {
+					handleError(w, r, "failed to update screenshot")
+					return
+				}
+			} else {
+				var err error
+				var success bool
+				if value {
+					err, success = writeScreenshotLike(uuid, idParam)
+				} else {
+					err, success = deleteScreenshotLike(uuid, idParam)
+				}
+				if err != nil {
+					handleInternalError(w, r, err)
+					return
+				}
+
+				if !success {
+					handleError(w, r, "failed to update screenshot like")
+					return
+				}
 			}
 		} else {
 			err := os.Remove("screenshots/" + uuid + "/" + idParam + ".png")
