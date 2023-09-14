@@ -17,6 +17,11 @@
 
 package server
 
+import (
+	"database/sql"
+	"time"
+)
+
 type Minigame struct {
 	Id             string `json:"minigameId"` // TODO: make this `json:"id"`
 	VarId          int    `json:"varId"`
@@ -43,4 +48,42 @@ func getRoomMinigames(roomId int) (minigames []*Minigame) {
 		}
 	}
 	return minigames
+}
+
+func getPlayerMinigameScore(playerUuid string, minigameId string) (score int, err error) {
+	err = db.QueryRow("SELECT score FROM playerMinigameScores WHERE uuid = ? AND minigameId = ?", playerUuid, minigameId).Scan(&score)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	return score, nil
+}
+
+func tryWritePlayerMinigameScore(playerUuid string, minigameId string, score int) (success bool, err error) {
+	if score <= 0 {
+		return false, nil
+	}
+
+	prevScore, err := getPlayerMinigameScore(playerUuid, minigameId)
+	if err != nil {
+		return false, err
+	} else if score <= prevScore {
+		return false, nil
+	} else if prevScore > 0 {
+		_, err = db.Exec("UPDATE playerMinigameScores SET score = ?, timestampCompleted = ? WHERE uuid = ? AND game = ? AND minigameId = ?", score, time.Now(), playerUuid, config.gameName, minigameId)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	_, err = db.Exec("INSERT INTO playerMinigameScores (uuid, game, minigameId, score, timestampCompleted) VALUES (?, ?, ?, ?, ?)", playerUuid, config.gameName, minigameId, score, time.Now())
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

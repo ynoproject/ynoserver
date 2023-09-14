@@ -18,6 +18,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"math"
 	"os"
@@ -840,4 +841,235 @@ func setBadges() {
 	badges = badgeConfig
 
 	logTaskComplete()
+}
+
+func getPlayerBadgeSlotCounts(playerName string) (badgeSlotRows int, badgeSlotCols int) {
+	err := db.QueryRow("SELECT badgeSlotRows, badgeSlotCols FROM accounts WHERE user = ?", playerName).Scan(&badgeSlotRows, &badgeSlotCols)
+	if err != nil {
+		return 1, 3
+	}
+
+	return badgeSlotRows, badgeSlotCols
+}
+
+func updatePlayerBadgeSlotCounts(uuid string) (err error) {
+	query := "UPDATE accounts JOIN (SELECT pb.uuid, SUM(b.bp) bp, COUNT(b.badgeId) bc FROM playerBadges pb JOIN badges b ON b.badgeId = pb.badgeId AND b.hidden = 0 GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN bp < 300 THEN 1 WHEN bp < 1000 THEN 2 WHEN bp < 2000 THEN 3 WHEN bp < 4000 THEN 4 WHEN bp < 7500 THEN 5 WHEN bp < 12500 THEN 6 WHEN bp < 20000 THEN 7 WHEN bp < 30000 THEN 8 WHEN bp < 50000 THEN 9 ELSE 10 END, badgeSlotCols = CASE WHEN bc < 50 THEN 3 WHEN bc < 150 THEN 4 WHEN bc < 300 THEN 5 WHEN bc < 500 THEN 6 ELSE 7 END"
+	if uuid == "" {
+		_, err = db.Exec(query)
+	} else {
+		query += " WHERE accounts.uuid = ?"
+		_, err = db.Exec(query, uuid)
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setPlayerBadge(uuid string, badge string) error {
+	if client, ok := clients.Load(uuid); ok {
+		client.badge = badge
+	}
+
+	_, err := db.Exec("UPDATE accounts SET badge = ? WHERE uuid = ?", badge, uuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getPlayerBadgeSlots(playerName string, badgeSlotRows int, badgeSlotCols int) (badgeSlots [][]string, err error) {
+	results, err := db.Query("SELECT pb.badgeId, pb.slotRow, pb.slotCol FROM playerBadges pb JOIN accounts a ON a.uuid = pb.uuid WHERE a.user = ? AND pb.slotRow BETWEEN 1 AND ? AND pb.slotCol BETWEEN 1 AND ? ORDER BY pb.slotRow, pb.slotCol", playerName, badgeSlotRows, badgeSlotCols)
+	if err != nil {
+		return badgeSlots, err
+	}
+
+	defer results.Close()
+
+	var badgeId string
+	var badgeRow int
+	var badgeCol int
+
+	for r := 1; r <= badgeSlotRows; r++ {
+		var badgeSlotRow []string
+		for c := 1; c <= badgeSlotCols; c++ {
+			if badgeRow > r || (badgeRow == r && badgeCol >= c) {
+				if badgeRow == r && badgeCol == c {
+					badgeSlotRow = append(badgeSlotRow, badgeId)
+				} else {
+					badgeSlotRow = append(badgeSlotRow, "null")
+				}
+			} else {
+				for {
+					if !results.Next() {
+						break
+					}
+					err := results.Scan(&badgeId, &badgeRow, &badgeCol)
+					if err != nil {
+						break
+					}
+
+					if badgeRow > r || (badgeRow == r && badgeCol >= c) {
+						if badgeRow == r && badgeCol == c {
+							badgeSlotRow = append(badgeSlotRow, badgeId)
+						}
+						break
+					}
+				}
+				if len(badgeSlotRow) < c {
+					badgeSlotRow = append(badgeSlotRow, "null")
+				}
+			}
+		}
+		badgeSlots = append(badgeSlots, badgeSlotRow)
+	}
+
+	return badgeSlots, nil
+}
+
+func setPlayerBadgeSlot(uuid string, badgeId string, slotRow int, slotCol int) error {
+	var slotCurrentBadgeId string
+	err := db.QueryRow("SELECT badgeId FROM playerBadges WHERE uuid = ? AND slotRow = ? AND slotCol = ? LIMIT 1", uuid, slotRow, slotCol).Scan(&slotCurrentBadgeId)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return err
+		}
+	} else if slotCurrentBadgeId == badgeId {
+		return nil
+	} else {
+		if badgeId != "null" {
+			var badgeCurrentSlotRow, badgeCurrentSlotCol int
+			err := db.QueryRow("SELECT slotRow, slotCol FROM playerBadges WHERE uuid = ? AND badgeId = ? LIMIT 1", uuid, badgeId).Scan(&badgeCurrentSlotRow, &badgeCurrentSlotCol)
+			if err != nil && err != sql.ErrNoRows {
+				return err
+			} else {
+				_, err = db.Exec("UPDATE playerBadges SET slotRow = ?, slotCol = ? WHERE uuid = ? AND badgeId = ?", badgeCurrentSlotRow, badgeCurrentSlotCol, uuid, slotCurrentBadgeId)
+				if err != nil && err != sql.ErrNoRows {
+					return err
+				}
+			}
+		} else {
+			_, err = db.Exec("UPDATE playerBadges SET slotRow = 0, slotCol = 0 WHERE uuid = ? AND slotRow = ? AND slotCol = ?", uuid, slotRow, slotCol)
+			if err != nil && err != sql.ErrNoRows {
+				return err
+			}
+		}
+	}
+
+	_, err = db.Exec("UPDATE playerBadges SET slotRow = ?, slotCol = ? WHERE uuid = ? AND badgeId = ?", slotRow, slotCol, uuid, badgeId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func writeGameBadges() error {
+	_, err := db.Exec("TRUNCATE TABLE badges")
+	if err != nil {
+		return err
+	}
+
+	for badgeGame := range badges {
+		for badgeId, badge := range badges[badgeGame] {
+			if _, ok := badges[config.gameName]; ok {
+				badgeUnlockPercentage := badgeUnlockPercentages[badgeId]
+				_, err = db.Exec("INSERT INTO badges (badgeId, game, bp, hidden, percentUnlocked) VALUES (?, ?, ?, ?, ?)", badgeId, badgeGame, badge.Bp, badge.Hidden || badge.Dev, badgeUnlockPercentage)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func getPlayerUnlockedBadgeIds(playerUuid string) (unlockedBadgeIds []string, err error) {
+	results, err := db.Query("SELECT badgeId FROM playerBadges WHERE uuid = ?", playerUuid)
+	if err != nil {
+		return unlockedBadgeIds, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var badgeId string
+		err := results.Scan(&badgeId)
+		if err != nil {
+			return unlockedBadgeIds, err
+		}
+		unlockedBadgeIds = append(unlockedBadgeIds, badgeId)
+	}
+
+	return unlockedBadgeIds, nil
+}
+
+func unlockPlayerBadge(playerUuid string, badgeId string) error {
+	_, err := db.Exec("INSERT INTO playerBadges (uuid, badgeId, timestampUnlocked) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE badgeId = badgeId", playerUuid, badgeId, time.Now())
+	if err != nil {
+		return err
+	}
+
+	badgeUnlockPercentages[badgeId], err = getBadgeUnlockPercentage(badgeId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removePlayerBadge(playerUuid string, badgeId string) error {
+	var slotRow int
+	var slotCol int
+
+	err := db.QueryRow("SELECT slotRow, slotCol FROM playerBadges WHERE uuid = ? AND badgeId = ?", playerUuid, badgeId).Scan(&slotRow, &slotCol)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("DELETE FROM playerBadges WHERE uuid = ? AND badgeId = ?", playerUuid, badgeId)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("UPDATE accounts SET badge = 'null' WHERE uuid = ? AND badge = ?", playerUuid, badgeId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getBadgeUnlockPercentage(badgeId string) (unlockPercentage float32, err error) {
+	err = db.QueryRow("SELECT COALESCE(COUNT(b.uuid) / aa.count, 0) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE EXISTS(SELECT * FROM playerBadges aab WHERE aab.uuid = aa.uuid AND aa.inactive = 0)) aa WHERE EXISTS(SELECT * FROM playerBadges ab WHERE ab.uuid = a.uuid AND a.inactive = 0) AND b.badgeId = ?", badgeId).Scan(&unlockPercentage)
+
+	return unlockPercentage, err
+}
+
+func getBadgeUnlockPercentages() (unlockPercentages map[string]float32, err error) {
+	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE EXISTS(SELECT * FROM playerBadges aab WHERE aab.uuid = aa.uuid AND aa.inactive = 0)) aa WHERE EXISTS(SELECT * FROM playerBadges ab WHERE ab.uuid = a.uuid AND a.inactive = 0) GROUP BY b.badgeId")
+	if err != nil {
+		return unlockPercentages, err
+	}
+
+	defer results.Close()
+
+	unlockPercentages = make(map[string]float32)
+
+	for results.Next() {
+		var badgeId string
+		var percentUnlocked float32
+
+		err := results.Scan(&badgeId, &percentUnlocked)
+		if err != nil {
+			return unlockPercentages, err
+		}
+
+		unlockPercentages[badgeId] = percentUnlocked
+	}
+
+	return unlockPercentages, nil
 }

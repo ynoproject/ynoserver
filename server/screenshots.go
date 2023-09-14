@@ -20,6 +20,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"image/png"
 	"io"
 	"net/http"
@@ -338,4 +339,219 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func getPlayerScreenshotLimit(uuid string) (screenshotLimit int) {
+	err := db.QueryRow("SELECT screenshotLimit FROM accounts WHERE uuid = ?", uuid).Scan(&screenshotLimit)
+	if err != nil {
+		return defaultPlayerScreenshotLimit
+	}
+
+	return screenshotLimit
+}
+
+func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game string, sortOrder string, intervalType string) ([]*ScreenshotData, error) {
+	var screenshots []*ScreenshotData
+
+	var queryArgs []any
+
+	var cteClause string
+	var selectClause string
+	var fromJoinClause string
+	var whereClause string
+	var orderByClause string
+
+	selectClause = "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.publicTimestamp, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END"
+
+	fromJoinClause = " FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? "
+
+	if offsetId != "" {
+		cteClause = "WITH offsetScreenshot AS (SELECT publicTimestamp FROM playerScreenshots WHERE id = ?) "
+		fromJoinClause += "JOIN offsetScreenshot ops ON ops.publicTimestamp >= ps.publicTimestamp "
+		queryArgs = append(queryArgs, offsetId)
+	}
+
+	queryArgs = append(queryArgs, uuid)
+
+	whereClause = "WHERE ps.public = 1 AND op.banned = 0 "
+
+	if game != "" {
+		whereClause += "AND ps.game = ? "
+		queryArgs = append(queryArgs, game)
+	}
+
+	if intervalType != "all" {
+		whereClause += "AND ps.publicTimestamp >= DATE_SUB(NOW(), INTERVAL 1 " + intervalType + ") "
+	}
+
+	orderByClause = "ORDER BY "
+
+	if sortOrder == "likes" {
+		if intervalType == "all" {
+			orderByClause += "likeCount"
+		} else {
+			orderByClause += "(SELECT COUNT(*) FROM playerScreenshotLikes ipsl WHERE ipsl.screenshotId = ps.id AND ipsl.timestamp >= DATE_SUB(NOW(), INTERVAL 1 " + intervalType + "))"
+		}
+		orderByClause += " DESC, "
+	}
+
+	orderByClause += "ps.publicTimestamp DESC, op.uuid, ps.id DESC "
+
+	query := cteClause + selectClause + fromJoinClause + whereClause + orderByClause + "LIMIT ?, ?"
+
+	queryArgs = append(queryArgs, offset, limit)
+
+	results, err := db.Query(query, queryArgs...)
+	if err != nil {
+		return screenshots, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		screenshot := &ScreenshotData{}
+		owner := &ScreenshotOwner{}
+		err := results.Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.Timestamp, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
+		if err != nil {
+			return screenshots, err
+		}
+		screenshot.Owner = owner
+		screenshots = append(screenshots, screenshot)
+	}
+
+	return screenshots, nil
+}
+
+func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
+	var playerScreenshots []*PlayerScreenshotData
+
+	results, err := db.Query("SELECT ps.id, ps.uuid, ps.game, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? ORDER BY 5 DESC, 1", uuid)
+	if err != nil {
+		return playerScreenshots, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		screenshot := &PlayerScreenshotData{}
+		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
+		if err != nil {
+			return playerScreenshots, err
+		}
+		playerScreenshots = append(playerScreenshots, screenshot)
+	}
+
+	return playerScreenshots, nil
+}
+
+func getScreenshotGames() ([]string, error) {
+	var screenshotGames []string
+
+	results, err := db.Query("SELECT DISTINCT game FROM playerScreenshots")
+	if err != nil {
+		return screenshotGames, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var game string
+		err := results.Scan(&game)
+		if err != nil {
+			return screenshotGames, err
+		}
+		screenshotGames = append(screenshotGames, game)
+	}
+
+	return screenshotGames, nil
+}
+
+func writeScreenshotData(id string, uuid string, game string) error {
+	var playerScreenshotCount int
+	err := db.QueryRow("SELECT COUNT(*) FROM playerScreenshots WHERE uuid = ?", uuid).Scan(&playerScreenshotCount)
+	if err != nil {
+		return err
+	} else {
+		playerScreenshotLimit := getPlayerScreenshotLimit(uuid)
+		if playerScreenshotCount >= playerScreenshotLimit {
+			return errors.New("screenshot limit exceeded")
+		}
+	}
+
+	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game) VALUES (?, ?, ?)", id, uuid, game)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setPlayerScreenshotPublic(id string, uuid string, value bool) (bool, error) {
+	results, err := db.Exec("UPDATE playerScreenshots SET public = ?, publicTimestamp = COALESCE(publicTimestamp, NOW()) WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", value, id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	updatedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return updatedRows > 0, nil
+}
+
+func setPlayerScreenshotSpoiler(id string, uuid string, value bool) (bool, error) {
+	results, err := db.Exec("UPDATE playerScreenshots SET spoiler = ? WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", value, id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	updatedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return updatedRows > 0, nil
+}
+
+func writePlayerScreenshotLike(id string, uuid string) (bool, error) {
+	results, err := db.Exec("INSERT IGNORE INTO playerScreenshotLikes (screenshotId, uuid) VALUES (?, ?)", id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	insertedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return insertedRows > 0, nil
+}
+
+func deletePlayerScreenshotLike(id string, uuid string) (bool, error) {
+	results, err := db.Exec("DELETE FROM playerScreenshotLikes WHERE screenshotId = ? AND uuid = ?", id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	deletedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return deletedRows > 0, nil
+}
+
+func deleteScreenshot(id string, uuid string) (bool, error) {
+	results, err := db.Exec("DELETE FROM playerScreenshots WHERE id = ? AND EXISTS (SELECT * FROM playerScreenshots ps JOIN players p ON p.uuid = ? JOIN players op ON op.uuid = ps.uuid WHERE p.uuid = op.uuid OR p.rank > op.rank)", id, uuid)
+	if err != nil {
+		return false, err
+	}
+
+	deletedRows, err := results.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return deletedRows > 0, nil
 }
