@@ -100,11 +100,8 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 
 	switch commandParam {
 	case "getScreenshotFeed":
-		var (
-			limit  int
-			offset int
-			err    error
-		)
+		var limit, offset int
+		var err error
 
 		limitParam := r.URL.Query().Get("limit")
 		if limitParam != "" {
