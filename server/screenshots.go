@@ -36,6 +36,7 @@ type PlayerScreenshotData struct {
 	SystemName string    `json:"systemName"`
 	Timestamp  time.Time `json:"timestamp"`
 	Public     bool      `json:"public"`
+	Spoiler    bool      `json:"spoiler"`
 	LikeCount  int       `json:"likeCount"`
 	Liked      bool      `json:"liked"`
 }
@@ -53,6 +54,7 @@ type ScreenshotData struct {
 	Owner     *ScreenshotOwner `json:"owner"`
 	Game      string           `json:"game"`
 	Timestamp time.Time        `json:"timestamp"`
+	Spoiler   bool             `json:"spoiler"`
 	LikeCount int              `json:"likeCount"`
 	Liked     bool             `json:"liked"`
 }
