@@ -672,7 +672,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 	selectClause = "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.publicTimestamp, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END"
 
 	if sortOrder == "likes" && intervalType != "all" {
-		selectClause += ", (SELECT COUNT(*) FROM playerScreenshotLikes ipsl WHERE ipsl.screenshotId = ps.id WHERE ipsl.timestamp >= DATE_SUB(NOW(), INTERVAL 1 " + intervalType + ")) AS intervalLikeCount"
+		selectClause += ", (SELECT COUNT(*) FROM playerScreenshotLikes ipsl WHERE ipsl.screenshotId = ps.id AND ipsl.timestamp >= DATE_SUB(NOW(), INTERVAL 1 " + intervalType + ")) AS intervalLikeCount"
 	}
 
 	fromJoinClause = " FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? "
