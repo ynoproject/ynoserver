@@ -735,7 +735,7 @@ func getRandomGameForEventLocation(pool map[string][]*EventLocationData, eventLo
 
 	var playerCounts []int
 	var gameIds []string
-	totalPlayerCount := 0
+	var totalPlayerCount int
 
 	for results.Next() {
 		var currentPlayerCount int
@@ -765,7 +765,7 @@ func getRandomGameForEventLocation(pool map[string][]*EventLocationData, eventLo
 
 	var poolThresholds []int
 	gamePool := make(map[int]string)
-	totalPoolValue := 0
+	var totalPoolValue int
 
 	poolCommonValue := int(math.Ceil(float64(avgPlayerCount) * gameEventShareFactor))
 

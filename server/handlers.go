@@ -937,7 +937,7 @@ func (c *SessionClient) handleL(msg []string) error {
 			continue
 		}
 
-		matchedLocationMap := false
+		var matchedLocationMap bool
 
 		for _, mapId := range mapIds {
 			if mapId == c.rClient.mapId {
