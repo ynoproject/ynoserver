@@ -1109,5 +1109,9 @@ func (c *SessionClient) handlePr(msg []string) error {
 
 	c.private = msg[1] == "1"
 
+	if c.roomC != nil {
+		c.roomC.handleSr([]string{"sr", c.roomC.mapId}) // good enough
+	}
+
 	return nil
 }
