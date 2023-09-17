@@ -1111,7 +1111,11 @@ func (c *SessionClient) handlePr(msg []string) error {
 
 	if c.roomC != nil {
 		for _, client := range c.roomC.room.clients {
-			c.roomC.outbox <- buildMsg("d", client.session.id)
+			if client == c.roomC {
+				continue
+			}
+
+			c.roomC.outbox <- buildMsg("d", client.session.id)	
 		}
 
 		c.roomC.handleSr([]string{"sr", c.roomC.mapId}) // good enough
