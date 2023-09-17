@@ -202,7 +202,7 @@ func (c *RoomClient) broadcast(msg []byte) {
 	}
 
 	for _, client := range c.room.clients {
-		if (client.session.private || c.session.private) && client.session.partyId != c.session.partyId {
+		if (client.session.private || c.session.private) && (c.session.partyId == 0 || client.session.partyId != c.session.partyId) {
 			continue
 		}
 
