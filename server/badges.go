@@ -302,7 +302,7 @@ func getRoomConditions(roomId int) (roomConditions []*Condition) {
 // but passing RoomClient as an argument every time just seems wasteful
 // not like anyone's going to see this anyways, right?
 func (c *RoomClient) checkRoomConditions(trigger string, value string) {
-	if !c.sClient.account {
+	if !c.session.account {
 		return
 	}
 
@@ -316,7 +316,7 @@ func (c *RoomClient) checkRoomConditions(trigger string, value string) {
 }
 
 func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames []*Minigame, trigger string, value string) {
-	if condition.Disabled && c.sClient.rank < 2 {
+	if condition.Disabled && c.session.rank < 2 {
 		return
 	}
 
@@ -378,9 +378,9 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 		} else if c.checkConditionCoords(condition) {
 			timeTrial := condition.TimeTrial && config.gameName == "2kki"
 			if !timeTrial {
-				success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
+				success, err := tryWritePlayerTag(c.session.uuid, condition.ConditionId)
 				if err != nil {
-					writeErrLog(c.sClient.uuid, c.mapId, err.Error())
+					writeErrLog(c.session.uuid, c.mapId, err.Error())
 				}
 				if success {
 					c.outbox <- buildMsg("b")
@@ -403,7 +403,7 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 				} else {
 					valueInt, err := strconv.Atoi(value)
 					if err != nil {
-						writeErrLog(c.sClient.ip, strconv.Itoa(roomId), err.Error())
+						writeErrLog(c.session.ip, strconv.Itoa(roomId), err.Error())
 						continue
 					}
 

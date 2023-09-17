@@ -85,9 +85,9 @@ func (c *RoomClient) handleM(msg []string) error {
 	}
 
 	if msg[0] == "jmp" {
-		c.broadcast(buildMsg("jmp", c.sClient.id, msg[1:])) // user %id% jumped to x y
+		c.broadcast(buildMsg("jmp", c.session.id, msg[1:])) // user %id% jumped to x y
 	} else {
-		c.broadcast(buildMsg("m", c.sClient.id, msg[1:])) // user %id% moved to x y
+		c.broadcast(buildMsg("m", c.session.id, msg[1:])) // user %id% moved to x y
 	}
 
 	return nil
@@ -106,7 +106,7 @@ func (c *RoomClient) handleF(msg []string) error {
 
 	c.facing = facing
 
-	c.broadcast(buildMsg("f", c.sClient.id, msg[1])) // user %id% facing changed to f
+	c.broadcast(buildMsg("f", c.session.id, msg[1])) // user %id% facing changed to f
 
 	return nil
 }
@@ -123,7 +123,7 @@ func (c *RoomClient) handleSpd(msg []string) error {
 
 	c.speed = spd
 
-	c.broadcast(buildMsg("spd", c.sClient.id, msg[1]))
+	c.broadcast(buildMsg("spd", c.session.id, msg[1]))
 
 	return nil
 }
@@ -146,10 +146,10 @@ func (c *RoomClient) handleSpr(msg []string) error {
 		return errconv
 	}
 
-	c.sClient.spriteName = msg[1]
-	c.sClient.spriteIndex = index
+	c.session.spriteName = msg[1]
+	c.session.spriteIndex = index
 
-	c.broadcast(buildMsg("spr", c.sClient.id, msg[1:]))
+	c.broadcast(buildMsg("spr", c.session.id, msg[1:]))
 
 	return nil
 }
@@ -189,7 +189,7 @@ func (c *RoomClient) handleFl(msg []string) error {
 		c.repeatingFlash = true
 	}
 
-	c.broadcast(buildMsg(msg[0], c.sClient.id, msg[1:]))
+	c.broadcast(buildMsg(msg[0], c.session.id, msg[1:]))
 
 	return nil
 }
@@ -198,7 +198,7 @@ func (c *RoomClient) handleRrfl() (err error) {
 	c.repeatingFlash = false
 	c.flash = [5]int{}
 
-	c.broadcast(buildMsg("rrfl", c.sClient.id))
+	c.broadcast(buildMsg("rrfl", c.session.id))
 
 	return nil
 }
@@ -210,7 +210,7 @@ func (c *RoomClient) handleH(msg []string) error {
 
 	c.hidden = msg[1] != "0"
 
-	c.broadcast(buildMsg(msg[0], c.sClient.id, msg[1]))
+	c.broadcast(buildMsg(msg[0], c.session.id, msg[1]))
 
 	return nil
 }
@@ -224,9 +224,9 @@ func (c *RoomClient) handleSys(msg []string) (err error) {
 		return err
 	}
 
-	c.sClient.systemName = msg[1]
+	c.session.systemName = msg[1]
 
-	c.broadcast(buildMsg("sys", c.sClient.id, msg[1]))
+	c.broadcast(buildMsg("sys", c.session.id, msg[1]))
 
 	return nil
 }
@@ -253,7 +253,7 @@ func (c *RoomClient) handleSe(msg []string) error {
 		return errconv
 	}
 
-	c.broadcast(buildMsg("se", c.sClient.id, msg[1:]))
+	c.broadcast(buildMsg("se", c.session.id, msg[1:]))
 
 	return nil
 }
@@ -394,7 +394,7 @@ func (c *RoomClient) handleP(msg []string) error {
 
 	c.pictures[id-1] = pic
 
-	c.broadcast(buildMsg(msg[0], c.sClient.id, msg[1:]))
+	c.broadcast(buildMsg(msg[0], c.session.id, msg[1:]))
 
 	return nil
 }
@@ -411,7 +411,7 @@ func (c *RoomClient) handleRp(msg []string) error {
 
 	c.pictures[id-1] = nil
 
-	c.broadcast(buildMsg("rp", c.sClient.id, msg[1]))
+	c.broadcast(buildMsg("rp", c.session.id, msg[1]))
 
 	return nil
 }
@@ -430,13 +430,13 @@ func (c *RoomClient) handleBa(msg []string) error {
 		return errors.New("invalid battle animation id")
 	}
 
-	c.broadcast(buildMsg("ba", c.sClient.id, msg[1]))
+	c.broadcast(buildMsg("ba", c.session.id, msg[1]))
 
 	return nil
 }
 
 func (c *RoomClient) handleSay(msg []string) error {
-	if c.sClient.muted {
+	if c.session.muted {
 		return nil
 	}
 
@@ -444,7 +444,7 @@ func (c *RoomClient) handleSay(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	if c.sClient.name == "" || c.sClient.systemName == "" {
+	if c.session.name == "" || c.session.systemName == "" {
 		return errors.New("no name or system graphic set")
 	}
 
@@ -453,7 +453,7 @@ func (c *RoomClient) handleSay(msg []string) error {
 		return errors.New("invalid message")
 	}
 
-	c.broadcast(buildMsg("say", c.sClient.id, msgContents))
+	c.broadcast(buildMsg("say", c.session.id, msgContents))
 
 	return nil
 }
@@ -470,8 +470,8 @@ func (c *RoomClient) handleSs(msg []string) error {
 
 	value := msg[2] == "1"
 
-	if config.gameName == "2kki" && c.sClient.rank == 0 && switchId == 11 && value {
-		c.sClient.cancel()
+	if config.gameName == "2kki" && c.session.rank == 0 && switchId == 11 && value {
+		c.session.cancel()
 	}
 
 	c.switchCache[switchId] = value
@@ -482,11 +482,11 @@ func (c *RoomClient) handleSs(msg []string) error {
 	} else {
 		if len(c.room.minigames) != 0 {
 			for m, minigame := range c.room.minigames {
-				if minigame.Dev && c.sClient.rank < 1 {
+				if minigame.Dev && c.session.rank < 1 {
 					continue
 				}
 				if minigame.SwitchId == switchId && minigame.SwitchValue == value && c.minigameScores[m] < c.varCache[minigame.VarId] {
-					tryWritePlayerMinigameScore(c.sClient.uuid, minigame.Id, c.varCache[minigame.VarId])
+					tryWritePlayerMinigameScore(c.session.uuid, minigame.Id, c.varCache[minigame.VarId])
 				}
 			}
 		}
@@ -524,7 +524,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 						if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
 							if !condition.TimeTrial {
 								if c.checkConditionCoords(condition) {
-									success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
+									success, err := tryWritePlayerTag(c.session.uuid, condition.ConditionId)
 									if err != nil {
 										return err
 									}
@@ -549,7 +549,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 							if condition.VarTrigger || (condition.VarId == 0 && len(condition.VarIds) == 0) {
 								if !condition.TimeTrial {
 									if c.checkConditionCoords(condition) {
-										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
+										success, err := tryWritePlayerTag(c.session.uuid, condition.ConditionId)
 										if err != nil {
 											return err
 										}
@@ -600,7 +600,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 		for _, condition := range conditions {
 			if condition.TimeTrial && value < 3600 {
 				if c.checkConditionCoords(condition) {
-					success, err := tryWritePlayerTimeTrial(c.sClient.uuid, c.room.id, value)
+					success, err := tryWritePlayerTimeTrial(c.session.uuid, c.room.id, value)
 					if err != nil {
 						return err
 					}
@@ -613,14 +613,14 @@ func (c *RoomClient) handleSv(msg []string) error {
 	} else {
 		if len(c.room.minigames) != 0 {
 			for m, minigame := range c.room.minigames {
-				if minigame.Dev && c.sClient.rank < 1 {
+				if minigame.Dev && c.session.rank < 1 {
 					continue
 				}
 				if minigame.VarId == varId && c.minigameScores[m] < value {
 					if minigame.SwitchId > 0 {
 						c.outbox <- buildMsg("ss", minigame.SwitchId, 0)
 					} else {
-						tryWritePlayerMinigameScore(c.sClient.uuid, minigame.Id, value)
+						tryWritePlayerMinigameScore(c.session.uuid, minigame.Id, value)
 					}
 				}
 			}
@@ -659,7 +659,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 						if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
 							if !condition.TimeTrial {
 								if c.checkConditionCoords(condition) {
-									success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
+									success, err := tryWritePlayerTag(c.session.uuid, condition.ConditionId)
 									if err != nil {
 										return err
 									}
@@ -684,7 +684,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 							if !condition.VarTrigger || (condition.SwitchId == 0 && len(condition.SwitchIds) == 0) {
 								if !condition.TimeTrial {
 									if c.checkConditionCoords(condition) {
-										success, err := tryWritePlayerTag(c.sClient.uuid, condition.ConditionId)
+										success, err := tryWritePlayerTag(c.session.uuid, condition.ConditionId)
 										if err != nil {
 											return err
 										}
@@ -738,12 +738,12 @@ func (c *RoomClient) handleSev(msg []string) error {
 		return errors.New("event vm id mismatch")
 	}
 
-	exp, err := tryCompleteEventVm(c.sClient.uuid, currentEventVmMapId, currentEventVmEventId)
+	exp, err := tryCompleteEventVm(c.session.uuid, currentEventVmMapId, currentEventVmEventId)
 	if err != nil {
 		return err
 	}
 	if exp > -1 {
-		c.sClient.outbox <- buildMsg("vm", exp)
+		c.session.outbox <- buildMsg("vm", exp)
 	}
 
 	return nil
@@ -789,15 +789,15 @@ func (c *SessionClient) handleName(msg []string) error {
 
 	c.name = msg[1]
 
-	if c.rClient != nil {
-		c.rClient.broadcast(buildMsg("name", c.id, c.name)) // broadcast name change to room if client is in one
+	if c.roomC != nil {
+		c.roomC.broadcast(buildMsg("name", c.id, c.name)) // broadcast name change to room if client is in one
 	}
 
 	return nil
 }
 
 func (c *SessionClient) handlePloc(msg []string) error {
-	if c.rClient == nil {
+	if c.roomC == nil {
 		return errors.New("room client does not exist")
 	}
 
@@ -809,16 +809,16 @@ func (c *SessionClient) handlePloc(msg []string) error {
 		return errors.New("invalid prev map id")
 	}
 
-	c.rClient.prevMapId = msg[1]
-	c.rClient.prevLocations = msg[2]
+	c.roomC.prevMapId = msg[1]
+	c.roomC.prevLocations = msg[2]
 
-	c.rClient.checkRoomConditions("prevMap", c.rClient.prevMapId)
+	c.roomC.checkRoomConditions("prevMap", c.roomC.prevMapId)
 
 	return nil
 }
 
 func (c *SessionClient) handleLcol(msg []string) error {
-	if c.rClient == nil {
+	if c.roomC == nil {
 		return errors.New("room client does not exist")
 	}
 
@@ -857,28 +857,11 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	}
 
 	enableLoc := true
-	var partyId int
-	var partyMemberUuids []string
 
 	if msg[0] == "gsay" {
 		enableLoc = msg[2] != "0"
-	} else {
-		partyIdV, err := getPlayerPartyId(c.uuid)
-		if err != nil {
-			return err
-		}
-		if partyIdV == 0 {
-			return errors.New("player not in a party")
-		}
-
-		partyId = partyIdV
-
-		partyMemberUuidsV, err := getPartyMemberUuids(partyId)
-		if err != nil {
-			return err
-		}
-
-		partyMemberUuids = partyMemberUuidsV
+	} else if c.partyId == 0 {
+		return errors.New("player not in a party")
 	}
 
 	mapId := "0000"
@@ -887,12 +870,12 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	x := -1
 	y := -1
 
-	if c.rClient != nil && enableLoc {
-		mapId = c.rClient.mapId
-		prevMapId = c.rClient.prevMapId
-		prevLocations = c.rClient.prevLocations
-		x = c.rClient.x
-		y = c.rClient.y
+	if c.roomC != nil && enableLoc {
+		mapId = c.roomC.mapId
+		prevMapId = c.roomC.prevMapId
+		prevLocations = c.roomC.prevLocations
+		x = c.roomC.x
+		y = c.roomC.y
 	}
 
 	msgId := randString(12)
@@ -906,13 +889,13 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 			return err
 		}
 	} else {
-		for _, uuid := range partyMemberUuids {
-			if client, ok := clients.Load(uuid); ok {
+		for _, client := range clients.Get() {
+			if client.partyId == c.partyId {
 				client.outbox <- buildMsg("psay", c.uuid, msgContents, msgId)
 			}
 		}
 
-		err := writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, partyId)
+		err := writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, c.partyId)
 		if err != nil {
 			return err
 		}
@@ -922,7 +905,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 }
 
 func (c *SessionClient) handleL(msg []string) error {
-	if c.rClient == nil {
+	if c.roomC == nil {
 		return errors.New("room client does not exist")
 	}
 
@@ -940,7 +923,7 @@ func (c *SessionClient) handleL(msg []string) error {
 		var matchedLocationMap bool
 
 		for _, mapId := range mapIds {
-			if mapId == c.rClient.mapId {
+			if mapId == c.roomC.mapId {
 				matchedLocationMap = true
 				break
 			}
@@ -948,7 +931,7 @@ func (c *SessionClient) handleL(msg []string) error {
 
 		if matchedLocationMap {
 			writePlayerGameLocation(c.uuid, locationName)
-			c.rClient.locations = append(c.rClient.locations, locationName)
+			c.roomC.locations = append(c.roomC.locations, locationName)
 		}
 	}
 
@@ -958,14 +941,10 @@ func (c *SessionClient) handleL(msg []string) error {
 }
 
 func (c *SessionClient) handlePt() error {
-	partyId, err := getPlayerPartyId(c.uuid)
-	if err != nil {
-		return err
-	}
-	if partyId == 0 {
+	if c.partyId == 0 {
 		return errors.New("player not in a party")
 	}
-	partyData, err := getPartyData(partyId)
+	partyData, err := getPartyData(c.partyId)
 	if err != nil {
 		return err
 	}
@@ -1075,7 +1054,7 @@ func (c *SessionClient) handleEec(msg []string) error {
 	}
 
 	exp := -1
-	if c.rClient != nil {
+	if c.roomC != nil {
 		if msg[2] != "1" { // not free expedition
 			expV, err := tryCompleteEventLocation(c.uuid, location)
 			if err != nil {
@@ -1119,6 +1098,16 @@ func (c *SessionClient) handleEec(msg []string) error {
 	}
 
 	c.outbox <- buildMsg("eec", exp, true)
+
+	return nil
+}
+
+func (c *SessionClient) handlePr(msg []string) error {
+	if len(msg) != 2 {
+		return errors.New("segment count mismatch")
+	}
+
+	c.private = msg[1] == "1"
 
 	return nil
 }

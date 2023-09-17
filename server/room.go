@@ -106,19 +106,19 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	}
 
 	if session, ok := clients.Load(uuid); ok {
-		if session.rClient != nil {
-			session.rClient.cancel()
+		if session.roomC != nil {
+			session.roomC.cancel()
 		}
 
-		session.rClient = client
-		client.sClient = session
+		session.roomC = client
+		client.session = session
 	} else {
 		// use 0000 as a placeholder since client.mapId isn't set until later
 		writeErrLog(uuid, "0000", "player has no session")
 		return
 	}
 
-	client.ctx, client.cancel = context.WithCancel(client.sClient.ctx)
+	client.ctx, client.cancel = context.WithCancel(client.session.ctx)
 
 	if tags, err := getPlayerTags(uuid); err != nil {
 		writeErrLog(uuid, "0000", "failed to read player tags")
@@ -129,7 +129,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	go client.msgWriter()
 
 	// send client info about itself
-	client.outbox <- buildMsg("s", client.sClient.id, int(client.key), uuid, client.sClient.rank, client.sClient.account, client.sClient.badge, client.sClient.medals[:])
+	client.outbox <- buildMsg("s", client.session.id, int(client.key), uuid, client.session.rank, client.session.account, client.session.badge, client.session.medals[:])
 
 	// register client to room
 	client.joinRoom(room)
@@ -147,7 +147,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		client.outbox <- buildMsg("bas", assets.battleAnims)
 	}
 
-	writeLog(client.sClient.uuid, client.mapId, "connect", 200)
+	writeLog(client.session.uuid, client.mapId, "connect", 200)
 }
 
 func (c *RoomClient) joinRoom(room *Room) {
@@ -157,7 +157,7 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	c.outbox <- buildMsg("ri", c.room.id) // tell client they've switched rooms serverside
 
-	if config.gameName == "2kki" && c.sClient.rank == 0 {
+	if config.gameName == "2kki" && c.session.rank == 0 {
 		c.outbox <- buildMsg("ss", 11, 2)
 	}
 
@@ -167,15 +167,15 @@ func (c *RoomClient) joinRoom(room *Room) {
 		room.clients = append(room.clients, c)
 
 		// tell everyone that a new client has connected
-		c.broadcast(buildMsg("c", c.sClient.id, c.sClient.uuid, c.sClient.rank, c.sClient.account, c.sClient.badge, c.sClient.medals[:])) // user %id% has connected message
+		c.broadcast(buildMsg("c", c.session.id, c.session.uuid, c.session.rank, c.session.account, c.session.badge, c.session.medals[:])) // user %id% has connected message
 
 		// send name of client
-		if c.sClient.name != "" {
-			c.broadcast(buildMsg("name", c.sClient.id, c.sClient.name))
+		if c.session.name != "" {
+			c.broadcast(buildMsg("name", c.session.id, c.session.name))
 		}
 	}
 
-	if c.sClient.account {
+	if c.session.account {
 		c.getRoomEventData()
 	}
 }
@@ -193,11 +193,20 @@ func (c *RoomClient) leaveRoom() {
 		c.room.clients = c.room.clients[:len(c.room.clients)-1]
 	}
 
-	c.broadcast(buildMsg("d", c.sClient.id)) // user %id% has disconnected message
+	c.broadcast(buildMsg("d", c.session.id)) // user %id% has disconnected message
 }
 
 func (c *RoomClient) broadcast(msg []byte) {
+	if c.session.private && c.session.partyId == 0 {
+		return
+	}
+
 	for _, client := range c.room.clients {
+		if c.session.private && client.session.partyId != c.session.partyId {
+			continue
+		}
+
+		// HACK: send required say echo
 		if client == c && !(len(msg) > 3 && string(msg[:3]) == "say") {
 			continue
 		}
@@ -205,7 +214,7 @@ func (c *RoomClient) broadcast(msg []byte) {
 		select {
 		case client.outbox <- msg:
 		default:
-			writeErrLog(c.sClient.uuid, c.mapId, "send channel is full")
+			writeErrLog(c.session.uuid, c.mapId, "send channel is full")
 		}
 	}
 }
@@ -282,44 +291,48 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 		return err
 	}
 
-	writeLog(c.sClient.uuid, c.mapId, msgStr, 200)
+	writeLog(c.session.uuid, c.mapId, msgStr, 200)
 
 	return nil
 }
 
 func (c *RoomClient) getRoomPlayerData() {
 	// send the new client info about the game state
-	for _, otherClient := range c.room.clients {
-		if otherClient == c {
+	for _, client := range c.room.clients {
+		if client == c {
 			continue
 		}
 
-		c.outbox <- buildMsg("c", otherClient.sClient.id, otherClient.sClient.uuid, otherClient.sClient.rank, otherClient.sClient.account, otherClient.sClient.badge, otherClient.sClient.medals[:])
-		c.outbox <- buildMsg("m", otherClient.sClient.id, otherClient.x, otherClient.y)
-		if otherClient.facing != 0 {
-			c.outbox <- buildMsg("f", otherClient.sClient.id, otherClient.facing)
+		if client.session.private && client.session.partyId != c.session.partyId {
+			continue
 		}
-		if otherClient.speed != 0 {
-			c.outbox <- buildMsg("spd", otherClient.sClient.id, otherClient.speed)
+
+		c.outbox <- buildMsg("c", client.session.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge, client.session.medals[:])
+		c.outbox <- buildMsg("m", client.session.id, client.x, client.y)
+		if client.facing != 0 {
+			c.outbox <- buildMsg("f", client.session.id, client.facing)
 		}
-		if otherClient.sClient.name != "" {
-			c.outbox <- buildMsg("name", otherClient.sClient.id, otherClient.sClient.name)
+		if client.speed != 0 {
+			c.outbox <- buildMsg("spd", client.session.id, client.speed)
 		}
-		if otherClient.sClient.spriteIndex != -1 {
-			c.outbox <- buildMsg("spr", otherClient.sClient.id, otherClient.sClient.spriteName, otherClient.sClient.spriteIndex) // if the other client sent us valid sprite and index before
+		if client.session.name != "" {
+			c.outbox <- buildMsg("name", client.session.id, client.session.name)
 		}
-		if otherClient.repeatingFlash {
-			c.outbox <- buildMsg("rfl", otherClient.sClient.id, otherClient.flash[:])
+		if client.session.spriteIndex != -1 {
+			c.outbox <- buildMsg("spr", client.session.id, client.session.spriteName, client.session.spriteIndex) // if the other client sent us valid sprite and index before
 		}
-		if otherClient.hidden {
-			c.outbox <- buildMsg("h", otherClient.sClient.id, 1)
+		if client.repeatingFlash {
+			c.outbox <- buildMsg("rfl", client.session.id, client.flash[:])
 		}
-		if otherClient.sClient.systemName != "" {
-			c.outbox <- buildMsg("sys", otherClient.sClient.id, otherClient.sClient.systemName)
+		if client.hidden {
+			c.outbox <- buildMsg("h", client.session.id, 1)
 		}
-		for i, pic := range otherClient.pictures {
+		if client.session.systemName != "" {
+			c.outbox <- buildMsg("sys", client.session.id, client.session.systemName)
+		}
+		for i, pic := range client.pictures {
 			if pic != nil {
-				c.outbox <- buildMsg("ap", otherClient.sClient.id, i+1, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
+				c.outbox <- buildMsg("ap", client.session.id, i+1, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 			}
 		}
 	}
@@ -329,12 +342,12 @@ func (c *RoomClient) getRoomEventData() {
 	c.checkRoomConditions("", "")
 
 	for _, minigame := range c.room.minigames {
-		if minigame.Dev && c.sClient.rank < 1 {
+		if minigame.Dev && c.session.rank < 1 {
 			continue
 		}
-		score, err := getPlayerMinigameScore(c.sClient.uuid, minigame.Id)
+		score, err := getPlayerMinigameScore(c.session.uuid, minigame.Id)
 		if err != nil {
-			writeErrLog(c.sClient.uuid, c.mapId, "failed to read player minigame score for "+minigame.Id)
+			writeErrLog(c.session.uuid, c.mapId, "failed to read player minigame score for "+minigame.Id)
 		}
 		c.minigameScores = append(c.minigameScores, score)
 		varSyncType := 1

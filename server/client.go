@@ -52,7 +52,7 @@ type Picture struct {
 
 // SessionClient
 type SessionClient struct {
-	rClient *RoomClient
+	roomC *RoomClient
 
 	conn *websocket.Conn
 	ip   string
@@ -77,6 +77,9 @@ type SessionClient struct {
 	spriteIndex int
 
 	systemName string
+
+	private bool
+	partyId int
 }
 
 func (c *SessionClient) msgReader() {
@@ -152,7 +155,7 @@ func (c *SessionClient) disconnect() {
 // RoomClient
 type RoomClient struct {
 	room    *Room
-	sClient *SessionClient
+	session *SessionClient
 
 	conn *websocket.Conn
 
@@ -206,7 +209,7 @@ func (c *RoomClient) msgReader() {
 			errs := c.processMsgs(message)
 			if len(errs) != 0 {
 				for _, err := range errs {
-					writeErrLog(c.sClient.uuid, c.mapId, err.Error())
+					writeErrLog(c.session.uuid, c.mapId, err.Error())
 				}
 			}
 		}
@@ -259,7 +262,7 @@ func (c *RoomClient) disconnect() {
 	c.cancel()
 
 	// unbind rClient from session
-	c.sClient.rClient = nil
+	c.session.roomC = nil
 
 	// unregister
 	c.leaveRoom()
@@ -267,7 +270,7 @@ func (c *RoomClient) disconnect() {
 	// close conn, ends reader and processor
 	c.conn.Close()
 
-	writeLog(c.sClient.uuid, c.mapId, "disconnect", 200)
+	writeLog(c.session.uuid, c.mapId, "disconnect", 200)
 }
 
 func (c *RoomClient) reset() {

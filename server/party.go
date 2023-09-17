@@ -82,6 +82,8 @@ func (c *SessionClient) cacheParty() error {
 		return err
 	}
 
+	c.partyId = partyId
+
 	if _, ok := parties[partyId]; ok { // it's already in the cache
 		return nil
 	}
@@ -148,12 +150,12 @@ func getPartyData(partyId int) (*Party, error) {
 		member.Badge = client.badge
 		member.Medals = client.medals
 
-		if client.rClient != nil {
-			member.MapId = client.rClient.mapId
-			member.PrevMapId = client.rClient.prevMapId
-			member.PrevLocations = client.rClient.prevLocations
-			member.X = client.rClient.x
-			member.Y = client.rClient.y
+		if client.roomC != nil {
+			member.MapId = client.roomC.mapId
+			member.PrevMapId = client.roomC.prevMapId
+			member.PrevLocations = client.roomC.prevLocations
+			member.X = client.roomC.x
+			member.Y = client.roomC.y
 		}
 
 		member.Online = true
@@ -310,6 +312,8 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		PrevMapId:   "0000", // initial value
 	})
 
+	client.partyId = partyId
+
 	return nil
 }
 
@@ -344,6 +348,10 @@ func leavePlayerParty(playerUuid string) error {
 				break
 			}
 		}
+	}
+	
+	if client, ok := clients.Load(playerUuid); ok {
+		client.partyId = 0
 	}
 
 	return nil
@@ -381,7 +389,7 @@ func assumeNextPartyOwner(partyId int) error {
 
 	for _, uuid := range partyMemberUuids {
 		if client, ok := clients.Load(uuid); ok {
-			if client.rClient != nil {
+			if client.roomC != nil {
 				nextOnlinePlayerUuid = uuid
 				break
 			}

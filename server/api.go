@@ -1250,11 +1250,11 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 	uuid := getUuidFromToken(token)
 
 	if client, ok := clients.Load(uuid); ok {
-		if client.rClient != nil {
+		if client.roomC != nil {
 			var allConnLocationNames []string
 			retUrl := "https://2kki.app/location?locations="
 
-			for i, locationName := range client.rClient.locations {
+			for i, locationName := range client.roomC.locations {
 				var connLocationNames []string
 
 				if i > 0 {

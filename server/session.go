@@ -70,36 +70,36 @@ func handleSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func joinSessionWs(conn *websocket.Conn, ip string, token string) {
-	client := &SessionClient{
+	c := &SessionClient{
 		conn:   conn,
 		ip:     ip,
 		outbox: make(chan []byte, 8),
 	}
 
-	client.ctx, client.cancel = context.WithCancel(context.Background())
+	c.ctx, c.cancel = context.WithCancel(context.Background())
 
 	var banned bool
 	if token != "" {
-		client.uuid, client.name, client.rank, client.badge, banned, client.muted = getPlayerDataFromToken(token)
-		if client.uuid != "" {
-			client.medals = getPlayerMedals(client.uuid)
+		c.uuid, c.name, c.rank, c.badge, banned, c.muted = getPlayerDataFromToken(token)
+		if c.uuid != "" {
+			c.medals = getPlayerMedals(c.uuid)
 		}
 	}
 
-	if client.uuid != "" {
-		client.account = true
+	if c.uuid != "" {
+		c.account = true
 	} else {
-		client.uuid, banned, client.muted = getOrCreatePlayerData(ip)
+		c.uuid, banned, c.muted = getOrCreatePlayerData(ip)
 	}
 
 	if banned {
-		writeErrLog(client.uuid, "sess", "player is banned")
+		writeErrLog(c.uuid, "sess", "player is banned")
 		return
 	}
 
-	client.cacheParty() // don't log error because player is probably not in a party
+	c.cacheParty() // don't log error because player is probably not in a party
 
-	if client, ok := clients.Load(client.uuid); ok {
+	if client, ok := clients.Load(c.uuid); ok {
 		client.cancel()
 	}
 
@@ -110,38 +110,38 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		}
 	}
 	if sameIp > 3 {
-		writeErrLog(client.uuid, "sess", "too many connections from ip")
+		writeErrLog(c.uuid, "sess", "too many connections from ip")
 		return
 	}
 
-	if client.badge == "" {
-		client.badge = "null"
+	if c.badge == "" {
+		c.badge = "null"
 	}
 
 	for i := 0; i < 0xFFFF; i++ {
 		var used bool
-		for _, otherClient := range clients.Get() {
-			if otherClient.id == i {
+		for _, client := range clients.Get() {
+			if client.id == i {
 				used = true
 			}
 		}
 
 		if !used {
-			client.id = i
+			c.id = i
 			break
 		}
 	}
 
-	client.spriteName, client.spriteIndex, client.systemName = getPlayerGameData(client.uuid)
+	c.spriteName, c.spriteIndex, c.systemName = getPlayerGameData(c.uuid)
 
-	go client.msgWriter()
+	go c.msgWriter()
 
 	// register client to the clients list
-	clients.Store(client.uuid, client)
+	clients.Store(c.uuid, c)
 
-	go client.msgReader()
+	go c.msgReader()
 
-	writeLog(client.uuid, "sess", "connect", 200)
+	writeLog(c.uuid, "sess", "connect", 200)
 }
 
 func (c *SessionClient) broadcast(msg []byte) {
@@ -185,6 +185,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handleEexp()
 	case "eec": // claim expedition
 		err = c.handleEec(msgFields)
+	case "pr": // private mode
+		err = c.handlePr(msgFields)
 	default:
 		err = errors.New("unknown message type")
 	}

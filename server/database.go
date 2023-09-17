@@ -99,8 +99,8 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok {
-		if client.rClient != nil {
-			client.rClient.cancel()
+		if client.roomC != nil {
+			client.roomC.cancel()
 		}
 
 		client.cancel()
@@ -189,8 +189,8 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 	if client, ok := clients.Load(recipientUuid); ok { // change client username if they're connected
 		client.name = newUsername
 
-		if client.rClient != nil {
-			client.rClient.broadcast(buildMsg("name", client.id, newUsername)) // broadcast name change to room if client is in one
+		if client.roomC != nil {
+			client.roomC.broadcast(buildMsg("name", client.id, newUsername)) // broadcast name change to room if client is in one
 		}
 	}
 
@@ -1017,7 +1017,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 
 func tryCompleteEventLocation(playerUuid string, location string) (exp int, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
-		if client.rClient == nil {
+		if client.roomC == nil {
 			return -1, err
 		}
 
@@ -1051,7 +1051,7 @@ func tryCompleteEventLocation(playerUuid string, location string) (exp int, err 
 			}
 
 			for _, mapId := range mapIds {
-				if client.rClient.mapId != mapId {
+				if client.roomC.mapId != mapId {
 					continue
 				}
 				if weekEventExp >= weeklyExpCap {
@@ -1079,13 +1079,13 @@ func tryCompleteEventLocation(playerUuid string, location string) (exp int, err 
 
 func tryCompletePlayerEventLocation(playerUuid string, location string) (success bool, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
-		if client.rClient == nil {
+		if client.roomC == nil {
 			return false, err
 		}
 
 		// HACK: workaround for strange race condition
 		// it's possible for a player to disconnect before the query finishes, causing a nil ptr
-		clientMapId := client.rClient.mapId
+		clientMapId := client.roomC.mapId
 
 		results, err := db.Query("SELECT pel.id, pl.mapIds FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId WHERE pel.gamePeriodId = ? AND pl.title = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", currentGameEventPeriodId, location, playerUuid)
 		if err != nil {
@@ -1205,7 +1205,7 @@ func writeEventVmData(mapId int, eventId int, exp int) error {
 
 func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err error) {
 	if client, ok := clients.Load(playerUuid); ok {
-		if client.rClient == nil {
+		if client.roomC == nil {
 			return -1, err
 		}
 
@@ -1246,7 +1246,7 @@ func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err
 				}
 			}
 
-			if client.rClient.mapId != fmt.Sprintf("%04d", eventMapId) {
+			if client.roomC.mapId != fmt.Sprintf("%04d", eventMapId) {
 				continue
 			}
 			if weekEventExp >= weeklyExpCap {
@@ -1292,13 +1292,13 @@ func getPlayerTags(playerUuid string) (tags []string, err error) {
 
 func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
 	if client, ok := clients.Load(playerUuid); ok { // Player must be online to add a tag
-		if client.rClient == nil {
+		if client.roomC == nil {
 			return false, nil
 		}
 
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
 		var tagExists bool
-		for _, tag := range client.rClient.tags {
+		for _, tag := range client.roomC.tags {
 			if tag == name {
 				tagExists = true
 				break
