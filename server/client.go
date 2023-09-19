@@ -35,11 +35,6 @@ const (
 	maxPictures = 50
 )
 
-type Client interface {
-	SessionClient
-	RoomClient
-}
-
 type Picture struct {
 	name string
 
