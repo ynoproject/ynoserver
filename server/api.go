@@ -1258,7 +1258,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 				var connLocationNames []string
 
 				if i > 0 {
-					retUrl += ","
+					retUrl += "|"
 				}
 				retUrl += url.QueryEscape(locationName)
 
