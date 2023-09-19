@@ -137,11 +137,11 @@ func getPartyData(partyId int) (*Party, error) {
 		if client.name != "" {
 			member.Name = client.name
 		}
-		if client.systemName != "" {
-			member.SystemName = client.systemName
+		if client.system != "" {
+			member.SystemName = client.system
 		}
-		if client.spriteName != "" {
-			member.SpriteName = client.spriteName
+		if client.sprite != "" {
+			member.SpriteName = client.sprite
 		}
 		if client.spriteIndex > -1 {
 			member.SpriteIndex = client.spriteIndex
@@ -304,8 +304,8 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		Rank:        client.rank,
 		Account:     client.account,
 		Badge:       client.badge,
-		SystemName:  client.systemName,
-		SpriteName:  client.spriteName,
+		SystemName:  client.system,
+		SpriteName:  client.sprite,
 		SpriteIndex: client.spriteIndex,
 		Medals:      client.medals,
 		MapId:       "0000", // initial value

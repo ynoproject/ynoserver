@@ -319,7 +319,7 @@ func (c *RoomClient) getRoomPlayerData() {
 			c.outbox <- buildMsg("name", client.session.id, client.session.name)
 		}
 		if client.session.spriteIndex != -1 {
-			c.outbox <- buildMsg("spr", client.session.id, client.session.spriteName, client.session.spriteIndex) // if the other client sent us valid sprite and index before
+			c.outbox <- buildMsg("spr", client.session.id, client.session.sprite, client.session.spriteIndex) // if the other client sent us valid sprite and index before
 		}
 		if client.repeatingFlash {
 			c.outbox <- buildMsg("rfl", client.session.id, client.flash[:])
@@ -327,8 +327,8 @@ func (c *RoomClient) getRoomPlayerData() {
 		if client.hidden {
 			c.outbox <- buildMsg("h", client.session.id, 1)
 		}
-		if client.session.systemName != "" {
-			c.outbox <- buildMsg("sys", client.session.id, client.session.systemName)
+		if client.session.system != "" {
+			c.outbox <- buildMsg("sys", client.session.id, client.session.system)
 		}
 		for i, pic := range client.pictures {
 			if pic != nil {

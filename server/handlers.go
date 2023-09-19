@@ -146,7 +146,7 @@ func (c *RoomClient) handleSpr(msg []string) error {
 		return errconv
 	}
 
-	c.session.spriteName = msg[1]
+	c.session.sprite = msg[1]
 	c.session.spriteIndex = index
 
 	c.broadcast(buildMsg("spr", c.session.id, msg[1:]))
@@ -224,7 +224,7 @@ func (c *RoomClient) handleSys(msg []string) (err error) {
 		return err
 	}
 
-	c.session.systemName = msg[1]
+	c.session.system = msg[1]
 
 	c.broadcast(buildMsg("sys", c.session.id, msg[1]))
 
@@ -444,7 +444,7 @@ func (c *RoomClient) handleSay(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	if c.session.name == "" || c.session.systemName == "" {
+	if c.session.name == "" || c.session.system == "" {
 		return errors.New("no name or system graphic set")
 	}
 
@@ -847,7 +847,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	if c.name == "" || c.systemName == "" {
+	if c.name == "" || c.system == "" {
 		return errors.New("no name or system graphic set")
 	}
 
@@ -881,7 +881,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	msgId := randString(12)
 
 	if msg[0] == "gsay" {
-		c.broadcast(buildMsg("p", c.uuid, c.name, c.systemName, c.rank, c.account, c.badge, c.medals[:]))
+		c.broadcast(buildMsg("p", c.uuid, c.name, c.system, c.rank, c.account, c.badge, c.medals[:]))
 		c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
 
 		err := writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)

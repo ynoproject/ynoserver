@@ -73,10 +73,10 @@ type SessionClient struct {
 
 	muted bool
 
-	spriteName  string
+	sprite  string
 	spriteIndex int
 
-	systemName string
+	system string
 
 	private bool
 	partyId int

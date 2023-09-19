@@ -132,7 +132,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		}
 	}
 
-	c.spriteName, c.spriteIndex, c.systemName = getPlayerGameData(c.uuid)
+	c.sprite, c.spriteIndex, c.system = getPlayerGameData(c.uuid)
 
 	go c.msgWriter()
 

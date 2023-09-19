@@ -286,7 +286,7 @@ func getPlayerGameData(uuid string) (spriteName string, spriteIndex int, systemN
 }
 
 func (c *SessionClient) updatePlayerGameData() error {
-	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", c.uuid, config.gameName, c.name, c.systemName, c.spriteName, c.spriteIndex, c.name, c.systemName, c.spriteName, c.spriteIndex)
+	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", c.uuid, config.gameName, c.name, c.system, c.sprite, c.spriteIndex, c.name, c.system, c.sprite, c.spriteIndex)
 	if err != nil {
 		return err
 	}
