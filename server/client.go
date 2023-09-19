@@ -303,18 +303,18 @@ func (c *RoomClient) reset() {
 	c.varCache = make(map[int]int)
 }
 
-type ClientMap struct {
+type SClientMap struct {
 	clients map[string]*SessionClient
 	mutex   sync.RWMutex
 }
 
-func NewSCMap() *ClientMap {
-	return &ClientMap{
+func NewSCMap() *SClientMap {
+	return &SClientMap{
 		clients: make(map[string]*SessionClient),
 	}
 }
 
-func (m *ClientMap) Store(uuid string, client *SessionClient) {
+func (m *SClientMap) Store(uuid string, client *SessionClient) {
 	m.mutex.Lock()
 
 	m.clients[uuid] = client
@@ -322,7 +322,7 @@ func (m *ClientMap) Store(uuid string, client *SessionClient) {
 	m.mutex.Unlock()
 }
 
-func (m *ClientMap) Load(uuid string) (*SessionClient, bool) {
+func (m *SClientMap) Load(uuid string) (*SessionClient, bool) {
 	m.mutex.RLock()
 
 	client, ok := m.clients[uuid]
@@ -332,7 +332,7 @@ func (m *ClientMap) Load(uuid string) (*SessionClient, bool) {
 	return client, ok
 }
 
-func (m *ClientMap) Delete(uuid string) {
+func (m *SClientMap) Delete(uuid string) {
 	m.mutex.Lock()
 
 	delete(m.clients, uuid)
@@ -340,7 +340,7 @@ func (m *ClientMap) Delete(uuid string) {
 	m.mutex.Unlock()
 }
 
-func (m *ClientMap) Get() []*SessionClient {
+func (m *SClientMap) Get() []*SessionClient {
 	m.mutex.RLock()
 
 	clients := make([]*SessionClient, 0, len(m.clients))
@@ -353,14 +353,14 @@ func (m *ClientMap) Get() []*SessionClient {
 	return clients
 }
 
-func (m *ClientMap) GetAmount() int {
+func (m *SClientMap) GetAmount() int {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
 	return len(m.clients)
 }
 
-func (m *ClientMap) Exists(uuid string) bool {
+func (m *SClientMap) Exists(uuid string) bool {
 	m.mutex.RLock()
 
 	_, ok := m.clients[uuid]
