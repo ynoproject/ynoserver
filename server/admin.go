@@ -29,15 +29,13 @@ func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var response []PlayerInfo
+	response := make([]PlayerInfo, 0, clients.GetAmount())
 	for _, client := range clients.Get() {
-		player := PlayerInfo{
+		response = append(response, PlayerInfo{
 			Uuid: client.uuid,
 			Name: client.name,
 			Rank: client.rank,
-		}
-
-		response = append(response, player)
+		})
 	}
 
 	responseJson, err := json.Marshal(response)

@@ -348,7 +348,7 @@ func (m *ClientMap) Delete(uuid string) {
 func (m *ClientMap) Get() []*SessionClient {
 	m.mutex.RLock()
 
-	var clients []*SessionClient
+	clients := make([]*SessionClient, 0, len(m.clients))
 	for _, client := range m.clients {
 		clients = append(clients, client)
 	}
