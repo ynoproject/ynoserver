@@ -184,12 +184,12 @@ func (c *RoomClient) leaveRoom() {
 	// setting c.room to nil could cause a nil pointer dereference
 	// so we let joinRoom update it
 
-	for clientIdx, client := range c.room.clients {
+	for i, client := range c.room.clients {
 		if client != c {
 			continue
 		}
 
-		c.room.clients[clientIdx] = c.room.clients[len(c.room.clients)-1]
+		c.room.clients[i] = c.room.clients[len(c.room.clients)-1]
 		c.room.clients = c.room.clients[:len(c.room.clients)-1]
 	}
 

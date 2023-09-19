@@ -233,7 +233,7 @@ func randString(length int) string {
 }
 
 func buildMsg(segments ...any) (message []byte) {
-	for idx, segment := range segments {
+	for i, segment := range segments {
 		switch segment := segment.(type) {
 		case byte:
 			message = append(message, segment)
@@ -288,7 +288,7 @@ func buildMsg(segments ...any) (message []byte) {
 			continue
 		}
 
-		if idx != len(segments)-1 {
+		if i != len(segments)-1 {
 			message = append(message, []byte(delim)...)
 		}
 	}
