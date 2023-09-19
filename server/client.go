@@ -20,6 +20,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/fasthttp/websocket"
@@ -73,7 +74,7 @@ type SessionClient struct {
 
 	muted bool
 
-	sprite  string
+	sprite      string
 	spriteIndex int
 
 	system string
@@ -300,4 +301,71 @@ func (c *RoomClient) reset() {
 
 	c.switchCache = make(map[int]bool)
 	c.varCache = make(map[int]int)
+}
+
+type ClientMap struct {
+	clients map[string]*SessionClient
+	mutex   sync.RWMutex
+}
+
+func NewSCMap() *ClientMap {
+	return &ClientMap{
+		clients: make(map[string]*SessionClient),
+	}
+}
+
+func (m *ClientMap) Store(uuid string, client *SessionClient) {
+	m.mutex.Lock()
+
+	m.clients[uuid] = client
+
+	m.mutex.Unlock()
+}
+
+func (m *ClientMap) Load(uuid string) (*SessionClient, bool) {
+	m.mutex.RLock()
+
+	client, ok := m.clients[uuid]
+
+	m.mutex.RUnlock()
+
+	return client, ok
+}
+
+func (m *ClientMap) Delete(uuid string) {
+	m.mutex.Lock()
+
+	delete(m.clients, uuid)
+
+	m.mutex.Unlock()
+}
+
+func (m *ClientMap) Get() []*SessionClient {
+	m.mutex.RLock()
+
+	var clients []*SessionClient
+	for _, client := range m.clients {
+		clients = append(clients, client)
+	}
+
+	m.mutex.RUnlock()
+
+	return clients
+}
+
+func (m *ClientMap) GetAmount() int {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	return len(m.clients)
+}
+
+func (m *ClientMap) Exists(uuid string) bool {
+	m.mutex.RLock()
+
+	_, ok := m.clients[uuid]
+
+	m.mutex.RUnlock()
+
+	return ok
 }
