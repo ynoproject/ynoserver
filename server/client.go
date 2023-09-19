@@ -35,6 +35,11 @@ const (
 	maxPictures = 50
 )
 
+type Client interface {
+	SessionClient
+	RoomClient
+}
+
 type Picture struct {
 	name string
 
@@ -262,7 +267,7 @@ func (c *RoomClient) msgWriter() {
 func (c *RoomClient) disconnect() {
 	c.cancel()
 
-	// unbind rClient from session
+	// unbind roomC from session
 	c.session.roomC = nil
 
 	// unregister
