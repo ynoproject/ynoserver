@@ -36,7 +36,7 @@ func removePlayerFriend(uuid string, targetUuid string) error {
 }
 
 func getPlayerFriendData(uuid string) (playerFriends []*PlayerListFullData, err error) {
-	results, err := db.Query("SELECT pf.targetUuid, a.user, pd.rank, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.targetUuid JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.uuid = ? AND pgd.game = ? ORDER BY a.user", uuid, config.gameName)
+	results, err := db.Query("SELECT pf.targetUuid, pf.accepted, a.user, pd.rank, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.targetUuid JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.uuid = ? AND pgd.game = ? ORDER BY a.user", uuid, config.gameName)
 	if err != nil {
 		return playerFriends, err
 	}
@@ -50,12 +50,40 @@ func getPlayerFriendData(uuid string) (playerFriends []*PlayerListFullData, err 
 			PrevMapId: "0000",
 		}
 
-		err := results.Scan(&playerFriend.Uuid, &playerFriend.Name, &playerFriend.Rank, &playerFriend.Badge, &playerFriend.SystemName, &playerFriend.SpriteName, &playerFriend.SpriteIndex, &playerFriend.Medals[0], &playerFriend.Medals[1], &playerFriend.Medals[2], &playerFriend.Medals[3], &playerFriend.Medals[4])
+		var accepted bool
+
+		err := results.Scan(&playerFriend.Uuid, &accepted, &playerFriend.Name, &playerFriend.Rank, &playerFriend.Badge, &playerFriend.SystemName, &playerFriend.SpriteName, &playerFriend.SpriteIndex, &playerFriend.Medals[0], &playerFriend.Medals[1], &playerFriend.Medals[2], &playerFriend.Medals[3], &playerFriend.Medals[4])
 		if err != nil {
 			return playerFriends, err
 		}
 
-		playerFriend.Online = clients.Exists(playerFriend.Uuid)
+		if accepted {
+			client, ok := clients.Load(playerFriend.Uuid)
+			if ok {
+				if client.system != "" {
+					playerFriend.SystemName = client.system
+				}
+				if client.sprite != "" {
+					playerFriend.SpriteName = client.sprite
+				}
+				if client.spriteIndex > -1 {
+					playerFriend.SpriteIndex = client.spriteIndex
+				}
+
+				playerFriend.Badge = client.badge
+				playerFriend.Medals = client.medals
+
+				if client.roomC != nil {
+					playerFriend.MapId = client.roomC.mapId
+					playerFriend.PrevMapId = client.roomC.prevMapId
+					playerFriend.PrevLocations = client.roomC.prevLocations
+					playerFriend.X = client.roomC.x
+					playerFriend.Y = client.roomC.y
+				}
+
+				playerFriend.Online = true
+			}
+		}
 
 		playerFriends = append(playerFriends, playerFriend)
 	}
