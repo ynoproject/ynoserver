@@ -24,32 +24,14 @@ import (
 )
 
 type Party struct {
-	Id          int            `json:"id"`
-	Name        string         `json:"name"`
-	Public      bool           `json:"public"`
-	Pass        string         `json:"-"`
-	SystemName  string         `json:"systemName"`
-	Description string         `json:"description"`
-	OwnerUuid   string         `json:"ownerUuid"`
-	Members     []*PartyMember `json:"members"`
-}
-
-type PartyMember struct {
-	Uuid          string `json:"uuid"`
-	Name          string `json:"name"`
-	Rank          int    `json:"rank"`
-	Account       bool   `json:"account"`
-	Badge         string `json:"badge"`
-	Medals        [5]int `json:"medals"`
-	SystemName    string `json:"systemName"`
-	SpriteName    string `json:"spriteName"`
-	SpriteIndex   int    `json:"spriteIndex"`
-	MapId         string `json:"mapId,omitempty"`
-	PrevMapId     string `json:"prevMapId,omitempty"`
-	PrevLocations string `json:"prevLocations,omitempty"`
-	X             int    `json:"x"`
-	Y             int    `json:"y"`
-	Online        bool   `json:"online"`
+	Id          int                   `json:"id"`
+	Name        string                `json:"name"`
+	Public      bool                  `json:"public"`
+	Pass        string                `json:"-"`
+	SystemName  string                `json:"systemName"`
+	Description string                `json:"description"`
+	OwnerUuid   string                `json:"ownerUuid"`
+	Members     []*PlayerListFullData `json:"members"`
 }
 
 var parties = make(map[int]*Party)
@@ -199,7 +181,7 @@ func getPartyDataFromDatabase(playerUuid string) (party Party, err error) {
 	return party, nil
 }
 
-func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PartyMember, err error) {
+func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PlayerListFullData, err error) {
 	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
@@ -211,7 +193,7 @@ func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PartyMember, e
 		var partyId int
 		var accountBin int
 
-		partyMember := &PartyMember{
+		partyMember := &PlayerListFullData{
 			MapId:     "0000",
 			PrevMapId: "0000",
 		}
@@ -298,13 +280,13 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		return errors.New("client not online")
 	}
 
-	party.Members = append(party.Members, &PartyMember{
+	party.Members = append(party.Members, &PlayerListFullData{
 		Uuid:        client.uuid,
 		Name:        client.name,
+		SystemName:  client.system,
 		Rank:        client.rank,
 		Account:     client.account,
 		Badge:       client.badge,
-		SystemName:  client.system,
 		SpriteName:  client.sprite,
 		SpriteIndex: client.spriteIndex,
 		Medals:      client.medals,
@@ -349,7 +331,7 @@ func leavePlayerParty(playerUuid string) error {
 			}
 		}
 	}
-	
+
 	if client, ok := clients.Load(playerUuid); ok {
 		client.partyId = 0
 	}

@@ -57,6 +57,27 @@ type PlayerListData struct {
 	SpriteIndex int    `json:"spriteIndex"`
 }
 
+type PlayerListFullData struct {
+	Uuid       string `json:"uuid"`
+	Name       string `json:"name"`
+	SystemName string `json:"systemName"`
+	Rank       int    `json:"rank"`
+	Account    bool   `json:"account"`
+	Badge      string `json:"badge"`
+	Medals     [5]int `json:"medals"`
+
+	SpriteName  string `json:"spriteName"`
+	SpriteIndex int    `json:"spriteIndex"`
+
+	MapId         string `json:"mapId,omitempty"`
+	PrevMapId     string `json:"prevMapId,omitempty"`
+	PrevLocations string `json:"prevLocations,omitempty"`
+	X             int    `json:"x"`
+	Y             int    `json:"y"`
+
+	Online bool `json:"online"`
+}
+
 func initApi() {
 	logInitTask("API")
 
@@ -79,6 +100,9 @@ func initApi() {
 	http.HandleFunc("/api/login", handleLogin)
 	http.HandleFunc("/api/logout", handleLogout)
 	http.HandleFunc("/api/changepw", handleChangePw)
+
+	http.HandleFunc("/api/addplayerfriend", handleAddPlayerFriend)
+	http.HandleFunc("/api/removeplayerfriend", handleRemovePlayerFriend)
 
 	http.HandleFunc("/api/blockplayer", handleBlockPlayer)
 	http.HandleFunc("/api/unblockplayer", handleUnblockPlayer)
@@ -1122,6 +1146,67 @@ func handleResetPw(uuid string) (newPassword string, err error) {
 	db.Exec("UPDATE accounts SET pass = ? WHERE uuid = ?", hashedPassword, uuid)
 
 	return newPassword, nil
+}
+
+func handleAddPlayerFriend(w http.ResponseWriter, r *http.Request) {
+	handleAddRemovePlayerFriend(w, r, true)
+}
+
+func handleRemovePlayerFriend(w http.ResponseWriter, r *http.Request) {
+	handleAddRemovePlayerFriend(w, r, false)
+}
+
+func handleAddRemovePlayerFriend(w http.ResponseWriter, r *http.Request, isAdd bool) {
+	token := r.Header.Get("Authorization")
+
+	if token == "" {
+		handleError(w, r, "token not specified")
+		return
+	}
+
+	uuid := getUuidFromToken(token)
+
+	if uuid == "" {
+		handleError(w, r, "invalid token")
+		return
+	}
+
+	targetUuid := r.URL.Query().Get("uuid")
+	if targetUuid == "" {
+		user := r.URL.Query().Get("user")
+		if user == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
+
+		uuid, err := getUuidFromName(user)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		if uuid == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
+
+		targetUuid = uuid
+	}
+
+	var err error
+
+	if isAdd {
+		err = addPlayerFriend(uuid, targetUuid)
+	} else {
+		err = removePlayerFriend(uuid, targetUuid)
+	}
+
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
 }
 
 func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {

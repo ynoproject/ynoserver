@@ -172,6 +172,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handleGPSay(msgFields)
 	case "l": // enter location(s)
 		err = c.handleL(msgFields)
+	case "pf": // friend list update
+		err = c.handlePf()
 	case "pt": // party update
 		err = c.handlePt()
 		if err != nil {

@@ -944,6 +944,21 @@ func (c *SessionClient) handleL(msg []string) error {
 	return nil
 }
 
+func (c *SessionClient) handlePf() error {
+	playerFriendData, err := getPlayerFriendData(c.uuid)
+	if err != nil {
+		return err
+	}
+	playerFriendDataJson, err := json.Marshal(playerFriendData)
+	if err != nil {
+		return err
+	}
+
+	c.outbox <- buildMsg("pf", playerFriendDataJson)
+
+	return nil
+}
+
 func (c *SessionClient) handlePt() error {
 	if c.partyId == 0 {
 		return errors.New("player not in a party")
