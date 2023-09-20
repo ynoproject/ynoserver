@@ -909,6 +909,10 @@ func (c *SessionClient) handleL(msg []string) error {
 		return errors.New("room client does not exist")
 	}
 
+	if len(c.roomC.locations) > 0 {
+		c.roomC.locations = []string{}
+	}
+
 	for i, locationName := range msg {
 		if i == 0 {
 			continue
@@ -1115,7 +1119,7 @@ func (c *SessionClient) handlePr(msg []string) error {
 				continue
 			}
 
-			c.roomC.outbox <- buildMsg("d", client.session.id)	
+			c.roomC.outbox <- buildMsg("d", client.session.id)
 		}
 
 		c.roomC.handleSr([]string{"sr", c.roomC.mapId}) // good enough
