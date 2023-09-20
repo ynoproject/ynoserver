@@ -210,8 +210,6 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 
 		w.Write(screenshotGamesJson)
 	case "upload":
-		fallthrough
-	case "uploadScreenshot":
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			handleError(w, r, "failed to read body")
@@ -229,9 +227,39 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		mapIdParam := r.URL.Query().Get("mapId")
+		if mapIdParam != "" {
+			_, err = strconv.Atoi(mapIdParam)
+			if err != nil || len(mapIdParam) != 4 {
+				handleError(w, r, "invalid mapId")
+				return
+			}
+		} else {
+			mapIdParam = "0000"
+		}
+
+		mapXParam := r.URL.Query().Get("mapX")
+		mapYParam := r.URL.Query().Get("mapY")
+
+		mapX := 0
+		mapY := 0
+
+		if mapXParam != "" && mapYParam != "" {
+			mapX, err = strconv.Atoi(mapXParam)
+			if err != nil || mapX < 0 || mapX >= 500 {
+				handleError(w, r, "invalid mapX")
+				return
+			}
+			mapY, err = strconv.Atoi(mapYParam)
+			if err != nil || mapY < 0 || mapY >= 500 {
+				handleError(w, r, "invalid mapY")
+				return
+			}
+		}
+
 		id := getNanoId()
 
-		err = writeScreenshotData(id, uuid, config.gameName)
+		err = writeScreenshotData(id, uuid, config.gameName, mapIdParam, mapX, mapY)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -255,8 +283,6 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 	case "setLike":
 		fallthrough
 	case "delete":
-		fallthrough
-	case "deleteScreenshot":
 		idParam := r.URL.Query().Get("id")
 		if idParam == "" || !regexp.MustCompile("[0-9a-f]{16}").MatchString(idParam) {
 			handleError(w, r, "invalid screenshot id")
@@ -463,7 +489,7 @@ func getScreenshotGames() ([]string, error) {
 	return screenshotGames, nil
 }
 
-func writeScreenshotData(id string, uuid string, game string) error {
+func writeScreenshotData(id string, uuid string, game string, mapId string, mapX int, mapY int) error {
 	var playerScreenshotCount int
 	err := db.QueryRow("SELECT COUNT(*) FROM playerScreenshots WHERE uuid = ?", uuid).Scan(&playerScreenshotCount)
 	if err != nil {
@@ -475,7 +501,7 @@ func writeScreenshotData(id string, uuid string, game string) error {
 		}
 	}
 
-	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game) VALUES (?, ?, ?)", id, uuid, game)
+	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game, mapId, mapX, mapY) VALUES (?, ?, ?, ?, ?, ?)", id, uuid, game, mapId, mapX, mapY)
 	if err != nil {
 		return err
 	}
