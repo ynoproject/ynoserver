@@ -36,7 +36,7 @@ func removePlayerFriend(uuid string, targetUuid string) error {
 }
 
 func getPlayerFriendData(uuid string) (playerFriends []*PlayerListFullData, err error) {
-	results, err := db.Query("SELECT pf.uuid, a.user, pd.rank, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.uuid = ? AND pgd.game = ? ORDER BY a.user", uuid, config.gameName)
+	results, err := db.Query("SELECT pf.targetUuid, a.user, pd.rank, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.targetUuid JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.uuid = ? AND pgd.game = ? ORDER BY a.user", uuid, config.gameName)
 	if err != nil {
 		return playerFriends, err
 	}
