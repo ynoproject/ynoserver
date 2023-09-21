@@ -280,7 +280,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		return errors.New("client not online")
 	}
 
-	party.Members = append(party.Members, &PlayerListFullData{
+	partyMemberPlayerListData := PlayerListData{
 		Uuid:        client.uuid,
 		Name:        client.name,
 		SystemName:  client.system,
@@ -290,8 +290,12 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		SpriteName:  client.sprite,
 		SpriteIndex: client.spriteIndex,
 		Medals:      client.medals,
-		MapId:       "0000", // initial value
-		PrevMapId:   "0000", // initial value
+	}
+
+	party.Members = append(party.Members, &PlayerListFullData{
+		PlayerListData: partyMemberPlayerListData,
+		MapId:          "0000", // initial value
+		PrevMapId:      "0000", // initial value
 	})
 
 	client.partyId = partyId

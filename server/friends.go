@@ -2,6 +2,11 @@ package server
 
 import "errors"
 
+type PlayerFriend struct {
+	PlayerListFullData
+	Accepted bool `json:"accepted"`
+}
+
 func addPlayerFriend(uuid string, targetUuid string) error {
 	if uuid == targetUuid {
 		return errors.New("attempted adding self as friend")
@@ -35,7 +40,7 @@ func removePlayerFriend(uuid string, targetUuid string) error {
 	return nil
 }
 
-func getPlayerFriendData(uuid string) (playerFriends []*PlayerListFullData, err error) {
+func getPlayerFriendData(uuid string) (playerFriends []*PlayerFriend, err error) {
 	results, err := db.Query("SELECT pf.targetUuid, pf.accepted, a.user, pd.rank, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.targetUuid JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.uuid = ? AND pgd.game = ? ORDER BY a.user", uuid, config.gameName)
 	if err != nil {
 		return playerFriends, err
@@ -44,20 +49,24 @@ func getPlayerFriendData(uuid string) (playerFriends []*PlayerListFullData, err 
 	defer results.Close()
 
 	for results.Next() {
-		playerFriend := &PlayerListFullData{
-			Account:   true,
-			MapId:     "0000",
-			PrevMapId: "0000",
+		playerListData := PlayerListData{
+			Account: true,
+		}
+		playerFriendData := PlayerListFullData{
+			PlayerListData: playerListData,
+			MapId:          "0000",
+			PrevMapId:      "0000",
+		}
+		playerFriend := &PlayerFriend{
+			PlayerListFullData: playerFriendData,
 		}
 
-		var accepted bool
-
-		err := results.Scan(&playerFriend.Uuid, &accepted, &playerFriend.Name, &playerFriend.Rank, &playerFriend.Badge, &playerFriend.SystemName, &playerFriend.SpriteName, &playerFriend.SpriteIndex, &playerFriend.Medals[0], &playerFriend.Medals[1], &playerFriend.Medals[2], &playerFriend.Medals[3], &playerFriend.Medals[4])
+		err := results.Scan(&playerFriendData.Uuid, &playerFriend.Accepted, &playerFriend.Name, &playerFriend.Rank, &playerFriend.Badge, &playerFriend.SystemName, &playerFriend.SpriteName, &playerFriend.SpriteIndex, &playerFriend.Medals[0], &playerFriend.Medals[1], &playerFriend.Medals[2], &playerFriend.Medals[3], &playerFriend.Medals[4])
 		if err != nil {
 			return playerFriends, err
 		}
 
-		if accepted {
+		if playerFriend.Accepted {
 			client, ok := clients.Load(playerFriend.Uuid)
 			if ok {
 				if client.system != "" {

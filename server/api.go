@@ -58,16 +58,7 @@ type PlayerListData struct {
 }
 
 type PlayerListFullData struct {
-	Uuid       string `json:"uuid"`
-	Name       string `json:"name"`
-	SystemName string `json:"systemName"`
-	Rank       int    `json:"rank"`
-	Account    bool   `json:"account"`
-	Badge      string `json:"badge"`
-	Medals     [5]int `json:"medals"`
-
-	SpriteName  string `json:"spriteName"`
-	SpriteIndex int    `json:"spriteIndex"`
+	PlayerListData
 
 	MapId         string `json:"mapId,omitempty"`
 	PrevMapId     string `json:"prevMapId,omitempty"`
