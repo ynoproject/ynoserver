@@ -61,7 +61,7 @@ func getPlayerFriendData(uuid string) (playerFriends []*PlayerFriend, err error)
 			PlayerListFullData: playerFriendData,
 		}
 
-		err := results.Scan(&playerFriendData.Uuid, &playerFriend.Accepted, &playerFriend.Name, &playerFriend.Rank, &playerFriend.Badge, &playerFriend.SystemName, &playerFriend.SpriteName, &playerFriend.SpriteIndex, &playerFriend.Medals[0], &playerFriend.Medals[1], &playerFriend.Medals[2], &playerFriend.Medals[3], &playerFriend.Medals[4])
+		err := results.Scan(&playerFriend.Uuid, &playerFriend.Accepted, &playerFriend.Name, &playerFriend.Rank, &playerFriend.Badge, &playerFriend.SystemName, &playerFriend.SpriteName, &playerFriend.SpriteIndex, &playerFriend.Medals[0], &playerFriend.Medals[1], &playerFriend.Medals[2], &playerFriend.Medals[3], &playerFriend.Medals[4])
 		if err != nil {
 			return playerFriends, err
 		}
