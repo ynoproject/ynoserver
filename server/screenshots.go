@@ -388,7 +388,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 
 	fromJoinClause = " FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? "
 
-	if offsetId != "" {
+	if offsetId != "" && sortOrder != "likes" {
 		cteClause = "WITH offsetScreenshot AS (SELECT publicTimestamp FROM playerScreenshots WHERE id = ?) "
 		fromJoinClause += "JOIN offsetScreenshot ops ON ops.publicTimestamp >= ps.publicTimestamp "
 		queryArgs = append(queryArgs, offsetId)
