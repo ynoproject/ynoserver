@@ -21,7 +21,7 @@ func addPlayerFriend(uuid string, targetUuid string) error {
 		if err != nil {
 			return err
 		}
-		accepted = updatedRows > 1
+		accepted = updatedRows > 0
 	}
 
 	_, err = db.Exec("INSERT IGNORE INTO playerFriends (uuid, targetUuid, accepted) VALUES (?, ?, ?)", uuid, targetUuid, accepted)
