@@ -142,6 +142,11 @@ func (c *SessionClient) msgWriter() {
 }
 
 func (c *SessionClient) disconnect() {
+	err := updatePlayerGameActivity(c.uuid, false)
+	if err != nil {
+		writeErrLog(c.uuid, "sess", err.Error())
+	}
+
 	// unregister
 	clients.Delete(c.uuid)
 

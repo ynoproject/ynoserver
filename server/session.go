@@ -141,6 +141,11 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	go c.msgReader()
 
+	err := updatePlayerGameActivity(c.uuid, true)
+	if err != nil {
+		writeErrLog(c.uuid, "sess", err.Error())
+	}
+
 	writeLog(c.uuid, "sess", "connect", 200)
 }
 
@@ -159,6 +164,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		return errors.New("invalid utf8")
 	}
 
+	updateGameActivity := false
+
 	switch msgFields := strings.Split(string(msg), delim); msgFields[0] {
 	case "i": // player info
 		err = c.handleI()
@@ -170,8 +177,10 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handleLcol(msgFields)
 	case "gsay", "psay": // global say and party say
 		err = c.handleGPSay(msgFields)
+		updateGameActivity = true
 	case "l": // enter location(s)
 		err = c.handleL(msgFields)
+		updateGameActivity = true
 	case "pf": // friend list update
 		err = c.handlePf()
 	case "pt": // party update
@@ -189,11 +198,19 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handleEec(msgFields)
 	case "pr": // private mode
 		err = c.handlePr(msgFields)
+		updateGameActivity = true
 	default:
 		err = errors.New("unknown message type")
 	}
 	if err != nil {
 		return err
+	}
+
+	if updateGameActivity {
+		err = updatePlayerGameActivity(c.uuid, true)
+		if err != nil {
+			writeErrLog(c.uuid, "sess", err.Error())
+		}
 	}
 
 	writeLog(c.uuid, "sess", string(msg), 200)

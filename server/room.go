@@ -249,9 +249,12 @@ func (c *RoomClient) processMsgs(msg []byte) (errs []error) {
 }
 
 func (c *RoomClient) processMsg(msgStr string) (err error) {
+	updateGameActivity := false
+
 	switch msgFields := strings.Split(msgStr, delim); msgFields[0] {
 	case "sr": // switch room
 		err = c.handleSr(msgFields)
+		updateGameActivity = true
 	case "m", "tp", "jmp": // moved / teleported / jumped to x y
 		err = c.handleM(msgFields)
 	case "f": // change facing direction
@@ -278,6 +281,7 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 		err = c.handleBa(msgFields)
 	case "say":
 		err = c.handleSay(msgFields)
+		updateGameActivity = true
 	case "ss": // sync switch
 		err = c.handleSs(msgFields)
 	case "sv": // sync variable
@@ -289,6 +293,13 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 	}
 	if err != nil {
 		return err
+	}
+
+	if updateGameActivity {
+		err = updatePlayerGameActivity(c.session.uuid, true)
+		if err != nil {
+			writeErrLog(c.session.uuid, c.mapId, err.Error())
+		}
 	}
 
 	writeLog(c.session.uuid, c.mapId, msgStr, 200)

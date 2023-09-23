@@ -1,11 +1,16 @@
 package server
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type PlayerFriend struct {
 	PlayerListFullData
-	Incoming bool `json:"incoming"`
-	Accepted bool `json:"accepted"`
+	Game       string    `json:"game"`
+	LastActive time.Time `json:"lastActive"`
+	Incoming   bool      `json:"incoming"`
+	Accepted   bool      `json:"accepted"`
 }
 
 func addPlayerFriend(uuid string, targetUuid string) error {
@@ -42,8 +47,8 @@ func removePlayerFriend(uuid string, targetUuid string) error {
 }
 
 func getPlayerFriendData(uuid string) (playerFriends []*PlayerFriend, err error) {
-	results, err := db.Query("SELECT pf.targetUuid, pf.accepted, 0, a.user, pd.rank, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.targetUuid JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.uuid       = ? AND pgd.game = ? UNION "+
-		"                       SELECT pf.uuid,       pf.accepted, 1, a.user, pd.rank, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.uuid       JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.targetUuid = ? AND pgd.game = ? AND NOT EXISTS (SELECT * FROM playerFriends opf WHERE opf.uuid = pf.targetUuid AND opf.targetUuid = pf.uuid) ORDER BY user", uuid, config.gameName, uuid, config.gameName)
+	results, err := db.Query("SELECT pf.targetUuid, pf.accepted, 0, a.user, pd.rank, COALESCE(a.badge, ''), pgd.game, pgd.online, pgd.timestampLastActive, pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.targetUuid JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.uuid       = ? AND pgd.game = (SELECT rpgd.game FROM playerGameData rpgd WHERE uuid = pf.targetUuid ORDER BY online DESC, timestampLastActive DESC, CASE WHEN game = ? THEN 1 ELSE 0 END DESC LIMIT 1) UNION "+
+		"                       SELECT pf.uuid,       pf.accepted, 1, a.user, pd.rank, COALESCE(a.badge, ''), pgd.game, pgd.online, pgd.timestampLastActive, pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM playerFriends pf JOIN playerGameData pgd ON pgd.uuid = pf.uuid       JOIN players pd ON pd.uuid = pgd.uuid JOIN accounts a ON a.uuid = pd.uuid WHERE pf.targetUuid = ? AND pgd.game = (SELECT rpgd.game FROM playerGameData rpgd WHERE uuid = pf.uuid ORDER BY online DESC, timestampLastActive DESC, CASE WHEN game = ? THEN 1 ELSE 0 END DESC LIMIT 1) AND NOT EXISTS (SELECT * FROM playerFriends opf WHERE opf.uuid = pf.targetUuid AND opf.targetUuid = pf.uuid) ORDER BY user", uuid, config.gameName, uuid, config.gameName)
 	if err != nil {
 		return playerFriends, err
 	}
@@ -63,12 +68,12 @@ func getPlayerFriendData(uuid string) (playerFriends []*PlayerFriend, err error)
 			PlayerListFullData: playerFriendData,
 		}
 
-		err := results.Scan(&playerFriend.Uuid, &playerFriend.Accepted, &playerFriend.Incoming, &playerFriend.Name, &playerFriend.Rank, &playerFriend.Badge, &playerFriend.SystemName, &playerFriend.SpriteName, &playerFriend.SpriteIndex, &playerFriend.Medals[0], &playerFriend.Medals[1], &playerFriend.Medals[2], &playerFriend.Medals[3], &playerFriend.Medals[4])
+		err := results.Scan(&playerFriend.Uuid, &playerFriend.Accepted, &playerFriend.Incoming, &playerFriend.Name, &playerFriend.Rank, &playerFriend.Badge, &playerFriend.Game, &playerFriend.Online, &playerFriend.LastActive, &playerFriend.SystemName, &playerFriend.SpriteName, &playerFriend.SpriteIndex, &playerFriend.Medals[0], &playerFriend.Medals[1], &playerFriend.Medals[2], &playerFriend.Medals[3], &playerFriend.Medals[4])
 		if err != nil {
 			return playerFriends, err
 		}
 
-		if playerFriend.Accepted {
+		if playerFriend.Accepted && playerFriend.Game == config.gameName {
 			client, ok := clients.Load(playerFriend.Uuid)
 			if ok {
 				if client.system != "" {
