@@ -295,7 +295,7 @@ func (c *SessionClient) addOrUpdatePlayerGameData() error {
 }
 
 func (c *SessionClient) updatePlayerGameActivity(online bool) error {
-	_, err := db.Exec("UPDATE playerGameData SET c.name = ?, systemName = ?, spriteName = ?, spriteIndex = ?, online = ?, timestampLastActive = UTC_TIMESTAMP() WHERE uuid = ? AND game = ?", c.name, c.system, c.sprite, c.spriteIndex, online, c.uuid, config.gameName)
+	_, err := db.Exec("UPDATE playerGameData SET name = ?, systemName = ?, spriteName = ?, spriteIndex = ?, online = ?, timestampLastActive = UTC_TIMESTAMP() WHERE uuid = ? AND game = ?", c.name, c.system, c.sprite, c.spriteIndex, online, c.uuid, config.gameName)
 	if err != nil {
 		return err
 	}
