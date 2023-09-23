@@ -285,8 +285,17 @@ func getPlayerGameData(uuid string) (spriteName string, spriteIndex int, systemN
 	return spriteName, spriteIndex, systemName
 }
 
-func (c *SessionClient) updatePlayerGameData() error {
-	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, name, systemName, spriteName, spriteIndex) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, systemName = ?, spriteName = ?, spriteIndex = ?", c.uuid, config.gameName, c.name, c.system, c.sprite, c.spriteIndex, c.name, c.system, c.sprite, c.spriteIndex)
+func (c *SessionClient) addOrUpdatePlayerGameData() error {
+	_, err := db.Exec("INSERT INTO playerGameData (uuid, game, online) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE online = 1, timestampLastActive = UTC_TIMESTAMP()", c.uuid, config.gameName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *SessionClient) updatePlayerGameActivity(online bool) error {
+	_, err := db.Exec("UPDATE playerGameData SET c.name = ?, systemName = ?, spriteName = ?, spriteIndex = ?, online = ?, timestampLastActive = UTC_TIMESTAMP() WHERE uuid = ? AND game = ?", c.name, c.system, c.sprite, c.spriteIndex, online, c.uuid, config.gameName)
 	if err != nil {
 		return err
 	}
@@ -314,15 +323,6 @@ func getPlayerInfoFromToken(token string) (uuid string, name string, rank int, b
 
 func updatePlayerActivity() error {
 	_, err := db.Exec("UPDATE accounts SET inactive = CASE WHEN timestampLoggedIn IS NULL OR timestampLoggedIn < DATE_SUB(NOW(), INTERVAL 3 MONTH) THEN 1 ELSE 0 END")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func updatePlayerGameActivity(uuid string, online bool) error {
-	_, err := db.Exec("UPDATE playerGameData SET online = ?, timestampLastActive = UTC_TIMESTAMP() WHERE uuid = ? AND game = ?", online, uuid, config.gameName)
 	if err != nil {
 		return err
 	}

@@ -141,7 +141,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	go c.msgReader()
 
-	err := updatePlayerGameActivity(c.uuid, true)
+	err := c.addOrUpdatePlayerGameData()
 	if err != nil {
 		writeErrLog(c.uuid, "sess", err.Error())
 	}
@@ -207,7 +207,7 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 	}
 
 	if updateGameActivity {
-		err = updatePlayerGameActivity(c.uuid, true)
+		err = c.updatePlayerGameActivity(true)
 		if err != nil {
 			writeErrLog(c.uuid, "sess", err.Error())
 		}

@@ -296,7 +296,7 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 	}
 
 	if updateGameActivity {
-		err = updatePlayerGameActivity(c.session.uuid, true)
+		err = c.session.updatePlayerGameActivity(true)
 		if err != nil {
 			writeErrLog(c.session.uuid, c.mapId, err.Error())
 		}
