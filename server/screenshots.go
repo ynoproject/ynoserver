@@ -247,13 +247,11 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		if mapXParam != "" && mapYParam != "" {
 			mapX, err = strconv.Atoi(mapXParam)
 			if err != nil || mapX < 0 || mapX >= 500 {
-				handleError(w, r, "invalid mapX")
-				return
+				mapX = 0
 			}
 			mapY, err = strconv.Atoi(mapYParam)
 			if err != nil || mapY < 0 || mapY >= 500 {
-				handleError(w, r, "invalid mapY")
-				return
+				mapY = 0
 			}
 		}
 
