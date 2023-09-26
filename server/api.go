@@ -66,7 +66,8 @@ type PlayerListFullData struct {
 	X             int    `json:"x"`
 	Y             int    `json:"y"`
 
-	Online bool `json:"online"`
+	Online     bool      `json:"online"`
+	LastActive time.Time `json:"lastActive"`
 }
 
 func initApi() {

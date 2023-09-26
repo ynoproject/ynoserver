@@ -182,7 +182,7 @@ func getPartyDataFromDatabase(playerUuid string) (party Party, err error) {
 }
 
 func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PlayerListFullData, err error) {
-	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
+	results, err := db.Query("SELECT pm.partyId, pm.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.timestampLastActive, pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM partyMembers pm JOIN playerGameData pgd ON pgd.uuid = pm.uuid JOIN players pd ON pd.uuid = pgd.uuid JOIN parties p ON p.id = pm.partyId LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pm.partyId = ? AND pgd.game = ? ORDER BY CASE WHEN p.owner = pm.uuid THEN 0 ELSE 1 END, pd.rank DESC, pm.id", partyId, config.gameName)
 	if err != nil {
 		return partyMembers, err
 	}
@@ -198,7 +198,7 @@ func getPartyMemberDataFromDatabase(partyId int) (partyMembers []*PlayerListFull
 			PrevMapId: "0000",
 		}
 
-		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.Badge, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex, &partyMember.Medals[0], &partyMember.Medals[1], &partyMember.Medals[2], &partyMember.Medals[3], &partyMember.Medals[4])
+		err := results.Scan(&partyId, &partyMember.Uuid, &partyMember.Name, &partyMember.Rank, &accountBin, &partyMember.Badge, &partyMember.LastActive, &partyMember.SystemName, &partyMember.SpriteName, &partyMember.SpriteIndex, &partyMember.Medals[0], &partyMember.Medals[1], &partyMember.Medals[2], &partyMember.Medals[3], &partyMember.Medals[4])
 		if err != nil {
 			return partyMembers, err
 		}

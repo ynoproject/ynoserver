@@ -2,15 +2,13 @@ package server
 
 import (
 	"errors"
-	"time"
 )
 
 type PlayerFriend struct {
 	PlayerListFullData
-	Game       string    `json:"game"`
-	LastActive time.Time `json:"lastActive"`
-	Incoming   bool      `json:"incoming"`
-	Accepted   bool      `json:"accepted"`
+	Game     string `json:"game"`
+	Incoming bool   `json:"incoming"`
+	Accepted bool   `json:"accepted"`
 }
 
 func addPlayerFriend(uuid string, targetUuid string) error {
