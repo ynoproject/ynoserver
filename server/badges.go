@@ -853,7 +853,10 @@ func getPlayerBadgeSlotCounts(playerName string) (badgeSlotRows int, badgeSlotCo
 }
 
 func updatePlayerBadgeSlotCounts(uuid string) (err error) {
-	query := "UPDATE accounts JOIN (SELECT pb.uuid, SUM(b.bp) bp, COUNT(b.badgeId) bc FROM playerBadges pb JOIN badges b ON b.badgeId = pb.badgeId AND b.hidden = 0 GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid SET badgeSlotRows = CASE WHEN bp < 300 THEN 1 WHEN bp < 1000 THEN 2 WHEN bp < 2000 THEN 3 WHEN bp < 4000 THEN 4 WHEN bp < 7500 THEN 5 WHEN bp < 12500 THEN 6 WHEN bp < 20000 THEN 7 WHEN bp < 30000 THEN 8 WHEN bp < 50000 THEN 9 ELSE 10 END, badgeSlotCols = CASE WHEN bc < 50 THEN 3 WHEN bc < 150 THEN 4 WHEN bc < 300 THEN 5 WHEN bc < 500 THEN 6 ELSE 7 END"
+	query := "UPDATE accounts JOIN (SELECT pb.uuid, SUM(b.bp) bp, COUNT(b.badgeId) bc FROM playerBadges pb JOIN badges b ON b.badgeId = pb.badgeId AND b.hidden = 0 GROUP BY pb.uuid) AS pb ON pb.uuid = accounts.uuid " +
+		"SET badgeSlotRows = CASE WHEN bp < 300 THEN 1 WHEN bp < 1000 THEN 2 WHEN bp < 2000 THEN 3 WHEN bp < 4000 THEN 4 WHEN bp < 7500 THEN 5 WHEN bp < 12500 THEN 6 WHEN bp < 20000 THEN 7 WHEN bp < 30000 THEN 8 WHEN bp < 50000 THEN 9 ELSE 10 END, " +
+		"badgeSlotCols = CASE WHEN bc < 50 THEN 3 WHEN bc < 150 THEN 4 WHEN bc < 300 THEN 5 WHEN bc < 500 THEN 6 ELSE 7 END, " +
+		"screenshotLimit = GREATEST(CASE WHEN bp < 100 THEN 10 WHEN bp < 250 THEN 15 WHEN bp < 500 THEN 20 WHEN bp < 1000 THEN 25 WHEN bp < 2500 THEN 30 WHEN bp < 5000 THEN 35 WHEN bp < 7500 THEN 40 WHEN bp < 10000 THEN 45 WHEN bp < 12500 THEN 50 WHEN bp < 15000 THEN 55 WHEN bp < 17500 THEN 60 WHEN bp < 20000 THEN 65 WHEN bp < 25000 THEN 70 ELSE 75 END, screenshotLimit)"
 	if uuid == "" {
 		_, err = db.Exec(query)
 	} else {
