@@ -388,7 +388,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 	var whereClause string
 	var orderByClause string
 
-	selectClause = "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.game, ps.publicTimestamp, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END"
+	selectClause = "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.mapId, ps.mapX, ps.mapY, ps.publicTimestamp, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END"
 
 	fromJoinClause = " FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? "
 
