@@ -34,6 +34,9 @@ type PlayerScreenshotData struct {
 	Id         string    `json:"id"`
 	Uuid       string    `json:"uuid"`
 	Game       string    `json:"game"`
+	MapId      string    `json:"mapId"`
+	MapX       int       `json:"mapX"`
+	MapY       int       `json:"mapY"`
 	SystemName string    `json:"systemName"`
 	Timestamp  time.Time `json:"timestamp"`
 	Public     bool      `json:"public"`
@@ -54,6 +57,9 @@ type ScreenshotData struct {
 	Id        string           `json:"id"`
 	Owner     *ScreenshotOwner `json:"owner"`
 	Game      string           `json:"game"`
+	MapId     string           `json:"mapId"`
+	MapX      int              `json:"mapX"`
+	MapY      int              `json:"mapY"`
 	Timestamp time.Time        `json:"timestamp"`
 	Spoiler   bool             `json:"spoiler"`
 	LikeCount int              `json:"likeCount"`
@@ -382,7 +388,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 	var whereClause string
 	var orderByClause string
 
-	selectClause = "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.publicTimestamp, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END"
+	selectClause = "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.game, ps.publicTimestamp, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END"
 
 	fromJoinClause = " FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? "
 
@@ -432,7 +438,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 	for results.Next() {
 		screenshot := &ScreenshotData{}
 		owner := &ScreenshotOwner{}
-		err := results.Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.Timestamp, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
+		err := results.Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.Timestamp, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
 		if err != nil {
 			return screenshots, err
 		}
@@ -446,7 +452,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
 	var playerScreenshots []*PlayerScreenshotData
 
-	results, err := db.Query("SELECT ps.id, ps.uuid, ps.game, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? ORDER BY 5 DESC, 1", uuid)
+	results, err := db.Query("SELECT ps.id, ps.uuid, ps.game, ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? ORDER BY ps.timestamp DESC, ps.id", uuid)
 	if err != nil {
 		return playerScreenshots, err
 	}
@@ -455,7 +461,7 @@ func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
 
 	for results.Next() {
 		screenshot := &PlayerScreenshotData{}
-		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
+		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
 		if err != nil {
 			return playerScreenshots, err
 		}
