@@ -1030,6 +1030,9 @@ func tryCompleteEventLocation(playerUuid string, location string) (exp int, err 
 			return -1, err
 		}
 
+		// prevent race condition
+		clientMapId := client.roomC.mapId
+
 		results, err := db.Query("SELECT el.id, el.type, el.exp, l.mapIds FROM eventLocations el JOIN gameLocations l ON l.id = el.locationId WHERE el.gamePeriodId = ? AND l.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", currentGameEventPeriodId, location)
 		if err != nil {
 			return -1, err
@@ -1060,7 +1063,7 @@ func tryCompleteEventLocation(playerUuid string, location string) (exp int, err 
 			}
 
 			for _, mapId := range mapIds {
-				if client.roomC.mapId != mapId {
+				if clientMapId != mapId {
 					continue
 				}
 				if weekEventExp >= weeklyExpCap {
@@ -1092,8 +1095,7 @@ func tryCompletePlayerEventLocation(playerUuid string, location string) (success
 			return false, err
 		}
 
-		// HACK: workaround for strange race condition
-		// it's possible for a player to disconnect before the query finishes, causing a nil ptr
+		// prevent race condition
 		clientMapId := client.roomC.mapId
 
 		results, err := db.Query("SELECT pel.id, pl.mapIds FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId WHERE pel.gamePeriodId = ? AND pl.title = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", currentGameEventPeriodId, location, playerUuid)
@@ -1218,6 +1220,9 @@ func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err
 			return -1, err
 		}
 
+		// prevent race condition
+		clientMapId := client.roomC.mapId
+
 		results, err := db.Query("SELECT ev.id, ev.mapId, ev.eventId, ev.exp FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId WHERE gep.periodId = ? AND ev.mapId = ? AND ev.eventId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", currentEventPeriodId, mapId, eventId)
 		if err != nil {
 			return -1, err
@@ -1255,7 +1260,7 @@ func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err
 				}
 			}
 
-			if client.roomC.mapId != fmt.Sprintf("%04d", eventMapId) {
+			if clientMapId != fmt.Sprintf("%04d", eventMapId) {
 				continue
 			}
 			if weekEventExp >= weeklyExpCap {
@@ -1305,9 +1310,12 @@ func tryWritePlayerTag(playerUuid string, name string) (success bool, err error)
 			return false, nil
 		}
 
+		// prevent race condition
+		tags := client.roomC.tags
+
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
 		var tagExists bool
-		for _, tag := range client.roomC.tags {
+		for _, tag := range tags {
 			if tag == name {
 				tagExists = true
 				break
