@@ -905,12 +905,15 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 }
 
 func (c *SessionClient) handleL(msg []string) error {
-	if c.roomC == nil {
+	// HACK: c.roomC likes to be nulled before this finishes
+	roomC := c.roomC
+
+	if roomC == nil {
 		return errors.New("room client does not exist")
 	}
 
-	if len(c.roomC.locations) > 0 {
-		c.roomC.locations = []string{}
+	if len(roomC.locations) > 0 {
+		roomC.locations = []string{}
 	}
 
 	for i, locationName := range msg {
@@ -927,7 +930,7 @@ func (c *SessionClient) handleL(msg []string) error {
 		var matchedLocationMap bool
 
 		for _, mapId := range mapIds {
-			if mapId == c.roomC.mapId {
+			if mapId == roomC.mapId {
 				matchedLocationMap = true
 				break
 			}
@@ -935,7 +938,7 @@ func (c *SessionClient) handleL(msg []string) error {
 
 		if matchedLocationMap {
 			writePlayerGameLocation(c.uuid, locationName)
-			c.roomC.locations = append(c.roomC.locations, locationName)
+			roomC.locations = append(roomC.locations, locationName)
 		}
 	}
 
