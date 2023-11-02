@@ -247,8 +247,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		mapXParam := r.URL.Query().Get("mapX")
 		mapYParam := r.URL.Query().Get("mapY")
 
-		mapX := 0
-		mapY := 0
+		var mapX, mapY int
 
 		if mapXParam != "" && mapYParam != "" {
 			mapX, err = strconv.Atoi(mapXParam)

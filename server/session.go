@@ -164,7 +164,7 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		return errors.New("invalid utf8")
 	}
 
-	updateGameActivity := false
+	var updateGameActivity bool
 
 	switch msgFields := strings.Split(string(msg), delim); msgFields[0] {
 	case "i": // player info

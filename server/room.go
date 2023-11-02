@@ -249,7 +249,7 @@ func (c *RoomClient) processMsgs(msg []byte) (errs []error) {
 }
 
 func (c *RoomClient) processMsg(msgStr string) (err error) {
-	updateGameActivity := false
+	var updateGameActivity bool
 
 	switch msgFields := strings.Split(msgStr, delim); msgFields[0] {
 	case "sr": // switch room
