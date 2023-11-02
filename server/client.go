@@ -142,7 +142,6 @@ func (c *SessionClient) msgWriter() {
 }
 
 func (c *SessionClient) disconnect() {
-
 	// unregister
 	clients.Delete(c.uuid)
 
