@@ -62,6 +62,8 @@ var (
 			return true
 		},
 	}
+
+	isOkString = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
 )
 
 func Start() {
@@ -203,10 +205,6 @@ func isVpn(ip string) (vpn bool) {
 	}
 
 	return vpn
-}
-
-func isOkString(str string) bool {
-	return regexp.MustCompile("^[A-Za-z0-9]+$").MatchString(str)
 }
 
 func writeLog(uuid string, location string, payload string, errorcode int) {
