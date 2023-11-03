@@ -40,7 +40,11 @@ func initSession() {
 
 	scheduler.Every(5).Seconds().Do(func() {
 		sender.broadcast(buildMsg("pc", clients.GetAmount()))
+	})
+
+	scheduler.Every(10).Seconds().Do(func() {
 		sendPartyUpdate()
+		sendFriendsUpdate()
 	})
 
 	scheduler.Cron("0 2,8,14,20 * * *").Do(func() {

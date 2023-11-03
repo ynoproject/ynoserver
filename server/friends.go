@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 )
 
@@ -9,6 +10,26 @@ type PlayerFriend struct {
 	Game     string `json:"game"`
 	Incoming bool   `json:"incoming"`
 	Accepted bool   `json:"accepted"`
+}
+
+func sendFriendsUpdate() {
+	for _, client := range clients.Get() {
+		if !client.account {
+			continue
+		}
+
+		playerFriendData, err := getPlayerFriendData(client.uuid)
+		if err != nil {
+			continue
+		}
+
+		playerFriendDataJson, err := json.Marshal(playerFriendData)
+		if err != nil {
+			continue
+		}
+
+		client.outbox <- buildMsg("pf", playerFriendDataJson)
+	}
 }
 
 func addPlayerFriend(uuid string, targetUuid string) error {
