@@ -29,7 +29,8 @@ import (
 )
 
 var (
-	clients = NewSCMap()
+	clients             = NewSCMap()
+	lastSentPlayerCount int
 )
 
 func initSession() {
@@ -39,7 +40,13 @@ func initSession() {
 	sender := SessionClient{}
 
 	scheduler.Every(5).Seconds().Do(func() {
-		sender.broadcast(buildMsg("pc", clients.GetAmount()))
+		count := clients.GetAmount()
+
+		if count != lastSentPlayerCount {
+			sender.broadcast(buildMsg("pc", count))
+
+			lastSentPlayerCount = count
+		}
 	})
 
 	scheduler.Every(10).Seconds().Do(func() {
