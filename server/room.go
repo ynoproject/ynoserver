@@ -206,11 +206,6 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
-		// HACK: send required say echo
-		if client == c && !(len(msg) > 3 && string(msg[:3]) == "say") {
-			continue
-		}
-
 		select {
 		case client.outbox <- msg:
 		default:

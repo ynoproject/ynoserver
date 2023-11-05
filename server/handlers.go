@@ -841,6 +841,8 @@ func (c *SessionClient) handleSay(msg []string) error {
 		client.session.outbox <- buildMsg("say", c.uuid, msgContents)
 	}
 
+	c.outbox <- buildMsg("say", c.uuid, msgContents)
+
 	return nil
 }
 
