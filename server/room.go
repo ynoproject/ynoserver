@@ -279,9 +279,6 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 		err = c.handleRp(msgFields)
 	case "ba": // battle animation
 		err = c.handleBa(msgFields)
-	case "say":
-		err = c.handleSay(msgFields)
-		updateGameActivity = true
 	case "ss": // sync switch
 		err = c.handleSs(msgFields)
 	case "sv": // sync variable

@@ -435,29 +435,6 @@ func (c *RoomClient) handleBa(msg []string) error {
 	return nil
 }
 
-func (c *RoomClient) handleSay(msg []string) error {
-	if c.session.muted {
-		return nil
-	}
-
-	if len(msg) != 2 {
-		return errors.New("segment count mismatch")
-	}
-
-	if c.session.name == "" || c.session.system == "" {
-		return errors.New("no name or system graphic set")
-	}
-
-	msgContents := strings.TrimSpace(msg[1])
-	if msgContents == "" || len(msgContents) > 150 {
-		return errors.New("invalid message")
-	}
-
-	c.broadcast(buildMsg("say", c.session.id, msgContents))
-
-	return nil
-}
-
 func (c *RoomClient) handleSs(msg []string) error {
 	if len(msg) != 3 {
 		return errors.New("segment count mismatch")
@@ -834,6 +811,35 @@ func (c *SessionClient) handleLcol(msg []string) error {
 	}
 
 	c.outbox <- buildMsg("lcol", "", "")
+
+	return nil
+}
+
+func (c *SessionClient) handleSay(msg []string) error {
+	if c.roomC == nil {
+		return errors.New("room client does not exist")
+	}
+
+	if c.muted {
+		return errors.New("player is muted")
+	}
+
+	if len(msg) != 2 {
+		return errors.New("segment count mismatch")
+	}
+
+	if c.name == "" || c.system == "" {
+		return errors.New("no name or system graphic set")
+	}
+
+	msgContents := strings.TrimSpace(msg[1])
+	if msgContents == "" || len(msgContents) > 150 {
+		return errors.New("invalid message")
+	}
+
+	for _, client := range c.roomC.room.clients {
+		client.session.outbox <- buildMsg("say", c.uuid, msgContents)
+	}
 
 	return nil
 }

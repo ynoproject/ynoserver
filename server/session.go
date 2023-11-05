@@ -186,6 +186,9 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handlePloc(msgFields)
 	case "lcol": // location colors
 		err = c.handleLcol(msgFields)
+	case "say": // map say
+		err = c.handleSay(msgFields)
+		updateGameActivity = true
 	case "gsay", "psay": // global say and party say
 		err = c.handleGPSay(msgFields)
 		updateGameActivity = true
