@@ -30,7 +30,6 @@ import (
 
 var (
 	clients             = NewSCMap()
-	lastSentPlayerCount int
 )
 
 func initSession() {
@@ -39,6 +38,7 @@ func initSession() {
 	// we need a sender
 	var sender SessionClient
 
+	var lastSentPlayerCount int
 	scheduler.Every(5).Seconds().Do(func() {
 		count := clients.GetAmount()
 
