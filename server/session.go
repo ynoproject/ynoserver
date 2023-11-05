@@ -37,7 +37,7 @@ func initSession() {
 	logInitTask("session")
 
 	// we need a sender
-	sender := SessionClient{}
+	var sender SessionClient
 
 	scheduler.Every(5).Seconds().Do(func() {
 		count := clients.GetAmount()
