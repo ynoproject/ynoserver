@@ -311,7 +311,12 @@ func (c *RoomClient) getRoomPlayerData() {
 		}
 
 		c.outbox <- buildMsg("c", client.session.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge, client.session.medals[:])
-		c.outbox <- buildMsg("m", client.session.id, client.x, client.y)
+		
+		// client.x and client.y get set at the same time
+		// only one needs to be checked
+		if client.x != -1 {
+			c.outbox <- buildMsg("m", client.session.id, client.x, client.y)
+		}
 		if client.facing != 0 {
 			c.outbox <- buildMsg("f", client.session.id, client.facing)
 		}

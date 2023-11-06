@@ -278,8 +278,8 @@ func (c *RoomClient) disconnect() {
 }
 
 func (c *RoomClient) reset() {
-	c.x = 0
-	c.y = 0
+	c.x = -1
+	c.y = -1
 	c.facing = 0
 	c.speed = 0
 
