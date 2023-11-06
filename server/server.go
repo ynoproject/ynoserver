@@ -154,9 +154,19 @@ func getListener() net.Listener {
 	return listener
 }
 
-func contains(s []int, num int) bool {
+func containsInt(s []int, num int) bool {
 	for _, v := range s {
 		if v == num {
+			return true
+		}
+	}
+
+	return false
+}
+
+func containsString(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
 			return true
 		}
 	}

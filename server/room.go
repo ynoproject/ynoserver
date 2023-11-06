@@ -47,7 +47,7 @@ func createRooms(roomIds []int, spRooms []int) {
 	for _, roomId := range roomIds {
 		rooms[roomId] = &Room{
 			id:           roomId,
-			singleplayer: contains(spRooms, roomId),
+			singleplayer: containsInt(spRooms, roomId),
 			conditions:   getRoomConditions(roomId),
 			minigames:    getRoomMinigames(roomId),
 		}
@@ -206,7 +206,10 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
-		if (client.session.private || c.session.private) && (c.session.partyId == 0 || client.session.partyId != c.session.partyId) {
+		if (client.session.private || c.session.private) &&
+			((c.session.partyId == 0 ||
+				client.session.partyId != c.session.partyId) ||
+				!containsString(c.session.onlineFriends, client.session.uuid)) {
 			continue
 		}
 
@@ -310,7 +313,10 @@ func (c *RoomClient) getRoomPlayerData() {
 			continue
 		}
 
-		if (client.session.private || c.session.private) && (c.session.partyId == 0 || client.session.partyId != c.session.partyId) {
+		if (client.session.private || c.session.private) &&
+			((c.session.partyId == 0 ||
+				client.session.partyId != c.session.partyId) ||
+				!containsString(c.session.onlineFriends, client.session.uuid)) {
 			continue
 		}
 

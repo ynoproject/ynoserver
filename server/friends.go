@@ -23,6 +23,15 @@ func sendFriendsUpdate() {
 			continue
 		}
 
+		// for private mode
+		client.onlineFriends = nil
+
+		for _, friend := range playerFriendData {
+			if friend.Online {
+				client.onlineFriends = append(client.onlineFriends, friend.Uuid)
+			}
+		}
+
 		playerFriendDataJson, err := json.Marshal(playerFriendData)
 		if err != nil {
 			continue
