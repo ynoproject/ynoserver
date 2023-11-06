@@ -206,10 +206,7 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
-		if (client.session.private || c.session.private) &&
-			((c.session.partyId == 0 ||
-				client.session.partyId != c.session.partyId) ||
-				!containsString(c.session.onlineFriends, client.session.uuid)) {
+		if (client.session.private || c.session.private) && ((c.session.partyId == 0 || client.session.partyId != c.session.partyId) && !containsString(client.session.onlineFriends, c.session.uuid)) {
 			continue
 		}
 
@@ -313,10 +310,7 @@ func (c *RoomClient) getRoomPlayerData() {
 			continue
 		}
 
-		if (client.session.private || c.session.private) &&
-			((c.session.partyId == 0 ||
-				client.session.partyId != c.session.partyId) ||
-				!containsString(c.session.onlineFriends, client.session.uuid)) {
+		if (client.session.private || c.session.private) && ((c.session.partyId == 0 || client.session.partyId != c.session.partyId) && !containsString(client.session.onlineFriends, c.session.uuid)) {
 			continue
 		}
 
