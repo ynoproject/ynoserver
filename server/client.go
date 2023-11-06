@@ -295,13 +295,13 @@ func (c *RoomClient) reset() {
 	c.prevMapId = ""
 	c.prevLocations = ""
 
-	c.locations = []string{}
+	c.locations = nil
 
 	// don't clear tags
 
 	c.syncCoords = false
 
-	c.minigameScores = []int{}
+	c.minigameScores = nil
 
 	c.switchCache = make(map[int]bool)
 	c.varCache = make(map[int]int)
