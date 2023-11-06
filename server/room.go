@@ -202,6 +202,10 @@ func (c *RoomClient) broadcast(msg []byte) {
 	}
 
 	for _, client := range c.room.clients {
+		if client == c {
+			continue
+		}
+
 		if (client.session.private || c.session.private) && (c.session.partyId == 0 || client.session.partyId != c.session.partyId) {
 			continue
 		}
@@ -311,7 +315,7 @@ func (c *RoomClient) getRoomPlayerData() {
 		}
 
 		c.outbox <- buildMsg("c", client.session.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge, client.session.medals[:])
-		
+
 		// client.x and client.y get set at the same time
 		// only one needs to be checked
 		if client.x != -1 {
