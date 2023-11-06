@@ -1149,17 +1149,5 @@ func (c *SessionClient) handlePr(msg []string) error {
 
 	c.private = msg[1] == "1"
 
-	if c.roomC != nil {
-		for _, client := range c.roomC.room.clients {
-			if client == c.roomC {
-				continue
-			}
-
-			c.roomC.outbox <- buildMsg("d", client.session.id)
-		}
-
-		c.roomC.handleSr([]string{"sr", c.roomC.mapId}) // good enough
-	}
-
 	return nil
 }
