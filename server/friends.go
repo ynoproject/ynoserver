@@ -27,7 +27,7 @@ func sendFriendsUpdate() {
 		client.onlineFriends = nil
 
 		for _, friend := range playerFriendData {
-			if friend.Online {
+			if friend.Accepted && friend.Online {
 				client.onlineFriends = append(client.onlineFriends, friend.Uuid)
 			}
 		}
