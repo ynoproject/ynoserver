@@ -839,12 +839,19 @@ func (c *SessionClient) handleSay(msg []string) error {
 
 
 	for _, client := range c.roomC.room.clients {
+		if client.session == c {
+			continue
+		}
+	
 		if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && !containsString(client.session.onlineFriends, c.uuid)) {
 			continue
 		}
 	
 		client.session.outbox <- buildMsg("say", c.uuid, msgContents)
 	}
+	
+	// so local echo appears
+	c.outbox <- buildMsg("say", c.uuid, msgContents)
 
 	return nil
 }
