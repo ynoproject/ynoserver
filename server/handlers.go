@@ -847,7 +847,7 @@ func (c *SessionClient) handleSay(msg []string) error {
 			continue
 		}
 	
-		if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && client.session.onlineFriends[c.uuid]) {
+		if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && !client.session.onlineFriends[c.uuid]) {
 			continue
 		}
 	
