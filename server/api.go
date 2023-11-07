@@ -1240,6 +1240,16 @@ func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// "disconnect" them NOW!!!
+	if client, ok := clients.Load(uuid); ok {
+		if otherClient, ok := clients.Load(targetUuid); ok {
+			if (client.roomC != nil && otherClient.roomC != nil) && client.roomC.room == otherClient.roomC.room {
+				client.roomC.outbox <- buildMsg("d", otherClient.id)
+				otherClient.roomC.outbox <- buildMsg("d", client.id)
+			}
+		}
+	}
+
 	w.Write([]byte("ok"))
 }
 
