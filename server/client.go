@@ -268,9 +268,6 @@ func (c *RoomClient) msgWriter() {
 func (c *RoomClient) disconnect() {
 	c.cancel()
 
-	// unbind roomC from session
-	c.session.roomC = nil
-
 	// unregister
 	c.leaveRoom()
 
