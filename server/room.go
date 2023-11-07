@@ -302,46 +302,50 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 func (c *RoomClient) getRoomPlayerData() {
 	// send the new client info about the game state
 	for _, client := range c.room.clients {
-		if client == c {
-			continue
-		}
+		c.getPlayerData(client)
+	}
+}
 
-		if (client.session.private || c.session.private) && ((c.session.partyId == 0 || client.session.partyId != c.session.partyId) && client.session.onlineFriends[c.session.uuid]) {
-			continue
-		}
+func (c *RoomClient) getPlayerData(client *RoomClient) {
+	if client == c {
+		return
+	}
 
-		c.outbox <- buildMsg("c", client.session.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge, client.session.medals[:])
+	if (client.session.private || c.session.private) && ((c.session.partyId == 0 || client.session.partyId != c.session.partyId) && client.session.onlineFriends[c.session.uuid]) {
+		return
+	}
 
-		// client.x and client.y get set at the same time
-		// only one needs to be checked
-		if client.x != -1 {
-			c.outbox <- buildMsg("m", client.session.id, client.x, client.y)
-		}
-		if client.facing != 0 {
-			c.outbox <- buildMsg("f", client.session.id, client.facing)
-		}
-		if client.speed != 0 {
-			c.outbox <- buildMsg("spd", client.session.id, client.speed)
-		}
-		if client.session.name != "" {
-			c.outbox <- buildMsg("name", client.session.id, client.session.name)
-		}
-		if client.session.spriteIndex != -1 {
-			c.outbox <- buildMsg("spr", client.session.id, client.session.sprite, client.session.spriteIndex) // if the other client sent us valid sprite and index before
-		}
-		if client.repeatingFlash {
-			c.outbox <- buildMsg("rfl", client.session.id, client.flash[:])
-		}
-		if client.hidden {
-			c.outbox <- buildMsg("h", client.session.id, 1)
-		}
-		if client.session.system != "" {
-			c.outbox <- buildMsg("sys", client.session.id, client.session.system)
-		}
-		for i, pic := range client.pictures {
-			if pic != nil {
-				c.outbox <- buildMsg("ap", client.session.id, i+1, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
-			}
+	c.outbox <- buildMsg("c", client.session.id, client.session.uuid, client.session.rank, client.session.account, client.session.badge, client.session.medals[:])
+
+	// client.x and client.y get set at the same time
+	// only one needs to be checked
+	if client.x != -1 {
+		c.outbox <- buildMsg("m", client.session.id, client.x, client.y)
+	}
+	if client.facing != 0 {
+		c.outbox <- buildMsg("f", client.session.id, client.facing)
+	}
+	if client.speed != 0 {
+		c.outbox <- buildMsg("spd", client.session.id, client.speed)
+	}
+	if client.session.name != "" {
+		c.outbox <- buildMsg("name", client.session.id, client.session.name)
+	}
+	if client.session.spriteIndex != -1 {
+		c.outbox <- buildMsg("spr", client.session.id, client.session.sprite, client.session.spriteIndex) // if the other client sent us valid sprite and index before
+	}
+	if client.repeatingFlash {
+		c.outbox <- buildMsg("rfl", client.session.id, client.flash[:])
+	}
+	if client.hidden {
+		c.outbox <- buildMsg("h", client.session.id, 1)
+	}
+	if client.session.system != "" {
+		c.outbox <- buildMsg("sys", client.session.id, client.session.system)
+	}
+	for i, pic := range client.pictures {
+		if pic != nil {
+			c.outbox <- buildMsg("ap", client.session.id, i+1, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
 		}
 	}
 }

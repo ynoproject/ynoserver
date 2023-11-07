@@ -1292,6 +1292,16 @@ func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// "connect" them NOW!!!
+	if client, ok := clients.Load(uuid); ok {
+		if otherClient, ok := clients.Load(targetUuid); ok {
+			if (client.roomC != nil && otherClient.roomC != nil) && client.roomC.room == otherClient.roomC.room {
+				client.roomC.getPlayerData(otherClient.roomC)
+				otherClient.roomC.getPlayerData(client.roomC)
+			}
+		}
+	}
+
 	w.Write([]byte("ok"))
 }
 
