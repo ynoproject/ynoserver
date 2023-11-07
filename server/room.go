@@ -197,10 +197,6 @@ func (c *RoomClient) leaveRoom() {
 }
 
 func (c *RoomClient) broadcast(msg []byte) {
-	if c.session.private && c.session.partyId == 0 {
-		return
-	}
-
 	for _, client := range c.room.clients {
 		if client == c {
 			continue

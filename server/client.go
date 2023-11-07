@@ -79,9 +79,11 @@ type SessionClient struct {
 
 	system string
 
-	private       bool
-	partyId       int
+	private bool
+	partyId int
+
 	onlineFriends []string
+	blockedUsers []string
 }
 
 func (c *SessionClient) msgReader() {

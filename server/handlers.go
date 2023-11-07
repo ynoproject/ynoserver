@@ -842,6 +842,10 @@ func (c *SessionClient) handleSay(msg []string) error {
 		if client.session == c {
 			continue
 		}
+
+		if containsString(client.session.blockedUsers, c.uuid) || containsString(c.blockedUsers, client.session.uuid) {
+			continue
+		}
 	
 		if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && !containsString(client.session.onlineFriends, c.uuid)) {
 			continue

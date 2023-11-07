@@ -1302,6 +1302,15 @@ func handleBlockList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// for hiding blocked players
+	if client, ok := clients.Load(uuid); ok {
+		client.blockedUsers = nil
+
+		for _, player := range blockedPlayers {
+			client.blockedUsers = append(client.blockedUsers, player.Uuid)
+		}
+	}
+
 	blockedPlayersJson, err := json.Marshal(blockedPlayers)
 	if err != nil {
 		handleInternalError(w, r, err)
