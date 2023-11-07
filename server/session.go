@@ -22,7 +22,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 	"unicode/utf8"
 
 	"github.com/fasthttp/websocket"
@@ -61,6 +65,21 @@ func initSession() {
 	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
 
 	scheduler.Every(1).Thursday().At("04:00").Do(doCleanupQueries)
+
+	go func() {
+		stop := make(chan os.Signal, 1)
+
+		signal.Notify(stop, syscall.SIGTERM)
+
+		<-stop
+
+		sender.broadcast(buildMsg("p", "0000000000000000", "YNOproject", "", 2, true, "null", [5]int{}))
+		sender.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, ":2kkiSign: **The server is now restarting.** :2kkiSign:", randString(12)))
+
+		time.Sleep(time.Second)
+
+		os.Exit(0)
+	}()
 
 	logTaskComplete()
 }
