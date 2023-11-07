@@ -84,7 +84,7 @@ func initApi() {
 
 	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
-	http.HandleFunc("/api/saveSync", handleSaveSync)
+	http.HandleFunc("/api/savesync", handleSaveSync)
 	http.HandleFunc("/api/vm", handleVm)
 	http.HandleFunc("/api/badge", handleBadge)
 
