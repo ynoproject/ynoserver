@@ -74,7 +74,7 @@ func initSession() {
 		<-stop
 
 		sender.broadcast(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
-		sender.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, "**The server is now restarting.**", randString(12)))
+		sender.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, "**The server is restarting.**", randString(12)))
 
 		time.Sleep(time.Second)
 
