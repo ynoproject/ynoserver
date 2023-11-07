@@ -82,8 +82,8 @@ type SessionClient struct {
 	private bool
 	partyId int
 
-	onlineFriends []string
-	blockedUsers []string
+	onlineFriends map[string]bool
+	blockedUsers  map[string]bool
 }
 
 func (c *SessionClient) msgReader() {

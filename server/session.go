@@ -104,6 +104,8 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		conn:   conn,
 		ip:     ip,
 		outbox: make(chan []byte, 8),
+		onlineFriends: make(map[string]bool),
+		blockedUsers: make(map[string]bool),
 	}
 
 	c.ctx, c.cancel = context.WithCancel(context.Background())

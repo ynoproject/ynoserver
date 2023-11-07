@@ -1314,11 +1314,13 @@ func handleBlockList(w http.ResponseWriter, r *http.Request) {
 
 	// for hiding blocked players
 	if client, ok := clients.Load(uuid); ok {
-		client.blockedUsers = nil
+		blockedUsers := make(map[string]bool)
 
 		for _, player := range blockedPlayers {
-			client.blockedUsers = append(client.blockedUsers, player.Uuid)
+			blockedUsers[player.Uuid] = true
 		}
+
+		client.blockedUsers = blockedUsers
 	}
 
 	blockedPlayersJson, err := json.Marshal(blockedPlayers)

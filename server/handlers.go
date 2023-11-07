@@ -843,11 +843,11 @@ func (c *SessionClient) handleSay(msg []string) error {
 			continue
 		}
 
-		if containsString(client.session.blockedUsers, c.uuid) || containsString(c.blockedUsers, client.session.uuid) {
+		if client.session.blockedUsers[c.uuid] || c.blockedUsers[client.session.uuid] {
 			continue
 		}
 	
-		if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && !containsString(client.session.onlineFriends, c.uuid)) {
+		if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && client.session.onlineFriends[c.uuid]) {
 			continue
 		}
 	
