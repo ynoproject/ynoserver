@@ -166,6 +166,7 @@ func getIp(r *http.Request) string {
 
 type IpHubResponse struct {
 	Block int `json:"block"`
+	Error string `json:"error"`
 }
 
 func isVpn(ip string) bool {
@@ -197,6 +198,10 @@ func isVpn(ip string) bool {
 	var response IpHubResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
+		return false
+	}
+
+	if response.Error != "" {
 		return false
 	}
 
