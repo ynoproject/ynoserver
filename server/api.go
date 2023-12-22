@@ -73,146 +73,91 @@ type PlayerListFullData struct {
 func initApi() {
 	logInitTask("API")
 
-	http.HandleFunc("/admin/getplayers", adminGetPlayers)
-	http.HandleFunc("/admin/getbans", adminGetBans)
-	http.HandleFunc("/admin/getmutes", adminGetMutes)
-	http.HandleFunc("/admin/ban", adminBan)
-	http.HandleFunc("/admin/mute", adminMute)
-	http.HandleFunc("/admin/unban", adminUnban)
-	http.HandleFunc("/admin/unmute", adminUnmute)
-	http.HandleFunc("/admin/changeusername", adminChangeUsername)
-
-	http.HandleFunc("/api/admin", handleAdmin)
-	http.HandleFunc("/api/party", handleParty)
-	http.HandleFunc("/api/savesync", handleSaveSync)
-	http.HandleFunc("/api/vm", handleVm)
-	http.HandleFunc("/api/badge", handleBadge)
-
-	http.HandleFunc("/api/register", handleRegister)
-	http.HandleFunc("/api/login", handleLogin)
-	http.HandleFunc("/api/logout", handleLogout)
-	http.HandleFunc("/api/changepw", handleChangePw)
-
-	http.HandleFunc("/api/addplayerfriend", handleAddPlayerFriend)
-	http.HandleFunc("/api/removeplayerfriend", handleRemovePlayerFriend)
-
-	http.HandleFunc("/api/blockplayer", handleBlockPlayer)
-	http.HandleFunc("/api/unblockplayer", handleUnblockPlayer)
-	http.HandleFunc("/api/blocklist", handleBlockList)
-
-	http.HandleFunc("/api/chathistory", handleChatHistory)
-	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
-
-	http.HandleFunc("/api/screenshot", handleScreenshot)
-
-	http.HandleFunc("/api/2kki", func(w http.ResponseWriter, r *http.Request) {
-		if config.gameName != "2kki" {
-			handleError(w, r, "endpoint not supported")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request){
+		if isVpn(getIp(r)) {
+			http.Error(w, "vpn not permitted", http.StatusForbidden)
 			return
 		}
+	
+		switch r.URL.Path {
+		case "/session":
+			handleSession(w, r)
+		case "/room":
+			handleRoom(w, r)
 
-		actionParam := r.URL.Query().Get("action")
-		if actionParam == "" {
-			handleError(w, r, "action not specified")
-			return
+		case "/admin/getplayers":
+			adminGetPlayers(w, r)
+		case "/admin/getbans":
+			adminGetBans(w, r)
+		case "/admin/getmutes":
+			adminGetMutes(w, r)
+		case "/admin/ban":
+			adminBan(w, r)
+		case "/admin/mute":
+			adminMute(w, r)
+		case "/admin/unban":
+			adminUnban(w, r)
+		case "/admin/unmute":
+			adminUnmute(w, r)
+		case "/admin/changeusername":
+			adminChangeUsername(w, r)
+
+		case "/api/admin":
+			handleAdmin(w, r)
+		case "/api/party":
+			handleParty(w, r)
+		case "/api/savesync":
+			handleSaveSync(w, r)
+		case "/api/vm":
+			handleVm(w, r)
+		case "/api/badge":
+			handleBadge(w, r)
+
+		case "/api/register":
+			handleRegister(w, r)
+		case "/api/login":
+			handleLogin(w, r)
+		case "/api/logout":
+			handleLogout(w, r)
+		case "/api/changepw":
+			handleChangePw(w, r)
+
+		case "/api/addplayerfriend":
+			handleAddPlayerFriend(w, r)
+		case "/api/removeplayerfriend":
+			handleRemovePlayerFriend(w, r)
+
+		case "/api/blockplayer":
+			handleBlockPlayer(w, r)
+		case "/api/unblockplayer":
+			handleUnblockPlayer(w, r)
+		case "/api/blocklist":
+			handleBlockList(w, r)
+
+		case "/api/chathistory":
+			handleChatHistory(w, r)
+		case "/api/clearchathistory":
+			handleClearChatHistory(w, r)
+
+		case "/api/screenshot":
+			handleScreenshot(w, r)
+
+		case "/api/2kki":
+			handle2kki(w, r)
+
+		case "/api/explorer":
+			handleExplorer(w, r)
+		case "/api/explorercompletion":
+			handleExplorerCompletion(w, r)
+		case "/api/explorerlocations":
+			handleExplorerLocations(w, r)
+
+		case "/api/info":
+			handleInfo(w, r)
+
+		case "/api/players":
+			handlePlayers(w, r)
 		}
-
-		query := r.URL.Query()
-		query.Del("action")
-
-		queryString := query.Encode()
-
-		var response string
-
-		err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam, queryString).Scan(&response)
-		if err != nil {
-			if err != sql.ErrNoRows {
-				handleInternalError(w, r, err)
-				return
-			}
-
-			url := "https://2kki.app/" + actionParam
-			if queryString != "" {
-				url += "?" + queryString
-			}
-
-			resp, err := http.Get(url)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-
-			if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
-				writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
-			} else {
-				_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)", actionParam, queryString, string(body), string(body))
-				if err != nil {
-					writeErrLog(getIp(r), r.URL.Path, err.Error())
-				}
-			}
-
-			w.Write(body)
-			return
-		}
-
-		w.Write([]byte(response))
-	})
-	http.HandleFunc("/api/explorer", handleExplorer)
-	http.HandleFunc("/api/explorercompletion", handleExplorerCompletion)
-	http.HandleFunc("/api/explorerlocations", handleExplorerLocations)
-
-	http.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
-		var uuid string
-		var name string
-		var rank int
-		var badge string
-		var badgeSlotRows int
-		var badgeSlotCols int
-		var screenshotLimit int
-		var medals [5]int
-
-		token := r.Header.Get("Authorization")
-		if token == "" {
-			uuid, name, rank = getPlayerInfo(getIp(r))
-		} else {
-			uuid, name, rank, badge, badgeSlotRows, badgeSlotCols, screenshotLimit = getPlayerInfoFromToken(token)
-			medals = getPlayerMedals(uuid)
-		}
-
-		// guest accounts with no playerGameData records will return nothing
-		// if uuid is empty it breaks fetchAndUpdatePlayerInfo in forest-orb
-		if uuid == "" {
-			uuid = "null"
-		}
-
-		playerInfo := PlayerInfo{
-			Uuid:            uuid,
-			Name:            name,
-			Rank:            rank,
-			Badge:           badge,
-			BadgeSlotRows:   badgeSlotRows,
-			BadgeSlotCols:   badgeSlotCols,
-			ScreenshotLimit: screenshotLimit,
-			Medals:          medals,
-		}
-		playerInfoJson, err := json.Marshal(playerInfo)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write(playerInfoJson)
-	})
-
-	http.HandleFunc("/api/players", func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(strconv.Itoa(clients.GetAmount())))
 	})
 
 	logTaskComplete()
@@ -990,10 +935,6 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	ip := getIp(r)
 
-	if isVpn(ip) {
-		handleError(w, r, "vpn not permitted")
-	}
-
 	if isIpBanned(ip) {
 		handleError(w, r, "banned users cannot create accounts")
 		return
@@ -1580,4 +1521,111 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("ok"))
+}
+
+func handle2kki(w http.ResponseWriter, r *http.Request) {
+	if config.gameName != "2kki" {
+		handleError(w, r, "endpoint not supported")
+		return
+	}
+
+	actionParam := r.URL.Query().Get("action")
+	if actionParam == "" {
+		handleError(w, r, "action not specified")
+		return
+	}
+
+	query := r.URL.Query()
+	query.Del("action")
+
+	queryString := query.Encode()
+
+	var response string
+
+	err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam, queryString).Scan(&response)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		url := "https://2kki.app/" + actionParam
+		if queryString != "" {
+			url += "?" + queryString
+		}
+
+		resp, err := http.Get(url)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
+			writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
+		} else {
+			_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)", actionParam, queryString, string(body), string(body))
+			if err != nil {
+				writeErrLog(getIp(r), r.URL.Path, err.Error())
+			}
+		}
+
+		w.Write(body)
+		return
+	}
+
+	w.Write([]byte(response))
+}
+
+func handleInfo(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+	var name string
+	var rank int
+	var badge string
+	var badgeSlotRows int
+	var badgeSlotCols int
+	var screenshotLimit int
+	var medals [5]int
+
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		uuid, name, rank = getPlayerInfo(getIp(r))
+	} else {
+		uuid, name, rank, badge, badgeSlotRows, badgeSlotCols, screenshotLimit = getPlayerInfoFromToken(token)
+		medals = getPlayerMedals(uuid)
+	}
+
+	// guest accounts with no playerGameData records will return nothing
+	// if uuid is empty it breaks fetchAndUpdatePlayerInfo in forest-orb
+	if uuid == "" {
+		uuid = "null"
+	}
+
+	playerInfo := PlayerInfo{
+		Uuid:            uuid,
+		Name:            name,
+		Rank:            rank,
+		Badge:           badge,
+		BadgeSlotRows:   badgeSlotRows,
+		BadgeSlotCols:   badgeSlotCols,
+		ScreenshotLimit: screenshotLimit,
+		Medals:          medals,
+	}
+	playerInfoJson, err := json.Marshal(playerInfo)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+	w.Write(playerInfoJson)
+}
+
+func handlePlayers(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(strconv.Itoa(clients.GetAmount())))
 }

@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -116,9 +115,6 @@ func Start() {
 
 	scheduler.StartAsync()
 
-	http.HandleFunc("/room", handleRoom)
-	http.HandleFunc("/session", handleSession)
-
 	fmt.Print("Now serving requests.\n")
 
 	http.Serve(getListener(), nil)
@@ -172,7 +168,13 @@ type IpHubResponse struct {
 	Block int `json:"block"`
 }
 
-func isVpn(ip string) (vpn bool) {
+func isVpn(ip string) bool {
+	var status int
+	err := db.QueryRow("SELECT status FROM vpns WHERE ip = ? AND expire > UTC_TIMESTAMP()").Scan(&status)
+	if err == nil {
+		return status != 0
+	}
+
 	if config.ipHubKey == "" {
 		return false // VPN checking is not available
 	}
@@ -183,6 +185,7 @@ func isVpn(ip string) (vpn bool) {
 	}
 
 	req.Header.Set("X-Key", config.ipHubKey)
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -190,21 +193,16 @@ func isVpn(ip string) (vpn bool) {
 	}
 
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+
+	var response IpHubResponse
+	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		return false
 	}
 
-	var response IpHubResponse
-	if err := json.Unmarshal(body, &response); err != nil {
-		return false
-	}
-
-	if response.Block != 0 {
-		vpn = true
-	}
-
-	return vpn
+	db.Exec("INSERT INTO vpns (ip, status, expire) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)) ON DUPLICATE KEY UPDATE status = ?, expire = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)", ip, response.Block, response.Block)
+		
+	return response.Block != 0
 }
 
 func writeLog(uuid string, location string, payload string, errorcode int) {

@@ -50,7 +50,6 @@ func getOrCreatePlayerData(ip string) (uuid string, banned bool, muted bool) {
 
 		// create new guest account
 		uuid = randString(16)
-		banned = isVpn(ip)
 		createPlayerData(ip, uuid, banned)
 
 		// recheck moderation status
