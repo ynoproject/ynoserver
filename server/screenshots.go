@@ -92,7 +92,13 @@ func (sfs ScreenshotFS) Open(path string) (http.File, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if stat.IsDir() {
+		err := file.Close()
+		if err != nil {
+			return nil, err
+		}
+
 		return nil, errors.New("not permitted to serve directories")
 	}
 
