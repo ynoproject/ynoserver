@@ -203,6 +203,23 @@ func (c *RoomClient) handleRrfl() (err error) {
 	return nil
 }
 
+func (c *RoomClient) handleTr(msg []string) error {
+	if len(msg) != 2 {
+		return errors.New("segment count mismatch")
+	}
+
+	transparency, errconv := strconv.Atoi(msg[1])
+	if errconv != nil || transparency < 0 || transparency > 7 {
+		return errconv
+	}
+
+	c.transparency = transparency
+
+	c.broadcast(buildMsg(msg[0], c.session.id, msg[1]))
+
+	return nil
+}
+
 func (c *RoomClient) handleH(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")

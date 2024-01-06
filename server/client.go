@@ -177,6 +177,7 @@ type RoomClient struct {
 
 	flash          [5]int
 	repeatingFlash bool
+	transparency int
 
 	hidden bool
 
@@ -285,6 +286,7 @@ func (c *RoomClient) reset() {
 
 	c.flash = [5]int{}
 	c.repeatingFlash = false
+	c.transparency = 0
 
 	c.hidden = false
 

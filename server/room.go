@@ -262,6 +262,8 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 		err = c.handleFl(msgFields)
 	case "rrfl": // remove repeating player flash
 		err = c.handleRrfl()
+	case "tr": // change transparency
+		err = c.handleTr(msgFields)
 	case "h": // change sprite visibility
 		err = c.handleH(msgFields)
 	case "sys": // change my system graphic
@@ -336,6 +338,9 @@ func (c *RoomClient) getPlayerData(client *RoomClient) {
 	}
 	if client.repeatingFlash {
 		c.outbox <- buildMsg("rfl", client.session.id, client.flash[:])
+	}
+	if client.transparency != 0 {
+		c.outbox <- buildMsg("tr", client.session.id, client.transparency)
 	}
 	if client.hidden {
 		c.outbox <- buildMsg("h", client.session.id, 1)
