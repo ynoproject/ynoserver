@@ -23,7 +23,7 @@ import (
 )
 
 type Minigame struct {
-	Id             string `json:"minigameId"` // TODO: make this `json:"id"`
+	Id             string `json:"id"`
 	VarId          int    `json:"varId"`
 	InitialVarSync bool   `json:"initialVarSync"`
 	SwitchId       int    `json:"switchId"`
