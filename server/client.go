@@ -177,10 +177,7 @@ type RoomClient struct {
 
 	flash          [5]int
 	repeatingFlash bool
-
 	transparency int
-	opacity      int
-
 	hidden bool
 
 	pictures [maxPictures]*Picture

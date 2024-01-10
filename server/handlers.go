@@ -220,23 +220,6 @@ func (c *RoomClient) handleTr(msg []string) error {
 	return nil
 }
 
-func (c *RoomClient) handleOp(msg []string) error {
-	if len(msg) != 2 {
-		return errors.New("segment count mismatch")
-	}
-
-	opacity, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || opacity < 0 || opacity > 255 {
-		return errconv
-	}
-
-	c.opacity = opacity
-
-	c.broadcast(buildMsg(msg[0], c.session.id, msg[1]))
-
-	return nil
-}
-
 func (c *RoomClient) handleH(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")
