@@ -73,12 +73,12 @@ type PlayerListFullData struct {
 func initApi() {
 	logInitTask("API")
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request){
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if isVpn(getIp(r)) {
 			http.Error(w, "vpn not permitted", http.StatusForbidden)
 			return
 		}
-	
+
 		switch r.URL.Path {
 		case "/session":
 			handleSession(w, r)

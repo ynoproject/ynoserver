@@ -871,7 +871,6 @@ func (c *SessionClient) handleSay(msg []string) error {
 		return errors.New("invalid message")
 	}
 
-
 	for _, client := range c.roomC.room.clients {
 		if client.session == c {
 			continue
@@ -880,14 +879,14 @@ func (c *SessionClient) handleSay(msg []string) error {
 		if client.session.blockedUsers[c.uuid] || c.blockedUsers[client.session.uuid] {
 			continue
 		}
-	
+
 		if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && !client.session.onlineFriends[c.uuid]) {
 			continue
 		}
-	
+
 		client.session.outbox <- buildMsg("say", c.uuid, msgContents)
 	}
-	
+
 	// so local echo appears
 	c.outbox <- buildMsg("say", c.uuid, msgContents)
 

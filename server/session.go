@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	clients             = NewSCMap()
+	clients = NewSCMap()
 )
 
 func initSession() {
@@ -96,11 +96,11 @@ func handleSession(w http.ResponseWriter, r *http.Request) {
 
 func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	c := &SessionClient{
-		conn:   conn,
-		ip:     ip,
-		outbox: make(chan []byte, 8),
+		conn:          conn,
+		ip:            ip,
+		outbox:        make(chan []byte, 8),
 		onlineFriends: make(map[string]bool),
-		blockedUsers: make(map[string]bool),
+		blockedUsers:  make(map[string]bool),
 	}
 
 	c.ctx, c.cancel = context.WithCancel(context.Background())

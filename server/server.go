@@ -165,7 +165,7 @@ func getIp(r *http.Request) string {
 }
 
 type IpHubResponse struct {
-	Block int `json:"block"`
+	Block int    `json:"block"`
 	Error string `json:"error"`
 }
 
@@ -206,7 +206,7 @@ func isVpn(ip string) bool {
 	}
 
 	db.Exec("INSERT INTO vpns (ip, status, expire) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)) ON DUPLICATE KEY UPDATE status = ?, expire = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)", ip, response.Block, response.Block)
-		
+
 	return response.Block != 0
 }
 

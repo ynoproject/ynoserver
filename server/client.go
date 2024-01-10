@@ -179,7 +179,7 @@ type RoomClient struct {
 	repeatingFlash bool
 
 	transparency int
-	opacity int
+	opacity      int
 
 	hidden bool
 
