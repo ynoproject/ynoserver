@@ -19,9 +19,6 @@
 ## Battle Animation IDs to sync in multiplayer
 #battle_anim_ids: ""
 
-## IPHub API key, leave blank to disable VPN check
-#iphub_key: ""
-
 ## Logging settings
 logging:
   ## Size of log file (MB)

@@ -20,7 +20,6 @@ package server
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -162,52 +161,6 @@ func contains(s []int, num int) bool {
 
 func getIp(r *http.Request) string {
 	return r.Header.Get("x-forwarded-for")
-}
-
-type IpHubResponse struct {
-	Block int    `json:"block"`
-	Error string `json:"error"`
-}
-
-func isVpn(ip string) bool {
-	var status int
-	err := db.QueryRow("SELECT status FROM vpns WHERE ip = ? AND expire > UTC_TIMESTAMP()").Scan(&status)
-	if err == nil {
-		return status != 0
-	}
-
-	if config.ipHubKey == "" {
-		return false // VPN checking is not available
-	}
-
-	req, err := http.NewRequest("GET", "https://v2.api.iphub.info/ip/"+ip, nil)
-	if err != nil {
-		return false
-	}
-
-	req.Header.Set("X-Key", config.ipHubKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return false
-	}
-
-	defer resp.Body.Close()
-
-	var response IpHubResponse
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		return false
-	}
-
-	if response.Error != "" {
-		return false
-	}
-
-	db.Exec("INSERT INTO vpns (ip, status, expire) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)) ON DUPLICATE KEY UPDATE status = ?, expire = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)", ip, response.Block, response.Block)
-
-	return response.Block != 0
 }
 
 func writeLog(uuid string, location string, payload string, errorcode int) {

@@ -35,8 +35,6 @@ type Config struct {
 	picturePrefixes []string
 	battleAnimIds   map[int]bool
 
-	ipHubKey string
-
 	logging struct {
 		maxSize    int
 		maxBackups int
@@ -55,7 +53,6 @@ type ConfigFile struct {
 	BattleAnimIds   string `yaml:"battle_anim_ids"`
 
 	SignKey  string `yaml:"sign_key"`
-	IpHubKey string `yaml:"iphub_key"`
 
 	Logging struct {
 		MaxSize    int `yaml:"max_size"`
@@ -122,8 +119,6 @@ func parseConfigFile(filename string) (config *Config) {
 			config.battleAnimIds[idInt] = true
 		}
 	}
-
-	config.ipHubKey = configFile.IpHubKey
 
 	if configFile.Logging.MaxSize != 0 {
 		config.logging.maxSize = configFile.Logging.MaxSize

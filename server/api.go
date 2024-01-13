@@ -73,92 +73,50 @@ type PlayerListFullData struct {
 func initApi() {
 	logInitTask("API")
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if isVpn(getIp(r)) {
-			http.Error(w, "vpn not permitted", http.StatusForbidden)
-			return
-		}
+	http.HandleFunc("/session", handleSession)
+	http.HandleFunc("/room", handleRoom)
 
-		switch r.URL.Path {
-		case "/session":
-			handleSession(w, r)
-		case "/room":
-			handleRoom(w, r)
+	http.HandleFunc("/admin/getplayers", adminGetPlayers)
+	http.HandleFunc("/admin/getbans", adminGetBans)
+	http.HandleFunc("/admin/getmutes", adminGetMutes)
+	http.HandleFunc("/admin/ban", adminBan)
+	http.HandleFunc("/admin/mute", adminMute)
+	http.HandleFunc("/admin/unban", adminUnban)
+	http.HandleFunc("/admin/unmute", adminUnmute)
+	http.HandleFunc("/admin/changeusername", adminChangeUsername)
 
-		case "/admin/getplayers":
-			adminGetPlayers(w, r)
-		case "/admin/getbans":
-			adminGetBans(w, r)
-		case "/admin/getmutes":
-			adminGetMutes(w, r)
-		case "/admin/ban":
-			adminBan(w, r)
-		case "/admin/mute":
-			adminMute(w, r)
-		case "/admin/unban":
-			adminUnban(w, r)
-		case "/admin/unmute":
-			adminUnmute(w, r)
-		case "/admin/changeusername":
-			adminChangeUsername(w, r)
+	http.HandleFunc("/api/admin", handleAdmin)
+	http.HandleFunc("/api/party", handleParty)
+	http.HandleFunc("/api/savesync", handleSaveSync)
+	http.HandleFunc("/api/vm", handleVm)
+	http.HandleFunc("/api/badge", handleBadge)
 
-		case "/api/admin":
-			handleAdmin(w, r)
-		case "/api/party":
-			handleParty(w, r)
-		case "/api/savesync":
-			handleSaveSync(w, r)
-		case "/api/vm":
-			handleVm(w, r)
-		case "/api/badge":
-			handleBadge(w, r)
+	http.HandleFunc("/api/register", handleRegister)
+	http.HandleFunc("/api/login", handleLogin)
+	http.HandleFunc("/api/logout", handleLogout)
+	http.HandleFunc("/api/changepw", handleChangePw)
 
-		case "/api/register":
-			handleRegister(w, r)
-		case "/api/login":
-			handleLogin(w, r)
-		case "/api/logout":
-			handleLogout(w, r)
-		case "/api/changepw":
-			handleChangePw(w, r)
+	http.HandleFunc("/api/addplayerfriend", handleAddPlayerFriend)
+	http.HandleFunc("/api/removeplayerfriend", handleRemovePlayerFriend)
 
-		case "/api/addplayerfriend":
-			handleAddPlayerFriend(w, r)
-		case "/api/removeplayerfriend":
-			handleRemovePlayerFriend(w, r)
+	http.HandleFunc("/api/blockplayer", handleBlockPlayer)
+	http.HandleFunc("/api/unblockplayer", handleUnblockPlayer)
+	http.HandleFunc("/api/blocklist", handleBlockList)
 
-		case "/api/blockplayer":
-			handleBlockPlayer(w, r)
-		case "/api/unblockplayer":
-			handleUnblockPlayer(w, r)
-		case "/api/blocklist":
-			handleBlockList(w, r)
+	http.HandleFunc("/api/chathistory", handleChatHistory)
+	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
 
-		case "/api/chathistory":
-			handleChatHistory(w, r)
-		case "/api/clearchathistory":
-			handleClearChatHistory(w, r)
+	http.HandleFunc("/api/screenshot", handleScreenshot)
 
-		case "/api/screenshot":
-			handleScreenshot(w, r)
+	http.HandleFunc("/api/2kki", handle2kki)
 
-		case "/api/2kki":
-			handle2kki(w, r)
+	http.HandleFunc("/api/explorer", handleExplorer)
+	http.HandleFunc("/api/explorercompletion", handleExplorerCompletion)
+	http.HandleFunc("/api/explorerlocations", handleExplorerLocations)
 
-		case "/api/explorer":
-			handleExplorer(w, r)
-		case "/api/explorercompletion":
-			handleExplorerCompletion(w, r)
-		case "/api/explorerlocations":
-			handleExplorerLocations(w, r)
+	http.HandleFunc("/api/info", handleInfo)
 
-		case "/api/info":
-			handleInfo(w, r)
-
-		case "/api/players":
-			handlePlayers(w, r)
-		}
-	})
+	http.HandleFunc("/api/players", handlePlayers)
 
 	logTaskComplete()
 }
