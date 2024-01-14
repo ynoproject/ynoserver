@@ -35,6 +35,8 @@ type Config struct {
 	picturePrefixes []string
 	battleAnimIds   map[int]bool
 
+	webhookUrl string
+
 	logging struct {
 		maxSize    int
 		maxBackups int
@@ -51,6 +53,8 @@ type ConfigFile struct {
 	PictureNames    string `yaml:"picture_names"`
 	PicturePrefixes string `yaml:"picture_prefixes"`
 	BattleAnimIds   string `yaml:"battle_anim_ids"`
+
+	WebHookUrl string `json:"webhook_url"`
 
 	SignKey  string `yaml:"sign_key"`
 
@@ -119,6 +123,8 @@ func parseConfigFile(filename string) (config *Config) {
 			config.battleAnimIds[idInt] = true
 		}
 	}
+
+	config.webhookUrl = configFile.WebHookUrl
 
 	if configFile.Logging.MaxSize != 0 {
 		config.logging.maxSize = configFile.Logging.MaxSize

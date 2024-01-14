@@ -20,6 +20,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -925,6 +926,13 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		err := writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
 		if err != nil {
 			return err
+		}
+
+		if c.account && config.webhookUrl != "" {
+			err = sendWebhookMessage(fmt.Sprintf("%s@%s", c.name, config.gameName), msgContents)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		for _, client := range clients.Get() {
