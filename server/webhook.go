@@ -8,7 +8,26 @@ import (
 	"strings"
 )
 
-var urlReplacer = strings.NewReplacer("http://", "", "https://", "")
+var (
+	urlReplacer = strings.NewReplacer("http://", "", "https://", "")
+	gameIdToName = map[string]string{
+		"2kki": "Yume 2kki",
+		"amillusion": "Amillusion",
+		"braingirl": "Braingirl",
+		"deepdreams": "Deep Dreams",
+		"flow": ".flow",
+		"genie": "Dream Genie",
+		"mikan": "Mikan Muzou",
+		"muma": "Muma|Rope",
+		"oversomnia": "Oversomnia",
+		"prayers": "Answered Prayers",
+		"sheawaits": "She Awaits",
+		"someday": "Someday",
+		"ultraviolet": "Ultra Violet",
+		"unevendream": "Uneven Dream",
+		"yume": "Yume Nikki",
+	}
+)
 
 type WebhookRequest struct {
 	Username        string `json:"username"`

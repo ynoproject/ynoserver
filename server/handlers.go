@@ -929,7 +929,12 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		}
 
 		if c.account && config.chatWebhook != "" {
-			err = sendWebhookMessage(config.chatWebhook, fmt.Sprintf("%s (%s)", c.name, config.gameName), c.badge, msgContents, true)
+			game := config.gameName
+			if gameName, ok := gameIdToName[game]; ok {
+				game = gameName
+			}
+
+			err = sendWebhookMessage(config.chatWebhook, fmt.Sprintf("%s (%s)", c.name, game), c.badge, msgContents, true)
 			if err != nil {
 				return err
 			}
