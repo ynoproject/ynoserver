@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -10,17 +11,24 @@ import (
 var urlReplacer = strings.NewReplacer("http://", "", "https://", "")
 
 type WebhookRequest struct {
-	Username string `json:"username"`
-	Content string `json:"content"`
+	Username        string `json:"username"`
+	AvatarUrl       string `json:"avatar_url"`
+	Content         string `json:"content"`
 	AllowedMentions struct {
 		Parse []string `json:"parse"`
 	} `json:"allowed_mentions"`
 }
 
-func sendWebhookMessage(name, contents string) error {
+func sendWebhookMessage(name, badge, contents string) error {
+	var avatarUrl string
+	if badge != "" {
+		avatarUrl = fmt.Sprintf("https://ynoproject.net/%s/badges/%s.png", config.gameName, badge)
+	}
+
 	body, err := json.Marshal(WebhookRequest{
-		Username: name,
-		Content: urlReplacer.Replace(contents),
+		Username:  name,
+		AvatarUrl: avatarUrl,
+		Content:   urlReplacer.Replace(contents),
 	})
 	if err != nil {
 		return err

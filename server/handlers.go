@@ -929,7 +929,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		}
 
 		if c.account && config.webhookUrl != "" {
-			err = sendWebhookMessage(fmt.Sprintf("%s@%s", c.name, config.gameName), msgContents)
+			err = sendWebhookMessage(fmt.Sprintf("%s@%s", c.name, config.gameName), c.badge, msgContents)
 			if err != nil {
 				return err
 			}
