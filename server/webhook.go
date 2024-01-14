@@ -18,12 +18,10 @@ type WebhookRequest struct {
 }
 
 func sendWebhookMessage(name, contents string) error {
-	req := WebhookRequest{
+	body, err := json.Marshal(WebhookRequest{
 		Username: name,
 		Content: urlReplacer.Replace(contents),
-	}
-	
-	body, err := json.Marshal(req)
+	})
 	if err != nil {
 		return err
 	}

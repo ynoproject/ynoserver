@@ -54,7 +54,7 @@ type ConfigFile struct {
 	PicturePrefixes string `yaml:"picture_prefixes"`
 	BattleAnimIds   string `yaml:"battle_anim_ids"`
 
-	WebHookUrl string `json:"webhook_url"`
+	WebhookUrl string `yaml:"webhook_url"`
 
 	SignKey  string `yaml:"sign_key"`
 
@@ -124,7 +124,7 @@ func parseConfigFile(filename string) (config *Config) {
 		}
 	}
 
-	config.webhookUrl = configFile.WebHookUrl
+	config.webhookUrl = configFile.WebhookUrl
 
 	if configFile.Logging.MaxSize != 0 {
 		config.logging.maxSize = configFile.Logging.MaxSize
