@@ -343,7 +343,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				if commandParam == "setPublic" {
+				if commandParam == "setPublic" && valueParam == "1" {
 					_, name, _, badge, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 				
 					err = sendWebhookMessage(config.screenshotWebhook, name, badge, fmt.Sprintf("https://connect.ynoproject.net/%s/screenshots/%s/%s.png", config.gameName, uuid, idParam), false)
