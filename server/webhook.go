@@ -22,7 +22,7 @@ type WebhookRequest struct {
 func sendWebhookMessage(name, badge, contents string) error {
 	var avatarUrl string
 	if badge != "" {
-		avatarUrl = fmt.Sprintf("https://ynoproject.net/%s/badges/%s.png", config.gameName, badge)
+		avatarUrl = fmt.Sprintf("https://ynoproject.net/%s/images/badge/%s.png", config.gameName, badge)
 	}
 
 	body, err := json.Marshal(WebhookRequest{
