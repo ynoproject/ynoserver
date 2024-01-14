@@ -35,7 +35,8 @@ type Config struct {
 	picturePrefixes []string
 	battleAnimIds   map[int]bool
 
-	webhookUrl string
+	chatWebhook string
+	screenshotWebhook string
 
 	logging struct {
 		maxSize    int
@@ -54,7 +55,8 @@ type ConfigFile struct {
 	PicturePrefixes string `yaml:"picture_prefixes"`
 	BattleAnimIds   string `yaml:"battle_anim_ids"`
 
-	WebhookUrl string `yaml:"webhook_url"`
+	ChatWebhook string `yaml:"chat_webhook"`
+	ScreenshotWebhook string `yaml:"screenshot_webhook"`
 
 	SignKey  string `yaml:"sign_key"`
 
@@ -124,7 +126,8 @@ func parseConfigFile(filename string) (config *Config) {
 		}
 	}
 
-	config.webhookUrl = configFile.WebhookUrl
+	config.chatWebhook = configFile.ChatWebhook
+	config.screenshotWebhook = configFile.ScreenshotWebhook
 
 	if configFile.Logging.MaxSize != 0 {
 		config.logging.maxSize = configFile.Logging.MaxSize

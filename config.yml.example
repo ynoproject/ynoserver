@@ -20,7 +20,10 @@
 #battle_anim_ids: ""
 
 ## Discord Webhook URL for chat bridge
-#webhook_url: ""
+#chat_webhook: ""
+
+## Discord Webhook URL for community screenshots
+#screenshot_webhook: ""
 
 ## Logging settings
 logging:

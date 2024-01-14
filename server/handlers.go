@@ -928,8 +928,8 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 			return err
 		}
 
-		if c.account && config.webhookUrl != "" {
-			err = sendWebhookMessage(fmt.Sprintf("%s@%s", c.name, config.gameName), c.badge, msgContents)
+		if c.account && config.chatWebhook != "" {
+			err = sendWebhookMessage(config.chatWebhook, fmt.Sprintf("%s@%s", c.name, config.gameName), c.badge, msgContents, true)
 			if err != nil {
 				return err
 			}

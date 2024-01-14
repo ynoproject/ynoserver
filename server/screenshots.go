@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"image/png"
 	"io"
 	"net/http"
@@ -340,6 +341,16 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				if !success {
 					handleError(w, r, "failed to update screenshot")
 					return
+				}
+
+				if commandParam == "setPublic" {
+					_, name, _, badge, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
+				
+					err = sendWebhookMessage(config.screenshotWebhook, name, badge, fmt.Sprintf("https://connect.ynoproject.net/%s/screenshots/%s/%s.png", config.gameName, uuid, idParam), false)
+					if err != nil {
+						handleError(w, r, "failed to send to webhook")
+						return
+					}
 				}
 			} else {
 				var err error
