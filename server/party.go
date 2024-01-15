@@ -96,7 +96,7 @@ func getPlayerPartyId(uuid string) (partyId int, err error) {
 func getPartyData(partyId int) (*Party, error) {
 	party, ok := parties[partyId]
 	if !ok {
-		return &Party{}, errors.New("party id not in cache")
+		return nil, errors.New("party id not in cache")
 	}
 
 	var hasOnlineMember bool
