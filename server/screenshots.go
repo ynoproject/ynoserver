@@ -71,41 +71,6 @@ const (
 	defaultPlayerScreenshotLimit = 10
 )
 
-func initScreenshots() {
-	logInitTask("screenshots")
-
-	http.Handle("/screenshots/", http.StripPrefix("/screenshots", http.FileServer(ScreenshotFS{fs: http.Dir("./screenshots")})))
-
-	logTaskComplete()
-}
-
-type ScreenshotFS struct {
-	fs http.FileSystem
-}
-
-func (sfs ScreenshotFS) Open(path string) (http.File, error) {
-	file, err := sfs.fs.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	stat, err := file.Stat()
-	if err != nil {
-		return nil, err
-	}
-
-	if stat.IsDir() {
-		err := file.Close()
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, errors.New("not permitted to serve directories")
-	}
-
-	return file, nil
-}
-
 func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 	commandParam := r.URL.Query().Get("command")
 	if commandParam == "" {

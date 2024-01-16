@@ -109,7 +109,6 @@ func Start() {
 	initHistory()
 	initEvents()
 	initBadges()
-	initScreenshots()
 	initSession()
 
 	scheduler.StartAsync()
