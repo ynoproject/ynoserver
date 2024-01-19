@@ -21,15 +21,22 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"log"
 	"math/rand"
+	"os"
 )
 
 type Security struct {
 	signKey []byte
 }
 
-func New(signKey []byte) *Security {
-	return &Security{signKey: signKey}
+func New() *Security {
+	key, err := os.ReadFile("key.bin")
+	if err != nil {
+		log.Fatalf("failed to read key file!")
+	}
+
+	return &Security{signKey: key}
 }
 
 func (s *Security) NewClientKey() uint32 {

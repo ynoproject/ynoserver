@@ -76,12 +76,7 @@ func Start() {
 
 	isMainServer = config.gameName == mainGameId
 
-	key, err := os.ReadFile("key.bin")
-	if err != nil {
-		log.Fatalf("failed to read key file!")
-	}
-
-	serverSecurity = security.New(key)
+	serverSecurity = security.New()
 	assets = getAssets(config.gamePath)
 
 	assets.ignoredSounds = config.badSounds
