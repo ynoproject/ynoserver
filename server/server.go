@@ -62,6 +62,7 @@ var (
 	}
 
 	isOkString = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
+	wordFilter *strings.Replacer
 )
 
 func Start() {
@@ -77,14 +78,10 @@ func Start() {
 	serverSecurity = security.New()
 	assets = getAssets(config.gamePath)
 
-	assets.ignoredSounds = config.badSounds
-	assets.allowedPictures = config.pictures
-	assets.allowedPicturePrefixes = config.picturePrefixes
-	assets.battleAnims = config.battleAnimIds
-
 	setConditions()
 	setBadges()
 	setEventVms()
+	setWordFilter()
 
 	globalConditions = getGlobalConditions()
 

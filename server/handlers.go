@@ -444,7 +444,7 @@ func (c *RoomClient) handleBa(msg []string) error {
 		return errconv
 	}
 
-	if !assets.battleAnims[id] {
+	if !config.battleAnimIds[id] {
 		return errors.New("invalid battle animation id")
 	}
 
@@ -850,7 +850,7 @@ func (c *SessionClient) handleSay(msg []string) error {
 		return errors.New("no name or system graphic set")
 	}
 
-	msgContents := strings.TrimSpace(msg[1])
+	msgContents := wordFilter.Replace(strings.TrimSpace(msg[1]))
 	if msgContents == "" || len(msgContents) > 150 {
 		return errors.New("invalid message")
 	}
@@ -890,7 +890,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("no name or system graphic set")
 	}
 
-	msgContents := strings.TrimSpace(msg[1])
+	msgContents := wordFilter.Replace(strings.TrimSpace(msg[1]))
 	if msgContents == "" || len(msgContents) > 150 {
 		return errors.New("invalid message")
 	}

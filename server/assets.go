@@ -30,11 +30,7 @@ type Assets struct {
 	sprites                map[string]bool
 	systems                map[string]bool
 	sounds                 map[string]bool
-	ignoredSounds          map[string]bool
 	pictures               map[string]bool
-	allowedPictures        map[string]bool
-	allowedPicturePrefixes []string
-	battleAnims            map[int]bool
 }
 
 func getAssets(gamePath string) *Assets {
@@ -149,7 +145,7 @@ func (a *Assets) IsValidSound(name string) bool {
 		return false
 	}
 
-	if a.ignoredSounds[name] {
+	if config.badSounds[name] {
 		return false
 	}
 
@@ -165,11 +161,11 @@ func (a *Assets) IsValidPicture(name string) bool {
 		return false
 	}
 
-	if a.allowedPictures[name] {
+	if config.pictures[name] {
 		return true
 	}
 
-	for _, prefix := range a.allowedPicturePrefixes {
+	for _, prefix := range config.picturePrefixes {
 		if strings.HasPrefix(strings.ToLower(name), prefix) {
 			return true
 		}
