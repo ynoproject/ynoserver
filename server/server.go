@@ -72,8 +72,6 @@ func Start() {
 
 	config = parseConfigFile(*configFile)
 
-	fmt.Printf("Current game ID is \"%s\".\n", config.gameName)
-
 	isMainServer = config.gameName == mainGameId
 
 	serverSecurity = security.New()
