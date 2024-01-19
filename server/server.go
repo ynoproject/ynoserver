@@ -62,7 +62,7 @@ var (
 	}
 
 	isOkString = regexp.MustCompile("^[A-Za-z0-9]+$").MatchString
-	wordFilter *strings.Replacer
+	wordFilter *regexp.Regexp
 )
 
 func Start() {

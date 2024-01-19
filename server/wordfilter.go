@@ -3,7 +3,7 @@ package server
 import (
 	"bufio"
 	"os"
-	"strings"
+	"regexp"
 )
 
 func setWordFilter() error {
@@ -16,13 +16,25 @@ func setWordFilter() error {
 
 	scanner.Split(bufio.ScanLines)
 
-	var wordFilterArgs []string
+	regexStr := "(?i)("
+
+	var wordAdded bool
 	for scanner.Scan() {
-		wordFilterArgs = append(wordFilterArgs, scanner.Text())
-		wordFilterArgs = append(wordFilterArgs, strings.Repeat("?", len(scanner.Text())))
+		if wordAdded {
+			regexStr += "|"
+		}
+
+		regexStr += scanner.Text()
+
+		wordAdded = true
 	}
 
-	wordFilter = strings.NewReplacer(wordFilterArgs...)
+	regex, err := regexp.Compile(regexStr + ")")
+	if err != nil {
+		return err
+	}
+
+	wordFilter = regex
 
 	return nil
 }

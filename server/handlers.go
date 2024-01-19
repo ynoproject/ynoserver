@@ -850,7 +850,7 @@ func (c *SessionClient) handleSay(msg []string) error {
 		return errors.New("no name or system graphic set")
 	}
 
-	msgContents := wordFilter.Replace(strings.TrimSpace(msg[1]))
+	msgContents := wordFilter.ReplaceAllString(strings.TrimSpace(msg[1]), ":2kkiSign:")
 	if msgContents == "" || len(msgContents) > 150 {
 		return errors.New("invalid message")
 	}
@@ -890,7 +890,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("no name or system graphic set")
 	}
 
-	msgContents := wordFilter.Replace(strings.TrimSpace(msg[1]))
+	msgContents := wordFilter.ReplaceAllString(strings.TrimSpace(msg[1]), ":2kkiSign:")
 	if msgContents == "" || len(msgContents) > 150 {
 		return errors.New("invalid message")
 	}
