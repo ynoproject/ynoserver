@@ -58,8 +58,6 @@ type ConfigFile struct {
 	ChatWebhook string `yaml:"chat_webhook"`
 	ScreenshotWebhook string `yaml:"screenshot_webhook"`
 
-	SignKey  string `yaml:"sign_key"`
-
 	Logging struct {
 		MaxSize    int `yaml:"max_size"`
 		MaxBackups int `yaml:"max_backups"`
