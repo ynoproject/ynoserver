@@ -23,6 +23,7 @@ var (
 		"prayers": "Answered Prayers",
 		"sheawaits": "She Awaits",
 		"someday": "Someday",
+		"tsushin": "Yume Tsushin",
 		"ultraviolet": "Ultra Violet",
 		"unevendream": "Uneven Dream",
 		"yume": "Yume Nikki",
