@@ -899,7 +899,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userExists int
-	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE user = ?", user).Scan(&userExists)
+	db.QueryRow("SELECT EXISTS(SELECT * FROM accounts WHERE user = ?)", user).Scan(&userExists)
 
 	if userExists > 0 {
 		handleError(w, r, "user exists")
@@ -1020,10 +1020,10 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleResetPw(uuid string) (newPassword string, err error) {
-	var userCount int
-	db.QueryRow("SELECT COUNT(*) FROM accounts WHERE uuid = ?", uuid).Scan(&userCount)
+	var userExists int
+	db.QueryRow("SELECT EXISTS (SELECT * FROM accounts WHERE uuid = ?)", uuid).Scan(&userExists)
 
-	if userCount == 0 {
+	if userExists == 0 {
 		return "", errors.New("user not found")
 	}
 
