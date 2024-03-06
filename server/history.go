@@ -57,8 +57,8 @@ var (
 func initHistory() {
 	lastMsgIds, _ = getLastMessageIds()
 
-	// Use main server to process chat message archiving task for all games
+	// Use main server to process chat message cleaning task for all games
 	if isMainServer {
-		scheduler.Cron("0 * * * *").Do(archiveChatMessages)
+		scheduler.Cron("0 * * * *").Do(deleteOldChatMessages)
 	}
 }
