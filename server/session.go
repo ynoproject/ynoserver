@@ -80,8 +80,6 @@ func initSession() {
 
 		os.Exit(0)
 	}()
-
-	logTaskComplete()
 }
 
 func handleSession(w http.ResponseWriter, r *http.Request) {

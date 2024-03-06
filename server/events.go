@@ -265,8 +265,6 @@ func initEvents() {
 	if currentEventVmMapId == 0 && currentEventVmEventId == 0 {
 		addEventVm()
 	}
-
-	logTaskComplete()
 }
 
 func sendEventsUpdate() {
@@ -521,8 +519,6 @@ func setEventVms() {
 
 		eventVms[mapIdInt] = append(eventVms[mapIdInt], eventIdInt)
 	}
-
-	logTaskComplete()
 }
 
 func setGameEventLocationPoolsAndLocationColors() {

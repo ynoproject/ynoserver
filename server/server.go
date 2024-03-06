@@ -116,10 +116,6 @@ func logUpdateTask(taskName string) {
 	fmt.Print("Updating " + taskName + "...\n")
 }
 
-func logTaskComplete() {
-	fmt.Print("Done.\n")
-}
-
 func getListener() net.Listener {
 	// remove socket file
 	os.Remove("sockets/" + config.gameName + ".sock")

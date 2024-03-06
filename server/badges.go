@@ -232,8 +232,6 @@ func setBadgeData() {
 			updatePlayerBadgeSlotCounts("")
 		}
 	}
-
-	logTaskComplete()
 }
 
 func updateActiveBadgesAndConditions() {
@@ -273,8 +271,6 @@ func updateActiveBadgesAndConditions() {
 			}
 		}
 	}
-
-	logTaskComplete()
 }
 
 func getGlobalConditions() (globalConditions []*Condition) {
@@ -767,8 +763,6 @@ func setConditions() {
 	}
 
 	conditions = conditionConfig
-
-	logTaskComplete()
 }
 
 func setBadges() {
@@ -840,8 +834,6 @@ func setBadges() {
 	}
 
 	badges = badgeConfig
-
-	logTaskComplete()
 }
 
 func getPlayerBadgeSlotCounts(playerName string) (badgeSlotRows int, badgeSlotCols int) {

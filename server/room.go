@@ -52,8 +52,6 @@ func createRooms(roomIds []int, spRooms []int) {
 			minigames:    getRoomMinigames(roomId),
 		}
 	}
-
-	logTaskComplete()
 }
 
 func handleRoom(w http.ResponseWriter, r *http.Request) {

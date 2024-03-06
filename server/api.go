@@ -117,8 +117,6 @@ func initApi() {
 	http.HandleFunc("/api/info", handleInfo)
 
 	http.HandleFunc("/api/players", handlePlayers)
-
-	logTaskComplete()
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {

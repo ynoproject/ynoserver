@@ -56,6 +56,4 @@ func initHistory() {
 	if isMainServer {
 		scheduler.Cron("0 * * * *").Do(deleteOldChatMessages)
 	}
-
-	logTaskComplete()
 }
