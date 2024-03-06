@@ -199,7 +199,6 @@ type TimeTrialRecord struct {
 }
 
 func initBadges() {
-
 	setBadgeData()
 
 	scheduler.Every(1).Tuesday().At("20:00").Do(updateActiveBadgesAndConditions)
