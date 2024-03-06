@@ -217,21 +217,23 @@ func initBadges() {
 }
 
 func setBadgeData() {
-	if len(badges) != 0 {
-		logUpdateTask("badge data")
-
-		badgeUnlockPercentages, _ = getBadgeUnlockPercentages()
-		// Use main server to update badge data
-		if isMainServer {
-			if _, ok := badges[config.gameName]; ok {
-				// Badge records needed for determining badge game
-				writeGameBadges()
-				updatePlayerBadgeSlotCounts("")
-			}
-		}
-
-		logTaskComplete()
+	if len(badges) == 0 {
+		return
 	}
+
+	logUpdateTask("badge data")
+
+	badgeUnlockPercentages, _ = getBadgeUnlockPercentages()
+	// Use main server to update badge data
+	if isMainServer {
+		if _, ok := badges[config.gameName]; ok {
+			// Badge records needed for determining badge game
+			writeGameBadges()
+			updatePlayerBadgeSlotCounts("")
+		}
+	}
+
+	logTaskComplete()
 }
 
 func updateActiveBadgesAndConditions() {
