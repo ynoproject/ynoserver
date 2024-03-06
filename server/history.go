@@ -49,14 +49,7 @@ type ChatHistory struct {
 	Messages []*ChatMessage `json:"messages"`
 }
 
-var (
-	msgSent    bool
-	lastMsgIds map[int]string
-)
-
 func initHistory() {
-	lastMsgIds, _ = getLastMessageIds()
-
 	// Use main server to process chat message cleaning task for all games
 	if isMainServer {
 		scheduler.Cron("0 * * * *").Do(deleteOldChatMessages)

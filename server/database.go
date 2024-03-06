@@ -335,31 +335,7 @@ func writeGlobalChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string,
 		return err
 	}
 
-	msgSent = true
-
 	return nil
-}
-
-func getLastMessageIds() (lastMsgIds map[int]string, err error) {
-	lastMsgIds = make(map[int]string)
-
-	results, err := db.Query("SELECT COALESCE(cm.partyId, 0), cm.msgId FROM chatMessages cm WHERE cm.timestamp = (SELECT MAX(cm2.timestamp) FROM chatMessages cm2 JOIN players pd ON pd.uuid = cm2.uuid WHERE cm2.game = ? AND pd.banned = 0 AND cm2.timestamp > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY) AND ((cm.partyId IS NULL AND cm2.partyId IS NULL) OR (cm2.partyId = cm.partyId))) GROUP BY COALESCE(cm.partyId, 0)", config.gameName)
-	if err != nil {
-		return lastMsgIds, nil
-	}
-
-	defer results.Close()
-
-	for results.Next() {
-		var partyId int
-		var lastMsgId string
-
-		results.Scan(&partyId, &lastMsgId)
-
-		lastMsgIds[partyId] = lastMsgId
-	}
-
-	return lastMsgIds, nil
 }
 
 func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) error {
@@ -384,24 +360,9 @@ func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) error {
 func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastMsgId string) (chatHistory *ChatHistory, err error) {
 	chatHistory = &ChatHistory{}
 
-	reconnectAfterRestart := lastMsgId != "" && !msgSent
-	if reconnectAfterRestart {
-		// Assume empty results if reconnecting after a disconnect with the last global message as the last message ID
-		if lastGlobalMsgId, ok := lastMsgIds[0]; ok && lastGlobalMsgId == lastMsgId {
-			return chatHistory, nil
-		}
-	}
-
 	partyId, err := getPlayerPartyId(uuid)
 	if err != nil {
 		return chatHistory, err
-	}
-
-	if reconnectAfterRestart && partyId != 0 {
-		// Assume empty results if reconnecting after a disconnect with the last party message in the user's party as the last message ID
-		if lastPartyMsgId, ok := lastMsgIds[partyId]; ok && lastPartyMsgId == lastMsgId {
-			return chatHistory, nil
-		}
 	}
 
 	var query string

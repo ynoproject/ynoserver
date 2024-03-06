@@ -455,7 +455,5 @@ func writePartyChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, 
 		return err
 	}
 
-	msgSent = true
-
 	return nil
 }
