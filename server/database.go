@@ -1400,7 +1400,7 @@ func isIpBanned(ip string) bool {
 	var banned int
 
 	// check if account is banned
-	err := db.QueryRow("SELECT players.banned FROM players JOIN accounts ON players.uuid = accounts.uuid WHERE accounts.ip = ?", ip).Scan(&banned)
+	err := db.QueryRow("SELECT banned FROM players JOIN accounts ON players.uuid = accounts.uuid WHERE accounts.ip = ?", ip).Scan(&banned)
 	if err != nil && err != sql.ErrNoRows {
 		return false
 	}
