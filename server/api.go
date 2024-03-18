@@ -84,8 +84,10 @@ func initApi() {
 	http.HandleFunc("/admin/unban", adminUnban)
 	http.HandleFunc("/admin/unmute", adminUnmute)
 	http.HandleFunc("/admin/changeusername", adminChangeUsername)
+	http.HandleFunc("/admin/resetpw", adminResetPw)
+	http.HandleFunc("/admin/grantbadge", adminManageBadge)
+	http.HandleFunc("/admin/revokebadge", adminManageBadge)
 
-	http.HandleFunc("/api/admin", handleAdmin)
 	http.HandleFunc("/api/party", handleParty)
 	http.HandleFunc("/api/savesync", handleSaveSync)
 	http.HandleFunc("/api/vm", handleVm)
@@ -117,111 +119,6 @@ func initApi() {
 	http.HandleFunc("/api/info", handleInfo)
 
 	http.HandleFunc("/api/players", handlePlayers)
-}
-
-func handleAdmin(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
-		handleError(w, r, "access denied")
-		return
-	}
-
-	commandParam := r.URL.Query().Get("command")
-	if commandParam == "" {
-		handleError(w, r, "command not specified")
-		return
-	}
-
-	switch commandParam {
-	case "grantbadge", "revokebadge":
-		uuidParam := r.URL.Query().Get("uuid")
-		if uuidParam == "" {
-			userParam := r.URL.Query().Get("user")
-			if userParam == "" {
-				handleError(w, r, "uuid or user not specified")
-				return
-			}
-			var err error
-			uuidParam, err = getUuidFromName(userParam)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-			if uuidParam == "" {
-				handleError(w, r, "invalid user specified")
-				return
-			}
-		}
-
-		idParam := r.URL.Query().Get("id")
-		if idParam == "" {
-			handleError(w, r, "badge ID not specified")
-			return
-		}
-
-		var badgeExists bool
-
-		for _, gameBadges := range badges {
-			for badgeId := range gameBadges {
-				if badgeId == idParam {
-					badgeExists = true
-					break
-				}
-			}
-			if badgeExists {
-				break
-			}
-		}
-
-		if !badgeExists {
-			handleError(w, r, "badge not found for the provided badge ID")
-			return
-		}
-
-		var err error
-		if commandParam == "grantbadge" {
-			err = unlockPlayerBadge(uuidParam, idParam)
-		} else {
-			err = removePlayerBadge(uuidParam, idParam)
-		}
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-	case "resetpw":
-		uuidParam := r.URL.Query().Get("uuid")
-		if uuidParam == "" {
-			userParam := r.URL.Query().Get("user")
-			if userParam == "" {
-				handleError(w, r, "uuid or user not specified")
-				return
-			}
-			var err error
-			uuidParam, err = getUuidFromName(userParam)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-			if uuidParam == "" {
-				handleError(w, r, "invalid user specified")
-				return
-			}
-		}
-
-		newPw, err := handleResetPw(uuidParam)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		w.Write([]byte(newPw))
-		return
-	default:
-		handleError(w, r, "unknown command")
-		return
-	}
-
-	w.Write([]byte("ok"))
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {

@@ -268,3 +268,101 @@ func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte("ok"))
 }
+
+func adminResetPw(w http.ResponseWriter, r *http.Request) {
+	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank == 0 {
+		handleError(w, r, "access denied")
+		return
+	}
+
+	user := r.URL.Query().Get("user")
+
+	if user == "" {
+		handleError(w, r, "user not specified")
+		return
+	}
+
+	userUuid, err := getUuidFromName(user)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+	if userUuid == "" {
+		handleError(w, r, "invalid user specified")
+		return
+	}
+
+	newPw, err := handleResetPw(userUuid)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte(newPw))
+}
+
+func adminManageBadge(w http.ResponseWriter, r *http.Request) {
+	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank == 0 {
+		handleError(w, r, "access denied")
+		return
+	}
+
+	uuidParam := r.URL.Query().Get("uuid")
+	if uuidParam == "" {
+		userParam := r.URL.Query().Get("user")
+		if userParam == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
+		var err error
+		uuidParam, err = getUuidFromName(userParam)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+		if uuidParam == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
+	}
+
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" {
+		handleError(w, r, "badge ID not specified")
+		return
+	}
+
+	var badgeExists bool
+
+	for _, gameBadges := range badges {
+		for badgeId := range gameBadges {
+			if badgeId == idParam {
+				badgeExists = true
+				break
+			}
+		}
+		if badgeExists {
+			break
+		}
+	}
+
+	if !badgeExists {
+		handleError(w, r, "badge not found for the provided badge ID")
+		return
+	}
+
+	var err error
+	if r.URL.Path == "/admin/grantbadge" {
+		err = unlockPlayerBadge(uuidParam, idParam)
+	} else {
+		err = removePlayerBadge(uuidParam, idParam)
+	}
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
+}
