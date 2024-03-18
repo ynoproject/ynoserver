@@ -47,14 +47,14 @@ func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseJson)
 }
 
-func adminGetBans(w http.ResponseWriter, r *http.Request) {
+func adminGetBansMutes(w http.ResponseWriter, r *http.Request) {
 	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
-
-	responseJson, err := json.Marshal(getModeratedPlayers(0))
+	
+	responseJson, err := json.Marshal(getBannedMutedPlayers(r.URL.Path == "/admin/getbans"))
 	if err != nil {
 		handleError(w, r, "error while marshaling")
 		return
@@ -63,23 +63,7 @@ func adminGetBans(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseJson)
 }
 
-func adminGetMutes(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
-		handleError(w, r, "access denied")
-		return
-	}
-
-	responseJson, err := json.Marshal(getModeratedPlayers(1))
-	if err != nil {
-		handleError(w, r, "error while marshaling")
-		return
-	}
-
-	w.Write(responseJson)
-}
-
-func adminBan(w http.ResponseWriter, r *http.Request) {
+func adminBanMute(w http.ResponseWriter, r *http.Request) {
 	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank == 0 {
 		handleError(w, r, "access denied")
@@ -108,121 +92,17 @@ func adminBan(w http.ResponseWriter, r *http.Request) {
 		targetUuid = uuid
 	}
 
-	err := tryBanPlayer(uuid, targetUuid)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
+	var err error
+	switch r.URL.Path {
+	case "/admin/ban":
+		err = tryBanPlayer(uuid, targetUuid)
+	case "/admin/unban":
+		err = tryUnbanPlayer(uuid, targetUuid)
+	case "/admin/mute":
+		err = tryMutePlayer(uuid, targetUuid)
+	case "/admin/unmute":
+		err = tryUnmutePlayer(uuid, targetUuid)
 	}
-
-	w.Write([]byte("ok"))
-}
-
-func adminMute(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
-		handleError(w, r, "access denied")
-		return
-	}
-
-	targetUuid := r.URL.Query().Get("uuid")
-	if targetUuid == "" {
-		user := r.URL.Query().Get("user")
-		if user == "" {
-			handleError(w, r, "uuid or user not specified")
-			return
-		}
-
-		uuid, err := getUuidFromName(user)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		if uuid == "" {
-			handleError(w, r, "invalid user specified")
-			return
-		}
-
-		targetUuid = uuid
-	}
-
-	err := tryMutePlayer(uuid, targetUuid)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
-	w.Write([]byte("ok"))
-}
-
-func adminUnban(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
-		handleError(w, r, "access denied")
-		return
-	}
-
-	targetUuid := r.URL.Query().Get("uuid")
-	if targetUuid == "" {
-		user := r.URL.Query().Get("user")
-		if user == "" {
-			handleError(w, r, "uuid or user not specified")
-			return
-		}
-
-		uuid, err := getUuidFromName(user)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		if uuid == "" {
-			handleError(w, r, "invalid user specified")
-			return
-		}
-
-		targetUuid = uuid
-	}
-
-	err := tryUnbanPlayer(uuid, targetUuid)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
-	w.Write([]byte("ok"))
-}
-
-func adminUnmute(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
-		handleError(w, r, "access denied")
-		return
-	}
-
-	targetUuid := r.URL.Query().Get("uuid")
-	if targetUuid == "" {
-		user := r.URL.Query().Get("user")
-		if user == "" {
-			handleError(w, r, "uuid or user not specified")
-			return
-		}
-
-		uuid, err := getUuidFromName(user)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		if uuid == "" {
-			handleError(w, r, "invalid user specified")
-			return
-		}
-
-		targetUuid = uuid
-	}
-
-	err := tryUnmutePlayer(uuid, targetUuid)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return

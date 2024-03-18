@@ -1323,10 +1323,10 @@ func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success
 	return true, nil
 }
 
-func getModeratedPlayers(action int) (players []PlayerInfo) {
+func getBannedMutedPlayers(banned bool) (players []PlayerInfo) {
 	var actionStr string
 
-	if action == 0 {
+	if banned {
 		actionStr = "banned"
 	} else {
 		actionStr = "muted"
