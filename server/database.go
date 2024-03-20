@@ -357,12 +357,12 @@ func updatePlayerLastChatMessage(uuid, lastMsgId string, party bool) error {
 	return nil
 }
 
-func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastMsgId string) (chatHistory *ChatHistory, err error) {
-	chatHistory = &ChatHistory{}
+func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastMsgId string) (*ChatHistory, error) {
+	var chatHistory ChatHistory
 
 	partyId, err := getPlayerPartyId(uuid)
 	if err != nil {
-		return chatHistory, err
+		return &chatHistory, err
 	}
 
 	var query string
@@ -412,18 +412,20 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	messageResults, err := db.Query(query, messageQueryArgs...)
 	if err != nil {
-		return chatHistory, err
+		return &chatHistory, err
 	}
 
 	defer messageResults.Close()
 
 	for messageResults.Next() {
-		chatMessage := &ChatMessage{}
+		var chatMessage ChatMessage
+
 		err := messageResults.Scan(&chatMessage.MsgId, &chatMessage.Uuid, &chatMessage.MapId, &chatMessage.PrevMapId, &chatMessage.PrevLocations, &chatMessage.X, &chatMessage.Y, &chatMessage.Contents, &chatMessage.Timestamp, &chatMessage.Party)
 		if err != nil {
-			return chatHistory, err
+			return &chatHistory, err
 		}
-		chatHistory.Messages = append(chatHistory.Messages, chatMessage)
+
+		chatHistory.Messages = append(chatHistory.Messages, &chatMessage)
 	}
 
 	var firstTimestamp time.Time
@@ -452,21 +454,23 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	playerResults, err := db.Query(playersQuery, playerQueryArgs...)
 	if err != nil {
-		return chatHistory, err
+		return &chatHistory, err
 	}
 
 	defer playerResults.Close()
 
 	for playerResults.Next() {
-		chatPlayer := &ChatPlayer{}
+		var chatPlayer ChatPlayer
+
 		err := playerResults.Scan(&chatPlayer.Uuid, &chatPlayer.Name, &chatPlayer.Rank, &chatPlayer.Account, &chatPlayer.Badge, &chatPlayer.SystemName, &chatPlayer.Medals[0], &chatPlayer.Medals[1], &chatPlayer.Medals[2], &chatPlayer.Medals[3], &chatPlayer.Medals[4])
 		if err != nil {
-			return chatHistory, err
+			return &chatHistory, err
 		}
-		chatHistory.Players = append(chatHistory.Players, chatPlayer)
+
+		chatHistory.Players = append(chatHistory.Players, &chatPlayer)
 	}
 
-	return chatHistory, nil
+	return &chatHistory, nil
 }
 
 func deleteOldChatMessages() error {
