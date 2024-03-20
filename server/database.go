@@ -1448,7 +1448,7 @@ func writeGamePlayerCount(playerCount int) error {
 
 func doCleanupQueries() error {
 	// Remove player records with no game activity
-	_, err := db.Exec("DELETE IGNORE FROM players WHERE ip IS NOT NULL AND uuid NOT IN (SELECT uuid FROM playerGameData)")
+	_, err := db.Exec("DELETE IGNORE FROM players WHERE ip IS NOT NULL")
 	if err != nil {
 		return err
 	}
