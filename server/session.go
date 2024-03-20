@@ -62,10 +62,6 @@ func initSession() {
 		writeGamePlayerCount(clients.GetAmount())
 	})
 
-	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
-
-	scheduler.Every(1).Thursday().At("04:00").Do(doCleanupQueries)
-
 	go func() {
 		stop := make(chan os.Signal, 1)
 

@@ -101,6 +101,9 @@ func Start() {
 	initBadges()
 	initSession()
 
+	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
+	scheduler.Every(1).Day().At("04:00").Do(doCleanupQueries)
+
 	scheduler.StartAsync()
 
 	fmt.Print("Now serving requests.\n")
