@@ -30,10 +30,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var db = getDatabaseConn()
+var db *sql.DB
 
-func getDatabaseConn() *sql.DB {
-	conn, err := sql.Open("mysql", "yno@unix(/run/mysqld/mysqld.sock)/ynodb?parseTime=true")
+func getDatabaseConn(user, password, proto, addr, database string) *sql.DB {
+	conn, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s?parseTime=true", user, password, proto, addr, database))
 	if err != nil {
 		panic(err)
 	}

@@ -69,9 +69,15 @@ func Start() {
 	fmt.Println("Now starting YNOserver...")
 
 	configFile := flag.String("config", "config.yml", "Path to the configuration file")
+	dbUser := flag.String("dbuser", "yno", "Database server user")
+	dbPass := flag.String("dbpass", "", "Database server user password")
+	dbProto := flag.String("dbproto", "tcp", "Database server connection protocol")
+	dbAddr := flag.String("dbaddr", "127.0.0.1", "Database server address")
+	dbName := flag.String("dbname", "ynodb", "Database server database name")
 	flag.Parse()
 
 	config = parseConfigFile(*configFile)
+	db = getDatabaseConn(*dbUser, *dbPass, *dbProto, *dbAddr, *dbName)
 
 	isMainServer = config.gameName == mainGameId
 
