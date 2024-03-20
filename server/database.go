@@ -1476,7 +1476,7 @@ func doCleanupQueries() error {
 	}
 
 	// Remove Yume 2kki Explorer API query cache records that have expired
-	_, err = db.Exec("DELETE FROM 2kkiApiQueries WHERE timestampExpired < CURRENT_TIMESTAMP()")
+	_, err = db.Exec("DELETE FROM 2kkiApiQueries WHERE timestampExpired < NOW()")
 	if err != nil {
 		return err
 	}

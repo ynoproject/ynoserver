@@ -1395,7 +1395,7 @@ func handle2kki(w http.ResponseWriter, r *http.Request) {
 
 	var response string
 
-	err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND CURRENT_TIMESTAMP() < timestampExpired", actionParam, queryString).Scan(&response)
+	err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND NOW() < timestampExpired", actionParam, queryString).Scan(&response)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			handleInternalError(w, r, err)
@@ -1424,7 +1424,7 @@ func handle2kki(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
 			writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
 		} else {
-			_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)", actionParam, queryString, string(body), string(body))
+			_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 1 HOUR)", actionParam, queryString, string(body), string(body))
 			if err != nil {
 				writeErrLog(getIp(r), r.URL.Path, err.Error())
 			}
