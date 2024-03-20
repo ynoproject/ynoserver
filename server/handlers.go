@@ -886,8 +886,8 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	if c.name == "" || c.system == "" {
-		return errors.New("no name or system graphic set")
+	if c.name == ""  {
+		return errors.New("no name set")
 	}
 
 	msgContents := wordFilter.ReplaceAllString(strings.TrimSpace(msg[1]), ":2kkiSign:")
