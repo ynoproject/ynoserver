@@ -255,12 +255,14 @@ func getBlockedPlayerData(uuid string) ([]*PlayerListData, error) {
 	defer results.Close()
 
 	for results.Next() {
-		blockedPlayer := &PlayerListData{}
+		var blockedPlayer PlayerListData
+
 		err := results.Scan(&blockedPlayer.Uuid, &blockedPlayer.Name, &blockedPlayer.Rank, &blockedPlayer.Account, &blockedPlayer.Badge, &blockedPlayer.SystemName, &blockedPlayer.SpriteName, &blockedPlayer.SpriteIndex, &blockedPlayer.Medals[0], &blockedPlayer.Medals[1], &blockedPlayer.Medals[2], &blockedPlayer.Medals[3], &blockedPlayer.Medals[4])
 		if err != nil {
 			return blockedPlayers, err
 		}
-		blockedPlayers = append(blockedPlayers, blockedPlayer)
+
+		blockedPlayers = append(blockedPlayers, &blockedPlayer)
 	}
 
 	return blockedPlayers, nil
@@ -651,14 +653,14 @@ func getGameCurrentEventPeriodsData() (gameEventPeriods map[string]*EventPeriod,
 
 	for results.Next() {
 		var gameId string
-		eventPeriod := &EventPeriod{}
+		var eventPeriod EventPeriod
 
 		err = results.Scan(&eventPeriod.Id, &eventPeriod.PeriodOrdinal, &eventPeriod.EndDate, &eventPeriod.EnableVms, &gameId)
 		if err != nil {
 			return gameEventPeriods, err
 		}
 
-		gameEventPeriods[gameId] = eventPeriod
+		gameEventPeriods[gameId] = &eventPeriod
 	}
 
 	return gameEventPeriods, nil
@@ -924,7 +926,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 	defer results.Close()
 
 	for results.Next() {
-		eventLocation := &EventLocation{}
+		var eventLocation EventLocation
 
 		var completeBin int
 
@@ -941,7 +943,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 			eventLocation.Complete = true
 		}
 
-		eventLocations = append(eventLocations, eventLocation)
+		eventLocations = append(eventLocations, &eventLocation)
 	}
 
 	results, err = db.Query("SELECT pel.id, gep.game, pl.title, pl.titleJP, pl.depth, pl.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND gep.game = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId, config.gameName)
@@ -952,7 +954,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 	defer results.Close()
 
 	for results.Next() {
-		eventLocation := &EventLocation{}
+		var eventLocation EventLocation
 
 		err := results.Scan(&eventLocation.Id, &eventLocation.Game, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.EndDate)
 		if err != nil {
@@ -965,7 +967,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 			eventLocation.MinDepth = 0
 		}
 
-		eventLocations = append(eventLocations, eventLocation)
+		eventLocations = append(eventLocations, &eventLocation)
 	}
 
 	return eventLocations, nil
@@ -1106,7 +1108,7 @@ func getCurrentPlayerEventVmsData(playerUuid string) (eventVms []*EventVm, err e
 	defer results.Close()
 
 	for results.Next() {
-		eventVm := &EventVm{}
+		var eventVm EventVm
 
 		var completeBin int
 
@@ -1119,7 +1121,7 @@ func getCurrentPlayerEventVmsData(playerUuid string) (eventVms []*EventVm, err e
 			eventVm.Complete = true
 		}
 
-		eventVms = append(eventVms, eventVm)
+		eventVms = append(eventVms, &eventVm)
 	}
 
 	return eventVms, nil
@@ -1289,14 +1291,14 @@ func getPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTrial
 	defer results.Close()
 
 	for results.Next() {
-		timeTrialRecord := &TimeTrialRecord{}
+		var timeTrialRecord TimeTrialRecord
 
 		err := results.Scan(&timeTrialRecord.MapId, &timeTrialRecord.Seconds)
 		if err != nil {
 			return timeTrialRecords, err
 		}
 
-		timeTrialRecords = append(timeTrialRecords, timeTrialRecord)
+		timeTrialRecords = append(timeTrialRecords, &timeTrialRecord)
 	}
 
 	return timeTrialRecords, nil

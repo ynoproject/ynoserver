@@ -438,14 +438,16 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 	defer results.Close()
 
 	for results.Next() {
-		screenshot := &ScreenshotData{}
-		owner := &ScreenshotOwner{}
+		var screenshot ScreenshotData
+		var owner ScreenshotOwner
+
 		err := results.Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.Timestamp, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
 		if err != nil {
 			return screenshots, err
 		}
-		screenshot.Owner = owner
-		screenshots = append(screenshots, screenshot)
+
+		screenshot.Owner = &owner
+		screenshots = append(screenshots, &screenshot)
 	}
 
 	return screenshots, nil
@@ -462,12 +464,14 @@ func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
 	defer results.Close()
 
 	for results.Next() {
-		screenshot := &PlayerScreenshotData{}
+		var screenshot PlayerScreenshotData
+
 		err := results.Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
 		if err != nil {
 			return playerScreenshots, err
 		}
-		playerScreenshots = append(playerScreenshots, screenshot)
+
+		playerScreenshots = append(playerScreenshots, &screenshot)
 	}
 
 	return playerScreenshots, nil

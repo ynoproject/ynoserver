@@ -732,7 +732,7 @@ func setConditions() {
 			}
 
 			for _, conditionConfigFile := range conditionConfigs {
-				condition := &Condition{}
+				var condition Condition
 
 				data, err := os.ReadFile(configPath + conditionConfigFile.Name())
 				if err != nil {
@@ -756,7 +756,8 @@ func setConditions() {
 							}
 						}
 					}
-					conditionConfig[gameId][conditionId] = condition
+
+					conditionConfig[gameId][conditionId] = &condition
 				}
 			}
 		}
@@ -788,7 +789,7 @@ func setBadges() {
 			}
 
 			for _, badgeConfigFile := range badgeConfigs {
-				badge := &Badge{}
+				var badge Badge
 
 				data, err := os.ReadFile(configPath + badgeConfigFile.Name())
 				if err != nil {
@@ -798,7 +799,7 @@ func setBadges() {
 				err = json.Unmarshal(data, &badge)
 				if err == nil {
 					badgeId := badgeConfigFile.Name()[:len(badgeConfigFile.Name())-5]
-					badgeConfig[gameId][badgeId] = badge
+					badgeConfig[gameId][badgeId] = &badge
 					badgeIds = append(badgeIds, badgeId)
 				}
 			}
