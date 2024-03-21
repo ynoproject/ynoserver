@@ -29,13 +29,15 @@ type Config struct {
 	gameName string
 	gamePath string
 
+	dbUser, dbPass, dbAddr, dbName string
+
 	spRooms         []int
 	badSounds       map[string]bool
 	pictures        map[string]bool
 	picturePrefixes []string
 	battleAnimIds   map[int]bool
 
-	chatWebhook string
+	chatWebhook       string
 	screenshotWebhook string
 
 	logging struct {
@@ -49,13 +51,18 @@ type ConfigFile struct {
 	GameName string `yaml:"game_name"`
 	GamePath string `yaml:"game_path"`
 
+	DbUser  string `yaml:"db_user"`
+	DbPass  string `yaml:"db_pass"`
+	DbAddr  string `yaml:"db_addr"`
+	DbName  string `yaml:"db_name"`
+
 	SpRooms         string `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
 	PictureNames    string `yaml:"picture_names"`
 	PicturePrefixes string `yaml:"picture_prefixes"`
 	BattleAnimIds   string `yaml:"battle_anim_ids"`
 
-	ChatWebhook string `yaml:"chat_webhook"`
+	ChatWebhook       string `yaml:"chat_webhook"`
 	ScreenshotWebhook string `yaml:"screenshot_webhook"`
 
 	Logging struct {
@@ -65,7 +72,7 @@ type ConfigFile struct {
 	} `yaml:"logging"`
 }
 
-func parseConfigFile(filename string) (config *Config) {
+func parseConfigFile(filename string) (*Config) {
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
@@ -78,10 +85,15 @@ func parseConfigFile(filename string) (config *Config) {
 		panic(err)
 	}
 
-	config = &Config{}
+	var config Config
 
 	config.gameName = configFile.GameName
 	config.gamePath = configFile.GamePath
+
+	config.dbUser = configFile.DbUser
+	config.dbPass = configFile.DbPass
+	config.dbAddr = configFile.DbAddr
+	config.dbName = configFile.DbName
 
 	if configFile.SpRooms != "" {
 		for _, str := range strings.Split(configFile.SpRooms, ",") {
@@ -143,5 +155,5 @@ func parseConfigFile(filename string) (config *Config) {
 		config.logging.maxAge = 28 // Days
 	}
 
-	return config
+	return &config
 }

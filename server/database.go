@@ -32,8 +32,8 @@ import (
 
 var db *sql.DB
 
-func getDatabaseConn(user, password, proto, addr, database string) *sql.DB {
-	conn, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s?parseTime=true", user, password, proto, addr, database))
+func getDatabaseConn(user, password, addr, database string) *sql.DB {
+	conn, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s/%s?parseTime=true", user, password, addr, database))
 	if err != nil {
 		panic(err)
 	}
