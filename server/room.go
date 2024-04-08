@@ -22,6 +22,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -47,7 +48,7 @@ func createRooms(roomIds []int, spRooms []int) {
 	for _, roomId := range roomIds {
 		rooms[roomId] = &Room{
 			id:           roomId,
-			singleplayer: contains(spRooms, roomId),
+			singleplayer: slices.Contains(spRooms, roomId),
 			conditions:   getRoomConditions(roomId),
 			minigames:    getRoomMinigames(roomId),
 		}

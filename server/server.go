@@ -138,16 +138,6 @@ func getListener() net.Listener {
 	return listener
 }
 
-func contains(s []int, num int) bool {
-	for _, v := range s {
-		if v == num {
-			return true
-		}
-	}
-
-	return false
-}
-
 func getIp(r *http.Request) string {
 	return r.Header.Get("x-forwarded-for")
 }
