@@ -19,6 +19,7 @@ var (
 		"genie": "Dream Genie",
 		"mikan": "Mikan Muzou",
 		"muma": "Muma|Rope",
+		"nostalgic": "nostAlgic",
 		"oversomnia": "Oversomnia",
 		"prayers": "Answered Prayers",
 		"sheawaits": "She Awaits",
