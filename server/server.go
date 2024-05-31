@@ -102,6 +102,10 @@ func Start() {
 	initBadges()
 	initSession()
 
+	if config.gameName == "unconscious" {
+		initUnconscious()
+	}
+
 	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
 	scheduler.Every(1).Day().At("04:00").Do(doCleanupQueries)
 
