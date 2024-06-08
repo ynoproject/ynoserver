@@ -744,12 +744,6 @@ func (c *RoomClient) handleSev(msg []string) error {
 	return nil
 }
 
-func (c *RoomClient) handleCut() error {
-	c.outbox <- buildMsg("cut", getUnconsciousTime())
-
-	return nil
-}
-
 // SESSION
 
 func (c *SessionClient) handleI() error {

@@ -281,8 +281,6 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 		err = c.handleSv(msgFields)
 	case "sev":
 		err = c.handleSev(msgFields)
-	case "cut": // collective unconscious time
-		err = c.handleCut()
 	default:
 		err = errors.New("unknown message type")
 	}
