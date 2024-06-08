@@ -427,10 +427,6 @@ func (c *RoomClient) handleRp(msg []string) error {
 		return errconv
 	}
 
-	if cap(c.pictures) < id {
-		return errors.New("id too large")
-	}
-
 	c.pictures[id-1] = nil
 
 	c.broadcast(buildMsg("rp", c.session.id, msg[1]))

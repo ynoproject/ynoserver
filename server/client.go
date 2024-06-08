@@ -32,7 +32,7 @@ const (
 	pingPeriod     = (pongWait * 9) / 10
 	maxMessageSize = 4096
 
-	maxPictures = 50
+	maxPictures = 1000
 )
 
 type Picture struct {
