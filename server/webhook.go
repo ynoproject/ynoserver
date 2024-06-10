@@ -26,6 +26,7 @@ var (
 		"someday": "Someday",
 		"tsushin": "Yume Tsushin",
 		"ultraviolet": "Ultra Violet",
+		"unconscious": "Collective Unconscious",
 		"unevendream": "Uneven Dream",
 		"yume": "Yume Nikki",
 	}
