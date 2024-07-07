@@ -423,7 +423,7 @@ func (c *RoomClient) handleRp(msg []string) error {
 	}
 
 	id, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || id == 0 {
+	if errconv != nil || id == 0 || id > maxPictures {
 		return errconv
 	}
 
