@@ -1233,7 +1233,7 @@ func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err
 	return -1, err
 }
 
-func getPlayerTags(playerUuid string) (tags []string, lastUnlocked string, err error) {
+func getPlayerTags(playerUuid string) (tags []string, lastUnlocked time.Time, err error) {
 	results, err := db.Query("SELECT name, timestampUnlocked FROM playerTags WHERE uuid = ?", playerUuid)
 	if err != nil {
 		return tags, lastUnlocked, err
@@ -1242,13 +1242,14 @@ func getPlayerTags(playerUuid string) (tags []string, lastUnlocked string, err e
 	defer results.Close()
 
 	for results.Next() {
-		var tagName, timestamp string
+		var tagName string
+		var timestamp time.Time
 		err := results.Scan(&tagName, &timestamp)
 		if err != nil {
 			return tags, lastUnlocked, err
 		}
 		tags = append(tags, tagName)
-		if lastUnlocked == "" || timestamp > lastUnlocked {
+		if timestamp.After(lastUnlocked) {
 			lastUnlocked = timestamp
 		}
 	}

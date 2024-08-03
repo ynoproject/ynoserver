@@ -712,18 +712,22 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	case "new":
-		fromTimestamp := r.URL.Query().Get("since")
+		since := r.URL.Query().Get("since")
+		sinceTimestamp, err := time.Parse(time.RFC3339, since)
+		if err != nil {
+			sinceTimestamp = time.Time{}
+		}
 		var tags []string
 		var newTags bool
 		if token != "" {
 			var err error
-			var lastUnlocked string
+			var lastUnlocked time.Time
 			tags, lastUnlocked, err = getPlayerTags(uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
 			}
-			newTags = fromTimestamp != "" && lastUnlocked != "" && lastUnlocked > fromTimestamp
+			newTags = lastUnlocked.UTC().After(sinceTimestamp)
 		}
 		newUnlockedBadgeIds, err := getPlayerNewUnlockedBadgeIds(uuid, rank, tags)
 		if err != nil {
