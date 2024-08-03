@@ -172,25 +172,26 @@ type SimplePlayerBadge struct {
 }
 
 type PlayerBadge struct {
-	BadgeId         string  `json:"badgeId"`
-	Game            string  `json:"game"`
-	Group           string  `json:"group"`
-	Bp              int     `json:"bp"`
-	MapId           int     `json:"mapId"`
-	MapX            int     `json:"mapX"`
-	MapY            int     `json:"mapY"`
-	Seconds         int     `json:"seconds"`
-	Secret          bool    `json:"secret"`
-	SecretCondition bool    `json:"secretCondition"`
-	Hidden          bool    `json:"hidden"`
-	OverlayType     int     `json:"overlayType"`
-	Art             string  `json:"art"`
-	Animated        bool    `json:"animated"`
-	Percent         float32 `json:"percent"`
-	Goals           int     `json:"goals"`
-	GoalsTotal      int     `json:"goalsTotal"`
-	Unlocked        bool    `json:"unlocked"`
-	NewUnlock       bool    `json:"newUnlock"`
+	BadgeId         string   `json:"badgeId"`
+	Game            string   `json:"game"`
+	Group           string   `json:"group"`
+	Bp              int      `json:"bp"`
+	MapId           int      `json:"mapId"`
+	MapX            int      `json:"mapX"`
+	MapY            int      `json:"mapY"`
+	Seconds         int      `json:"seconds"`
+	Secret          bool     `json:"secret"`
+	SecretCondition bool     `json:"secretCondition"`
+	Hidden          bool     `json:"hidden"`
+	OverlayType     int      `json:"overlayType"`
+	Art             string   `json:"art"`
+	Animated        bool     `json:"animated"`
+	Percent         float32  `json:"percent"`
+	Goals           int      `json:"goals"`
+	GoalsTotal      int      `json:"goalsTotal"`
+	Tags            []string `json:"tags"`
+	Unlocked        bool     `json:"unlocked"`
+	NewUnlock       bool     `json:"newUnlock"`
 }
 
 type TimeTrialRecord struct {
@@ -499,7 +500,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, OverlayType: gameBadge.OverlayType, Art: gameBadge.Art, Animated: gameBadge.Animated, Percent: badgeUnlockPercentages[badgeId], Hidden: gameBadge.Hidden || gameBadge.Dev}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, OverlayType: gameBadge.OverlayType, Art: gameBadge.Art, Animated: gameBadge.Animated, Percent: badgeUnlockPercentages[badgeId], Hidden: gameBadge.Hidden || gameBadge.Dev, Tags: []string{}}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}
@@ -523,6 +524,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 						for _, cTag := range gameBadge.ReqStrings {
 							if tag == cTag {
 								playerBadge.Goals++
+								playerBadge.Tags = append(playerBadge.Tags, tag)
 								break
 							}
 						}
@@ -540,6 +542,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 								if tag == cTag {
 									tagFound = true
 									playerBadge.Goals++
+									playerBadge.Tags = append(playerBadge.Tags, tag)
 									break
 								}
 							}
@@ -590,6 +593,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				if !playerBadge.Unlocked {
 					if playerBadge.GoalsTotal > 0 && playerBadge.Goals >= playerBadge.GoalsTotal {
 						playerBadge.Unlocked = true
+						playerBadge.Tags = []string{} // no need to do styling anymore
 					} else {
 						for _, unlockedBadgeId := range playerUnlockedBadgeIds {
 							if playerBadge.BadgeId == unlockedBadgeId {
