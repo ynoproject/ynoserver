@@ -70,6 +70,11 @@ type PlayerListFullData struct {
 	LastActive time.Time `json:"lastActive"`
 }
 
+type CheckUpdateData struct {
+	BadgeIds []string `json:"badgeIds"`
+	NewTags  bool     `json:"newTags"`
+}
+
 func initApi() {
 	logInitTask("API")
 
@@ -599,7 +604,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			case "null":
 				unlocked = true
 			default:
-				tags, err := getPlayerTags(uuid)
+				tags, _, err := getPlayerTags(uuid)
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
@@ -670,7 +675,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		var tags []string
 		if token != "" {
 			var err error
-			tags, err = getPlayerTags(uuid)
+			tags, _, err = getPlayerTags(uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -707,14 +712,22 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	case "new":
+		since := r.URL.Query().Get("since")
+		sinceTimestamp, err := time.Parse(time.RFC3339, since)
+		if err != nil {
+			sinceTimestamp = time.Time{}
+		}
 		var tags []string
+		var newTags bool
 		if token != "" {
 			var err error
-			tags, err = getPlayerTags(uuid)
+			var lastUnlocked time.Time
+			tags, lastUnlocked, err = getPlayerTags(uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
 			}
+			newTags = lastUnlocked.UTC().After(sinceTimestamp)
 		}
 		newUnlockedBadgeIds, err := getPlayerNewUnlockedBadgeIds(uuid, rank, tags)
 		if err != nil {
@@ -728,12 +741,13 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		newUnlockedBadgeIdsJson, err := json.Marshal(newUnlockedBadgeIds)
+		response := &CheckUpdateData{BadgeIds: newUnlockedBadgeIds, NewTags: newTags}
+		responseJson, err := json.Marshal(response)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write(newUnlockedBadgeIdsJson)
+		w.Write(responseJson)
 		return
 	case "slotList":
 		badgeSlots, err := getPlayerBadgeSlots(name, badgeSlotRows, badgeSlotCols)

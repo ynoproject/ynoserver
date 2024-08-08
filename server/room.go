@@ -119,7 +119,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 
 	client.ctx, client.cancel = context.WithCancel(client.session.ctx)
 
-	if tags, err := getPlayerTags(uuid); err != nil {
+	if tags, _, err := getPlayerTags(uuid); err != nil {
 		writeErrLog(uuid, "0000", "failed to read player tags")
 	} else {
 		client.tags = tags
