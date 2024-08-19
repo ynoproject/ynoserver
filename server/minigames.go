@@ -46,7 +46,7 @@ func getRoomMinigames(roomId int) (minigames []*Minigame) {
 		case 344:
 			minigames = append(minigames, &Minigame{Id: "fuji_ex", VarId: 3218, SwitchId: 3219, SwitchValue: true})
 		case 1899:
-			minigames = append(minigames, &Minigame{Id: "hozo", VarId: 4268, SwitchId: 5019})
+			minigames = append(minigames, &Minigame{Id: "hozo", VarId: 4268, SwitchId: 5019, SwitchValue: true})
 		}
 	//case "amillusion":
 	//	if roomId == 185 {
