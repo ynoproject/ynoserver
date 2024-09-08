@@ -49,6 +49,14 @@ type Picture struct {
 	effectMode, effectPower int
 
 	useTransparentColor, fixedToMap bool
+
+	spritesheetCols, spritesheetRows   int
+	spritesheetFrame, spritesheetSpeed int
+	spritesheetPlayOnce                bool
+
+	mapLayer, battleLayer, flags, blendMode, origin int
+
+	flipX, flipY bool
 }
 
 // SessionClient
@@ -177,8 +185,8 @@ type RoomClient struct {
 
 	flash          [5]int
 	repeatingFlash bool
-	transparency int
-	hidden bool
+	transparency   int
+	hidden         bool
 
 	pictures [maxPictures]*Picture
 

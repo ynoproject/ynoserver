@@ -349,7 +349,7 @@ func (c *RoomClient) getPlayerData(client *RoomClient) {
 	}
 	for i, pic := range client.pictures {
 		if pic != nil {
-			c.outbox <- buildMsg("ap", client.session.id, i+1, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap)
+			c.outbox <- buildMsg("ap", client.session.id, i+1, pic.posX, pic.posY, pic.mapX, pic.mapY, pic.panX, pic.panY, pic.magnify, pic.topTrans, pic.bottomTrans, pic.red, pic.blue, pic.green, pic.saturation, pic.effectMode, pic.effectPower, pic.name, pic.useTransparentColor, pic.fixedToMap, pic.spritesheetCols, pic.spritesheetRows, pic.spritesheetFrame, pic.spritesheetSpeed, pic.spritesheetPlayOnce, pic.mapLayer, pic.battleLayer, pic.flags, pic.blendMode, pic.flipX, pic.flipY, pic.origin)
 		}
 	}
 }

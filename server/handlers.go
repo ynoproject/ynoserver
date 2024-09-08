@@ -280,7 +280,7 @@ func (c *RoomClient) handleP(msg []string) error {
 	isShow := msg[0] == "ap"
 	msgLength := 18
 	if isShow {
-		msgLength = 20
+		msgLength = 32
 	}
 	if len(msg) != msgLength {
 		return errors.New("segment count mismatch")
@@ -373,6 +373,9 @@ func (c *RoomClient) handleP(msg []string) error {
 			name:                picName,
 			useTransparentColor: msg[18] != "0",
 			fixedToMap:          msg[19] != "0",
+			spritesheetPlayOnce: msg[24] != "0",
+			flipX:               msg[29] != "0",
+			flipY:               msg[30] != "0",
 		}
 
 		if ptr := c.pictures[id-1]; ptr != nil {
@@ -381,6 +384,53 @@ func (c *RoomClient) handleP(msg []string) error {
 				return err
 			}
 		}
+
+		spritesheetCols, errconv := strconv.Atoi(msg[20])
+		if errconv != nil {
+			return errconv
+		}
+		spritesheetRows, errconv := strconv.Atoi(msg[21])
+		if errconv != nil {
+			return errconv
+		}
+		spritesheetFrame, errconv := strconv.Atoi(msg[22])
+		if errconv != nil {
+			return errconv
+		}
+		spritesheetSpeed, errconv := strconv.Atoi(msg[23])
+		if errconv != nil {
+			return errconv
+		}
+		mapLayer, errconv := strconv.Atoi(msg[25])
+		if errconv != nil {
+			return errconv
+		}
+		battleLayer, errconv := strconv.Atoi(msg[26])
+		if errconv != nil {
+			return errconv
+		}
+		flags, errconv := strconv.Atoi(msg[27])
+		if errconv != nil {
+			return errconv
+		}
+		blendMode, errconv := strconv.Atoi(msg[28])
+		if errconv != nil {
+			return errconv
+		}
+		origin, errconv := strconv.Atoi(msg[31])
+		if errconv != nil {
+			return errconv
+		}
+
+		pic.spritesheetCols = spritesheetCols
+		pic.spritesheetRows = spritesheetRows
+		pic.spritesheetFrame = spritesheetFrame
+		pic.spritesheetSpeed = spritesheetSpeed
+		pic.mapLayer = mapLayer
+		pic.battleLayer = battleLayer
+		pic.flags = flags
+		pic.blendMode = blendMode
+		pic.origin = origin
 	} else {
 		if ptr := c.pictures[id-1]; ptr != nil {
 			duration, errconv := strconv.Atoi(msg[17])
@@ -886,7 +936,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	if c.name == ""  {
+	if c.name == "" {
 		return errors.New("no name set")
 	}
 
