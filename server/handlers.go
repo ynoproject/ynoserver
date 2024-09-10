@@ -1072,7 +1072,7 @@ func (c *SessionClient) handleNl(msg []string) error {
 
 	nextLocations, err := getNext2kkiLocations(c.roomC.locations[0], destLocationName)
 	if err != nil {
-		return fmt.Errorf("invalid next locations: %s", err)
+		return fmt.Errorf("invalid next locations for %s -> %s: %s", err, c.roomC.locations[0], destLocationName)
 	}
 
 	c.outbox <- buildMsg("nl", nextLocations)
