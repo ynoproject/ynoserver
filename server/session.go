@@ -205,6 +205,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 	case "l": // enter location(s)
 		err = c.handleL(msgFields)
 		updateGameActivity = true
+	case "nl": // next expedition location(s)
+		err = c.handleNl(msgFields)
 	case "pf": // friend list update
 		err = c.handlePf()
 	case "pt": // party update

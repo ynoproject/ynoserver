@@ -1407,45 +1407,13 @@ func handle2kki(w http.ResponseWriter, r *http.Request) {
 
 	queryString := query.Encode()
 
-	var response string
-
-	err := db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND NOW() < timestampExpired", actionParam, queryString).Scan(&response)
+	response, err := query2kki(actionParam, queryString)
 	if err != nil {
-		if err != sql.ErrNoRows {
+		if response == "" {
 			handleInternalError(w, r, err)
-			return
-		}
-
-		url := "https://2kki.app/" + actionParam
-		if queryString != "" {
-			url += "?" + queryString
-		}
-
-		resp, err := http.Get(url)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		defer resp.Body.Close()
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-
-		if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
-			writeErrLog(getIp(r), r.URL.Path, "received error response from Yume 2kki Explorer API: "+string(body))
 		} else {
-			_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 1 HOUR)", actionParam, queryString, string(body), string(body))
-			if err != nil {
-				writeErrLog(getIp(r), r.URL.Path, err.Error())
-			}
+			writeErrLog(getIp(r), r.URL.Path, err.Error())
 		}
-
-		w.Write(body)
-		return
 	}
 
 	w.Write([]byte(response))
@@ -1495,4 +1463,43 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 
 func handlePlayers(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(strconv.Itoa(clients.GetAmount())))
+}
+
+func query2kki(action string, queryString string) (response string, err error) {
+	err = db.QueryRow("SELECT response FROM 2kkiApiQueries WHERE action = ? AND query = ? AND NOW() < timestampExpired", action, queryString).Scan(&response)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return "", err
+		}
+
+		url := "https://2kki.app/" + action
+		if queryString != "" {
+			url += "?" + queryString
+		}
+
+		resp, err := http.Get(url)
+		if err != nil {
+			return "", err
+		}
+
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		if !strings.HasPrefix(string(body), "{\"error\"") && !strings.HasPrefix(string(body), "<!DOCTYPE html>") {
+			return string(body), errors.New("received error response from Yume 2kki Explorer API: " + string(body))
+		} else {
+			_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 1 HOUR)", action, queryString, string(body), string(body))
+			if err != nil {
+				return "", err
+			}
+		}
+
+		return string(body), nil
+	}
+
+	return response, nil
 }

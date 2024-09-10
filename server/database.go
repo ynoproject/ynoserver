@@ -825,6 +825,15 @@ func getPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletio
 	return eventLocationCompletion, nil
 }
 
+func getLocationName(locationId int) (locationName string, err error) {
+	err = db.QueryRow("SELECT l.title FROM gameLocations l WHERE l.id = ?", locationId).Scan(&locationName)
+	if err != nil {
+		return "", err
+	}
+
+	return locationName, nil
+}
+
 func getOrWriteLocationIdForEventLocation(gameId string, gameEventPeriodId int, title string, titleJP string, depth int, minDepth int, mapIds []string) (locationId int, err error) {
 	mapIdsJson, err := json.Marshal(mapIds)
 	if err != nil {
@@ -918,7 +927,7 @@ func writePlayerEventLocationData(gameId string, gameEventPeriodId int, playerUu
 }
 
 func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*EventLocation, err error) {
-	results, err := db.Query("SELECT el.id, el.type, gep.game, l.title, l.titleJP, l.depth, l.minDepth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el JOIN gameLocations l ON l.id = el.locationId JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.type = 0 AND ec.uuid = ? WHERE gep.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, currentEventPeriodId)
+	results, err := db.Query("SELECT el.id, el.type, gep.game, l.id, l.title, l.titleJP, l.depth, l.minDepth, el.exp, el.endDate, CASE WHEN ec.uuid IS NOT NULL THEN 1 ELSE 0 END FROM eventLocations el JOIN gameLocations l ON l.id = el.locationId JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = el.id AND ec.type = 0 AND ec.uuid = ? WHERE gep.periodId = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2, 1", playerUuid, currentEventPeriodId)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -930,7 +939,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 
 		var completeBin int
 
-		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Game, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.Exp, &eventLocation.EndDate, &completeBin)
+		err := results.Scan(&eventLocation.Id, &eventLocation.Type, &eventLocation.Game, &eventLocation.LocationId, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.Exp, &eventLocation.EndDate, &completeBin)
 		if err != nil {
 			return eventLocations, err
 		}
@@ -946,7 +955,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 		eventLocations = append(eventLocations, &eventLocation)
 	}
 
-	results, err = db.Query("SELECT pel.id, gep.game, pl.title, pl.titleJP, pl.depth, pl.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND gep.game = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId, config.gameName)
+	results, err = db.Query("SELECT pel.id, gep.game, pl.id, pl.title, pl.titleJP, pl.depth, pl.minDepth, pel.endDate FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId JOIN gameEventPeriods gep ON gep.id = pel.gamePeriodId LEFT JOIN eventCompletions ec ON ec.eventId = pel.id AND ec.type = 1 AND ec.uuid = pel.uuid WHERE pel.uuid = ? AND gep.periodId = ? AND gep.game = ? AND ec.uuid IS NULL AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 1", playerUuid, currentEventPeriodId, config.gameName)
 	if err != nil {
 		return eventLocations, err
 	}
@@ -956,7 +965,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 	for results.Next() {
 		var eventLocation EventLocation
 
-		err := results.Scan(&eventLocation.Id, &eventLocation.Game, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.EndDate)
+		err := results.Scan(&eventLocation.Id, &eventLocation.Game, &eventLocation.LocationId, &eventLocation.Title, &eventLocation.TitleJP, &eventLocation.Depth, &eventLocation.MinDepth, &eventLocation.EndDate)
 		if err != nil {
 			return eventLocations, err
 		}

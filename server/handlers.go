@@ -1045,6 +1045,39 @@ func (c *SessionClient) handleL(msg []string) error {
 	return nil
 }
 
+func (c *SessionClient) handleNl(msg []string) error {
+	if c.roomC == nil {
+		return errors.New("room client does not exist")
+	}
+
+	if len(msg) != 2 {
+		return errors.New("segment count mismatch")
+	}
+
+	destLocationId, err := strconv.Atoi(msg[1])
+	if err != nil || destLocationId == 0 {
+		return errors.New("invalid destination location id")
+	}
+
+	destLocationName, err := getLocationName(destLocationId)
+	if err != nil || destLocationName == "" {
+		return errors.New("invalid destination location")
+	}
+
+	if len(c.roomC.locations) == 0 {
+		return errors.New("player location unknown")
+	}
+
+	nextLocations, err := getNext2kkiLocations(c.roomC.locations[0], destLocationName)
+	if err != nil {
+		return errors.New("invalid next locations")
+	}
+
+	c.outbox <- buildMsg("nl", nextLocations)
+
+	return nil
+}
+
 func (c *SessionClient) handlePf() error {
 	playerFriendData, err := getPlayerFriendData(c.uuid)
 	if err != nil {
