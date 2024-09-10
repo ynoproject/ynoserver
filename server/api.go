@@ -1489,7 +1489,7 @@ func query2kki(action string, queryString string) (response string, err error) {
 			return "", err
 		}
 
-		if !strings.HasPrefix(string(body), "{\"error\"") && !strings.HasPrefix(string(body), "<!DOCTYPE html>") {
+		if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
 			return string(body), errors.New("received error response from Yume 2kki Explorer API: " + string(body))
 		} else {
 			_, err = db.Exec("INSERT INTO 2kkiApiQueries (action, query, response, timestampExpired) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 1 HOUR)", action, queryString, string(body), string(body))
