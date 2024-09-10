@@ -1014,20 +1014,24 @@ func (c *SessionClient) handleL(msg []string) error {
 		c.roomC.locations = []string{}
 	}
 
+	var locationIds []int
+
 	for i, locationName := range msg {
 		if i == 0 {
 			continue
 		}
 
-		mapIds, err := getGameLocationMapIds(locationName)
+		gameLocation, err := getGameLocationByName(locationName)
 		if err != nil {
 			writeLog(c.uuid, "sess", err.Error(), 200)
 			continue
 		}
 
+		locationIds = append(locationIds, gameLocation.Id)
+
 		var matchedLocationMap bool
 
-		for _, mapId := range mapIds {
+		for _, mapId := range gameLocation.MapIds {
 			if mapId == c.roomC.mapId {
 				matchedLocationMap = true
 				break
@@ -1040,7 +1044,7 @@ func (c *SessionClient) handleL(msg []string) error {
 		}
 	}
 
-	c.outbox <- buildMsg("l")
+	c.outbox <- buildMsg("l", locationIds)
 
 	return nil
 }

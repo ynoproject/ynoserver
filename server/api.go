@@ -1222,6 +1222,11 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			trackedLocations := r.URL.Query().Get("trackedLocations")
+			if trackedLocations != "" {
+				retUrl += "&trackedConnLocations=" + trackedLocations
+			}
+
 			w.Write([]byte(retUrl))
 		}
 	}

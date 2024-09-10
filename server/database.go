@@ -484,9 +484,10 @@ func deleteOldChatMessages() error {
 	return nil
 }
 
-func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
+func getGameLocationByName(locationName string) (gameLocation *GameLocation, err error) {
+	gameLocation = &GameLocation{}
 	var mapIdsJson []byte
-	err = db.QueryRow("SELECT mapIds FROM gameLocations WHERE title = ? AND game = ?", locationName, config.gameName).Scan(&mapIdsJson)
+	err = db.QueryRow("SELECT id, game, title, mapIds FROM gameLocations WHERE title = ? AND game = ?", locationName, config.gameName).Scan(&gameLocation.Id, &gameLocation.Game, &gameLocation.Name, &mapIdsJson)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			var matchingEventLocation *EventLocationData
@@ -494,7 +495,7 @@ func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
 			if config.gameName == "2kki" {
 				matchingEventLocation, err = get2kkiEventLocationData(locationName)
 				if err != nil {
-					return mapIds, err
+					return gameLocation, err
 				}
 			} else {
 				for _, eventLocation := range gameEventLocations[config.gameName] {
@@ -508,27 +509,39 @@ func getGameLocationMapIds(locationName string) (mapIds []string, err error) {
 			if matchingEventLocation != nil {
 				mapIdsJson, err = json.Marshal(matchingEventLocation.MapIds)
 				if err != nil {
-					return mapIds, err
+					return gameLocation, err
 				}
 
-				_, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson)
+				res, err := db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson)
 				if err != nil {
-					return mapIds, err
+					return gameLocation, err
 				}
 
-				return matchingEventLocation.MapIds, nil
+				locationId, err := res.LastInsertId()
+				if err != nil {
+					return gameLocation, err
+				}
+
+				gameLocation = &GameLocation{
+					Id:     int(locationId),
+					Game:   config.gameName,
+					Name:   matchingEventLocation.Title,
+					MapIds: matchingEventLocation.MapIds,
+				}
+
+				return gameLocation, nil
 			}
 		}
 
-		return mapIds, err
+		return gameLocation, err
 	}
 
-	err = json.Unmarshal([]byte(mapIdsJson), &mapIds)
+	err = json.Unmarshal([]byte(mapIdsJson), &gameLocation.MapIds)
 	if err != nil {
-		return mapIds, err
+		return gameLocation, err
 	}
 
-	return mapIds, nil
+	return gameLocation, nil
 }
 
 func writePlayerGameLocation(uuid string, locationName string) error {

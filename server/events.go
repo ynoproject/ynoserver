@@ -616,18 +616,3 @@ func setGameEventLocationPoolsAndLocationColors() {
 		}
 	}
 }
-
-func getNext2kkiLocations(originLocationName string, destLocationName string) ([]string, error) {
-	response, err := query2kki("getNextLocations", "origin="+url.QueryEscape(originLocationName)+"&dest="+url.QueryEscape(destLocationName))
-	if err != nil {
-		return nil, err
-	}
-
-	var nextLocations []string
-	err = json.Unmarshal([]byte(response), &nextLocations)
-	if err != nil {
-		return nil, err
-	}
-
-	return nextLocations, nil
-}
