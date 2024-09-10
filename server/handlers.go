@@ -1055,12 +1055,14 @@ func (c *SessionClient) handleNl(msg []string) error {
 	}
 
 	destLocationId, err := strconv.Atoi(msg[1])
-	if err != nil || destLocationId == 0 {
+	if err != nil || destLocationId > 0 {
 		return errors.New("invalid destination location id")
 	}
 
 	destLocationName, err := getLocationName(destLocationId)
-	if err != nil || destLocationName == "" {
+	if err != nil {
+		return fmt.Errorf("invalid destination location: %s", err)
+	} else if destLocationName == "" {
 		return errors.New("invalid destination location")
 	}
 
@@ -1070,7 +1072,7 @@ func (c *SessionClient) handleNl(msg []string) error {
 
 	nextLocations, err := getNext2kkiLocations(c.roomC.locations[0], destLocationName)
 	if err != nil {
-		return errors.New("invalid next locations")
+		return fmt.Errorf("invalid next locations: %s", err)
 	}
 
 	c.outbox <- buildMsg("nl", nextLocations)
