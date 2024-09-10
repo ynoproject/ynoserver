@@ -1055,7 +1055,7 @@ func (c *SessionClient) handleNl(msg []string) error {
 	}
 
 	destLocationId, err := strconv.Atoi(msg[1])
-	if err != nil || destLocationId > 0 {
+	if err != nil || destLocationId < 0 {
 		return errors.New("invalid destination location id")
 	}
 
