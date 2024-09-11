@@ -19,7 +19,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 )
 
@@ -50,7 +49,11 @@ type ConnTypeParams struct {
 func getNext2kkiLocations(originLocationName string, destLocationName string) (PathLocations, error) {
 	var nextLocations PathLocations
 
-	response, err := query2kki("getNextLocations", fmt.Sprintf("origin=%s&dest=%s", url.QueryEscape(originLocationName), url.QueryEscape(destLocationName)))
+	v := make(url.Values)
+	v.Set("origin", originLocationName)
+	v.Set("dest", destLocationName)
+
+	response, err := query2kki("getNextLocations", v.Encode())
 	if err != nil {
 		return nextLocations, err
 	}
