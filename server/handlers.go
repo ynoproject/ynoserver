@@ -1076,10 +1076,15 @@ func (c *SessionClient) handleNl(msg []string) error {
 
 	nextLocations, err := getNext2kkiLocations(c.roomC.locations[0], destLocationName)
 	if err != nil {
-		return fmt.Errorf("invalid next locations for %s -> %s: %s", err, c.roomC.locations[0], destLocationName)
+		return fmt.Errorf("invalid next locations for %s -> %s: %s", c.roomC.locations[0], destLocationName, err)
 	}
 
-	c.outbox <- buildMsg("nl", nextLocations)
+	nextLocationsJson, err := json.Marshal(nextLocations.Locations)
+	if err != nil {
+		return fmt.Errorf("error while marshaling: %s", err)
+	}
+
+	c.outbox <- buildMsg("nl", nextLocationsJson)
 
 	return nil
 }

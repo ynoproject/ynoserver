@@ -19,6 +19,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 )
 
@@ -29,16 +30,34 @@ type GameLocation struct {
 	MapIds []string `json:"mapIds"`
 }
 
-func getNext2kkiLocations(originLocationName string, destLocationName string) ([]string, error) {
-	response, err := query2kki("getNextLocations", "origin="+url.QueryEscape(originLocationName)+"&dest="+url.QueryEscape(destLocationName))
+type PathLocations struct {
+	Locations []PathLocation `json:"locations"`
+}
+
+type PathLocation struct {
+	Title      string                    `json:"title"`
+	TitleJP    string                    `json:"titleJP"`
+	ConnType   int                       `json:"connType"`
+	TypeParams map[string]ConnTypeParams `json:"typeParams"`
+	Depth      int                       `json:"depth"`
+}
+
+type ConnTypeParams struct {
+	Params   string `json:"params"`
+	ParamsJP string `json:"paramsJP"`
+}
+
+func getNext2kkiLocations(originLocationName string, destLocationName string) (PathLocations, error) {
+	var nextLocations PathLocations
+
+	response, err := query2kki("getNextLocations", fmt.Sprintf("origin=%s&dest=%s", url.QueryEscape(originLocationName), url.QueryEscape(destLocationName)))
 	if err != nil {
-		return nil, err
+		return nextLocations, err
 	}
 
-	var nextLocations []string
-	err = json.Unmarshal([]byte(response), &nextLocations)
+	err = json.Unmarshal([]byte(response), &nextLocations.Locations)
 	if err != nil {
-		return nil, err
+		return nextLocations, err
 	}
 
 	return nextLocations, nil
