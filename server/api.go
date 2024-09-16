@@ -1543,14 +1543,18 @@ func queryWiki(action string, queryString string) (response string, err error) {
 			return "", err
 		}
 
-		if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
-			return "", errors.New("received error response from Yume Wiki API: " + string(body))
+		bodyStr := string(body)
+
+		if strings.HasPrefix(bodyStr, "{\"error\"") || strings.HasPrefix(bodyStr, "<!DOCTYPE html>") {
+			return "", errors.New("received error response from Yume Wiki API: " + bodyStr)
 		} else {
-			_, err = db.Exec("INSERT INTO wikiApiQueries (game, action, query, response, timestampExpired) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 12 HOUR)", config.gameName, action, queryString, string(body), string(body))
+			_, err = db.Exec("INSERT INTO wikiApiQueries (game, action, query, response, timestampExpired) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 12 HOUR)", config.gameName, action, queryString, bodyStr, bodyStr)
 			if err != nil {
 				return "", err
 			}
 		}
+
+		return bodyStr, nil
 	}
 
 	return response, nil

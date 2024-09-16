@@ -127,7 +127,7 @@ func updateLocationCache() {
 	var locationsResponse LocationsResponse
 	continueKey := "0"
 
-	for ok := true; ok; ok = (continueKey != "") {
+	for continueKey != "" {
 		response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
 		if err != nil {
 			writeErrLog("SERVER", "Locations", err.Error())
