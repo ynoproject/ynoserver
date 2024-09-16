@@ -167,7 +167,3 @@ func updateLocationCache() {
 
 	locationCache = locations
 }
-
-func getLocationFeed(uuid string, limit int, offset int, offsetId string, sortOrder string) ([]*Location, error) {
-	return nil, nil
-}

@@ -1049,6 +1049,21 @@ func (c *SessionClient) handleL(msg []string) error {
 	return nil
 }
 
+func (c *SessionClient) handleGl() error {
+	if c.roomC == nil {
+		return errors.New("room client does not exist")
+	}
+
+	gameLocationsJson, err := json.Marshal(locationCache)
+	if err != nil {
+		return fmt.Errorf("error while marshaling: %s", err)
+	}
+
+	c.outbox <- buildMsg("gl", gameLocationsJson)
+
+	return nil
+}
+
 func (c *SessionClient) handleNl(msg []string) error {
 	if c.roomC == nil {
 		return errors.New("room client does not exist")
