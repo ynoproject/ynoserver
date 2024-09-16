@@ -63,9 +63,9 @@ type LocationResponse struct {
 }
 
 type LocationsResponse struct {
-	Locations   []*LocationResponse `json:"locations"`
-	Game        string              `json:"game"`
-	ContinueKey string              `json:"continueKey,omitempty"`
+	Locations   []LocationResponse `json:"locations"`
+	Game        string             `json:"game"`
+	ContinueKey string             `json:"continueKey,omitempty"`
 }
 
 type Location struct {
@@ -123,7 +123,7 @@ func getNext2kkiLocations(originLocationName string, destLocationName string) (P
 
 func updateLocationCache() {
 	var locations []*Location
-	var wikiLocations []*LocationResponse
+	var wikiLocations []LocationResponse
 	var locationsResponse LocationsResponse
 	continueKey := "0"
 
