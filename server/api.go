@@ -114,6 +114,8 @@ func initApi() {
 	http.HandleFunc("/api/chathistory", handleChatHistory)
 	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
 
+	http.HandleFunc("/api/gamelocations", handleGameLocations)
+
 	http.HandleFunc("/api/screenshot", handleScreenshot)
 
 	http.HandleFunc("/api/2kki", handle2kki)

@@ -20,6 +20,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 )
 
@@ -86,6 +87,18 @@ func initLocations() {
 	logInitTask("locations")
 
 	scheduler.Every(6).Hours().Do(updateLocationCache)
+
+	go updateLocationCache()
+}
+
+func handleGameLocations(w http.ResponseWriter, r *http.Request) {
+	gameLocationsJson, err := json.Marshal(locationCache)
+	if err != nil {
+		handleError(w, r, fmt.Sprintf("error while marshaling: %s", err.Error()))
+		return
+	}
+
+	w.Write([]byte(gameLocationsJson))
 }
 
 func getNext2kkiLocations(originLocationName string, destLocationName string) (PathLocations, error) {
