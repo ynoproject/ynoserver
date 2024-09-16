@@ -42,6 +42,7 @@ type PlayerInfo struct {
 	BadgeSlotCols   int    `json:"badgeSlotCols"`
 	ScreenshotLimit int    `json:"screenshotLimit"`
 	Medals          [5]int `json:"medals"`
+	LocationIds     []int  `json:"locationIds"`
 }
 
 type PlayerListData struct {
@@ -1433,6 +1434,9 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 	var badgeSlotCols int
 	var screenshotLimit int
 	var medals [5]int
+	var locationIds []int
+
+	var err error
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
@@ -1440,6 +1444,7 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 	} else {
 		uuid, name, rank, badge, badgeSlotRows, badgeSlotCols, screenshotLimit = getPlayerInfoFromToken(token)
 		medals = getPlayerMedals(uuid)
+		locationIds, _ = getPlayerGameLocationIds(uuid, config.gameName)
 	}
 
 	// guest accounts with no playerGameData records will return nothing
@@ -1457,6 +1462,7 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 		BadgeSlotCols:   badgeSlotCols,
 		ScreenshotLimit: screenshotLimit,
 		Medals:          medals,
+		LocationIds:     locationIds,
 	}
 	playerInfoJson, err := json.Marshal(playerInfo)
 	if err != nil {
@@ -1504,6 +1510,45 @@ func query2kki(action string, queryString string) (response string, err error) {
 		}
 
 		return string(body), nil
+	}
+
+	return response, nil
+}
+
+func queryWiki(action string, queryString string) (response string, err error) {
+	err = db.QueryRow("SELECT response FROM wikiApiQueries WHERE action = ? AND query = ? AND NOW() < timestampExpired", action, queryString).Scan(&response)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return "", err
+		}
+
+		url := "https://wrapper.yume.wiki/" + action + "?game=" + config.gameName
+		if queryString != "" {
+			url += "&" + queryString
+		}
+
+		var resp *http.Response
+		resp, err = http.Get(url)
+		if err != nil {
+			return "", err
+		}
+
+		defer resp.Body.Close()
+
+		var body []byte
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
+			return "", errors.New("received error response from Yume Wiki API: " + string(body))
+		} else {
+			_, err = db.Exec("INSERT INTO wikiApiQueries (action, game, query, response, timestampExpired) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 12 HOUR)", action, config.gameName, queryString, string(body), string(body))
+			if err != nil {
+				return "", err
+			}
+		}
 	}
 
 	return response, nil

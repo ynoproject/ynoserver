@@ -553,6 +553,29 @@ func writePlayerGameLocation(uuid string, locationName string) error {
 	return nil
 }
 
+func getPlayerGameLocationIds(uuid string, gameId string) (gameLocationIds []int, err error) {
+	var locationIds []int
+
+	results, err := db.Query("SELECT gl.id FROM playerGameLocations pgl JOIN gameLocations gl ON gl.id = pgl.locationId AND gl.game = ? WHERE pgl.uuid = ?", gameId, uuid)
+	if err != nil {
+		return gameLocationIds, err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var locationId int
+		err = results.Scan(&locationId)
+		if err != nil {
+			return gameLocationIds, err
+		}
+
+		locationIds = append(locationIds, locationId)
+	}
+
+	return locationIds, nil
+}
+
 func getPlayerGameLocationCompletion(uuid string, gameId string) (gameLocationCompletion int, err error) {
 	err = db.QueryRow("SELECT FLOOR(COUNT(*) / (SELECT COUNT(*) FROM gameLocations WHERE game = ? AND secret = 0) * 100) FROM playerGameLocations pgl JOIN gameLocations gl ON gl.id = pgl.locationId WHERE gl.game = ? and gl.secret = 0 AND pgl.uuid = ?", gameId, gameId, uuid).Scan(&gameLocationCompletion)
 	if err != nil {
