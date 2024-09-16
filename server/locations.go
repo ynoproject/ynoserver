@@ -143,6 +143,8 @@ func updateLocationCache() {
 		wikiLocations = append(wikiLocations, locationsResponse.Locations...)
 
 		continueKey = locationsResponse.ContinueKey
+
+		locationsResponse.ContinueKey = ""
 	}
 
 	locationsMap := make(map[string]*Location)
