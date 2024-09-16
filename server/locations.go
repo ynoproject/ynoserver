@@ -147,7 +147,7 @@ func updateLocationCache() {
 
 	locationsMap := make(map[string]*Location)
 
-	results, err := db.Query("SELECT l.id, l.title, l.depth, l.minDepth l.secret FROM gameLocations gl WHERE gl.game = ?", config.gameName)
+	results, err := db.Query("SELECT l.id, l.title, l.depth, l.minDepth, l.secret FROM gameLocations gl WHERE gl.game = ?", config.gameName)
 	if err != nil {
 		writeErrLog("SERVER", "Locations", err.Error())
 		return
