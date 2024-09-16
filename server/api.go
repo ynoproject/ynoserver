@@ -1518,7 +1518,7 @@ func query2kki(action string, queryString string) (response string, err error) {
 }
 
 func queryWiki(action string, queryString string) (response string, err error) {
-	err = db.QueryRow("SELECT response FROM wikiApiQueries WHERE action = ? AND query = ? AND NOW() < timestampExpired", action, queryString).Scan(&response)
+	err = db.QueryRow("SELECT response FROM wikiApiQueries WHERE game = ? AND action = ? AND query = ? AND NOW() < timestampExpired", config.gameName, action, queryString).Scan(&response)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			return "", err
@@ -1546,7 +1546,7 @@ func queryWiki(action string, queryString string) (response string, err error) {
 		if strings.HasPrefix(string(body), "{\"error\"") || strings.HasPrefix(string(body), "<!DOCTYPE html>") {
 			return "", errors.New("received error response from Yume Wiki API: " + string(body))
 		} else {
-			_, err = db.Exec("INSERT INTO wikiApiQueries (action, game, query, response, timestampExpired) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 12 HOUR)", action, config.gameName, queryString, string(body), string(body))
+			_, err = db.Exec("INSERT INTO wikiApiQueries (game, action, query, response, timestampExpired) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 12 HOUR)", config.gameName, action, queryString, string(body), string(body))
 			if err != nil {
 				return "", err
 			}
