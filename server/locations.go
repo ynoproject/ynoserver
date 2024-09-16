@@ -69,7 +69,7 @@ type LocationsResponse struct {
 }
 
 type Location struct {
-	Id                  string   `json:"id"`
+	Id                  int      `json:"id"`
 	Title               string   `json:"title"`
 	Depth               int      `json:"depth"`
 	MinDepth            int      `json:"minDepth"`
