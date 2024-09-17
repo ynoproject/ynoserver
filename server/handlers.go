@@ -945,11 +945,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("invalid message")
 	}
 
-	enableLoc := true
-
-	if msg[0] == "gsay" {
-		enableLoc = msg[2] != "0"
-	} else if c.partyId == 0 {
+	if msg[0] == "psay" && c.partyId == 0 {
 		return errors.New("player not in a party")
 	}
 
@@ -959,7 +955,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	x := -1
 	y := -1
 
-	if c.roomC != nil && enableLoc {
+	if c.roomC != nil && !c.hideLocation {
 		mapId = c.roomC.mapId
 		prevMapId = c.roomC.prevMapId
 		prevLocations = c.roomC.prevLocations
@@ -1012,6 +1008,7 @@ func (c *SessionClient) handleL(msg []string) error {
 
 	if len(c.roomC.locations) > 0 {
 		c.roomC.locations = []string{}
+		c.roomC.locationIds = []int{}
 	}
 
 	var locationIds []int
@@ -1041,6 +1038,7 @@ func (c *SessionClient) handleL(msg []string) error {
 		if matchedLocationMap {
 			writePlayerGameLocation(c.uuid, locationName)
 			c.roomC.locations = append(c.roomC.locations, locationName)
+			c.roomC.locationIds = append(c.roomC.locationIds, gameLocation.Id)
 		}
 	}
 
@@ -1085,6 +1083,12 @@ func (c *SessionClient) handleNl(msg []string) error {
 	}
 
 	c.outbox <- buildMsg("nl", nextLocationsJson)
+
+	return nil
+}
+
+func (c *SessionClient) handleLp() error {
+	c.outbox <- buildMsg("lp", locationPlayerCountsPayload)
 
 	return nil
 }
@@ -1272,6 +1276,16 @@ func (c *SessionClient) handlePr(msg []string) error {
 	}
 
 	c.private = msg[1] == "1"
+
+	return nil
+}
+
+func (c *SessionClient) handleHl(msg []string) error {
+	if len(msg) != 2 {
+		return errors.New("segment count mismatch")
+	}
+
+	c.hideLocation = msg[1] == "1"
 
 	return nil
 }

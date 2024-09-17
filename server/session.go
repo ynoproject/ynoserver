@@ -207,6 +207,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		updateGameActivity = true
 	case "nl": // next expedition location(s)
 		err = c.handleNl(msgFields)
+	case "lp": // location player counts
+		err = c.handleLp()
 	case "pf": // friend list update
 		err = c.handlePf()
 	case "pt": // party update
@@ -224,6 +226,9 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handleEec(msgFields)
 	case "pr": // private mode
 		err = c.handlePr(msgFields)
+		updateGameActivity = true
+	case "hl": // hide location
+		err = c.handleHl(msgFields)
 		updateGameActivity = true
 	default:
 		err = errors.New("unknown message type")

@@ -87,8 +87,9 @@ type SessionClient struct {
 
 	system string
 
-	private bool
-	partyId int
+	private      bool
+	hideLocation bool
+	partyId      int
 
 	onlineFriends map[string]bool
 	blockedUsers  map[string]bool
@@ -192,7 +193,8 @@ type RoomClient struct {
 
 	mapId, prevMapId, prevLocations string
 
-	locations []string
+	locations   []string
+	locationIds []int
 
 	tags []string
 

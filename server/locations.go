@@ -82,11 +82,16 @@ type Location struct {
 }
 
 var locationCache []*Location
+var locationPlayerCounts map[int]int
+var locationPlayerCountsPayload []byte
 
 func initLocations() {
 	logInitTask("locations")
 
+	locationPlayerCounts = make(map[int]int)
+
 	scheduler.Every(6).Hours().Do(updateLocationCache)
+	scheduler.Every(30).Seconds().Do(updateLocationPlayerCounts)
 
 	go updateLocationCache()
 }
@@ -181,4 +186,27 @@ func updateLocationCache() {
 	}
 
 	locationCache = locations
+}
+
+func updateLocationPlayerCounts() {
+	for k := range locationPlayerCounts {
+		delete(locationPlayerCounts, k)
+	}
+
+	for _, client := range clients.Get() {
+		if client.private || client.hideLocation {
+			continue
+		}
+		for _, locationId := range client.roomC.locationIds {
+			locationPlayerCounts[locationId]++
+		}
+	}
+
+	playerCountsJson, err := json.Marshal(locationPlayerCounts)
+	if err != nil {
+		writeErrLog("SERVER", "Location Player Counts", err.Error())
+		return
+	}
+
+	locationPlayerCountsPayload = playerCountsJson
 }
