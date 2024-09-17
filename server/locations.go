@@ -194,7 +194,7 @@ func updateLocationPlayerCounts() {
 	}
 
 	for _, client := range clients.Get() {
-		if client.private || client.hideLocation {
+		if client.private || client.hideLocation || client.roomC == nil {
 			continue
 		}
 		for _, locationId := range client.roomC.locationIds {
