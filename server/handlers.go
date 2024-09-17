@@ -1025,6 +1025,7 @@ func (c *SessionClient) handleL(msg []string) error {
 		}
 
 		locationIds = append(locationIds, gameLocation.Id)
+		c.roomC.locationIds = append(c.roomC.locationIds, gameLocation.Id)
 
 		var matchedLocationMap bool
 
@@ -1037,8 +1038,12 @@ func (c *SessionClient) handleL(msg []string) error {
 
 		if matchedLocationMap {
 			writePlayerGameLocation(c.uuid, locationName)
+			for _, l := range c.roomC.locations {
+				if l == locationName {
+					continue
+				}
+			}
 			c.roomC.locations = append(c.roomC.locations, locationName)
-			c.roomC.locationIds = append(c.roomC.locationIds, gameLocation.Id)
 		}
 	}
 
