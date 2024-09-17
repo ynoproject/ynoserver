@@ -64,6 +64,7 @@ func initSchedules() {
 func handleSchedules(w http.ResponseWriter, r *http.Request) {
 	var uuid string
 	var banned bool
+	var rank int
 
 	commandParam := r.URL.Query().Get("command")
 	if commandParam == "" {
@@ -79,7 +80,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
+		uuid, _, rank, _, banned, _ = getPlayerDataFromToken(token)
 		if uuid == "" {
 			handleError(w, r, "invalid token")
 			return
@@ -93,8 +94,9 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 
 	switch commandParam {
 	case "list":
-		schedules, err := listSchedules(uuid)
+		schedules, err := listSchedules(uuid, rank)
 		if err != nil {
+			fmt.Printf("listSchedules: %s", err)
 			handleError(w, r, "error listing schedules")
 			return
 		}
@@ -154,8 +156,9 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 				Bilibili: query.Get("bilibili"),
 			},
 		}
-		id, err = updateSchedule(id, uuid, payload)
+		id, err = updateSchedule(id, rank, uuid, payload)
 		if err != nil {
+			fmt.Printf("updateSchedules: %s", err)
 			handleError(w, r, "error updating schedule")
 			return
 		}
@@ -170,14 +173,28 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		shouldFollow := query.Get("value") == "true"
 		followCount, err := followSchedule(uuid, scheduleId, shouldFollow)
 		if err != nil {
+			fmt.Printf("followSchedules: %s", err)
 			handleError(w, r, "error following schedule")
 			return
 		}
 		w.Write([]byte(strconv.Itoa(followCount)))
+	case "cancel":
+		scheduleId, err := strconv.Atoi(r.URL.Query().Get("scheduleId"))
+		if err != nil {
+			handleError(w, r, "invalid scheduleId")
+			return
+		}
+		err = cancelSchedule(uuid, rank, scheduleId)
+		if err != nil {
+			fmt.Printf("cancelSchedules: %s", err)
+			handleError(w, r, "error cancelling schedule")
+			return
+		}
+		w.Write([]byte("ok"))
 	}
 }
 
-func listSchedules(uuid string) ([]*ScheduleDisplay, error) {
+func listSchedules(uuid string, rank int) ([]*ScheduleDisplay, error) {
 	var schedules []*ScheduleDisplay
 	partyId, err := getPlayerPartyId(uuid)
 	if err != nil {
@@ -191,11 +208,11 @@ SELECT s.id, s.name, s.description, s.ownerUuid, p.name AS ownerName, s.partyId,
 	   s.intervalType, s.datetime, s.systemName, s.discord, s.youtube, s.twitch, s.niconico, s.openrec, s.bilibili,
 	   tally.followerCount, IF(s.id IN likes, 1, 0) AS playerLiked
 FROM schedules s
-WHERE s.partyId IS NULL OR s.partyId = ?
+WHERE s.partyId IS NULL OR s.partyId = ? OR ?
 LEFT JOIN players p ON p.uuid = s.ownerUuid
 LEFT JOIN tally ON tally.scheduleId = s.id`
 
-	results, err := db.Query(selectClause, uuid, partyId)
+	results, err := db.Query(selectClause, uuid, partyId, rank > 0)
 	if err != nil {
 		return schedules, err
 	}
@@ -211,7 +228,7 @@ LEFT JOIN tally ON tally.scheduleId = s.id`
 	return schedules, nil
 }
 
-func updateSchedule(id int, uuid string, s *ScheduleUpdate) (int, error) {
+func updateSchedule(id int, rank int, uuid string, s *ScheduleUpdate) (int, error) {
 	if id == 0 {
 		query := `
 INSERT INTO schedules
@@ -233,8 +250,9 @@ VALUES
 UPDATE schedules SET
 	name = ?, description = ?, partyId = ?, ownerUuid = ?, game = ?, recurring = ?, intervalValue = ?, intervalType = ?, datetime = ?, systemName = ?,
 	discord = ?, youtube = ?, twitch = ?, niconico = ?, openrec = ?, bilibili = ?
-WHERE id = ? AND ownerUuid = ?`
-	results, err := db.Exec(query, s.Name, s.Description, s.PartyId, s.OwnerUuid, s.Game, s.Recurring, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName, s.Discord, s.Youtube, s.Twitch, s.Niconico, s.Openrec, s.Bilibili, id, uuid)
+WHERE id = ? AND (? OR ownerUuid = ?)`
+	results, err := db.Exec(query, s.Name, s.Description, s.PartyId, s.OwnerUuid, s.Game, s.Recurring, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName, s.Discord, s.Youtube, s.Twitch, s.Niconico, s.Openrec, s.Bilibili, id, rank > 0, uuid)
+
 	if err != nil {
 		return id, err
 	}
@@ -258,19 +276,13 @@ func followSchedule(uuid string, scheduleId int, shouldFollow bool) (followCount
 		}
 	}
 
-	results, err := db.Query("SELECT COUNT(uuid) FROM playerScheduleFollows WHERE scheduleId = ?", scheduleId)
-	if err != nil {
-		return followCount, err
-	}
-	defer results.Close()
-	if results.Next() {
-		err := results.Scan(&followCount)
-		if err != nil {
-			return followCount, err
-		}
-	}
+	err := db.QueryRow("SELECT COUNT(uuid) FROM playerScheduleFollows WHERE scheduleId = ?", scheduleId).Scan(&followCount)
+	return followCount, err
+}
 
-	return followCount, nil
+func cancelSchedule(uuid string, rank int, scheduleId int) error {
+	_, err := db.Exec("DELETE FROM schedules WHERE id = (SELECT id FROM schedules WHERE id = ? AND (? OR ownerUuid = ?))", scheduleId, rank > 0, uuid)
+	return err
 }
 
 func clearDoneSchedules() {
