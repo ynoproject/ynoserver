@@ -19,6 +19,8 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/url"
 )
 
@@ -46,6 +48,59 @@ type ConnTypeParams struct {
 	ParamsJP string `json:"paramsJP"`
 }
 
+type LocationResponse struct {
+	Title               string   `json:"title"`
+	LocationImage       string   `json:"locationImage"`
+	BackgroundColor     string   `json:"backgroundColor"`
+	FontColor           string   `json:"fontColor"`
+	OriginalName        string   `json:"originalName,omitempty"`
+	PrimaryAuthor       string   `json:"primaryAuthor,omitempty"`
+	ContributingAuthors []string `json:"contributingAuthors,omitempty"`
+	VersionAdded        string   `json:"versionAdded"`
+	VersionsUpdated     []string `json:"versionsUpdated"`
+	VersionRemoved      string   `json:"versionRemoved,omitempty"`
+	VersionGaps         []string `json:"versionGaps"`
+}
+
+type LocationsResponse struct {
+	Locations   []LocationResponse `json:"locations"`
+	Game        string             `json:"game"`
+	ContinueKey string             `json:"continueKey,omitempty"`
+}
+
+type Location struct {
+	Id                  int      `json:"id"`
+	Title               string   `json:"title"`
+	Depth               int      `json:"depth"`
+	MinDepth            int      `json:"minDepth"`
+	Image               string   `json:"locationImage"`
+	PrimaryAuthor       string   `json:"primaryAuthor,omitempty"`
+	ContributingAuthors []string `json:"contributingAuthors,omitempty"`
+	VersionAdded        string   `json:"versionAdded"`
+	VersionsUpdated     []string `json:"versionsUpdated"`
+	Secret              bool     `json:"secret"`
+}
+
+var locationCache []*Location
+
+func initLocations() {
+	logInitTask("locations")
+
+	scheduler.Every(6).Hours().Do(updateLocationCache)
+
+	go updateLocationCache()
+}
+
+func handleGameLocations(w http.ResponseWriter, r *http.Request) {
+	gameLocationsJson, err := json.Marshal(locationCache)
+	if err != nil {
+		handleError(w, r, fmt.Sprintf("error while marshaling: %s", err.Error()))
+		return
+	}
+
+	w.Write([]byte(gameLocationsJson))
+}
+
 func getNext2kkiLocations(originLocationName string, destLocationName string) (PathLocations, error) {
 	var nextLocations PathLocations
 
@@ -64,4 +119,66 @@ func getNext2kkiLocations(originLocationName string, destLocationName string) (P
 	}
 
 	return nextLocations, nil
+}
+
+func updateLocationCache() {
+	var locations []*Location
+	var wikiLocations []LocationResponse
+	var locationsResponse LocationsResponse
+	continueKey := "0"
+
+	for continueKey != "" {
+		response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
+		if err != nil {
+			writeErrLog("SERVER", "Locations", err.Error())
+			return
+		}
+
+		err = json.Unmarshal([]byte(response), &locationsResponse)
+		if err != nil {
+			writeErrLog("SERVER", "Locations", err.Error())
+			return
+		}
+
+		wikiLocations = append(wikiLocations, locationsResponse.Locations...)
+
+		continueKey = locationsResponse.ContinueKey
+
+		locationsResponse.ContinueKey = ""
+	}
+
+	locationsMap := make(map[string]*Location)
+
+	results, err := db.Query("SELECT id, title, depth, minDepth, secret FROM gameLocations WHERE game = ?", config.gameName)
+	if err != nil {
+		writeErrLog("SERVER", "Locations", err.Error())
+		return
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		location := &Location{}
+		err = results.Scan(&location.Id, &location.Title, &location.Depth, &location.MinDepth, &location.Secret)
+		if err != nil {
+			writeErrLog("SERVER", "Locations", err.Error())
+			return
+		}
+
+		locationsMap[location.Title] = location
+	}
+
+	for _, wikiLocation := range wikiLocations {
+		if location, ok := locationsMap[wikiLocation.Title]; ok {
+			location.Image = wikiLocation.LocationImage
+			location.PrimaryAuthor = wikiLocation.PrimaryAuthor
+			location.ContributingAuthors = wikiLocation.ContributingAuthors
+			location.VersionAdded = wikiLocation.VersionAdded
+			location.VersionsUpdated = wikiLocation.VersionsUpdated
+
+			locations = append(locations, location)
+		}
+	}
+
+	locationCache = locations
 }

@@ -42,6 +42,7 @@ type PlayerInfo struct {
 	BadgeSlotCols   int    `json:"badgeSlotCols"`
 	ScreenshotLimit int    `json:"screenshotLimit"`
 	Medals          [5]int `json:"medals"`
+	LocationIds     []int  `json:"locationIds"`
 }
 
 type PlayerListData struct {
@@ -112,6 +113,8 @@ func initApi() {
 
 	http.HandleFunc("/api/chathistory", handleChatHistory)
 	http.HandleFunc("/api/clearchathistory", handleClearChatHistory)
+
+	http.HandleFunc("/api/gamelocations", handleGameLocations)
 
 	http.HandleFunc("/api/screenshot", handleScreenshot)
 
@@ -1433,6 +1436,9 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 	var badgeSlotCols int
 	var screenshotLimit int
 	var medals [5]int
+	var locationIds []int
+
+	var err error
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
@@ -1440,6 +1446,7 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 	} else {
 		uuid, name, rank, badge, badgeSlotRows, badgeSlotCols, screenshotLimit = getPlayerInfoFromToken(token)
 		medals = getPlayerMedals(uuid)
+		locationIds, _ = getPlayerGameLocationIds(uuid, config.gameName)
 	}
 
 	// guest accounts with no playerGameData records will return nothing
@@ -1457,6 +1464,7 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 		BadgeSlotCols:   badgeSlotCols,
 		ScreenshotLimit: screenshotLimit,
 		Medals:          medals,
+		LocationIds:     locationIds,
 	}
 	playerInfoJson, err := json.Marshal(playerInfo)
 	if err != nil {
@@ -1504,6 +1512,49 @@ func query2kki(action string, queryString string) (response string, err error) {
 		}
 
 		return string(body), nil
+	}
+
+	return response, nil
+}
+
+func queryWiki(action string, queryString string) (response string, err error) {
+	err = db.QueryRow("SELECT response FROM wikiApiQueries WHERE game = ? AND action = ? AND query = ? AND NOW() < timestampExpired", config.gameName, action, queryString).Scan(&response)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return "", err
+		}
+
+		url := "https://wrapper.yume.wiki/" + action + "?game=" + config.gameName
+		if queryString != "" {
+			url += "&" + queryString
+		}
+
+		var resp *http.Response
+		resp, err = http.Get(url)
+		if err != nil {
+			return "", err
+		}
+
+		defer resp.Body.Close()
+
+		var body []byte
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		bodyStr := string(body)
+
+		if strings.HasPrefix(bodyStr, "{\"error\"") || strings.HasPrefix(bodyStr, "<!DOCTYPE html>") {
+			return "", errors.New("received error response from Yume Wiki API: " + bodyStr)
+		} else {
+			_, err = db.Exec("INSERT INTO wikiApiQueries (game, action, query, response, timestampExpired) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR)) ON DUPLICATE KEY UPDATE response = ?, timestampExpired = DATE_ADD(NOW(), INTERVAL 12 HOUR)", config.gameName, action, queryString, bodyStr, bodyStr)
+			if err != nil {
+				return "", err
+			}
+		}
+
+		return bodyStr, nil
 	}
 
 	return response, nil

@@ -19,6 +19,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 	"math/rand"
@@ -414,7 +415,11 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 }
 
 func get2kkiEventLocationData(locationName string) (*EventLocationData, error) {
-	url := "https://2kki.app/getLocationInfo?locationName=" + url.QueryEscape(locationName) + "&ignoreRemoved=1"
+	v := make(url.Values)
+	v.Set("locationName", locationName)
+	v.Set("ignoreRemoved", "1")
+
+	url := fmt.Sprintf("https://2kki.app/getLocationInfo?%s", v.Encode())
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err

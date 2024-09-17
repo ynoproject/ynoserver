@@ -27,10 +27,10 @@ import (
 type Assets struct {
 	maps []int
 
-	sprites                map[string]bool
-	systems                map[string]bool
-	sounds                 map[string]bool
-	pictures               map[string]bool
+	sprites  map[string]bool
+	systems  map[string]bool
+	sounds   map[string]bool
+	pictures map[string]bool
 }
 
 func getAssets(gamePath string) *Assets {
