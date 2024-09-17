@@ -1006,7 +1006,7 @@ func (c *SessionClient) handleL(msg []string) error {
 		return errors.New("room client does not exist")
 	}
 
-	if len(c.roomC.locations) > 0 {
+	if len(c.roomC.locationIds) > 0 {
 		c.roomC.locations = []string{}
 		c.roomC.locationIds = []int{}
 	}
@@ -1024,6 +1024,19 @@ func (c *SessionClient) handleL(msg []string) error {
 			continue
 		}
 
+		duplicateLocation := false
+
+		for _, l := range c.roomC.locationIds {
+			if l == gameLocation.Id {
+				duplicateLocation = true
+				break
+			}
+		}
+
+		if duplicateLocation {
+			continue
+		}
+
 		locationIds = append(locationIds, gameLocation.Id)
 		c.roomC.locationIds = append(c.roomC.locationIds, gameLocation.Id)
 
@@ -1038,11 +1051,6 @@ func (c *SessionClient) handleL(msg []string) error {
 
 		if matchedLocationMap {
 			writePlayerGameLocation(c.uuid, locationName)
-			for _, l := range c.roomC.locations {
-				if l == locationName {
-					continue
-				}
-			}
 			c.roomC.locations = append(c.roomC.locations, locationName)
 		}
 	}
