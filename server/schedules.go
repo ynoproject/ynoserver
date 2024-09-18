@@ -73,7 +73,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 	}
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		if commandParam == "list" {
+		if commandParam == "list" || commandParam == "follow" {
 			uuid, banned, _ = getOrCreatePlayerData(getIp(r))
 		} else {
 			handleError(w, r, "token not specified")
@@ -116,7 +116,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		var interval int
+		var interval, partyId int
 		var intervalType string
 		recurring := query.Get("recurring") == "true"
 		if recurring {
@@ -136,10 +136,12 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid datetime")
 			return
 		}
-		partyId, err := strconv.Atoi(query.Get("partyId"))
-		if err != nil {
-			handleError(w, r, "invalid partyId")
-			return
+		if query.Has("partyId") {
+			partyId, err = strconv.Atoi(query.Get("partyId"))
+			if err != nil {
+				handleError(w, r, "invalid partyId")
+				return
+			}
 		}
 		payload := &ScheduleUpdate{
 			Name:          query.Get("name"),
@@ -207,15 +209,14 @@ func listSchedules(uuid string, rank int) ([]*ScheduleDisplay, error) {
 	}
 
 	selectClause := `
-WITH tally AS (SELECT scheduleId, COUNT(uuid) AS followerCount FROM playerScheduleFollows GROUP BY scheduleId),
-	 likes AS (SELECT scheduleId FROM playerScheduleFollows WHERE uuid = ?)
-SELECT s.id, s.name, s.description, s.ownerUuid, p.name AS ownerName, s.partyId, s.game, s.recurring, s.intervalValue,
+WITH tally AS (SELECT scheduleId, COUNT(uuid) AS followerCount FROM playerScheduleFollows GROUP BY scheduleId)
+SELECT s.id, s.name, s.description, s.ownerUuid, acc.name AS ownerName, s.partyId, s.game, s.recurring, s.intervalValue,
 	   s.intervalType, s.datetime, s.systemName, s.discord, s.youtube, s.twitch, s.niconico, s.openrec, s.bilibili,
-	   tally.followerCount, IF(s.id IN likes, 1, 0) AS playerLiked
+	   tally.followerCount, CASE WHEN s.id IN (SELECT scheduleId FROM playerScheduleFollows WHERE uuid = ?) THEN 1 ELSE 0 END AS playerLiked
 FROM schedules s
-WHERE s.partyId IS NULL OR s.partyId = ? OR ?
-LEFT JOIN players p ON p.uuid = s.ownerUuid
-LEFT JOIN tally ON tally.scheduleId = s.id`
+LEFT JOIN accounts acc ON acc.uuid = s.ownerUuid
+LEFT JOIN tally ON tally.scheduleId = s.id
+WHERE s.partyId = 0 OR s.partyId = ? OR ?`
 
 	results, err := db.Query(selectClause, uuid, partyId, rank > 0)
 	if err != nil {
@@ -269,19 +270,23 @@ WHERE id = ? AND (? OR ownerUuid = ?)`
 }
 
 func followSchedule(uuid string, scheduleId int, shouldFollow bool) (followCount int, _ error) {
+	var query string
 	if shouldFollow {
-		_, err := db.Exec("INSERT IGNORE INTO playerScheduleFollows (uuid, scheduleId) VALUES (?, ?)", uuid, scheduleId)
-		if err != nil {
-			return followCount, err
-		}
+		query = "INSERT IGNORE INTO playerScheduleFollows (uuid, scheduleId) VALUES (?, ?)"
 	} else {
-		_, err := db.Exec("DELETE FROM playerScheduleFollows WHERE uuid = ? AND scheduleId = ?", uuid, scheduleId)
-		if err != nil {
-			return followCount, err
-		}
+		query = "DELETE FROM playerScheduleFollows WHERE uuid = ? AND scheduleId = ?"
+	}
+	results, err := db.Exec(query, uuid, scheduleId)
+	if err != nil {
+		return 0, err
 	}
 
-	err := db.QueryRow("SELECT COUNT(uuid) FROM playerScheduleFollows WHERE scheduleId = ?", scheduleId).Scan(&followCount)
+	rowsAffected, err := results.RowsAffected()
+	if err != nil || rowsAffected < 1 {
+		return 0, errors.Join(err, errors.New("failed to follow/unfollow"))
+	}
+
+	err = db.QueryRow("SELECT COUNT(uuid) FROM playerScheduleFollows WHERE scheduleId = ?", scheduleId).Scan(&followCount)
 	return followCount, err
 }
 
