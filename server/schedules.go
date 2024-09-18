@@ -31,7 +31,7 @@ type ScheduleUpdate struct {
 	Name          string    `json:"name"`
 	Description   string    `json:"description"`
 	OwnerUuid     string    `json:"ownerUuid"`
-	PartyId       string    `json:"partyId,omitempty"`
+	PartyId       int       `json:"partyId"`
 	Game          string    `json:"game"`
 	Recurring     bool      `json:"recurring"`
 	IntervalValue int       `json:"interval"`
@@ -96,8 +96,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 	case "list":
 		schedules, err := listSchedules(uuid, rank)
 		if err != nil {
-			fmt.Printf("listSchedules: %s", err)
-			handleError(w, r, "error listing schedules")
+			handleError(w, r, "error listing schedules: "+err.Error())
 			return
 		}
 		schedulesJson, err := json.Marshal(schedules)
@@ -134,14 +133,20 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		}
 		datetime, err := time.Parse(time.RFC3339, query.Get("datetime"))
 		if err != nil {
-			handleError(w, r, "invalid datetime `"+query.Get("datetime")+"`")
+			handleError(w, r, "invalid datetime")
+			return
+		}
+		partyId, err := strconv.Atoi(query.Get("partyId"))
+		if err != nil {
+			handleError(w, r, "invalid partyId")
+			return
 		}
 		payload := &ScheduleUpdate{
 			Name:          query.Get("name"),
 			Description:   query.Get("description"),
 			OwnerUuid:     query.Get("ownerUuid"),
-			PartyId:       query.Get("partyId"),
 			Game:          query.Get("game"),
+			PartyId:       partyId,
 			Recurring:     recurring,
 			IntervalValue: interval,
 			IntervalType:  intervalType,
@@ -159,7 +164,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		id, err = updateSchedule(id, rank, uuid, payload)
 		if err != nil {
 			fmt.Printf("updateSchedules: %s", err)
-			handleError(w, r, "error updating schedule")
+			handleError(w, r, "error updating schedule: "+err.Error())
 			return
 		}
 		w.Write([]byte(strconv.Itoa(id)))
@@ -174,7 +179,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		followCount, err := followSchedule(uuid, scheduleId, shouldFollow)
 		if err != nil {
 			fmt.Printf("followSchedules: %s", err)
-			handleError(w, r, "error following schedule")
+			handleError(w, r, "error following schedule: "+err.Error())
 			return
 		}
 		w.Write([]byte(strconv.Itoa(followCount)))
@@ -187,7 +192,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		err = cancelSchedule(uuid, rank, scheduleId)
 		if err != nil {
 			fmt.Printf("cancelSchedules: %s", err)
-			handleError(w, r, "error cancelling schedule")
+			handleError(w, r, "error cancelling schedule: "+err.Error())
 			return
 		}
 		w.Write([]byte("ok"))
@@ -202,7 +207,7 @@ func listSchedules(uuid string, rank int) ([]*ScheduleDisplay, error) {
 	}
 
 	selectClause := `
-WITH tally AS (SELECT pf.scheduleId, COUNT(pf.uuid) AS followerCount FROM playerScheduleFollows pf GROUP BY pf.scheduleId),
+WITH tally AS (SELECT scheduleId, COUNT(uuid) AS followerCount FROM playerScheduleFollows GROUP BY scheduleId),
 	 likes AS (SELECT scheduleId FROM playerScheduleFollows WHERE uuid = ?)
 SELECT s.id, s.name, s.description, s.ownerUuid, p.name AS ownerName, s.partyId, s.game, s.recurring, s.intervalValue,
 	   s.intervalType, s.datetime, s.systemName, s.discord, s.youtube, s.twitch, s.niconico, s.openrec, s.bilibili,
