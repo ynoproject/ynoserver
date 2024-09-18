@@ -42,10 +42,14 @@ type ScheduleUpdate struct {
 
 type ScheduleDisplay struct {
 	ScheduleUpdate
-	Id            int    `json:"id,omitempty"`
-	OwnerName     string `json:"ownerName"`
-	FollowerCount int    `json:"followerCount"`
-	PlayerLiked   bool   `json:"playerLiked"`
+	Id            int  `json:"id,omitempty"`
+	FollowerCount int  `json:"followerCount"`
+	PlayerLiked   bool `json:"playerLiked"`
+
+	OwnerName       string `json:"ownerName"`
+	OwnerRank       int    `json:"ownerRank"`
+	OwnerSystemName string `json:"ownerSystemName"`
+	OwnerBadge      string `json:"ownerString"`
 }
 
 type SchedulePlatforms struct {
@@ -101,7 +105,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		}
 		schedulesJson, err := json.Marshal(schedules)
 		if err != nil {
-			handleError(w, r, "error marshalling schedules")
+			handleError(w, r, "error marshalling schedules: "+err.Error())
 			return
 		}
 		w.Write(schedulesJson)
@@ -166,7 +170,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		id, err = updateSchedule(id, rank, uuid, payload)
 		if err != nil {
 			fmt.Printf("updateSchedules: %s", err)
-			handleError(w, r, "error updating schedule: "+err.Error())
+			handleError(w, r, "error updating schedule")
 			return
 		}
 		w.Write([]byte(strconv.Itoa(id)))
@@ -181,7 +185,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		followCount, err := followSchedule(uuid, scheduleId, shouldFollow)
 		if err != nil {
 			fmt.Printf("followSchedules: %s", err)
-			handleError(w, r, "error following schedule: "+err.Error())
+			handleError(w, r, "error following schedule")
 			return
 		}
 		w.Write([]byte(strconv.Itoa(followCount)))
@@ -194,7 +198,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		err = cancelSchedule(uuid, rank, scheduleId)
 		if err != nil {
 			fmt.Printf("cancelSchedules: %s", err)
-			handleError(w, r, "error cancelling schedule: "+err.Error())
+			handleError(w, r, "error cancelling schedule")
 			return
 		}
 		w.Write([]byte("ok"))
@@ -210,22 +214,24 @@ func listSchedules(uuid string, rank int) ([]*ScheduleDisplay, error) {
 
 	selectClause := `
 WITH tally AS (SELECT scheduleId, COUNT(uuid) AS followerCount FROM playerScheduleFollows GROUP BY scheduleId)
-SELECT s.id, s.name, s.description, s.ownerUuid, acc.name AS ownerName, s.partyId, s.game, s.recurring, s.intervalValue,
-	   s.intervalType, s.datetime, s.systemName, s.discord, s.youtube, s.twitch, s.niconico, s.openrec, s.bilibili,
-	   tally.followerCount, CASE WHEN s.id IN (SELECT scheduleId FROM playerScheduleFollows WHERE uuid = ?) THEN 1 ELSE 0 END AS playerLiked
+SELECT s.id, s.name, s.description, s.ownerUuid, acc.user AS ownerName, pd.rank AS ownerRank, acc.badge, pgd.systemName,
+	   s.partyId, s.game, s.recurring, s.intervalValue, s.intervalType, s.datetime, s.systemName, s.discord, s.youtube, s.twitch, s.niconico, s.openrec, s.bilibili,
+	   COALESCE(tally.followerCount, 0) AS followerCount, CASE WHEN s.id IN (SELECT scheduleId FROM playerScheduleFollows WHERE uuid = ?) THEN 1 ELSE 0 END AS playerLiked
 FROM schedules s
-LEFT JOIN accounts acc ON acc.uuid = s.ownerUuid
+JOIN accounts acc ON acc.uuid = s.ownerUuid
+JOIN playerGameData pgd ON pgd.uuid = s.ownerUuid AND pgd.game = ?
+JOIN players pd ON pd.uuid = s.ownerUuid
 LEFT JOIN tally ON tally.scheduleId = s.id
-WHERE s.partyId = 0 OR s.partyId = ? OR ?`
+WHERE COALESCE(s.partyId, 0) IN (0, ?) OR ?`
 
-	results, err := db.Query(selectClause, uuid, partyId, rank > 0)
+	results, err := db.Query(selectClause, uuid, config.gameName, partyId, rank > 0)
 	if err != nil {
 		return schedules, err
 	}
 	defer results.Close()
 	for results.Next() {
 		var s ScheduleDisplay
-		err := results.Scan(&s.Id, &s.Name, &s.Description, &s.OwnerUuid, &s.OwnerName, &s.PartyId, &s.Game, &s.Recurring, &s.IntervalValue, &s.IntervalType, &s.Datetime, &s.SystemName, &s.Discord, &s.Youtube, &s.Twitch, &s.Niconico, &s.Openrec, &s.Bilibili, &s.FollowerCount, &s.PlayerLiked)
+		err := results.Scan(&s.Id, &s.Name, &s.Description, &s.OwnerUuid, &s.OwnerName, &s.OwnerRank, &s.OwnerBadge, &s.OwnerSystemName, &s.PartyId, &s.Game, &s.Recurring, &s.IntervalValue, &s.IntervalType, &s.Datetime, &s.SystemName, &s.Discord, &s.Youtube, &s.Twitch, &s.Niconico, &s.Openrec, &s.Bilibili, &s.FollowerCount, &s.PlayerLiked)
 		if err != nil {
 			return schedules, err
 		}
