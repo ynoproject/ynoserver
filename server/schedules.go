@@ -314,7 +314,7 @@ SET datetime = CASE intervalType
     WHEN 'months' THEN DATE_ADD(datetime, INTERVAL intervalValue MONTH)
     WHEN 'years' THEN DATE_ADD(datetime, INTERVAL intervalValue YEAR)
     ELSE datetime
-END WHERE recurring`)
+END WHERE recurring AND datetime < NOW()`)
 	if err != nil {
 		fmt.Printf("error calculating recurring events: %s", err)
 	}
