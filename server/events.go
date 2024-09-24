@@ -402,11 +402,10 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 	}
 
 	for _, eventLocation := range eventLocations {
-		adjustedDepth, adjustedMinDepth := get2kkiEventLocationAdjustedDepths(&eventLocation)
 		if playerUuid == "" {
-			err = writeEventLocationData("2kki", gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, exp, eventLocation.MapIds)
+			err = writeEventLocationData("2kki", gameEventPeriodId, eventType, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, exp, eventLocation.MapIds)
 		} else {
-			err = writePlayerEventLocationData("2kki", gameEventPeriodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, adjustedDepth, adjustedMinDepth, eventLocation.MapIds)
+			err = writePlayerEventLocationData("2kki", gameEventPeriodId, playerUuid, eventLocation.Title, eventLocation.TitleJP, eventLocation.Depth, eventLocation.MinDepth, eventLocation.MapIds)
 		}
 		if err != nil {
 			handleInternalEventError(eventType, err)
@@ -442,31 +441,6 @@ func get2kkiEventLocationData(locationName string) (*EventLocationData, error) {
 	}
 
 	return &locationData, nil
-}
-
-func get2kkiEventLocationAdjustedDepths(eventLocation *EventLocationData) (int, int) {
-	adjustedDepth := (eventLocation.Depth / 3) * 2
-	if eventLocation.Depth%3 == 2 {
-		adjustedDepth++
-	}
-	if adjustedDepth > 10 {
-		adjustedDepth = 10
-	}
-
-	var adjustedMinDepth int
-	if eventLocation.MinDepth == eventLocation.Depth {
-		adjustedMinDepth = adjustedDepth
-	} else {
-		adjustedMinDepth = (eventLocation.MinDepth / 3) * 2
-		if eventLocation.MinDepth%3 == 2 {
-			adjustedMinDepth++
-		}
-		if adjustedMinDepth > 10 {
-			adjustedMinDepth = 10
-		}
-	}
-
-	return adjustedDepth, adjustedMinDepth
 }
 
 func addEventVm() {
