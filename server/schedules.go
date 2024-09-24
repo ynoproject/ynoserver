@@ -63,6 +63,8 @@ type SchedulePlatforms struct {
 
 func initSchedules() {
 	scheduler.Every(1).Day().At("06:00").Do(clearDoneSchedules)
+
+	clearDoneSchedules()
 }
 
 func handleSchedules(w http.ResponseWriter, r *http.Request) {
