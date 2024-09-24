@@ -127,6 +127,8 @@ func initApi() {
 	http.HandleFunc("/api/info", handleInfo)
 
 	http.HandleFunc("/api/players", handlePlayers)
+
+	http.HandleFunc("/api/schedule", handleSchedules)
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
