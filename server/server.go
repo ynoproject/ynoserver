@@ -99,6 +99,7 @@ func Start() {
 	initApi()
 	initHistory()
 	initLocations()
+	initSchedules()
 	initEvents()
 	initBadges()
 	initSession()
