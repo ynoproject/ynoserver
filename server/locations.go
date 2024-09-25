@@ -71,6 +71,7 @@ type LocationsResponse struct {
 type Location struct {
 	Id                  int      `json:"id"`
 	Title               string   `json:"title"`
+	OriginalTitle       string   `json:"originalTitle"`
 	Depth               int      `json:"depth"`
 	MinDepth            int      `json:"minDepth"`
 	Image               string   `json:"locationImage"`
@@ -176,6 +177,7 @@ func updateLocationCache() {
 	for _, wikiLocation := range wikiLocations {
 		if location, ok := locationsMap[wikiLocation.Title]; ok {
 			location.Image = wikiLocation.LocationImage
+			location.OriginalTitle = wikiLocation.OriginalName
 			location.PrimaryAuthor = wikiLocation.PrimaryAuthor
 			location.ContributingAuthors = wikiLocation.ContributingAuthors
 			location.VersionAdded = wikiLocation.VersionAdded
