@@ -567,7 +567,7 @@ func writeScreenshotData(id string, uuid string, game string, mapId string, mapX
 		}
 	}
 
-	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game, mapId, mapX, mapY, public, temp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", id, uuid, game, mapId, mapX, mapY, temp, temp)
+	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game, mapId, mapX, mapY, public, publicTimestamp, temp) VALUES (?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN UTC_TIMESTAMP() ELSE NULL END, ?)", id, uuid, game, mapId, mapX, mapY, temp, temp, temp)
 	if err != nil {
 		return err
 	}
