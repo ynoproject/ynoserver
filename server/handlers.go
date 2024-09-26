@@ -1283,12 +1283,12 @@ func (c *SessionClient) handleEec(msg []string) error {
 	return nil
 }
 
-func (c *SessionClient) handlePsi(msg []string) error {
+func (c *SessionClient) handlePsi(uuid string, msg []string) error {
 	if len(msg) != 3 {
 		return errors.New("segment count mismatch")
 	}
 
-	screenshotInfo, err := getScreenshotInfo(msg[1], msg[2])
+	screenshotInfo, err := getScreenshotInfo(uuid, msg[1], msg[2])
 	if err != nil {
 		return err
 	}
