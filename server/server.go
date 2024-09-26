@@ -98,6 +98,7 @@ func Start() {
 
 	initApi()
 	initHistory()
+	initScreenshots()
 	initLocations()
 	initSchedules()
 	initEvents()

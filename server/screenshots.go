@@ -71,6 +71,15 @@ const (
 	defaultPlayerScreenshotLimit = 10
 )
 
+func initScreenshots() {
+	// Use main server to process temp screenshot cleaning task for all games
+	if isMainServer {
+		logInitTask("screenshots")
+
+		scheduler.Cron("0 * * * *").Do(deleteTempScreenshots)
+	}
+}
+
 func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 	commandParam := r.URL.Query().Get("command")
 	if commandParam == "" {
@@ -253,9 +262,11 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		temp := r.URL.Query().Get("temp") == "1"
+
 		id := getNanoId()
 
-		err = writeScreenshotData(id, uuid, config.gameName, mapIdParam, mapX, mapY)
+		err = writeScreenshotData(id, uuid, config.gameName, mapIdParam, mapX, mapY, temp)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -310,7 +321,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 
 				if commandParam == "setPublic" && valueParam == "1" {
 					_, name, _, badge, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-				
+
 					err = sendWebhookMessage(config.screenshotWebhook, name, badge, fmt.Sprintf("https://connect.ynoproject.net/%s/screenshots/%s/%s.png", config.gameName, uuid, idParam), false)
 					if err != nil {
 						handleError(w, r, "failed to send to webhook")
@@ -402,7 +413,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 
 	queryArgs = append(queryArgs, uuid)
 
-	whereClause = "WHERE ps.public = 1 AND op.banned = 0 "
+	whereClause = "WHERE ps.temp = 0 AND ps.public = 1 AND op.banned = 0 "
 
 	if game != "" {
 		whereClause += "AND ps.game = ? "
@@ -453,10 +464,22 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 	return screenshots, nil
 }
 
+func getScreenshotInfo(uuid string, id string) (*PlayerScreenshotData, error) {
+	screenshot := &PlayerScreenshotData{}
+
+	query := "SELECT ps.id, ps.uuid, ps.game, ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? AND ps.id = ?"
+	err := db.QueryRow(query, uuid, id).Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
+	if err != nil {
+		return nil, err
+	}
+
+	return screenshot, nil
+}
+
 func getPlayerScreenshots(uuid string) ([]*PlayerScreenshotData, error) {
 	var playerScreenshots []*PlayerScreenshotData
 
-	results, err := db.Query("SELECT ps.id, ps.uuid, ps.game, ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? ORDER BY ps.timestamp DESC, ps.id", uuid)
+	results, err := db.Query("SELECT ps.id, ps.uuid, ps.game, ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? AND ps.temp = 0 ORDER BY ps.timestamp DESC, ps.id", uuid)
 	if err != nil {
 		return playerScreenshots, err
 	}
@@ -499,19 +522,25 @@ func getScreenshotGames() ([]string, error) {
 	return screenshotGames, nil
 }
 
-func writeScreenshotData(id string, uuid string, game string, mapId string, mapX int, mapY int) error {
+func writeScreenshotData(id string, uuid string, game string, mapId string, mapX int, mapY int, temp bool) error {
 	var playerScreenshotCount int
-	err := db.QueryRow("SELECT COUNT(*) FROM playerScreenshots WHERE uuid = ?", uuid).Scan(&playerScreenshotCount)
+	err := db.QueryRow("SELECT COUNT(*) FROM playerScreenshots WHERE uuid = ? AND temp = ?", uuid, temp).Scan(&playerScreenshotCount)
 	if err != nil {
 		return err
 	} else {
-		playerScreenshotLimit := getPlayerScreenshotLimit(uuid)
-		if playerScreenshotCount >= playerScreenshotLimit {
-			return errors.New("screenshot limit exceeded")
+		if temp {
+			if playerScreenshotCount >= 100 {
+				return errors.New("screenshot limit exceeded")
+			}
+		} else {
+			playerScreenshotLimit := getPlayerScreenshotLimit(uuid)
+			if playerScreenshotCount >= playerScreenshotLimit {
+				return errors.New("screenshot limit exceeded")
+			}
 		}
 	}
 
-	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game, mapId, mapX, mapY) VALUES (?, ?, ?, ?, ?, ?)", id, uuid, game, mapId, mapX, mapY)
+	_, err = db.Exec("INSERT INTO playerScreenshots (id, uuid, game, mapId, mapX, mapY, public, temp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", id, uuid, game, mapId, mapX, mapY, temp, temp)
 	if err != nil {
 		return err
 	}
@@ -587,4 +616,31 @@ func deleteScreenshot(id string, uuid string) (bool, error) {
 	}
 
 	return deletedRows > 0, nil
+}
+
+func deleteTempScreenshots() error {
+	results, err := db.Query("SELECT id, uuid FROM playerScreenshots WHERE temp = 1 AND timestamp < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)")
+	if err != nil {
+		return err
+	}
+
+	defer results.Close()
+
+	for results.Next() {
+		var screenshotId string
+		var uuid string
+		err = results.Scan(&screenshotId, &uuid)
+		if err != nil {
+			continue
+		}
+
+		os.Remove("screenshots/temp/" + uuid + "/" + screenshotId + ".png")
+	}
+
+	_, err = db.Exec("DELETE FROM playerScreenshots WHERE temp = 1 AND timestamp < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

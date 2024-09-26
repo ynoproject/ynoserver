@@ -224,6 +224,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = c.handleEexp()
 	case "eec": // claim expedition
 		err = c.handleEec(msgFields)
+	case "psi": // player screenshot info
+		err = c.handlePsi(msgFields)
 	case "pr": // private mode
 		err = c.handlePr(msgFields)
 		updateGameActivity = true

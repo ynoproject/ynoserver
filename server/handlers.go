@@ -1283,6 +1283,26 @@ func (c *SessionClient) handleEec(msg []string) error {
 	return nil
 }
 
+func (c *SessionClient) handlePsi(msg []string) error {
+	if len(msg) != 3 {
+		return errors.New("segment count mismatch")
+	}
+
+	screenshotInfo, err := getScreenshotInfo(msg[1], msg[2])
+	if err != nil {
+		return err
+	}
+
+	screenshotInfoJson, err := json.Marshal(screenshotInfo)
+	if err != nil {
+		return err
+	}
+
+	c.outbox <- buildMsg("psi", screenshotInfoJson)
+
+	return nil
+}
+
 func (c *SessionClient) handlePr(msg []string) error {
 	if len(msg) != 2 {
 		return errors.New("segment count mismatch")

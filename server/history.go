@@ -50,10 +50,10 @@ type ChatHistory struct {
 }
 
 func initHistory() {
-	logInitTask("history")
-
 	// Use main server to process chat message cleaning task for all games
 	if isMainServer {
+		logInitTask("history")
+
 		scheduler.Cron("0 * * * *").Do(deleteOldChatMessages)
 	}
 }

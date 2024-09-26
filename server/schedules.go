@@ -62,9 +62,13 @@ type SchedulePlatforms struct {
 }
 
 func initSchedules() {
-	scheduler.Every(1).Day().At("06:00").Do(clearDoneSchedules)
+	if isMainServer {
+		logInitTask("schedules")
 
-	clearDoneSchedules()
+		scheduler.Every(1).Day().At("06:00").Do(clearDoneSchedules)
+
+		clearDoneSchedules()
+	}
 }
 
 func handleSchedules(w http.ResponseWriter, r *http.Request) {
@@ -272,7 +276,7 @@ WHERE id = ? AND (? OR ownerUuid = ?)`
 	}
 	affected, err := results.RowsAffected()
 	if affected < 1 {
-		return id, errors.Join(err, errors.New("Did not update any schedules"))
+		return id, errors.Join(err, errors.New("did not update any schedules"))
 	}
 	return id, err
 }
