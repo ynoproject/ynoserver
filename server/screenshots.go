@@ -289,6 +289,8 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
+
+		w.Write([]byte(id))
 	case "setPublic":
 		fallthrough
 	case "setSpoiler":
