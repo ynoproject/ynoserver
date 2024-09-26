@@ -358,6 +358,8 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else {
+			temp := r.URL.Query().Get("temp") == "1"
+
 			var ownerUuid string
 
 			uuidParam := r.URL.Query().Get("uuid")
@@ -374,7 +376,12 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if success {
-				err := os.Remove("screenshots/" + ownerUuid + "/" + idParam + ".png")
+				directory := "screenshots/"
+				if temp {
+					directory += "temp/"
+				}
+				directory += ownerUuid + "/"
+				err := os.Remove(directory + idParam + ".png")
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
@@ -475,11 +482,11 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 	return screenshots, nil
 }
 
-func getScreenshotInfo(uuid string, id string) (*PlayerScreenshotData, error) {
+func getScreenshotInfo(uuid string, ownerUuid string, id string) (*PlayerScreenshotData, error) {
 	screenshot := &PlayerScreenshotData{}
 
-	query := "SELECT ps.id, ps.uuid, ps.game, ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ps.uuid WHERE ps.uuid = ? AND ps.id = ?"
-	err := db.QueryRow(query, uuid, id).Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
+	query := "SELECT ps.id, ps.uuid, ps.game, ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? WHERE ps.uuid = ? AND ps.id = ?"
+	err := db.QueryRow(query, uuid, ownerUuid, id).Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
 	if err != nil {
 		return nil, err
 	}
