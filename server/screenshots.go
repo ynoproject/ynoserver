@@ -179,6 +179,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Write(screenshotsJson)
+		return
 	case "getPlayerScreenshots":
 		uuidParam := r.URL.Query().Get("uuid")
 		if uuidParam == "" {
@@ -217,6 +218,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Write(screenshotGamesJson)
+		return
 	case "upload":
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -291,6 +293,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Write([]byte(id))
+		return
 	case "setPublic":
 		fallthrough
 	case "setSpoiler":
