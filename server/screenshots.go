@@ -62,6 +62,7 @@ type ScreenshotData struct {
 	MapX      int              `json:"mapX"`
 	MapY      int              `json:"mapY"`
 	Timestamp time.Time        `json:"timestamp"`
+	Public    bool             `json:"public"`
 	Spoiler   bool             `json:"spoiler"`
 	LikeCount int              `json:"likeCount"`
 	Liked     bool             `json:"liked"`
@@ -475,6 +476,7 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 			return screenshots, err
 		}
 
+		screenshot.Public = true
 		screenshot.Owner = &owner
 		screenshots = append(screenshots, &screenshot)
 	}
@@ -486,11 +488,17 @@ func getScreenshotInfo(uuid string, ownerUuid string, id string) (*ScreenshotDat
 	screenshot := &ScreenshotData{}
 	owner := &ScreenshotOwner{}
 
-	query := "ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.mapId, ps.mapX, ps.mapY, ps.publicTimestamp, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? WHERE ps.uuid = ? AND ps.id = ?"
-	err := db.QueryRow(query, uuid, ownerUuid, id).Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.Timestamp, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
+	query := "SELECT ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.mapId, ps.mapX, ps.mapY, ps.publicTimestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? WHERE ps.uuid = ? AND ps.id = ?"
+	err := db.QueryRow(query, uuid, ownerUuid, id).Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
 	if err != nil {
 		return nil, err
 	}
+
+	if screenshot.Owner.Uuid != ownerUuid && !screenshot.Public {
+		return nil, nil
+	}
+
+	screenshot.Owner = owner
 
 	return screenshot, nil
 }

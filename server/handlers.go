@@ -1293,12 +1293,14 @@ func (c *SessionClient) handlePsi(uuid string, msg []string) error {
 		return err
 	}
 
-	screenshotInfoJson, err := json.Marshal(screenshotInfo)
-	if err != nil {
-		return err
-	}
+	if screenshotInfo != nil {
+		screenshotInfoJson, err := json.Marshal(screenshotInfo)
+		if err != nil {
+			return err
+		}
 
-	c.outbox <- buildMsg("psi", screenshotInfoJson)
+		c.outbox <- buildMsg("psi", screenshotInfoJson)
+	}
 
 	return nil
 }
