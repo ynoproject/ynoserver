@@ -272,13 +272,19 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = os.Mkdir("screenshots/"+uuid, 0755)
+		directory := "screenshots/"
+		if temp {
+			directory += "temp/"
+		}
+		directory += uuid
+
+		err = os.Mkdir(directory, 0755)
 		if err != nil && os.IsNotExist(err) {
 			handleInternalError(w, r, err)
 			return
 		}
 
-		err = os.WriteFile("screenshots/"+uuid+"/"+id+".png", body, 0644)
+		err = os.WriteFile(directory+"/"+id+".png", body, 0644)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
