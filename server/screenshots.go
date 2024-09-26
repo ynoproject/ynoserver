@@ -494,7 +494,7 @@ func getScreenshotInfo(uuid string, ownerUuid string, id string) (*ScreenshotDat
 		return nil, err
 	}
 
-	if screenshot.Owner.Uuid != ownerUuid && !screenshot.Public {
+	if uuid != ownerUuid && !screenshot.Public {
 		return nil, nil
 	}
 
