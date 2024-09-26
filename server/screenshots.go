@@ -482,11 +482,12 @@ func getScreenshotFeed(uuid string, limit int, offset int, offsetId string, game
 	return screenshots, nil
 }
 
-func getScreenshotInfo(uuid string, ownerUuid string, id string) (*PlayerScreenshotData, error) {
-	screenshot := &PlayerScreenshotData{}
+func getScreenshotInfo(uuid string, ownerUuid string, id string) (*ScreenshotData, error) {
+	screenshot := &ScreenshotData{}
+	owner := &ScreenshotOwner{}
 
-	query := "SELECT ps.id, ps.uuid, ps.game, ps.mapId, ps.mapX, ps.mapY, opgd.systemName, ps.timestamp, ps.public, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id), CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN playerGameData opgd ON opgd.uuid = ps.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? WHERE ps.uuid = ? AND ps.id = ?"
-	err := db.QueryRow(query, uuid, ownerUuid, id).Scan(&screenshot.Id, &screenshot.Uuid, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.SystemName, &screenshot.Timestamp, &screenshot.Public, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
+	query := "ps.id, op.uuid, oa.user, op.rank, COALESCE(oa.badge, ''), opgd.systemName, ps.game, ps.mapId, ps.mapX, ps.mapY, ps.publicTimestamp, ps.spoiler, (SELECT COUNT(*) FROM playerScreenshotLikes psl WHERE psl.screenshotId = ps.id) AS likeCount, CASE WHEN upsl.uuid IS NULL THEN 0 ELSE 1 END FROM playerScreenshots ps JOIN players op ON op.uuid = ps.uuid JOIN accounts oa ON oa.uuid = op.uuid JOIN playerGameData opgd ON opgd.uuid = op.uuid AND opgd.game = ps.game LEFT JOIN playerScreenshotLikes upsl ON upsl.screenshotId = ps.id AND upsl.uuid = ? WHERE ps.uuid = ? AND ps.id = ?"
+	err := db.QueryRow(query, uuid, ownerUuid, id).Scan(&screenshot.Id, &owner.Uuid, &owner.Name, &owner.Rank, &owner.Badge, &owner.SystemName, &screenshot.Game, &screenshot.MapId, &screenshot.MapX, &screenshot.MapY, &screenshot.Timestamp, &screenshot.Spoiler, &screenshot.LikeCount, &screenshot.Liked)
 	if err != nil {
 		return nil, err
 	}
