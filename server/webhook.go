@@ -21,6 +21,7 @@ var (
 		"mikan": "Mikan Muzou",
 		"muma": "Muma|Rope",
 		"nostalgic": "nostAlgic",
+		"oneshot": "OneShot",
 		"oversomnia": "Oversomnia",
 		"prayers": "Answered Prayers",
 		"sheawaits": "She Awaits",
