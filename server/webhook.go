@@ -17,6 +17,7 @@ var (
 		"deepdreams": "Deep Dreams",
 		"flow": ".flow",
 		"genie": "Dream Genie",
+		"if": "If",
 		"mikan": "Mikan Muzou",
 		"muma": "Muma|Rope",
 		"nostalgic": "nostAlgic",
