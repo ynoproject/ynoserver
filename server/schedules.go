@@ -64,7 +64,7 @@ type SchedulePlatforms struct {
 }
 
 var (
-	timers map[int]*time.Timer
+	timers = make(map[int]*time.Timer)
 )
 
 const (
@@ -298,7 +298,7 @@ VALUES
 	query := `
 UPDATE schedules SET
 	name = ?, description = ?, partyId = ?, game = ?, recurring = ?, intervalValue = ?, intervalType = ?, datetime = ?, systemName = ?,
-	ownerUuid = CASE WHEN ? = '' THEN ownerUuid ELSE ? END,
+	ownerUuid = (CASE ? WHEN '' THEN ownerUuid ELSE ? END),
 	discord = ?, youtube = ?, twitch = ?, niconico = ?, openrec = ?, bilibili = ?
 WHERE id = ? AND (? OR ownerUuid = ?)`
 	results, err := db.Exec(query, s.Name, s.Description, s.PartyId, s.OwnerUuid, s.Game, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName,
