@@ -68,7 +68,7 @@ var (
 )
 
 const (
-	YEAR time.Duration = 366 * 24 * 60 * 60 * 1000
+	YEAR time.Duration = 366 * 24 * time.Hour
 )
 
 func initSchedules() {
@@ -159,6 +159,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		now := time.Now().UTC()
+		now = now.Add(-time.Duration(now.Second()) * time.Second)
 		datetime = clampDatetime(datetime, now)
 		if query.Has("partyId") {
 			partyId, err = strconv.Atoi(query.Get("partyId"))
