@@ -140,6 +140,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		var interval, partyId int
 		var intervalType string
 		recurring := query.Get("recurring") == "true"
+		official := query.Get("official") == "true"
 		if recurring {
 			interval, err = strconv.Atoi(query.Get("interval"))
 			if err != nil || interval <= 0 {
@@ -173,6 +174,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			Game:          query.Get("game"),
 			PartyId:       partyId,
 			Recurring:     recurring,
+			Official:      official,
 			IntervalValue: interval,
 			IntervalType:  intervalType,
 			Datetime:      datetime,
