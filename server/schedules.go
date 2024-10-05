@@ -295,15 +295,17 @@ VALUES
 		return int(idLarge), nil
 	}
 
+	isMod := rank > 0
 	query := `
 UPDATE schedules SET
 	name = ?, description = ?, partyId = ?, game = ?, recurring = ?, intervalValue = ?, intervalType = ?, datetime = ?, systemName = ?,
-	ownerUuid = (CASE ? WHEN '' THEN ownerUuid ELSE ? END),
+	official = (CASE WHEN ? THEN ? ELSE official END), ownerUuid = (CASE ? WHEN '' THEN ownerUuid ELSE ? END),
 	discord = ?, youtube = ?, twitch = ?, niconico = ?, openrec = ?, bilibili = ?
 WHERE id = ? AND (? OR ownerUuid = ?)`
-	results, err := db.Exec(query, s.Name, s.Description, s.PartyId, s.OwnerUuid, s.Game, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName,
-		s.OwnerUuid, s.OwnerUuid,
-		s.Discord, s.Youtube, s.Twitch, s.Niconico, s.Openrec, s.Bilibili, id, rank > 0, uuid)
+	results, err := db.Exec(query, s.Name, s.Description, s.PartyId, s.Game, s.Recurring, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName,
+		isMod, s.Official, s.OwnerUuid, s.OwnerUuid,
+		s.Discord, s.Youtube, s.Twitch, s.Niconico, s.Openrec, s.Bilibili,
+		id, isMod, uuid)
 
 	if err != nil {
 		return id, err
@@ -327,7 +329,10 @@ func setScheduleNotification(scheduleId int, datetime time.Time) {
 			oldTimer.Stop()
 		}
 		timers[scheduleId] = time.AfterFunc(timeTillEvent, func() {
-			sendScheduleNotification(scheduleId)
+			err := sendScheduleNotification(scheduleId)
+			if err != nil {
+				log.Printf("error sending notification: %s", err)
+			}
 			delete(timers, scheduleId)
 		})
 	}
@@ -435,8 +440,8 @@ WHERE s.id = ?`
 	}
 
 	msg := fmt.Sprintf(`The event "%s" is starting soon.`, scheduleName)
-	url := fmt.Sprintf("/%s", gameId)
-	err = sendPushNotification(&Notification{Title: "YNOproject Event Reminder", Body: msg, Data: url, Timestamp: datetime.UnixMilli()}, uuids)
+	url := json.RawMessage(fmt.Sprintf("\"/%s\"", gameId))
+	err = sendPushNotification(&Notification{Title: "YNOproject Event Reminder", Body: msg, Data: &url, Timestamp: datetime.UnixMilli()}, uuids)
 
 	return err
 }
