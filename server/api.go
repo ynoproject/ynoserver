@@ -130,6 +130,7 @@ func initApi() {
 
 	http.HandleFunc("/api/schedule", handleSchedules)
 	http.HandleFunc("/api/registernotification", handleRegisterSubscriber)
+	http.HandleFunc("/api/unregisternotification", handleUnregisterSubscriber)
 	http.HandleFunc("/api/vapidpublickey", handleVapidPublicKeyRequest)
 }
 

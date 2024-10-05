@@ -76,8 +76,48 @@ func handleRegisterSubscriber(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("post-registration notification failed", err)
 	}
+}
 
-	w.Write([]byte("true"))
+func handleUnregisterSubscriber(w http.ResponseWriter, r *http.Request) {
+	var uuid string
+	var banned bool
+
+	if r.Method != "POST" {
+		handleError(w, r, "unsupported HTTP method")
+		return
+	}
+
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		uuid, banned, _ = getOrCreatePlayerData(getIp(r))
+	} else {
+		uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
+		if uuid == "" {
+			handleError(w, r, "invalid token")
+			return
+		}
+	}
+
+	if banned {
+		handleError(w, r, "player is banned")
+		return
+	}
+
+	var sub struct {
+		Endpoint string `json:"endpoint"`
+	}
+	defer r.Body.Close()
+	err := json.NewDecoder(r.Body).Decode(&sub)
+	if err != nil {
+		handleError(w, r, "invalid payload")
+		return
+	}
+
+	_, err = db.Exec("DELETE FROM pushSubscriptions WHERE uuid = ? AND endpoint = ?", uuid, sub.Endpoint)
+	if err != nil {
+		handleError(w, r, "error removing push subscription")
+		return
+	}
 }
 
 func handleVapidPublicKeyRequest(w http.ResponseWriter, _ *http.Request) {
