@@ -21,7 +21,7 @@ type Notification struct {
 	Badge string `json:"badge,omitempty"`
 	Image string `json:"image,omitempty"`
 
-	Data interface{} `json:"data,omitempty"`
+	Data *json.RawMessage `json:"data,omitempty"`
 
 	// Unix timestamp, in milliseconds
 	Timestamp int64 `json:"timestamp,omitempty"`
