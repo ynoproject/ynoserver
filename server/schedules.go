@@ -192,7 +192,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		id, err = updateSchedule(id, rank, uuid, payload)
 		if err != nil {
 			fmt.Printf("updateSchedules: %s", err)
-			handleError(w, r, "error updating schedule")
+			handleError(w, r, fmt.Sprintf("error creating/updating schedule: %s", err))
 			return
 		}
 		w.Write([]byte(strconv.Itoa(id)))
