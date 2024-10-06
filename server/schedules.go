@@ -78,7 +78,6 @@ func initSchedules() {
 		scheduler.Every(1).Day().At("06:00").Do(clearDoneSchedules)
 
 		clearDoneSchedules()
-		initScheduleTimers()
 	}
 }
 
@@ -339,8 +338,8 @@ func setScheduleNotification(scheduleId int, datetime time.Time) {
 }
 
 func initScheduleTimers() {
-	ongoingLimit := time.Now().UTC().Add(-15 * time.Minute)
-	results, err := db.Query("SELECT id, datetime FROM schedules WHERE datetime <= ?", ongoingLimit)
+	ongoingLimit := time.Now().UTC().Add(15 * time.Minute)
+	results, err := db.Query("SELECT id, datetime FROM schedules WHERE datetime >= ?", ongoingLimit)
 	if err != nil {
 		log.Println("initScheduleTimers", err)
 		return
@@ -408,6 +407,8 @@ END WHERE recurring AND datetime < NOW()`)
 	if err != nil {
 		fmt.Printf("error calculating recurring events: %s", err)
 	}
+
+	initScheduleTimers()
 }
 
 func sendScheduleNotification(scheduleId int) error {
@@ -429,6 +430,10 @@ WHERE s.id = ?`
 			return err
 		}
 		uuids = append(uuids, uuid)
+	}
+
+	if len(uuids) < 1 {
+		return nil
 	}
 
 	var scheduleName string
