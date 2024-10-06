@@ -455,6 +455,7 @@ WHERE s.id = ?`
 			Category: "events",
 			Type:     "upcomingEvents",
 			YnoIcon:  "calendar",
+			Persist:  true,
 		},
 	}, uuids)
 

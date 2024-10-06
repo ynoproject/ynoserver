@@ -37,6 +37,8 @@ type NotificationMetadata struct {
 	YnoIcon string `json:"ynoIcon,omitempty"`
 	// If set, this notification should not be relayed to an active frontend client
 	NoRelay bool `json:"noRelay"`
+	// If not set, by default toasts disappear after some time.
+	Persist bool `json:"persist"`
 }
 
 func (n *Notification) SetDefaults() {
