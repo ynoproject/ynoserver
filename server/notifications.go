@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -14,7 +13,10 @@ import (
 // Mirrors the `options` parameter of https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/showNotification
 type Notification struct {
 	Title string `json:"title"`
-	Body  string `json:"body,omitempty"`
+
+	Metadata NotificationMetadata `json:"metadata"`
+
+	Body string `json:"body,omitempty"`
 
 	Icon string `json:"icon,omitempty"`
 	// the image to be used on a phone's status bar
@@ -25,6 +27,16 @@ type Notification struct {
 
 	// Unix timestamp, in milliseconds
 	Timestamp int64 `json:"timestamp,omitempty"`
+}
+
+type NotificationMetadata struct {
+	// Necessary for client-side muting of notifications.
+	Category string `json:"category"`
+	Type     string `json:"type"`
+	// Specify an icon predefined by frontend.
+	YnoIcon string `json:"ynoIcon,omitempty"`
+	// If set, this notification should not be relayed to an active frontend client
+	NoRelay bool `json:"noRelay"`
 }
 
 func (n *Notification) SetDefaults() {
@@ -72,7 +84,16 @@ func handleRegisterSubscriber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sendPushNotification(&Notification{Title: "YNOproject Notification", Body: "This is how you will be notified of upcoming events."}, []string{uuid})
+	err = sendPushNotification(&Notification{
+		Title: "YNOproject",
+		Body:  "This is how you will be notified of upcoming events.",
+		Metadata: NotificationMetadata{
+			Category: "system",
+			Type:     "pushNotifications",
+			YnoIcon:  "global",
+			NoRelay:  true,
+		},
+	}, []string{uuid})
 	if err != nil {
 		log.Println("post-registration notification failed", err)
 	}
@@ -124,14 +145,15 @@ func handleVapidPublicKeyRequest(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte(config.vapidKeys.public))
 }
 
+// If `uuids` is nil, sends the message to all users.
 func sendPushNotification(notification *Notification, uuids []string) error {
-	if len(uuids) < 1 {
-		return errors.New("cannot handle empty uuids")
-	}
-
 	placeholder, uuidParams := getPlaceholders(uuids...)
 
-	results, err := db.Query("SELECT endpoint, p256dh, auth FROM pushSubscriptions WHERE uuid IN ("+placeholder+")", uuidParams...)
+	query := "SELECT endpoint, p256dh, auth FROM pushSubscriptions"
+	if len(uuidParams) > 0 {
+		query += " WHERE uuid IN (" + placeholder + ")"
+	}
+	results, err := db.Query(query, uuidParams...)
 	if err != nil {
 		return err
 	}

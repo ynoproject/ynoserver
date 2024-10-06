@@ -446,7 +446,17 @@ WHERE s.id = ?`
 
 	msg := fmt.Sprintf(`The event "%s" is starting soon.`, scheduleName)
 	url := json.RawMessage(fmt.Sprintf("\"/%s\"", gameId))
-	err = sendPushNotification(&Notification{Title: "YNOproject Event Reminder", Body: msg, Data: &url, Timestamp: datetime.UnixMilli()}, uuids)
+	err = sendPushNotification(&Notification{
+		Title:     "YNOproject",
+		Body:      msg,
+		Data:      &url,
+		Timestamp: datetime.UnixMilli(),
+		Metadata: NotificationMetadata{
+			Category: "events",
+			Type:     "upcomingEvents",
+			YnoIcon:  "calendar",
+		},
+	}, uuids)
 
 	return err
 }
