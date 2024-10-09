@@ -149,6 +149,44 @@ func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
+func adminTempBanUser(w http.ResponseWriter, r *http.Request) {
+	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
+	if rank == 0 {
+		handleError(w, r, "access denied")
+		return
+	}
+
+	user, duration := r.URL.Query().Get("user"), r.URL.Query().Get("duration")
+
+	if user == "" {
+		handleError(w, r, "user not specified")
+		return
+	}
+	
+	if duration = 0 {
+		handleError(w, r, "duration not specified")
+		return
+	}
+
+	userUuid, err := getUuidFromName(user)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+	if userUuid == "" {
+		handleError(w, r, "invalid user specified")
+		return
+	}
+
+	duration , err := handleTempBan(userUuid)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
+	w.Write([]byte("ok"))
+}
+
 func adminResetPw(w http.ResponseWriter, r *http.Request) {
 	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank == 0 {

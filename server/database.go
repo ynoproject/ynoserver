@@ -196,6 +196,33 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 	return nil
 }
 
+func handleTempBan(uuid string) (duration int, err error) {
+	var userExists int
+	db.QueryRow("SELECT EXISTS (SELECT * FROM accounts WHERE uuid = ?)", uuid).Scan(&userExists)
+
+	if userExists == 0 {
+		return "", errors.New("user not found")
+	}
+
+	err = tryBanPlayer(uuid, uuid)
+	
+	if err != nil {
+		handleInternalError(http.ResponseWriter, *http.Request, err)
+		return
+	}
+	
+	tempBan := time.NewTimer(duration * 60 * time.Second)
+	
+	<-tempBan.C
+	err = tryUnbanPlayer(uuid, uuid)
+	if err != nil {
+		handleInternalError(http.ResponseWriter, *http.Request, err)
+		return
+	}
+	
+	w.Write([]byte("ok"))
+}
+
 func getPlayerMedals(uuid string) (medals [5]int) {
 	if client, ok := clients.Load(uuid); ok {
 		return client.medals // return medals from session if client is connected
