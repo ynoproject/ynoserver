@@ -205,6 +205,11 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
+		// if client blocked c, c should not be broadcasting messages to client.
+		if client.session.blockedUsers[c.session.uuid] {
+			continue
+		}
+
 		select {
 		case client.outbox <- msg:
 		default:
