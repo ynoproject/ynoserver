@@ -72,13 +72,9 @@ const (
 )
 
 func initSchedules() {
-	if isMainServer {
-		logInitTask("schedules")
-
-		scheduler.Every(1).Day().At("06:00").Do(clearDoneSchedules)
-
-		clearDoneSchedules()
-	}
+	logInitTask("schedules")
+	scheduler.Every(1).Day().At("06:00").Do(clearDoneSchedules)
+	clearDoneSchedules()
 }
 
 func handleSchedules(w http.ResponseWriter, r *http.Request) {
@@ -337,13 +333,24 @@ func setScheduleNotification(scheduleId int, datetime time.Time) {
 	}
 }
 
+func clearTimers() {
+	for _, timer := range timers {
+		if timer != nil {
+			timer.Stop()
+		}
+	}
+	timers = make(map[int]*time.Timer)
+}
+
 func initScheduleTimers() {
 	ongoingLimit := time.Now().UTC().Add(15 * time.Minute)
-	results, err := db.Query("SELECT id, datetime FROM schedules WHERE datetime >= ?", ongoingLimit)
+	results, err := db.Query("SELECT id, datetime FROM schedules WHERE datetime >= ? AND game = ?", ongoingLimit, config.gameName)
 	if err != nil {
 		log.Println("initScheduleTimers", err)
 		return
 	}
+
+	clearTimers()
 
 	defer results.Close()
 	for results.Next() {
@@ -352,7 +359,7 @@ func initScheduleTimers() {
 		err = results.Scan(&scheduleId, &datetime)
 		if err != nil {
 			log.Println("initScheduleTimers", err)
-			return
+			continue
 		}
 		setScheduleNotification(scheduleId, datetime)
 	}
@@ -391,7 +398,7 @@ func cancelSchedule(uuid string, rank int, scheduleId int) error {
 }
 
 func clearDoneSchedules() {
-	_, err := db.Exec("DELETE FROM schedules WHERE datetime < NOW() AND NOT recurring")
+	_, err := db.Exec("DELETE FROM schedules WHERE datetime < NOW() AND NOT recurring AND game = ?", config.gameName)
 	if err != nil {
 		fmt.Printf("error deleting non-recurring events: %s", err)
 	}
@@ -403,11 +410,10 @@ SET datetime = CASE intervalType
     WHEN 'months' THEN DATE_ADD(datetime, INTERVAL intervalValue MONTH)
     WHEN 'years' THEN DATE_ADD(datetime, INTERVAL intervalValue YEAR)
     ELSE datetime
-END WHERE recurring AND datetime < NOW()`)
+END WHERE recurring AND datetime < NOW() AND game = ?`, config.gameName)
 	if err != nil {
 		fmt.Printf("error calculating recurring events: %s", err)
 	}
-
 	initScheduleTimers()
 }
 

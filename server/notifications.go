@@ -168,24 +168,31 @@ func sendPushNotification(notification *Notification, uuids []string) error {
 	notification.SetDefaults()
 
 	defer results.Close()
+	var failures []error
 	for results.Next() {
 		var s webpush.Subscription
 		err = results.Scan(&s.Endpoint, &s.Keys.P256dh, &s.Keys.Auth)
 		if err != nil {
 			return err
 		}
-		_, err = webpush.SendNotification(notificationString, &s, &webpush.Options{
+		resp, err := webpush.SendNotification(notificationString, &s, &webpush.Options{
 			Subscriber:      "contact@ynoproject.net",
 			VAPIDPublicKey:  config.vapidKeys.public,
 			VAPIDPrivateKey: config.vapidKeys.private,
-			TTL:             30, // seconds
+			TTL:             30, // seconds,
 		})
 		if err != nil {
-			return err
+			log.Printf("error sending notifications: %s", err)
+			failures = append(failures, err)
+			continue
+		}
+		if resp != nil && resp.StatusCode >= 400 {
+			log.Printf("webpush client responded with: %s", resp.Status)
+			failures = append(failures, errors.New(s.Endpoint+" "+resp.Status))
 		}
 	}
 
-	return nil
+	return errors.Join(failures...)
 }
 
 func getPlaceholders(values ...string) (placeholders string, parameters []interface{}) {
