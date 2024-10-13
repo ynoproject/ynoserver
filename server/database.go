@@ -211,6 +211,11 @@ func handleTempBan(uuid string, targetUuid string) (duration int, err error) {
 		return
 	}
 	
+	_, err := db.Exec("INSERT INTO playerModerationAction (uuid, action, expiry) VALUES (?, 'tempban', ?)", uuid, duration)
+	if err != nil {
+		return err
+	}
+	
 	tempBan := time.NewTimer(duration * 60 * time.Second)
 	
 	<-tempBan.C
