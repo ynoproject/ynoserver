@@ -196,7 +196,7 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 	return nil
 }
 
-func handleTempBan(uuid string) (duration int, err error) {
+func handleTempBan(uuid string, targetUuid string) (duration int, err error) {
 	var userExists int
 	db.QueryRow("SELECT EXISTS (SELECT * FROM accounts WHERE uuid = ?)", uuid).Scan(&userExists)
 
@@ -204,7 +204,7 @@ func handleTempBan(uuid string) (duration int, err error) {
 		return "", errors.New("user not found")
 	}
 
-	err = tryBanPlayer(uuid, uuid)
+	err = tryBanPlayer(uuid, targetUuid)
 	
 	if err != nil {
 		handleInternalError(http.ResponseWriter, *http.Request, err)
@@ -214,7 +214,7 @@ func handleTempBan(uuid string) (duration int, err error) {
 	tempBan := time.NewTimer(duration * 60 * time.Second)
 	
 	<-tempBan.C
-	err = tryUnbanPlayer(uuid, uuid)
+	err = tryUnbanPlayer(uuid, targetUuid)
 	if err != nil {
 		handleInternalError(http.ResponseWriter, *http.Request, err)
 		return
