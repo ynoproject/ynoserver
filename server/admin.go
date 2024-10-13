@@ -150,17 +150,32 @@ func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminTempBanUser(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
+	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
 	if rank == 0 {
 		handleError(w, r, "access denied")
 		return
 	}
 
-	user, duration := r.URL.Query().Get("user"), r.URL.Query().Get("duration")
+	targetUuid, duration := r.URL.Query().Get("uuid"), r.URL.Query().Get("duration")
+	if targetUuid == "" {
+		user := r.URL.Query().Get("user")
+		if user == "" {
+			handleError(w, r, "uuid or user not specified")
+			return
+		}
 
-	if user == "" {
-		handleError(w, r, "user not specified")
-		return
+		uuid, err := getUuidFromName(user)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		if uuid == "" {
+			handleError(w, r, "invalid user specified")
+			return
+		}
+
+		targetUuid = uuid
 	}
 	
 	if duration = 0 {
@@ -168,17 +183,7 @@ func adminTempBanUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userUuid, err := getUuidFromName(user)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-	if userUuid == "" {
-		handleError(w, r, "invalid user specified")
-		return
-	}
-
-	duration , err := handleTempBan(userUuid)
+	duration , err := handleTempBan(uuid, targetUuid)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
