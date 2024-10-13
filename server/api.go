@@ -130,6 +130,9 @@ func initApi() {
 	http.HandleFunc("/api/players", handlePlayers)
 
 	http.HandleFunc("/api/schedule", handleSchedules)
+	http.HandleFunc("/api/registernotification", handleRegisterSubscriber)
+	http.HandleFunc("/api/unregisternotification", handleUnregisterSubscriber)
+	http.HandleFunc("/api/vapidpublickey", handleVapidPublicKeyRequest)
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {

@@ -212,6 +212,16 @@ func initEvents() {
 		}
 
 		sendEventsUpdate()
+		sendPushNotification(&Notification{
+			Title: "YNOproject",
+			Body:  "The expedition list has been updated.",
+			Metadata: NotificationMetadata{
+				Category: "events",
+				Type:     "listUpdated",
+				YnoIcon:  "expedition",
+				NoRelay:  true,
+			},
+		}, nil)
 	})
 
 	scheduler.Every(5).Minutes().Do(func() {

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -34,6 +35,7 @@ type ScheduleUpdate struct {
 	PartyId       int       `json:"partyId"`
 	Game          string    `json:"game"`
 	Recurring     bool      `json:"recurring"`
+	Official      bool      `json:"official"`
 	IntervalValue int       `json:"interval"`
 	IntervalType  string    `json:"intervalType"`
 	Datetime      time.Time `json:"datetime"`
@@ -61,14 +63,18 @@ type SchedulePlatforms struct {
 	Bilibili string `json:"bilibili,omitempty"`
 }
 
+var (
+	timers = make(map[int]*time.Timer)
+)
+
+const (
+	YEAR time.Duration = 366 * 24 * time.Hour
+)
+
 func initSchedules() {
-	if isMainServer {
-		logInitTask("schedules")
-
-		scheduler.Every(1).Day().At("06:00").Do(clearDoneSchedules)
-
-		clearDoneSchedules()
-	}
+	logInitTask("schedules")
+	scheduler.Every(1).Day().At("06:00").Do(clearDoneSchedules)
+	clearDoneSchedules()
 }
 
 func handleSchedules(w http.ResponseWriter, r *http.Request) {
@@ -129,9 +135,10 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		var interval, partyId int
 		var intervalType string
 		recurring := query.Get("recurring") == "true"
+		official := query.Get("official") == "true"
 		if recurring {
 			interval, err = strconv.Atoi(query.Get("interval"))
-			if err != nil {
+			if err != nil || interval <= 0 {
 				handleError(w, r, "invalid interval")
 				return
 			}
@@ -146,6 +153,9 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid datetime")
 			return
 		}
+		now := time.Now().UTC()
+		now = now.Add(-time.Duration(now.Second()) * time.Second)
+		datetime = clampDatetime(datetime, now)
 		if query.Has("partyId") {
 			partyId, err = strconv.Atoi(query.Get("partyId"))
 			if err != nil {
@@ -160,6 +170,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			Game:          query.Get("game"),
 			PartyId:       partyId,
 			Recurring:     recurring,
+			Official:      official,
 			IntervalValue: interval,
 			IntervalType:  intervalType,
 			Datetime:      datetime,
@@ -176,7 +187,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		id, err = updateSchedule(id, rank, uuid, payload)
 		if err != nil {
 			fmt.Printf("updateSchedules: %s", err)
-			handleError(w, r, "error updating schedule")
+			handleError(w, r, fmt.Sprintf("error creating/updating schedule: %s", err))
 			return
 		}
 		w.Write([]byte(strconv.Itoa(id)))
@@ -211,6 +222,17 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func clampDatetime(datetime, now time.Time) time.Time {
+	if datetime.Compare(now) < 0 {
+		return now
+	}
+	oneYearLater := now.Add(YEAR)
+	if datetime.Compare(oneYearLater) > 0 {
+		return oneYearLater
+	}
+	return datetime
+}
+
 func listSchedules(uuid string, rank int) ([]*ScheduleDisplay, error) {
 	var schedules []*ScheduleDisplay
 	partyId, err := getPlayerPartyId(uuid)
@@ -218,10 +240,10 @@ func listSchedules(uuid string, rank int) ([]*ScheduleDisplay, error) {
 		return schedules, err
 	}
 
-	selectClause := `
+	query := `
 WITH tally AS (SELECT scheduleId, COUNT(uuid) AS followerCount FROM playerScheduleFollows GROUP BY scheduleId)
 SELECT s.id, s.name, s.description, s.ownerUuid, acc.user AS ownerName, pd.rank AS ownerRank, acc.badge, pgd.systemName,
-	   s.partyId, s.game, s.recurring, s.intervalValue, s.intervalType, s.datetime, s.systemName, s.discord, s.youtube, s.twitch, s.niconico, s.openrec, s.bilibili,
+	   s.partyId, s.game, s.official, s.recurring, s.intervalValue, s.intervalType, s.datetime, s.systemName, s.discord, s.youtube, s.twitch, s.niconico, s.openrec, s.bilibili,
 	   COALESCE(tally.followerCount, 0) AS followerCount, CASE WHEN s.id IN (SELECT scheduleId FROM playerScheduleFollows WHERE uuid = ?) THEN 1 ELSE 0 END AS playerLiked
 FROM schedules s
 JOIN accounts acc ON acc.uuid = s.ownerUuid
@@ -230,14 +252,15 @@ JOIN players pd ON pd.uuid = s.ownerUuid
 LEFT JOIN tally ON tally.scheduleId = s.id
 WHERE COALESCE(s.partyId, 0) IN (0, ?) OR ?`
 
-	results, err := db.Query(selectClause, uuid, config.gameName, partyId, rank > 0)
+	results, err := db.Query(query, uuid, config.gameName, partyId, rank > 0)
 	if err != nil {
 		return schedules, err
 	}
 	defer results.Close()
 	for results.Next() {
 		var s ScheduleDisplay
-		err := results.Scan(&s.Id, &s.Name, &s.Description, &s.OwnerUuid, &s.OwnerName, &s.OwnerRank, &s.OwnerBadge, &s.OwnerSystemName, &s.PartyId, &s.Game, &s.Recurring, &s.IntervalValue, &s.IntervalType, &s.Datetime, &s.SystemName, &s.Discord, &s.Youtube, &s.Twitch, &s.Niconico, &s.Openrec, &s.Bilibili, &s.FollowerCount, &s.PlayerLiked)
+		err := results.Scan(&s.Id, &s.Name, &s.Description, &s.OwnerUuid, &s.OwnerName, &s.OwnerRank, &s.OwnerBadge, &s.OwnerSystemName, &s.PartyId, &s.Game, &s.Official,
+			&s.Recurring, &s.IntervalValue, &s.IntervalType, &s.Datetime, &s.SystemName, &s.Discord, &s.Youtube, &s.Twitch, &s.Niconico, &s.Openrec, &s.Bilibili, &s.FollowerCount, &s.PlayerLiked)
 		if err != nil {
 			return schedules, err
 		}
@@ -250,26 +273,34 @@ func updateSchedule(id int, rank int, uuid string, s *ScheduleUpdate) (int, erro
 	if id == 0 {
 		query := `
 INSERT INTO schedules
-	(name, description, ownerUuid, partyId, game, recurring, intervalValue, intervalType, datetime, systemName, discord, youtube, twitch, niconico, openrec, bilibili)
+	(name, description, ownerUuid, partyId, game, official, recurring, intervalValue, intervalType, datetime, systemName, discord, youtube, twitch, niconico, openrec, bilibili)
 VALUES
-	(   ?,           ?,         ?,       ?,    ?,         ?,             ?,            ?,        ?,          ?,       ?,       ?,      ?,        ?,       ?,        ?)`
-		results, err := db.Exec(query, s.Name, s.Description, s.OwnerUuid, s.PartyId, s.Game, s.Recurring, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName, s.Discord, s.Youtube, s.Twitch, s.Niconico, s.Openrec, s.Bilibili)
+	(   ?,           ?,         ?,       ?,    ?,         ?,        ?,             ?,            ?,        ?,          ?,       ?,       ?,      ?,        ?,       ?,        ?)`
+		results, err := db.Exec(query, s.Name, s.Description, s.OwnerUuid, s.PartyId, s.Game, s.Official, s.Recurring, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName,
+			s.Discord, s.Youtube, s.Twitch, s.Niconico, s.Openrec, s.Bilibili)
 		if err != nil {
 			return id, err
 		}
 		idLarge, err := results.LastInsertId()
 		if err != nil {
 			return id, err
+		} else {
+			setScheduleNotification(id, s.Datetime)
 		}
 		return int(idLarge), nil
 	}
 
+	isMod := rank > 0
 	query := `
 UPDATE schedules SET
-	name = ?, description = ?, partyId = ?, ownerUuid = ?, game = ?, recurring = ?, intervalValue = ?, intervalType = ?, datetime = ?, systemName = ?,
+	name = ?, description = ?, partyId = ?, game = ?, recurring = ?, intervalValue = ?, intervalType = ?, datetime = ?, systemName = ?,
+	official = (CASE WHEN ? THEN ? ELSE official END), ownerUuid = (CASE ? WHEN '' THEN ownerUuid ELSE ? END),
 	discord = ?, youtube = ?, twitch = ?, niconico = ?, openrec = ?, bilibili = ?
 WHERE id = ? AND (? OR ownerUuid = ?)`
-	results, err := db.Exec(query, s.Name, s.Description, s.PartyId, s.OwnerUuid, s.Game, s.Recurring, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName, s.Discord, s.Youtube, s.Twitch, s.Niconico, s.Openrec, s.Bilibili, id, rank > 0, uuid)
+	results, err := db.Exec(query, s.Name, s.Description, s.PartyId, s.Game, s.Recurring, s.IntervalValue, s.IntervalType, s.Datetime, s.SystemName,
+		isMod, s.Official, s.OwnerUuid, s.OwnerUuid,
+		s.Discord, s.Youtube, s.Twitch, s.Niconico, s.Openrec, s.Bilibili,
+		id, isMod, uuid)
 
 	if err != nil {
 		return id, err
@@ -278,7 +309,60 @@ WHERE id = ? AND (? OR ownerUuid = ?)`
 	if affected < 1 {
 		return id, errors.Join(err, errors.New("did not update any schedules"))
 	}
+
+	if err == nil {
+		setScheduleNotification(id, s.Datetime)
+	}
+
 	return id, err
+}
+
+func setScheduleNotification(scheduleId int, datetime time.Time) {
+	timeTillEvent := datetime.Sub(time.Now().UTC()) - 15*time.Minute
+	if timeTillEvent > 0 {
+		if oldTimer, ok := timers[scheduleId]; ok && oldTimer != nil {
+			oldTimer.Stop()
+		}
+		timers[scheduleId] = time.AfterFunc(timeTillEvent, func() {
+			err := sendScheduleNotification(scheduleId)
+			if err != nil {
+				log.Printf("error sending notification: %s", err)
+			}
+			delete(timers, scheduleId)
+		})
+	}
+}
+
+func clearTimers() {
+	for _, timer := range timers {
+		if timer != nil {
+			timer.Stop()
+		}
+	}
+	timers = make(map[int]*time.Timer)
+}
+
+func initScheduleTimers() {
+	ongoingLimit := time.Now().UTC().Add(15 * time.Minute)
+	results, err := db.Query("SELECT id, datetime FROM schedules WHERE datetime >= ? AND game = ?", ongoingLimit, config.gameName)
+	if err != nil {
+		log.Println("initScheduleTimers", err)
+		return
+	}
+
+	clearTimers()
+
+	defer results.Close()
+	for results.Next() {
+		var scheduleId int
+		var datetime time.Time
+		err = results.Scan(&scheduleId, &datetime)
+		if err != nil {
+			log.Println("initScheduleTimers", err)
+			continue
+		}
+		setScheduleNotification(scheduleId, datetime)
+	}
 }
 
 func followSchedule(uuid string, scheduleId int, shouldFollow bool) (followCount int, _ error) {
@@ -304,11 +388,17 @@ func followSchedule(uuid string, scheduleId int, shouldFollow bool) (followCount
 
 func cancelSchedule(uuid string, rank int, scheduleId int) error {
 	_, err := db.Exec("DELETE FROM schedules WHERE id = (SELECT id FROM schedules WHERE id = ? AND (? OR ownerUuid = ?))", scheduleId, rank > 0, uuid)
+	if err == nil {
+		if timer, ok := timers[scheduleId]; ok && timer != nil {
+			timer.Stop()
+		}
+		delete(timers, scheduleId)
+	}
 	return err
 }
 
 func clearDoneSchedules() {
-	_, err := db.Exec("DELETE FROM schedules WHERE datetime < NOW() AND NOT recurring")
+	_, err := db.Exec("DELETE FROM schedules WHERE datetime < NOW() AND NOT recurring AND game = ?", config.gameName)
 	if err != nil {
 		fmt.Printf("error deleting non-recurring events: %s", err)
 	}
@@ -320,8 +410,60 @@ SET datetime = CASE intervalType
     WHEN 'months' THEN DATE_ADD(datetime, INTERVAL intervalValue MONTH)
     WHEN 'years' THEN DATE_ADD(datetime, INTERVAL intervalValue YEAR)
     ELSE datetime
-END WHERE recurring AND datetime < NOW()`)
+END WHERE recurring AND datetime < NOW() AND game = ?`, config.gameName)
 	if err != nil {
 		fmt.Printf("error calculating recurring events: %s", err)
 	}
+	initScheduleTimers()
+}
+
+func sendScheduleNotification(scheduleId int) error {
+	query := `
+SELECT psf.uuid
+FROM schedules s
+JOIN playerScheduleFollows psf ON psf.scheduleId = s.id
+WHERE s.id = ?`
+	results, err := db.Query(query, scheduleId)
+	if err != nil {
+		return err
+	}
+	defer results.Close()
+	var uuids []string
+	for results.Next() {
+		var uuid string
+		err = results.Scan(&uuid)
+		if err != nil {
+			return err
+		}
+		uuids = append(uuids, uuid)
+	}
+
+	if len(uuids) < 1 {
+		return nil
+	}
+
+	var scheduleName string
+	var gameId string
+	var datetime time.Time
+	err = db.QueryRow("SELECT name, game, datetime FROM schedules WHERE id = ?", scheduleId).Scan(&scheduleName, &gameId, &datetime)
+	if err != nil {
+		return err
+	}
+
+	msg := fmt.Sprintf(`The event "%s" is starting soon.`, scheduleName)
+	url := json.RawMessage(fmt.Sprintf("\"/%s\"", gameId))
+	err = sendPushNotification(&Notification{
+		Title:     "YNOproject",
+		Body:      msg,
+		Data:      &url,
+		Timestamp: datetime.UnixMilli(),
+		Metadata: NotificationMetadata{
+			Category: "events",
+			Type:     "upcomingEvents",
+			YnoIcon:  "calendar",
+			Persist:  true,
+		},
+	}, uuids)
+
+	return err
 }

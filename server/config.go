@@ -45,16 +45,21 @@ type Config struct {
 		maxBackups int
 		maxAge     int
 	}
+
+	vapidKeys struct {
+		private string
+		public  string
+	}
 }
 
 type ConfigFile struct {
 	GameName string `yaml:"game_name"`
 	GamePath string `yaml:"game_path"`
 
-	DbUser  string `yaml:"db_user"`
-	DbPass  string `yaml:"db_pass"`
-	DbAddr  string `yaml:"db_addr"`
-	DbName  string `yaml:"db_name"`
+	DbUser string `yaml:"db_user"`
+	DbPass string `yaml:"db_pass"`
+	DbAddr string `yaml:"db_addr"`
+	DbName string `yaml:"db_name"`
 
 	SpRooms         string `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
@@ -65,6 +70,11 @@ type ConfigFile struct {
 	ChatWebhook       string `yaml:"chat_webhook"`
 	ScreenshotWebhook string `yaml:"screenshot_webhook"`
 
+	VapidKeys struct {
+		Private string `yaml:"private"`
+		Public  string `yaml:"public"`
+	} `yaml:"vapid_keys"`
+
 	Logging struct {
 		MaxSize    int `yaml:"max_size"`
 		MaxBackups int `yaml:"max_backups"`
@@ -72,7 +82,7 @@ type ConfigFile struct {
 	} `yaml:"logging"`
 }
 
-func parseConfigFile(filename string) (*Config) {
+func parseConfigFile(filename string) *Config {
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
@@ -154,6 +164,9 @@ func parseConfigFile(filename string) (*Config) {
 	} else {
 		config.logging.maxAge = 28 // Days
 	}
+
+	config.vapidKeys.private = configFile.VapidKeys.Private
+	config.vapidKeys.public = configFile.VapidKeys.Public
 
 	return &config
 }
