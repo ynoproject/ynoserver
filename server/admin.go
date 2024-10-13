@@ -189,7 +189,7 @@ func adminTempBanUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("ok"))
+	w.Write([]byte(duration))
 }
 
 func adminResetPw(w http.ResponseWriter, r *http.Request) {
