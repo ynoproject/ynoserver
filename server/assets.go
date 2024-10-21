@@ -18,6 +18,7 @@
 package server
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -59,16 +60,22 @@ func getCharSets(gamePath string) map[string]bool {
 }
 
 func getSounds(gamePath string) map[string]bool {
-	files, err := os.ReadDir(gamePath + "/Sound")
+	root := gamePath + "/Sound"
+	sounds := make(map[string]bool)
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			path, err := filepath.Rel(root, path)
+			if err != nil {
+				return err
+			}
+			path = path[:len(path)-len(filepath.Ext(path))]
+			sounds[path] = true
+		}
+		return err
+	})
 	if err != nil {
 		panic(err)
 	}
-
-	sounds := make(map[string]bool)
-	for _, file := range files {
-		sounds[file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))]] = true
-	}
-
 	return sounds
 }
 
@@ -141,15 +148,22 @@ func (a *Assets) IsValidSystem(name string, ignoreSingleQuotes bool) bool {
 }
 
 func (a *Assets) IsValidSound(name string) bool {
-	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+	if strings.Contains(name, "../") || strings.Contains(name, "..\\") {
 		return false
 	}
-
 	if config.badSounds[name] {
 		return false
 	}
 
-	return a.sounds[name]
+	valid := a.sounds[name]
+	if !valid && filepath.Separator == '/' {
+		// check for either backward or forward slash
+		alias := strings.Replace(name, "\\", "/", 1)
+		valid = a.sounds[alias]
+		// cache the results
+		a.sounds[name] = valid
+	}
+	return valid
 }
 
 func (a *Assets) IsValidPicture(name string) bool {
