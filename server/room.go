@@ -146,6 +146,10 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		client.outbox <- buildMsg("bas", config.battleAnimIds)
 	}
 
+	if config.gameName == "unconscious" {
+		didJoinRoomUnconscious(client)
+	}
+
 	writeLog(client.session.uuid, client.mapId, "connect", 200)
 }
 
