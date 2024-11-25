@@ -9,29 +9,29 @@ import (
 )
 
 var (
-	urlReplacer = strings.NewReplacer("http://", "", "https://", "")
+	urlReplacer  = strings.NewReplacer("http://", "", "https://", "")
 	gameIdToName = map[string]string{
-		"2kki": "Yume 2kki",
-		"amillusion": "Amillusion",
-		"braingirl": "Braingirl",
-		"deepdreams": "Deep Dreams",
-		"flow": ".flow",
-		"genie": "Dream Genie",
-		"if": "If",
-		"mikan": "Mikan Muzou",
-		"muma": "Muma|Rope",
-		"nostalgic": "nostAlgic",
-		"oneshot": "OneShot",
-		"oversomnia": "Oversomnia",
-		"prayers": "Answered Prayers",
-		"sheawaits": "She Awaits",
-		"someday": "Someday",
-		"tsushin": "Yume Tsushin",
-		"ultraviolet": "Ultra Violet",
+		"2kki":           "Yume 2kki",
+		"amillusion":     "Amillusion",
+		"braingirl":      "Braingirl",
+		"deepdreams":     "Deep Dreams",
+		"flow":           ".flow",
+		"genie":          "Dream Genie",
+		"if":             "If",
+		"mikan":          "Mikan Muzou",
+		"muma":           "Muma|Rope",
+		"nostalgic":      "nostAlgic",
+		"oneshot":        "OneShot",
+		"oversomnia":     "Oversomnia",
+		"prayers":        "Answered Prayers",
+		"sheawaits":      "She Awaits",
+		"someday":        "Someday",
+		"tsushin":        "Yume Tsushin",
+		"ultraviolet":    "Ultra Violet",
 		"unaccomplished": "Unaccomplished",
-		"unconscious": "Collective Unconscious",
-		"unevendream": "Uneven Dream",
-		"yume": "Yume Nikki",
+		"unconscious":    "Collective Unconscious",
+		"unevendream":    "Uneven Dream",
+		"yume":           "Yume Nikki",
 	}
 )
 
@@ -58,7 +58,7 @@ func sendWebhookMessage(url, name, badge, message string, sanitize bool) error {
 	body, err := json.Marshal(WebhookRequest{
 		Username:  name,
 		AvatarUrl: avatarUrl,
-		Content:  content,
+		Content:   content,
 	})
 	if err != nil {
 		return err

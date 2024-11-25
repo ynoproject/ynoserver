@@ -91,10 +91,15 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 	if senderUuid == recipientUuid {
 		return errors.New("attempted self-ban")
 	}
+	return banPlayerUnchecked(recipientUuid, true)
+}
 
-	_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUuid)
-	if err != nil {
-		return err
+func banPlayerUnchecked(recipientUuid string, updateDb bool) error {
+	if updateDb {
+		_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUuid)
+		if err != nil {
+			return err
+		}
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok {
@@ -133,10 +138,15 @@ func tryMutePlayer(senderUuid string, recipientUuid string) error { // called by
 	if senderUuid == recipientUuid {
 		return errors.New("attempted self-mute")
 	}
+	return mutePlayerUnchecked(recipientUuid, true)
+}
 
-	_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUuid)
-	if err != nil {
-		return err
+func mutePlayerUnchecked(recipientUuid string, updateDb bool) error {
+	if updateDb {
+		_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUuid)
+		if err != nil {
+			return err
+		}
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok { // mute client if they're connected
@@ -1499,6 +1509,31 @@ func writeGamePlayerCount(playerCount int) error {
 	}
 
 	return nil
+}
+
+func getReportersForPlayer(targetUuid, msgId string) (result map[string]string, err error) {
+	rows, err := db.Query(`
+		SELECT pgd.name, pr.reason FROM playerReports pr
+		JOIN playerGameData pgd ON pgd.uuid = pr.uuid
+		WHERE pr.targetUuid = ? AND pr.msgId = ?`, targetUuid, msgId)
+	if err != nil {
+		return result, err
+	}
+
+	result = make(map[string]string)
+	defer rows.Close()
+	for rows.Next() {
+		var reporter string
+		var reason string
+		err = rows.Scan(&reporter, &reason)
+		if err != nil {
+			return nil, err
+		}
+
+		result[reporter] = reason
+	}
+
+	return result, nil
 }
 
 func doCleanupQueries() error {

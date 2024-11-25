@@ -104,6 +104,8 @@ func Start() {
 	initEvents()
 	initBadges()
 	initSession()
+	initReports()
+	initRpc()
 
 	if config.gameName == "unconscious" {
 		initUnconscious()

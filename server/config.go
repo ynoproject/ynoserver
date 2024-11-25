@@ -21,6 +21,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -39,6 +40,16 @@ type Config struct {
 
 	chatWebhook       string
 	screenshotWebhook string
+
+	moderation struct {
+		botToken  string
+		channelId string
+		modRoleId string
+	}
+
+	ipc struct {
+		deadline time.Duration
+	}
 
 	logging struct {
 		maxSize    int
@@ -69,6 +80,16 @@ type ConfigFile struct {
 
 	ChatWebhook       string `yaml:"chat_webhook"`
 	ScreenshotWebhook string `yaml:"screenshot_webhook"`
+
+	Moderation *struct {
+		BotToken  string `yaml:"bot_token"`
+		ChannelID string `yaml:"channel_id"`
+		ModRoleID string `yaml:"mod_role_id"`
+	} `yaml:"moderation"`
+
+	Ipc *struct {
+		DeadlineMs int `yaml:"deadline_ms"`
+	} `yaml:"ipc"`
 
 	VapidKeys struct {
 		Private string `yaml:"private"`
@@ -148,6 +169,18 @@ func parseConfigFile(filename string) *Config {
 
 	config.chatWebhook = configFile.ChatWebhook
 	config.screenshotWebhook = configFile.ScreenshotWebhook
+
+	if mod := configFile.Moderation; mod != nil {
+		config.moderation.botToken = mod.BotToken
+		config.moderation.channelId = mod.ChannelID
+		config.moderation.modRoleId = mod.ModRoleID
+	}
+
+	if ipc := configFile.Ipc; ipc != nil {
+		config.ipc.deadline = time.Duration(ipc.DeadlineMs) * time.Millisecond
+	} else {
+		config.ipc.deadline = 10 * time.Second
+	}
 
 	if configFile.Logging.MaxSize != 0 {
 		config.logging.maxSize = configFile.Logging.MaxSize
