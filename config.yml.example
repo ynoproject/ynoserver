@@ -37,6 +37,17 @@
 ## Discord Webhook URL for community screenshots
 #screenshot_webhook: ""
 
+## Moderation settings for Discord integration
+moderation:
+## Bot token for messages
+  #bot_token: ""
+
+## Target channel for reports
+  #channel_id: ""
+
+## Mod role to be pinged in report posts
+  #mod_role_id: ""
+
 ## Logging settings
 logging:
   ## Size of log file (MB)
