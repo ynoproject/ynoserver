@@ -1,0 +1,128 @@
+/*
+	Copyright (C) 2021-2024  The YNOproject Developers
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU Affero General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Affero General Public License for more details.
+
+	You should have received a copy of the GNU Affero General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+package server
+
+import (
+	"errors"
+	"fmt"
+	"log"
+	"net"
+	"net/rpc"
+	"os"
+	"syscall"
+	"time"
+)
+
+// "Methods" can be defined on this actor which then can be called by sibling processes.
+type IPC struct{}
+
+type Void struct{}
+
+func (_ *IPC) TryBan(args *string, _ *Void) error {
+	return banPlayerUnchecked(*args, false)
+}
+
+func (_ *IPC) TryMute(args *string, _ *Void) error {
+	return mutePlayerUnchecked(*args, false)
+}
+
+type SendReportLogArgs struct {
+	uuid, ynoMsgId, originalMsg string
+}
+
+func (_ *IPC) SendReportLog(args *SendReportLogArgs, _ *Void) error {
+	return sendReportLogMainServer(args.uuid, args.ynoMsgId, args.originalMsg)
+}
+
+func banPlayerInGameUnchecked(game, uuid string) error {
+	if game == config.gameName {
+		return banPlayerUnchecked(uuid, true)
+	}
+	client, err := rpc.DialHTTP("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
+	if err != nil {
+		return errors.Join(errors.New("could not dial rpc socket"), err)
+	}
+
+	call := client.Go("IPC.TryBan", &uuid, new(Void), nil)
+	select {
+	case <-call.Done:
+		return call.Error
+	case <-time.After(config.ipc.deadline):
+		return errors.New("banPlayerInGameUnchecked: timed out")
+	}
+}
+
+func mutePlayerInGameUnchecked(game, uuid string) error {
+	if game == config.gameName {
+		return mutePlayerUnchecked(uuid, true)
+	}
+	client, err := rpc.DialHTTP("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
+	if err != nil {
+		return errors.Join(errors.New("could not dial rpc socket"), err)
+	}
+
+	call := client.Go("IPC.TryMute", &uuid, new(Void), nil)
+	select {
+	case <-call.Done:
+		return call.Error
+	case <-time.After(config.ipc.deadline):
+		return errors.New("mutePlayerInGameUnchecked: timed out")
+	}
+}
+
+func sendReportLog(uuid, ynoMsgId, originalMsg string) error {
+	if isMainServer {
+		return sendReportLogMainServer(uuid, ynoMsgId, originalMsg)
+	}
+	client, err := rpc.DialHTTP("unix", fmt.Sprintf("/tmp/yno/%s.sck", mainGameId))
+	if err != nil {
+		return errors.Join(errors.New("could not dial rpc socket"), err)
+	}
+
+	call := client.Go("IPC.SendReportLog", &SendReportLogArgs{uuid, ynoMsgId, originalMsg}, new(Void), nil)
+	select {
+	case <-call.Done:
+		return call.Error
+	case <-time.After(config.ipc.deadline):
+		return errors.New("mutePlayerInGameUnchecked: timed out")
+	}
+}
+
+func initRpc() {
+	var err error
+	socketPath := fmt.Sprintf("/tmp/yno/%s.sck", config.gameName)
+
+	os.MkdirAll("/tmp/yno", 0777)
+	os.Remove(socketPath)
+	err = syscall.Mkfifo(socketPath, 0666)
+	if err != nil {
+		log.Fatalf("initRpc(mkfifo): %s", err)
+	}
+
+	socket, err := net.Listen("unix", socketPath)
+	if err != nil {
+		log.Fatal("initRpc(listen)", err)
+	}
+
+	ipc := new(IPC)
+	server := rpc.NewServer()
+	server.Register(ipc)
+	server.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)
+
+	go server.Accept(socket)
+}

@@ -132,6 +132,8 @@ func initApi() {
 	http.HandleFunc("/api/registernotification", handleRegisterSubscriber)
 	http.HandleFunc("/api/unregisternotification", handleUnregisterSubscriber)
 	http.HandleFunc("/api/vapidpublickey", handleVapidPublicKeyRequest)
+
+	http.HandleFunc("/api/report", handleReport)
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
