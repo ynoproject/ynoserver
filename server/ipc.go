@@ -24,7 +24,6 @@ import (
 	"net"
 	"net/rpc"
 	"os"
-	"syscall"
 	"time"
 )
 
@@ -109,14 +108,14 @@ func initRpc() {
 
 	os.MkdirAll("/tmp/yno", 0777)
 	os.Remove(socketPath)
-	err = syscall.Mkfifo(socketPath, 0666)
-	if err != nil {
-		log.Fatalf("initRpc(mkfifo): %s", err)
-	}
 
 	socket, err := net.Listen("unix", socketPath)
 	if err != nil {
-		log.Fatal("initRpc(listen)", err)
+		log.Fatal("initRpc(listen):", err)
+	}
+
+	if err := os.Chmod(socketPath, 0666); err != nil {
+		log.Fatal("initRpc(chmod):", err)
 	}
 
 	ipc := new(IPC)
