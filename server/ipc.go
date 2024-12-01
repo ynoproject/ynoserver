@@ -32,32 +32,33 @@ type IPC struct{}
 
 type Void struct{}
 
-func (_ *IPC) TryBan(args *string, _ *Void) error {
-	return banPlayerUnchecked(*args, false)
+func (_ *IPC) TryBan(args string, _ *Void) error {
+	return banPlayerUnchecked(args, false)
 }
 
-func (_ *IPC) TryMute(args *string, _ *Void) error {
-	return mutePlayerUnchecked(*args, false)
+func (_ *IPC) TryMute(args string, _ *Void) error {
+	return mutePlayerUnchecked(args, false)
 }
 
 type SendReportLogArgs struct {
-	uuid, ynoMsgId, originalMsg string
+	Uuid, YnoMsgId, OriginalMsg string
 }
 
-func (_ *IPC) SendReportLog(args *SendReportLogArgs, _ *Void) error {
-	return sendReportLogMainServer(args.uuid, args.ynoMsgId, args.originalMsg)
+func (_ *IPC) SendReportLog(args SendReportLogArgs, _ *Void) error {
+	return sendReportLogMainServer(args.Uuid, args.YnoMsgId, args.OriginalMsg)
 }
 
 func banPlayerInGameUnchecked(game, uuid string) error {
 	if game == config.gameName {
 		return banPlayerUnchecked(uuid, true)
 	}
-	client, err := rpc.DialHTTP("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
+	client, err := rpc.Dial("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
 	if err != nil {
 		return errors.Join(errors.New("could not dial rpc socket"), err)
 	}
 
-	call := client.Go("IPC.TryBan", &uuid, new(Void), nil)
+	defer client.Close()
+	call := client.Go("IPC.TryBan", uuid, new(Void), make(chan *rpc.Call, 1))
 	select {
 	case <-call.Done:
 		return call.Error
@@ -70,12 +71,13 @@ func mutePlayerInGameUnchecked(game, uuid string) error {
 	if game == config.gameName {
 		return mutePlayerUnchecked(uuid, true)
 	}
-	client, err := rpc.DialHTTP("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
+	client, err := rpc.Dial("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
 	if err != nil {
 		return errors.Join(errors.New("could not dial rpc socket"), err)
 	}
 
-	call := client.Go("IPC.TryMute", &uuid, new(Void), nil)
+	defer client.Close()
+	call := client.Go("IPC.TryMute", uuid, new(Void), nil)
 	select {
 	case <-call.Done:
 		return call.Error
@@ -88,12 +90,13 @@ func sendReportLog(uuid, ynoMsgId, originalMsg string) error {
 	if isMainServer {
 		return sendReportLogMainServer(uuid, ynoMsgId, originalMsg)
 	}
-	client, err := rpc.DialHTTP("unix", fmt.Sprintf("/tmp/yno/%s.sck", mainGameId))
+	client, err := rpc.Dial("unix", fmt.Sprintf("/tmp/yno/%s.sck", mainGameId))
 	if err != nil {
 		return errors.Join(errors.New("could not dial rpc socket"), err)
 	}
 
-	call := client.Go("IPC.SendReportLog", &SendReportLogArgs{uuid, ynoMsgId, originalMsg}, new(Void), nil)
+	defer client.Close()
+	call := client.Go("IPC.SendReportLog", SendReportLogArgs{uuid, ynoMsgId, originalMsg}, new(Void), make(chan *rpc.Call, 1))
 	select {
 	case <-call.Done:
 		return call.Error
@@ -119,9 +122,6 @@ func initRpc() {
 	}
 
 	ipc := new(IPC)
-	server := rpc.NewServer()
-	server.Register(ipc)
-	server.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)
-
-	go server.Accept(socket)
+	rpc.Register(ipc)
+	go rpc.Accept(socket)
 }
