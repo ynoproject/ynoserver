@@ -31,8 +31,7 @@ import (
 )
 
 var (
-	bot *discordgo.Session
-	// uuid -> discord message ID
+	bot           *discordgo.Session
 	reportLog     map[string]string
 	reportReasons = map[string]string{
 		":1": "Slurs, harmful or inappropriate language",
@@ -69,9 +68,15 @@ func initReports() {
 		log.Printf("no bot token defined, not launching bot thread. (err=%s)", err)
 		return
 	}
-
 	bot.AddHandler(func(s *discordgo.Session, action *discordgo.InteractionCreate) {
-		if action.Interaction.Type != discordgo.InteractionMessageComponent {
+		resp := discordgo.InteractionResponse{}
+		defer func() {
+			if err := bot.InteractionRespond(action.Interaction, &resp); err != nil {
+				log.Printf("bot/respond: %s", err)
+			}
+		}()
+
+		if action.Type != discordgo.InteractionMessageComponent {
 			return
 		}
 		data := action.MessageComponentData()
@@ -84,89 +89,85 @@ func initReports() {
 			for game := range gameIdToName {
 				banPlayerInGameUnchecked(game, uuid)
 			}
-			if msgId, ok := reportLog[uuid]; ok {
-				targetName := getNameFromUuid(uuid)
-				bot.ChannelMessageEdit(config.moderation.channelId, msgId, fmt.Sprintf("*%s has been **banned** by %s.*", targetName, action.User.Username))
-				delete(reportLog, uuid)
-			}
+
+			targetName := getNameFromUuid(uuid)
+			content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
+
+			resp.Type = discordgo.InteractionResponseUpdateMessage
+			resp.Data = &discordgo.InteractionResponseData{Content: content}
+			delete(reportLog, uuid)
 			markAsResolved(uuid)
 		case "mute":
 			for game := range gameIdToName {
 				mutePlayerInGameUnchecked(game, uuid)
 			}
-			if msgId, ok := reportLog[uuid]; ok {
-				targetName := getNameFromUuid(uuid)
-				bot.ChannelMessageEdit(config.moderation.channelId, msgId, fmt.Sprintf("*%s has been muted by %s.*", targetName, action.User.Username))
-				delete(reportLog, uuid)
-			}
+
+			targetName := getNameFromUuid(uuid)
+			content := fmt.Sprintf("*%s has been muted by %s*", targetName, action.Member.DisplayName())
+
+			resp.Type = discordgo.InteractionResponseUpdateMessage
+			resp.Data = &discordgo.InteractionResponseData{Content: content}
+			delete(reportLog, uuid)
 			markAsResolved(uuid)
 		case "ack":
-			if msgId, ok := reportLog[uuid]; ok {
-				targetName := getNameFromUuid(uuid)
-				bot.ChannelMessageEdit(config.moderation.channelId, msgId, fmt.Sprintf("*Report on %s acknowledged by %s*", targetName, action.User.Username))
-				delete(reportLog, uuid)
-			}
+			targetName := getNameFromUuid(uuid)
+			content := fmt.Sprintf("*Report on %s acknowledged by %s*", targetName, action.Member.DisplayName())
+
+			resp.Type = discordgo.InteractionResponseUpdateMessage
+			resp.Data = &discordgo.InteractionResponseData{Content: content}
+			delete(reportLog, uuid)
+			markAsResolved(uuid)
 		case "cmd":
 			if len(data.Values) != 1 {
 				return
 			}
-			if discordMsgId, ok := reportLog[uuid]; ok {
-				// get the full message object, since we're interacting thru a Select Menu
-				msgObj, err := bot.ChannelMessage(config.moderation.channelId, discordMsgId)
+			msgObj := action.Interaction.Message
+			if msgObj == nil || len(msgObj.Embeds) < 1 || len(msgObj.Embeds[0].Fields) < 3 {
+				log.Printf("bot/cmd: message interaction absent")
+				return
+			}
+			metadataField := msgObj.Embeds[0].Fields[2]
+			msgIdMatch := msgIdPattern.FindSubmatch([]byte(metadataField.Value))
+			if msgIdMatch == nil {
+				return
+			}
+			ynoMsgId := string(msgIdMatch[1])
+
+			switch data.Values[0] {
+			case "reveal":
+				reports, err := getReportersForPlayer(uuid, ynoMsgId)
 				if err != nil {
-					log.Printf("bot/handler/cmd: %s", err)
+					log.Printf("getReportersForPlayer: %s", err)
 					return
 				}
-				metadataField := msgObj.Embeds[0].Fields[2]
-				msgIdMatch := msgIdPattern.FindSubmatch([]byte(metadataField.Value))
-				if msgIdMatch == nil {
-					return
+				reportsContent := ""
+				for reporter, reason := range reports {
+					reportsContent += fmt.Sprintf("%s: `%s`  \n", reporter, getReadableReportReason(reason))
 				}
-				ynoMsgId := string(msgIdMatch[1])
+				resp.Type = discordgo.InteractionResponseChannelMessageWithSource
+				resp.Data = &discordgo.InteractionResponseData{
+					Embeds: []*discordgo.MessageEmbed{
+						{
+							Title:       fmt.Sprintf("Reporters for `msgid=%s`", ynoMsgId),
+							Description: reportsContent,
+						},
+					},
+				}
+			}
 
-				switch data.Values[0] {
-				case "reveal":
-					reports, err := getReportersForPlayer(uuid, ynoMsgId)
-					if err != nil {
-						log.Printf("getReportersForPlayer: %s", err)
-						return
-					}
-					reportsContent := "```\n"
-					for reporter, reason := range reports {
-						reportsContent += fmt.Sprintf("%s: %s\n", reporter, getReadableReportReason(reason))
-					}
-					reportsContent += "```"
-					_, err = bot.ChannelMessageSendEmbed(config.moderation.channelId, &discordgo.MessageEmbed{
-						Title:       fmt.Sprintf("Reporters for `msgid`=%s", ynoMsgId),
-						Description: reportsContent,
-					})
-					if err != nil {
-						log.Printf("bot/handler/cmd/reveal: %s", err)
-					}
-				}
-
-				// reset components
-				edit := discordgo.NewMessageEdit(config.moderation.channelId, discordMsgId)
-				edit.Components = &msgObj.Components
-				msgObj, err = bot.ChannelMessageEditComplex(edit)
-				if err == nil && msgObj != nil {
-					reportLog[uuid] = msgObj.ID
-				}
+			// reset the selection
+			edit := discordgo.NewMessageEdit(config.moderation.channelId, action.Interaction.Message.ID)
+			edit.Components = &action.Interaction.Message.Components
+			if _, err = bot.ChannelMessageEditComplex(edit); err != nil {
+				log.Printf("bot/cmd/edit: %s", err)
 			}
 		}
 	})
 
-	bot.AddHandler(func(s *discordgo.Session, msg *discordgo.MessageDelete) {
-		if msg.BeforeDelete.ChannelID == config.moderation.channelId {
-			for uuid := range reportLog {
-				if reportLog[uuid] == msg.BeforeDelete.ID {
-					delete(reportLog, uuid)
-					break
-				}
-			}
-
-		}
-	})
+	if err = bot.Open(); err != nil {
+		log.Printf("bot/open: %s", err)
+		return
+	}
 }
 
 // obj should be an outpointer to one of the compatible message types
@@ -177,7 +178,7 @@ func formatReportLog(obj interface{}, targetUuid, ynoMsgId, originalMsg string, 
 	}
 	reasonsString := ""
 	for reason, count := range reasons {
-		reasonsString += fmt.Sprintf("- %s: %d\n", reason, count)
+		reasonsString += fmt.Sprintf("- `%s`: %d\n", getReadableReportReason(reason), count)
 	}
 
 	verifiedString := "false"
@@ -230,21 +231,27 @@ func formatReportLog(obj interface{}, targetUuid, ynoMsgId, originalMsg string, 
 				},
 			},
 		},
-		discordgo.SelectMenu{
-			Placeholder: "More Actions",
-			MaxValues:   1,
-			MenuType:    discordgo.StringSelectMenu,
-			CustomID:    "cmd:" + targetUuid,
-			Options: []discordgo.SelectMenuOption{
-				{
-					Label: "Reveal Reporters",
-					Value: "reveal",
+	}
+	if ynoMsgId != "" {
+		components = append(components, discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					Placeholder: "More Actions",
+					MaxValues:   1,
+					MenuType:    discordgo.StringSelectMenu,
+					CustomID:    "cmd:" + targetUuid,
+					Options: []discordgo.SelectMenuOption{
+						{
+							Label: "Reveal Reporters",
+							Value: "reveal",
+						},
+					},
 				},
 			},
-		},
+		})
 	}
 
-	content := fmt.Sprintf("<@&%s> Received report:", config.moderation.modRoleId)
+	content := fmt.Sprintf("<@&%s>", config.moderation.modRoleId)
 	allowedMentions := &discordgo.MessageAllowedMentions{
 		Roles: []string{config.moderation.modRoleId},
 	}
@@ -306,14 +313,14 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req.MsgId, req.OriginalMsg, err = createReport(uuid, req.Uuid, req.Reason, req.MsgId, req.OriginalMsg)
+	msgid, originalMsg, err := createReport(uuid, req.Uuid, req.Reason, req.MsgId, req.OriginalMsg)
 	if err != nil {
 		writeErrLog(uuid, r.URL.Path, "createReport failed: "+err.Error())
 		handleError(w, r, "Could not create report")
 		return
 	}
 
-	err = sendReportLog(req.Uuid, req.MsgId, req.OriginalMsg)
+	err = sendReportLog(req.Uuid, msgid, originalMsg)
 	if err != nil {
 		writeErrLog(uuid, r.URL.Path, "sendReportMessage failed: "+err.Error())
 	}
@@ -328,7 +335,7 @@ func sendReportLogMainServer(uuid, ynoMsgId, originalMsg string) error {
 
 	rows, err := db.Query(`
 SELECT reason, COUNT(*) FROM playerReports
-WHERE targetUuid = ? AND actionTaken = 0
+WHERE targetUuid = ? AND NOT actionTaken
 GROUP BY reason`, uuid)
 
 	var reasons map[string]int
@@ -348,9 +355,7 @@ GROUP BY reason`, uuid)
 	}
 
 	var msg *discordgo.Message
-
-	// Don't override a verified message with an unverified one
-	if discordMsgId, ok := reportLog[uuid]; ok && ynoMsgId != "" {
+	if discordMsgId, ok := reportLog[uuid]; ok {
 		payload := discordgo.NewMessageEdit(config.moderation.channelId, discordMsgId)
 		formatReportLog(payload, uuid, ynoMsgId, originalMsg, reasons)
 		msg, err = bot.ChannelMessageEditComplex(payload)
@@ -369,7 +374,7 @@ GROUP BY reason`, uuid)
 
 func createReport(uuid, targetUuid, reason, msgId, originalMsg string) (string, string, error) {
 	var err error
-	row := db.QueryRow("SELECT contents FROM chatMessages WHERE msgId = ? AND uuid = ?", msgId, targetUuid)
+	row := db.QueryRow("SELECT contents FROM chatMessages WHERE msgId = ? AND uuid = ? AND game = ?", msgId, targetUuid, config.gameName)
 	var contentsFromDb string
 	err = row.Scan(&contentsFromDb)
 	if err == nil {
@@ -381,12 +386,17 @@ func createReport(uuid, targetUuid, reason, msgId, originalMsg string) (string, 
 		msgId = ""
 	}
 
+	var msgIdLink *string
+	if msgId != "" {
+		msgIdLink = &msgId
+	}
+
 	_, err = db.Exec(`
 REPLACE INTO playerReports
-	(uuid, targetUuid, msgId, game, reason, originalMsg, timestampReported)
+	(uuid, targetUuid, msgId, game, reason, originalMsg, timestampReported, actionTaken)
 VALUES
-	(?, ?, ?, ?, ?, NOW())`,
-		uuid, targetUuid, msgId, config.gameName, urlReplacer.Replace(reason), originalMsg)
+	(?, ?, ?, ?, ?, ?, NOW(), 0)`,
+		uuid, targetUuid, msgIdLink, config.gameName, urlReplacer.Replace(reason), originalMsg)
 	return msgId, originalMsg, err
 }
 

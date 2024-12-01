@@ -1515,7 +1515,7 @@ func getReportersForPlayer(targetUuid, msgId string) (result map[string]string, 
 	rows, err := db.Query(`
 		SELECT pgd.name, pr.reason FROM playerReports pr
 		JOIN playerGameData pgd ON pgd.uuid = pr.uuid
-		WHERE pr.targetUuid = ? AND pr.msgId = ?`, targetUuid, msgId)
+		WHERE pr.targetUuid = ? AND pr.msgId = ? AND NOT actionTaken`, targetUuid, msgId)
 	if err != nil {
 		return result, err
 	}

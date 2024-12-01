@@ -179,7 +179,7 @@ func parseConfigFile(filename string) *Config {
 	if ipc := configFile.Ipc; ipc != nil {
 		config.ipc.deadline = time.Duration(ipc.DeadlineMs) * time.Millisecond
 	} else {
-		config.ipc.deadline = 10 * time.Second
+		config.ipc.deadline = 100 * time.Millisecond
 	}
 
 	if configFile.Logging.MaxSize != 0 {
