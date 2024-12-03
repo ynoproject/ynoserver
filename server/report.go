@@ -94,7 +94,14 @@ func initReports() {
 			content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
 
 			resp.Type = discordgo.InteractionResponseUpdateMessage
-			resp.Data = &discordgo.InteractionResponseData{Content: content}
+			resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: action.Message.Embeds}
+			if len(resp.Data.Embeds) >= 1 {
+				if desc := resp.Data.Embeds[0].Description; desc != "" {
+					if unquoted, ok := strings.CutPrefix(desc, "> "); ok {
+						resp.Data.Embeds[0].Description = fmt.Sprintf("> ||%s||", unquoted)
+					}
+				}
+			}
 			delete(reportLog, uuid)
 			markAsResolved(uuid)
 		case "mute":
@@ -106,7 +113,14 @@ func initReports() {
 			content := fmt.Sprintf("*%s has been muted by %s*", targetName, action.Member.DisplayName())
 
 			resp.Type = discordgo.InteractionResponseUpdateMessage
-			resp.Data = &discordgo.InteractionResponseData{Content: content}
+			resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: action.Message.Embeds}
+			if len(resp.Data.Embeds) >= 1 {
+				if desc := resp.Data.Embeds[0].Description; desc != "" {
+					if unquoted, ok := strings.CutPrefix(desc, "> "); ok {
+						resp.Data.Embeds[0].Description = fmt.Sprintf("> ||%s||", unquoted)
+					}
+				}
+			}
 			delete(reportLog, uuid)
 			markAsResolved(uuid)
 		case "ack":
@@ -114,7 +128,14 @@ func initReports() {
 			content := fmt.Sprintf("*Report on %s acknowledged by %s*", targetName, action.Member.DisplayName())
 
 			resp.Type = discordgo.InteractionResponseUpdateMessage
-			resp.Data = &discordgo.InteractionResponseData{Content: content}
+			resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: action.Message.Embeds}
+			if len(resp.Data.Embeds) >= 1 {
+				if desc := resp.Data.Embeds[0].Description; desc != "" {
+					if unquoted, ok := strings.CutPrefix(desc, "> "); ok {
+						resp.Data.Embeds[0].Description = fmt.Sprintf("> ||%s||", unquoted)
+					}
+				}
+			}
 			delete(reportLog, uuid)
 			markAsResolved(uuid)
 		case "cmd":
