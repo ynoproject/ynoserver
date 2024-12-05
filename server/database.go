@@ -103,11 +103,19 @@ func banPlayerUnchecked(recipientUuid string, updateDb bool) error {
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok {
+		name := client.name
 		if client.roomC != nil {
 			client.roomC.cancel()
 		}
 
 		client.cancel()
+
+		if name != "" {
+			msg := fmt.Sprintf("*%s has been banned.*", name)
+			var sender *SessionClient
+			sender.broadcast(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
+			sender.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12)))
+		}
 	}
 
 	return nil
@@ -151,6 +159,13 @@ func mutePlayerUnchecked(recipientUuid string, updateDb bool) error {
 
 	if client, ok := clients.Load(recipientUuid); ok { // mute client if they're connected
 		client.muted = true
+
+		if name := client.name; name != "" {
+			msg := fmt.Sprintf("*%s has been muted.*", name)
+			var sender *SessionClient
+			sender.broadcast(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
+			sender.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12)))
+		}
 	}
 
 	return nil

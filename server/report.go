@@ -86,11 +86,11 @@ func initReports() {
 		}
 		switch cmd {
 		case "ban":
+			targetName := getNameFromUuid(uuid)
 			for game := range gameIdToName {
 				banPlayerInGameUnchecked(game, uuid)
 			}
 
-			targetName := getNameFromUuid(uuid)
 			content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
 
 			resp.Type = discordgo.InteractionResponseUpdateMessage
@@ -105,11 +105,11 @@ func initReports() {
 			delete(reportLog, uuid)
 			markAsResolved(uuid)
 		case "mute":
+			targetName := getNameFromUuid(uuid)
 			for game := range gameIdToName {
 				mutePlayerInGameUnchecked(game, uuid)
 			}
 
-			targetName := getNameFromUuid(uuid)
 			content := fmt.Sprintf("*%s has been muted by %s*", targetName, action.Member.DisplayName())
 
 			resp.Type = discordgo.InteractionResponseUpdateMessage
