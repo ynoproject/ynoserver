@@ -200,8 +200,15 @@ func (c *RoomClient) leaveRoom() {
 }
 
 func (c *RoomClient) broadcast(msg []byte) {
+	if c.session.banned {
+		return
+	}
 	for _, client := range c.room.clients {
 		if client == c {
+			continue
+		}
+
+		if client.session.blockedUsers[c.session.uuid] || c.session.blockedUsers[client.session.uuid] {
 			continue
 		}
 

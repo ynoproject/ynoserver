@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -33,6 +34,8 @@ import (
 var (
 	bot *discordgo.Session
 	// uuid -> ynoMsgId -> discordMsgId
+	//
+	// main server only
 	reportLog     map[string]map[string]string
 	reportReasons = map[string]string{
 		":1": "Slurs, harmful or inappropriate language",
@@ -44,7 +47,19 @@ var (
 		":7": "Spam",
 	}
 	msgIdPattern = regexp.MustCompile("msgid=(\\S*)$")
+	// main server only
+	modActionExpirations map[ModAction]oneshotJob
 )
+
+type ModAction struct {
+	uuid   string
+	action int
+}
+
+type oneshotJob struct {
+	timer  *time.Timer
+	expiry time.Time
+}
 
 func getReadableReportReason(reason string) string {
 	if desc, ok := reportReasons[reason]; ok {
@@ -58,6 +73,11 @@ func initReports() {
 		return
 	}
 
+	initModBot()
+	initModActionExpirations()
+}
+
+func initModBot() {
 	reportLog = make(map[string]map[string]string)
 
 	var err error
@@ -69,6 +89,7 @@ func initReports() {
 		log.Printf("no bot token defined, not launching bot thread. (err=%s)", err)
 		return
 	}
+
 	bot.AddHandler(func(s *discordgo.Session, action *discordgo.InteractionCreate) {
 		resp := discordgo.InteractionResponse{}
 		defer func() {
@@ -76,6 +97,12 @@ func initReports() {
 				log.Printf("bot/respond: %s", err)
 			}
 		}()
+
+		switch action.Type {
+		case discordgo.InteractionModalSubmit:
+			botHandleModalResponse(&resp, action.ModalSubmitData(), action.Interaction)
+			return
+		}
 
 		if action.Type != discordgo.InteractionMessageComponent {
 			return
@@ -92,7 +119,7 @@ func initReports() {
 		case "ban":
 			targetName := getNameFromUuid(uuid)
 			for game := range gameIdToName {
-				banPlayerInGameUnchecked(game, uuid, false)
+				banPlayerInGameUnchecked(game, uuid, false, false)
 			}
 
 			content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
@@ -111,7 +138,7 @@ func initReports() {
 		case "mute":
 			targetName := getNameFromUuid(uuid)
 			for game := range gameIdToName {
-				mutePlayerInGameUnchecked(game, uuid)
+				mutePlayerInGameUnchecked(game, uuid, false)
 			}
 
 			content := fmt.Sprintf("*%s has been muted by %s*", targetName, action.Member.DisplayName())
@@ -159,6 +186,7 @@ func initReports() {
 				}
 				resp.Type = discordgo.InteractionResponseChannelMessageWithSource
 				resp.Data = &discordgo.InteractionResponseData{
+					Flags: discordgo.MessageFlagsEphemeral,
 					Embeds: []*discordgo.MessageEmbed{
 						{
 							Title:       fmt.Sprintf("Reporters for `msgid=%s`", ynoMsgId),
@@ -169,7 +197,7 @@ func initReports() {
 			case "dban":
 				targetName := getNameFromUuid(uuid)
 				for game := range gameIdToName {
-					banPlayerInGameUnchecked(game, uuid, true)
+					banPlayerInGameUnchecked(game, uuid, true, false)
 				}
 
 				content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
@@ -185,6 +213,40 @@ func initReports() {
 				}
 				delete(reportLog[uuid], ynoMsgId)
 				markAsResolved(uuid)
+			// handled by botHandleModalResponse
+			case "tempban":
+				fallthrough
+			case "tempmute":
+				// keep this up to date with parseTempBanReportComponents
+				resp.Type = discordgo.InteractionResponseModal
+				resp.Data = &discordgo.InteractionResponseData{
+					CustomID: fmt.Sprintf("%s:%s", data.Values[0], uuid),
+					Title:    "Details",
+					Components: []discordgo.MessageComponent{
+						discordgo.ActionsRow{
+							Components: []discordgo.MessageComponent{
+								discordgo.TextInput{
+									Label:       "Expiry",
+									CustomID:    "expiry",
+									Style:       discordgo.TextInputShort,
+									Placeholder: "duration (60s, 30m, 1h30m, 24h, etc.)",
+									Value:       "5m",
+									Required:    true,
+								},
+							},
+						},
+						discordgo.ActionsRow{
+							Components: []discordgo.MessageComponent{
+								discordgo.TextInput{
+									Label:     "Reason",
+									CustomID:  "reason",
+									Style:     discordgo.TextInputParagraph,
+									MaxLength: 150,
+								},
+							},
+						},
+					},
+				}
 			}
 
 			// reset the selection
@@ -214,6 +276,123 @@ func parseMsgIdFromComponent(msgObj *discordgo.Message) string {
 	}
 	ynoMsgId := string(msgIdMatch[1])
 	return ynoMsgId
+}
+
+func parseTempBanReportComponents(components []discordgo.MessageComponent) (expiry, reason string) {
+	expiry = components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
+	reason = components[1].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
+	return
+}
+
+func botHandleModalResponse(resp *discordgo.InteractionResponse, data discordgo.ModalSubmitInteractionData, interaction *discordgo.Interaction) {
+	cmd, uuid, ok := strings.Cut(data.CustomID, ":")
+	if !ok {
+		return
+	}
+
+	switch cmd {
+	case "tempban":
+		fallthrough
+	case "tempmute":
+		expiryRaw, reason := parseTempBanReportComponents(data.Components)
+		expiryDuration, err := time.ParseDuration(expiryRaw)
+		if err != nil {
+			resp.Type = discordgo.InteractionResponseChannelMessageWithSource
+			resp.Data = &discordgo.InteractionResponseData{
+				Flags:   discordgo.MessageFlagsEphemeral,
+				Content: fmt.Sprintf("`%s` is not a valid duration string", expiryRaw),
+			}
+			return
+		}
+
+		expiry := time.Now().Add(expiryDuration)
+		var action string
+		name := getNameFromUuid(uuid)
+		if cmd == "tempban" {
+			for game := range gameIdToName {
+				banPlayerInGameUnchecked(game, uuid, true, true)
+			}
+			registerModAction(uuid, actionBan, expiry, reason)
+			action = "**banned**"
+		} else {
+			for game := range gameIdToName {
+				mutePlayerInGameUnchecked(game, uuid, true)
+			}
+			registerModAction(uuid, actionMute, expiry, reason)
+			action = "muted"
+		}
+		content := fmt.Sprintf("*%s has been %s until <t:%d:F> by %s*", name, action, expiry.Unix(), interaction.Member.DisplayName())
+		var embeds []*discordgo.MessageEmbed
+		if msgObj := interaction.Message; msgObj != nil {
+			embeds = msgObj.Embeds
+		}
+		resp.Type = discordgo.InteractionResponseUpdateMessage
+		resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: embeds}
+	}
+}
+
+func initModActionExpirations() {
+	modActionExpirations = make(map[ModAction]oneshotJob)
+
+	rows, err := db.Query("SELECT uuid, action, expiry FROM playerModerationActions")
+	if err != nil {
+		log.Print("initModActionExpirations", err)
+		return
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var uuid string
+		var action int
+		var expiry time.Time
+		err = rows.Scan(&uuid, &action, &expiry)
+		if err != nil {
+			log.Print("initModActionExpirations/rows", err)
+			return
+		}
+
+		if err = scheduleModActionReversalMainServer(uuid, action, expiry, false); err != nil {
+			log.Print("initModActionsExpiration/schedule", err)
+			return
+		}
+	}
+}
+
+func scheduleModActionReversalMainServer(uuid string, action int, expiry time.Time, overrideLaterJobs bool) error {
+	if !isMainServer {
+		return errors.New("cannot schedule mod action reversal from non-main server")
+	}
+	if expiry.Compare(time.Now()) <= 0 {
+		return nil
+	}
+	key := ModAction{uuid, action}
+	if oldJob, ok := modActionExpirations[key]; ok {
+		if oldJob.expiry.Compare(expiry) >= 0 && !overrideLaterJobs {
+			return nil
+		}
+		oldJob.timer.Stop()
+	}
+
+	timer := time.AfterFunc(expiry.Sub(time.Now()), func() {
+		defer delete(modActionExpirations, key)
+
+		var err error
+		switch action {
+		case actionBan:
+			err = unbanPlayerUnchecked(uuid)
+		case actionMute:
+			err = unmutePlayerUnchecked(uuid)
+		default:
+			err = errors.New(fmt.Sprintf("did not handle reversal for action %d", action))
+		}
+		_, dberr := db.Exec("DELETE FROM playerModerationActions WHERE action = ? AND uuid = ?", action, uuid)
+		err = errors.Join(err, dberr)
+		if err != nil {
+			log.Printf("error reversing mod action for %s: %s", uuid, err)
+		}
+	})
+	modActionExpirations[key] = oneshotJob{timer, expiry}
+	return nil
 }
 
 // obj should be an outpointer to one of the compatible message types
@@ -278,28 +457,36 @@ func formatReportLog(obj interface{}, targetUuid, ynoMsgId, originalMsg string, 
 			},
 		},
 	}
-	if ynoMsgId != "" {
-		components = append(components, discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				discordgo.SelectMenu{
-					Placeholder: "More Actions",
-					MaxValues:   1,
-					MenuType:    discordgo.StringSelectMenu,
-					CustomID:    "cmd:" + targetUuid,
-					Options: []discordgo.SelectMenuOption{
-						{
-							Label: "Reveal Reporters",
-							Value: "reveal",
-						},
-						{
-							Label: "Banish",
-							Value: "dban",
-						},
-					},
-				},
-			},
-		})
+	options := []discordgo.SelectMenuOption{
+		{
+			Label: "Banish",
+			Value: "dban",
+		},
+		{
+			Label: "Temporary Ban",
+			Value: "tempban",
+		},
+		{
+			Label: "Temporary Mute",
+			Value: "tempmute",
+		},
+		{
+			Label: "Reveal Reporters",
+			Value: "reveal",
+		},
 	}
+
+	components = append(components, discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.SelectMenu{
+				Placeholder: "More Actions",
+				MaxValues:   1,
+				MenuType:    discordgo.StringSelectMenu,
+				CustomID:    "cmd:" + targetUuid,
+				Options:     options,
+			},
+		},
+	})
 
 	content := fmt.Sprintf("<@&%s>", config.moderation.modRoleId)
 	allowedMentions := &discordgo.MessageAllowedMentions{
