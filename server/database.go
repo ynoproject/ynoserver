@@ -1379,6 +1379,7 @@ func getPlayerTimeTrialRecords(playerUuid string) (timeTrialRecords []*TimeTrial
 }
 
 func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success bool, err error) {
+	return false, fmt.Errorf("Time trials disabled; please remove me when a fix for 2kki is made")
 	var prevSeconds int
 	err = db.QueryRow("SELECT seconds FROM playerTimeTrials WHERE uuid = ? AND mapId = ?", playerUuid, mapId).Scan(&prevSeconds)
 	if err != nil {
