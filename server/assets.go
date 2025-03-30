@@ -70,6 +70,9 @@ func getSounds(gamePath string) map[string]bool {
 			}
 			path = path[:len(path)-len(filepath.Ext(path))]
 			sounds[path] = true
+
+			alias := strings.Replace(path, "/", "\\", 1)
+			sounds[alias] = true
 		}
 		return err
 	})
@@ -155,15 +158,7 @@ func (a *Assets) IsValidSound(name string) bool {
 		return false
 	}
 
-	valid := a.sounds[name]
-	if !valid && filepath.Separator == '/' {
-		// check for either backward or forward slash
-		alias := strings.Replace(name, "\\", "/", 1)
-		valid = a.sounds[alias]
-		// cache the results
-		a.sounds[name] = valid
-	}
-	return valid
+	return a.sounds[name]
 }
 
 func (a *Assets) IsValidPicture(name string) bool {
