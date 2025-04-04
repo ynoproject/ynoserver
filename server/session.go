@@ -109,9 +109,8 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 
-	var banned bool
 	if token != "" {
-		c.uuid, c.name, c.rank, c.badge, banned, c.muted = getPlayerDataFromToken(token)
+		c.uuid, c.name, c.rank, c.badge, c.banned, c.muted = getPlayerDataFromToken(token)
 		if c.uuid != "" {
 			c.medals = getPlayerMedals(c.uuid)
 		}
@@ -120,10 +119,10 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	if c.uuid != "" {
 		c.account = true
 	} else {
-		c.uuid, banned, c.muted = getOrCreatePlayerData(ip)
+		c.uuid, c.banned, c.muted = getOrCreatePlayerData(ip)
 	}
 
-	if banned {
+	if c.banned {
 		writeErrLog(c.uuid, "sess", "player is banned")
 		return
 	}

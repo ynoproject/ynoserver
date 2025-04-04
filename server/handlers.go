@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -905,20 +906,22 @@ func (c *SessionClient) handleSay(msg []string) error {
 		return errors.New("invalid message")
 	}
 
-	for _, client := range c.roomC.room.clients {
-		if client.session == c {
-			continue
-		}
+	if !c.banned {
+		for _, client := range c.roomC.room.clients {
+			if client.session == c {
+				continue
+			}
 
-		if client.session.blockedUsers[c.uuid] || c.blockedUsers[client.session.uuid] {
-			continue
-		}
+			if client.session.blockedUsers[c.uuid] || c.blockedUsers[client.session.uuid] {
+				continue
+			}
 
-		if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && !client.session.onlineFriends[c.uuid]) {
-			continue
-		}
+			if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && !client.session.onlineFriends[c.uuid]) {
+				continue
+			}
 
-		client.session.outbox <- buildMsg("say", c.uuid, msgContents)
+			client.session.outbox <- buildMsg("say", c.uuid, msgContents)
+		}
 	}
 
 	// so local echo appears
@@ -966,8 +969,13 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	msgId := randString(12)
 
 	if msg[0] == "gsay" {
-		c.broadcast(buildMsg("p", c.uuid, c.name, c.system, c.rank, c.account, c.badge, c.medals[:]))
-		c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
+		if !c.banned {
+			c.broadcast(buildMsg("p", c.uuid, c.name, c.system, c.rank, c.account, c.badge, c.medals[:]))
+			c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
+		} else {
+			c.outbox <- buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId)
+			return nil
+		}
 
 		err := writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
 		if err != nil {
@@ -986,10 +994,15 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 			}
 		}
 	} else {
-		for _, client := range clients.Get() {
-			if client.partyId == c.partyId {
-				client.outbox <- buildMsg("psay", c.uuid, msgContents, msgId)
+		if !c.banned {
+			for _, client := range clients.Get() {
+				if client.partyId == c.partyId {
+					client.outbox <- buildMsg("psay", c.uuid, msgContents, msgId)
+				}
 			}
+		} else {
+			c.outbox <- buildMsg("psay", c.uuid, msgContents, msgId)
+			return nil
 		}
 
 		err := writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, c.partyId)
@@ -1024,14 +1037,7 @@ func (c *SessionClient) handleL(msg []string) error {
 			continue
 		}
 
-		duplicateLocation := false
-
-		for _, l := range c.roomC.locationIds {
-			if l == gameLocation.Id {
-				duplicateLocation = true
-				break
-			}
-		}
+		duplicateLocation := slices.Contains(c.roomC.locationIds, gameLocation.Id)
 
 		if duplicateLocation {
 			continue
@@ -1040,14 +1046,7 @@ func (c *SessionClient) handleL(msg []string) error {
 		locationIds = append(locationIds, gameLocation.Id)
 		c.roomC.locationIds = append(c.roomC.locationIds, gameLocation.Id)
 
-		var matchedLocationMap bool
-
-		for _, mapId := range gameLocation.MapIds {
-			if mapId == c.roomC.mapId {
-				matchedLocationMap = true
-				break
-			}
-		}
+		matchedLocationMap := slices.Contains(gameLocation.MapIds, c.roomC.mapId)
 
 		if matchedLocationMap {
 			writePlayerGameLocation(c.uuid, locationName)

@@ -53,7 +53,7 @@ func adminGetBansMutes(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "access denied")
 		return
 	}
-	
+
 	responseJson, err := json.Marshal(getBannedMutedPlayers(r.URL.Path == "/admin/getbans"))
 	if err != nil {
 		handleError(w, r, "error while marshaling")
@@ -95,7 +95,9 @@ func adminBanMute(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch r.URL.Path {
 	case "/admin/ban":
-		err = tryBanPlayer(uuid, targetUuid)
+		err = tryBanPlayer(uuid, targetUuid, false)
+	case "/admin/dban":
+		err = tryBanPlayer(uuid, targetUuid, true)
 	case "/admin/unban":
 		err = tryUnbanPlayer(uuid, targetUuid)
 	case "/admin/mute":

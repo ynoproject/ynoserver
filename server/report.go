@@ -31,8 +31,9 @@ import (
 )
 
 var (
-	bot           *discordgo.Session
-	reportLog     map[string]string
+	bot *discordgo.Session
+	// uuid -> ynoMsgId -> discordMsgId
+	reportLog     map[string]map[string]string
 	reportReasons = map[string]string{
 		":1": "Slurs, harmful or inappropriate language",
 		":2": "Harassment, bullying, stalking",
@@ -57,7 +58,7 @@ func initReports() {
 		return
 	}
 
-	reportLog = make(map[string]string)
+	reportLog = make(map[string]map[string]string)
 
 	var err error
 	bot, err = discordgo.New("Bot " + config.moderation.botToken)
@@ -84,11 +85,14 @@ func initReports() {
 		if !ok {
 			return
 		}
+
+		ynoMsgId := parseMsgIdFromComponent(action.Interaction.Message)
+
 		switch cmd {
 		case "ban":
 			targetName := getNameFromUuid(uuid)
 			for game := range gameIdToName {
-				banPlayerInGameUnchecked(game, uuid)
+				banPlayerInGameUnchecked(game, uuid, false)
 			}
 
 			content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
@@ -102,7 +106,7 @@ func initReports() {
 					}
 				}
 			}
-			delete(reportLog, uuid)
+			delete(reportLog[uuid], ynoMsgId)
 			markAsResolved(uuid)
 		case "mute":
 			targetName := getNameFromUuid(uuid)
@@ -121,7 +125,7 @@ func initReports() {
 					}
 				}
 			}
-			delete(reportLog, uuid)
+			delete(reportLog[uuid], ynoMsgId)
 			markAsResolved(uuid)
 		case "ack":
 			targetName := getNameFromUuid(uuid)
@@ -136,24 +140,12 @@ func initReports() {
 					}
 				}
 			}
-			delete(reportLog, uuid)
+			delete(reportLog[uuid], ynoMsgId)
 			markAsResolved(uuid)
 		case "cmd":
 			if len(data.Values) != 1 {
 				return
 			}
-			msgObj := action.Interaction.Message
-			if msgObj == nil || len(msgObj.Embeds) < 1 || len(msgObj.Embeds[0].Fields) < 3 {
-				log.Printf("bot/cmd: message interaction absent")
-				return
-			}
-			metadataField := msgObj.Embeds[0].Fields[2]
-			msgIdMatch := msgIdPattern.FindSubmatch([]byte(metadataField.Value))
-			if msgIdMatch == nil {
-				return
-			}
-			ynoMsgId := string(msgIdMatch[1])
-
 			switch data.Values[0] {
 			case "reveal":
 				reports, err := getReportersForPlayer(uuid, ynoMsgId)
@@ -174,6 +166,25 @@ func initReports() {
 						},
 					},
 				}
+			case "dban":
+				targetName := getNameFromUuid(uuid)
+				for game := range gameIdToName {
+					banPlayerInGameUnchecked(game, uuid, true)
+				}
+
+				content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
+
+				resp.Type = discordgo.InteractionResponseUpdateMessage
+				resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: action.Message.Embeds}
+				if len(resp.Data.Embeds) >= 1 {
+					if desc := resp.Data.Embeds[0].Description; desc != "" {
+						if unquoted, ok := strings.CutPrefix(desc, "> "); ok {
+							resp.Data.Embeds[0].Description = fmt.Sprintf("> ||%s||", unquoted)
+						}
+					}
+				}
+				delete(reportLog[uuid], ynoMsgId)
+				markAsResolved(uuid)
 			}
 
 			// reset the selection
@@ -189,6 +200,20 @@ func initReports() {
 		log.Printf("bot/open: %s", err)
 		return
 	}
+}
+
+func parseMsgIdFromComponent(msgObj *discordgo.Message) string {
+	if msgObj == nil || len(msgObj.Embeds) < 1 || len(msgObj.Embeds[0].Fields) < 3 {
+		log.Printf("bot/cmd: message interaction absent")
+		return ""
+	}
+	metadataField := msgObj.Embeds[0].Fields[2]
+	msgIdMatch := msgIdPattern.FindSubmatch([]byte(metadataField.Value))
+	if msgIdMatch == nil {
+		return ""
+	}
+	ynoMsgId := string(msgIdMatch[1])
+	return ynoMsgId
 }
 
 // obj should be an outpointer to one of the compatible message types
@@ -265,6 +290,10 @@ func formatReportLog(obj interface{}, targetUuid, ynoMsgId, originalMsg string, 
 						{
 							Label: "Reveal Reporters",
 							Value: "reveal",
+						},
+						{
+							Label: "Banish",
+							Value: "dban",
 						},
 					},
 				},
@@ -376,7 +405,7 @@ GROUP BY reason`, uuid)
 	}
 
 	var msg *discordgo.Message
-	if discordMsgId, ok := reportLog[uuid]; ok {
+	if discordMsgId, ok := reportLog[uuid][ynoMsgId]; ok {
 		payload := discordgo.NewMessageEdit(config.moderation.channelId, discordMsgId)
 		formatReportLog(payload, uuid, ynoMsgId, originalMsg, reasons)
 		msg, err = bot.ChannelMessageEditComplex(payload)
@@ -387,7 +416,14 @@ GROUP BY reason`, uuid)
 	}
 
 	if msg != nil && err == nil {
-		reportLog[uuid] = msg.ID
+		var forUuid map[string]string
+		if map_, ok := reportLog[uuid]; ok {
+			forUuid = map_
+		} else {
+			forUuid = make(map[string]string)
+			reportLog[uuid] = forUuid
+		}
+		forUuid[ynoMsgId] = msg.ID
 	}
 
 	return err

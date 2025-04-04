@@ -32,8 +32,13 @@ type IPC struct{}
 
 type Void struct{}
 
-func (_ *IPC) TryBan(args string, _ *Void) error {
-	return banPlayerUnchecked(args, false)
+type TryBanArgs struct {
+	TargetUuid string
+	Disconnect bool
+}
+
+func (_ *IPC) TryBan(args TryBanArgs, _ *Void) error {
+	return banPlayerUnchecked(args.TargetUuid, false, args.Disconnect)
 }
 
 func (_ *IPC) TryMute(args string, _ *Void) error {
@@ -48,9 +53,9 @@ func (_ *IPC) SendReportLog(args SendReportLogArgs, _ *Void) error {
 	return sendReportLogMainServer(args.Uuid, args.YnoMsgId, args.OriginalMsg)
 }
 
-func banPlayerInGameUnchecked(game, uuid string) error {
+func banPlayerInGameUnchecked(game, uuid string, disconnect bool) error {
 	if game == config.gameName {
-		return banPlayerUnchecked(uuid, true)
+		return banPlayerUnchecked(uuid, true, disconnect)
 	}
 	client, err := rpc.Dial("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
 	if err != nil {
@@ -58,7 +63,7 @@ func banPlayerInGameUnchecked(game, uuid string) error {
 	}
 
 	defer client.Close()
-	call := client.Go("IPC.TryBan", uuid, new(Void), make(chan *rpc.Call, 1))
+	call := client.Go("IPC.TryBan", TryBanArgs{TargetUuid: uuid, Disconnect: disconnect}, new(Void), make(chan *rpc.Call, 1))
 	select {
 	case <-call.Done:
 		return call.Error

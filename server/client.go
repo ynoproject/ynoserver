@@ -80,7 +80,7 @@ type SessionClient struct {
 	badge   string
 	medals  [5]int
 
-	muted bool
+	muted, banned bool
 
 	sprite      string
 	spriteIndex int
