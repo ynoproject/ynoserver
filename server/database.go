@@ -28,6 +28,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"slices"
 )
 
 var db *sql.DB
@@ -83,7 +84,7 @@ func getPlayerRank(uuid string) (rank int) {
 	return rank
 }
 
-func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by api only
+func tryBanPlayer(senderUuid string, recipientUuid string, disconnect bool) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
@@ -91,10 +92,10 @@ func tryBanPlayer(senderUuid string, recipientUuid string) error { // called by 
 	if senderUuid == recipientUuid {
 		return errors.New("attempted self-ban")
 	}
-	return banPlayerUnchecked(recipientUuid, true)
+	return banPlayerUnchecked(recipientUuid, true, disconnect)
 }
 
-func banPlayerUnchecked(recipientUuid string, updateDb bool) error {
+func banPlayerUnchecked(recipientUuid string, updateDb, disconnect bool) error {
 	if updateDb {
 		_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUuid)
 		if err != nil {
@@ -103,18 +104,20 @@ func banPlayerUnchecked(recipientUuid string, updateDb bool) error {
 	}
 
 	if client, ok := clients.Load(recipientUuid); ok {
-		name := client.name
+		client.banned = true
 		if client.roomC != nil {
-			client.roomC.cancel()
+			for _, other := range clients.Get() {
+				if other.roomC != nil && other.roomC.room == client.roomC.room {
+					other.roomC.outbox <- buildMsg("d", client.id)
+				}
+			}
 		}
 
-		client.cancel()
-
-		if name != "" {
-			msg := fmt.Sprintf("*%s has been banned.*", name)
-			var sender *SessionClient
-			sender.broadcast(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
-			sender.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12)))
+		if disconnect {
+			if client.roomC != nil {
+				client.roomC.cancel()
+			}
+			client.cancel()
 		}
 	}
 
@@ -159,13 +162,6 @@ func mutePlayerUnchecked(recipientUuid string, updateDb bool) error {
 
 	if client, ok := clients.Load(recipientUuid); ok { // mute client if they're connected
 		client.muted = true
-
-		if name := client.name; name != "" {
-			msg := fmt.Sprintf("*%s has been muted.*", name)
-			var sender *SessionClient
-			sender.broadcast(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
-			sender.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12)))
-		}
 	}
 
 	return nil
@@ -1337,13 +1333,7 @@ func tryWritePlayerTag(playerUuid string, name string) (success bool, err error)
 		tags := client.roomC.tags
 
 		// Spare SQL having to deal with a duplicate record by checking player tags beforehand
-		var tagExists bool
-		for _, tag := range tags {
-			if tag == name {
-				tagExists = true
-				break
-			}
-		}
+		tagExists := slices.Contains(tags, name)
 		if !tagExists {
 			_, err = db.Exec("INSERT INTO playerTags (uuid, name, timestampUnlocked) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = name", playerUuid, name, time.Now())
 			if err != nil {
@@ -1451,6 +1441,8 @@ func getUuidFromName(name string) (uuid string, err error) {
 }
 
 func getNameFromUuid(uuid string) (name string) {
+	default_ := fmt.Sprintf("`%s`", uuid)
+
 	// get name from sessionClients if they're connected
 	if client, ok := clients.Load(uuid); ok {
 		return client.name
@@ -1459,7 +1451,7 @@ func getNameFromUuid(uuid string) (name string) {
 	// otherwise check accounts
 	err := db.QueryRow("SELECT user FROM accounts WHERE uuid = ?", uuid).Scan(&name)
 	if err != nil {
-		return ""
+		return default_
 	}
 
 	// if we got a name then return it
@@ -1470,10 +1462,14 @@ func getNameFromUuid(uuid string) (name string) {
 	// otherwise check playergamedata
 	err = db.QueryRow("SELECT name FROM playerGameData WHERE uuid = ?").Scan(&name)
 	if err != nil {
-		return ""
+		return default_
 	}
 
-	return name
+	if name != "" {
+		return name
+	}
+
+	return default_
 }
 
 func isIpBanned(ip string) bool {

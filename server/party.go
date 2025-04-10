@@ -21,6 +21,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"slices"
 )
 
 type Party struct {
@@ -330,7 +331,7 @@ func leavePlayerParty(playerUuid string) error {
 	} else {
 		for i, member := range party.Members {
 			if member.Uuid == playerUuid {
-				party.Members = append(party.Members[:i], party.Members[i+1:]...)
+				party.Members = slices.Delete(party.Members, i, i+1)
 				break
 			}
 		}

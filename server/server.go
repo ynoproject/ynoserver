@@ -107,7 +107,7 @@ func Start() {
 	initReports()
 	initRpc()
 
-	if config.gameName == "unconscious" {
+	if config.flags.unconscious {
 		initUnconscious()
 	}
 

@@ -26,15 +26,18 @@ func initUnconscious() {
 		}
 	})
 	scheduler.Every(2).Minutes().Do(func() {
-		temperature = max(-100, min(100, temperature+weatherDelta(temperature)))
-		precipitation = max(0, min(100, precipitation+weatherDelta(precipitation)))
+		temperature += weatherDelta(temperature)
+		precipitation += weatherDelta(precipitation)
+
+		tempValue := max(-100, min(100, temperature))
+		precipValue := max(0, min(100, precipitation))
 		for _, client := range clients.Get() {
 			if client.roomC == nil {
 				continue
 			}
 
 			select {
-			case client.roomC.outbox <- buildMsg("cuw", temperature, precipitation):
+			case client.roomC.outbox <- buildMsg("cuw", tempValue, precipValue):
 			default:
 				writeErrLog(client.uuid, client.roomC.mapId, "send channel is full")
 			}

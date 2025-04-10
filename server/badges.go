@@ -20,6 +20,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"math"
 	"os"
 	"sort"
@@ -35,6 +36,10 @@ var (
 	badges                 map[string]map[string]*Badge
 	badgeUnlockPercentages map[string]float32
 	sortedBadgeIds         map[string][]string
+)
+
+const (
+	maxPresets = 3
 )
 
 type Condition struct {
@@ -965,6 +970,82 @@ func setPlayerBadgeSlot(uuid string, badgeId string, slotRow int, slotCol int) e
 	}
 
 	return nil
+}
+
+func getPlayerBadgePreset(uuid string, presetId int) (preset string, err error) {
+	if !(presetId >= 0 && presetId < maxPresets) {
+		return "null", errors.New("invalid preset")
+	}
+
+	err = db.QueryRow("SELECT data FROM playerBadgePresets WHERE uuid = ? AND presetId = ?", uuid, presetId).Scan(&preset)
+	switch err {
+	case sql.ErrNoRows:
+		return "null", nil
+	default:
+		if preset == "" {
+			preset = "null"
+		}
+		return
+	}
+}
+
+func setPlayerBadgePreset(uuid string, presetId int, data string) (err error) {
+	if !(presetId >= 0 && presetId < maxPresets) {
+		return errors.New("invalid preset")
+	}
+
+	_, err = db.Exec("REPLACE INTO playerBadgePresets (uuid, presetId, data) VALUES (?, ?, ?)", uuid, presetId, data)
+	return
+}
+
+func applyPlayerBadgePreset(uuid string, presetId, slotRows, slotCols int) (err error) {
+	var raw string
+	if raw, err = getPlayerBadgePreset(uuid, presetId); err != nil {
+		return
+	}
+
+	var preset [][]string
+	if err = json.Unmarshal([]byte(raw), &preset); err != nil {
+		return
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return
+	}
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, tx.Rollback())
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	for r := range slotRows {
+		if r >= len(preset) {
+			if _, err = db.Exec("UPDATE playerBadges SET slotRow = 0, slotCol = 0 WHERE uuid = ? AND slotRow >= ?", uuid, r); err != nil {
+				return
+			}
+			continue
+		}
+
+		row := preset[r]
+		for c := range slotCols {
+			if c >= len(row) {
+				if _, err = db.Exec("UPDATE playerBadges SET slotRow = 0, slotCol = 0 WHERE uuid = ? AND slotRow = ? AND slotCol >= ?", uuid, r, c); err != nil {
+					return
+				}
+				continue
+			}
+
+			badgeId := row[c]
+			if err = setPlayerBadgeSlot(uuid, badgeId, r+1, c+1); err != nil {
+				return
+			}
+		}
+	}
+
+	return
 }
 
 func writeGameBadges() error {

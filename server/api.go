@@ -568,6 +568,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	var badgeSlotRows int
 	var badgeSlotCols int
 	var banned bool
+	var presetId int
 
 	commandParam := r.URL.Query().Get("command")
 	if commandParam == "" {
@@ -576,6 +577,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 	}
 	token := r.Header.Get("Authorization")
 	if token == "" {
+		// commands available for guest players
 		if commandParam == "list" || commandParam == "playerSlotList" {
 			uuid, banned, _ = getOrCreatePlayerData(getIp(r))
 		} else {
@@ -595,8 +597,18 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.HasPrefix(commandParam, "slot") {
+	if strings.HasPrefix(commandParam, "slot") || strings.HasPrefix(commandParam, "preset") {
 		badgeSlotRows, badgeSlotCols = getPlayerBadgeSlotCounts(name)
+	}
+
+	if strings.HasPrefix(commandParam, "preset") {
+		raw := r.URL.Query().Get("preset")
+		var err error
+		presetId, err = strconv.Atoi(raw)
+		if raw == "" || err != nil {
+			handleError(w, r, "invalid preset")
+			return
+		}
 	}
 
 	switch commandParam {
@@ -792,6 +804,43 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write(badgeSlotsJson)
+		return
+	case "presetGet":
+		preset, err := getPlayerBadgePreset(uuid, presetId)
+		if err != nil {
+			handleError(w, r, "could not get badge preset")
+			return
+		}
+
+		w.Write([]byte(preset))
+		return
+	case "presetSave":
+		badgeSlots, err := getPlayerBadgeSlots(name, badgeSlotRows, badgeSlotCols)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		data, err := json.Marshal(badgeSlots)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		if err := setPlayerBadgePreset(uuid, presetId, string(data)); err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		w.WriteHeader(200)
+		return
+	case "presetLoad":
+		if err := applyPlayerBadgePreset(uuid, presetId, badgeSlotRows, badgeSlotCols); err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		w.WriteHeader(200)
 		return
 	default:
 		handleError(w, r, "unknown command")

@@ -61,6 +61,10 @@ type Config struct {
 		private string
 		public  string
 	}
+
+	flags struct {
+		unconscious bool
+	}
 }
 
 type ConfigFile struct {
@@ -101,6 +105,10 @@ type ConfigFile struct {
 		MaxBackups int `yaml:"max_backups"`
 		MaxAge     int `yaml:"max_age"`
 	} `yaml:"logging"`
+
+	Flags struct {
+		Unconscious bool `yaml:"unconscious"`
+	} `yaml:"flags"`
 }
 
 func parseConfigFile(filename string) *Config {
@@ -200,6 +208,8 @@ func parseConfigFile(filename string) *Config {
 
 	config.vapidKeys.private = configFile.VapidKeys.Private
 	config.vapidKeys.public = configFile.VapidKeys.Public
+
+	config.flags.unconscious = configFile.Flags.Unconscious
 
 	return &config
 }
