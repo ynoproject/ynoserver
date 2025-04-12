@@ -73,6 +73,7 @@ func Start() {
 
 	config = parseConfigFile(*configFile)
 	db = getDatabaseConn(config.dbUser, config.dbPass, config.dbAddr, config.dbName)
+	db.SetConnMaxIdleTime(1 * time.Minute)
 
 	isMainServer = config.gameName == mainGameId
 
