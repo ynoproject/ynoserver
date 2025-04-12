@@ -83,12 +83,6 @@ func initSession() {
 }
 
 func handleSession(w http.ResponseWriter, r *http.Request) {
-	ip := getIp(r)
-	if isIpBanned(ip) {
-		handleError(w, r, "user is banned")
-		return
-	}
-
 	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
 	if err != nil {
 		log.Println(err)
@@ -194,6 +188,12 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		return errors.New("invalid utf8")
 	}
 
+	defer func() {
+		if panicErr, ok := recover().(error); ok {
+			err = errors.Join(err, panicErr)
+		}
+	}()
+
 	var updateGameActivity bool
 
 	switch msgFields := strings.Split(string(msg), delim); msgFields[0] {
@@ -245,7 +245,7 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = errors.New("unknown message type")
 	}
 	if err != nil {
-		return err
+		return
 	}
 
 	if updateGameActivity {
@@ -257,5 +257,5 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 
 	writeLog(c.uuid, "sess", string(msg), 200)
 
-	return nil
+	return
 }
