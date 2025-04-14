@@ -6,10 +6,24 @@ import (
 	"time"
 )
 
-var startTime = time.Now()
-var randint, temperature, precipitation int
+// 1 minute = 1 ingame hour
+const (
+	minutesInMillis      = 60 * 1000
+	gameHoursPerGameDay  = 20
+	gameDaysPerGameMonth = 12
+	gameMonthInMinutes   = gameHoursPerGameDay * gameDaysPerGameMonth
+	gameMonthsInMillis   = gameMonthInMinutes * minutesInMillis
+)
+
+var (
+	randint, temperature, precipitation int
+	midnight                            time.Time
+)
 
 func initUnconscious() {
+	now := time.Now().UTC()
+	midnight = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+
 	scheduler.Every(1).Minute().Do(func() {
 		randint = rand.IntN(256)
 		time := getUnconsciousTime()
@@ -54,7 +68,7 @@ func weatherDelta(n int) int {
 }
 
 func getUnconsciousTime() int {
-	return int(time.Since(startTime).Minutes()) % 240
+	return int(time.Now().UTC().Sub(midnight).Milliseconds() / minutesInMillis % gameMonthInMinutes)
 }
 
 func didJoinRoomUnconscious(c *RoomClient) {
