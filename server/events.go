@@ -80,6 +80,8 @@ type EventLocationData struct {
 	BgColor  string   `json:"bgColor"`
 	MapIds   []string `json:"mapIds"`
 	Ignored  bool     `json:"ignored"`
+
+	syncdb bool // is this location synced yet?
 }
 
 const (
@@ -141,7 +143,8 @@ var (
 	freeEventLocationPool         []*EventLocationData
 	eventVms                      map[int][]int
 
-	gameEventLocations map[string][]*EventLocationData
+	// in 2kki, only used for cache bookkeeping
+	gameEventLocations map[string][]*EventLocationData = make(map[string][]*EventLocationData)
 	gameLocationColors map[string][]string
 )
 
@@ -423,6 +426,7 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 	}
 }
 
+// returns (nil, nil) if server error
 func get2kkiEventLocationData(locationName string) (*EventLocationData, error) {
 	v := make(url.Values)
 	v.Set("locationName", locationName)
@@ -521,7 +525,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 
 	gameLocationColors = make(map[string][]string)
 
-	gameEventLocations = make(map[string][]*EventLocationData)
+	// gameEventLocations = make(map[string][]*EventLocationData)
 	gameMaxDepths := make(map[string]int)
 
 	configPath := "eventlocations/"
@@ -540,6 +544,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 
 		data, err := os.ReadFile(configPath + gameId + ".json")
 		if err != nil {
+			gameEventLocations[gameId] = nil
 			continue
 		}
 

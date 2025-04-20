@@ -571,64 +571,88 @@ func deleteOldChatMessages() error {
 	return nil
 }
 
-func getGameLocationByName(locationName string) (gameLocation *GameLocation, err error) {
-	gameLocation = &GameLocation{}
+func getGameLocationByName(locationName string) (gameLocation GameLocation, err error) {
 	var mapIdsJson []byte
 	err = db.QueryRow("SELECT id, game, title, mapIds FROM gameLocations WHERE title = ? AND game = ?", locationName, config.gameName).Scan(&gameLocation.Id, &gameLocation.Game, &gameLocation.Name, &mapIdsJson)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			var matchingEventLocation *EventLocationData
 
-			if config.gameName == "2kki" {
-				matchingEventLocation, err = get2kkiEventLocationData(locationName)
-				if err != nil {
-					return gameLocation, err
+	if err != nil && err != sql.ErrNoRows {
+		return
+	}
+
+	dbHasData := err == nil
+
+	var matchingEventLocation *EventLocationData
+
+	for _, eventLocation := range gameEventLocations[config.gameName] {
+		if eventLocation.Title == locationName {
+			matchingEventLocation = eventLocation
+			break
+		}
+	}
+
+	if config.gameName == "2kki" {
+		if matchingEventLocation == nil || !matchingEventLocation.syncdb {
+			var eventLocationFromApi *EventLocationData
+			eventLocationFromApi, err = get2kkiEventLocationData(locationName)
+
+			if eventLocationFromApi == nil {
+				if !dbHasData && matchingEventLocation == nil {
+					err = errors.Join(err, errors.New("Got no response/error from 2kki API and no backing data"))
+					return
 				}
 			} else {
-				for _, eventLocation := range gameEventLocations[config.gameName] {
-					if eventLocation.Title == locationName {
-						matchingEventLocation = eventLocation
-						break
-					}
+				if matchingEventLocation == nil {
+					gameEventLocations[config.gameName] = append(gameEventLocations[config.gameName], eventLocationFromApi)
+					matchingEventLocation = eventLocationFromApi
+				} else {
+					*matchingEventLocation = *eventLocationFromApi
 				}
 			}
+		}
+	}
 
-			if matchingEventLocation != nil {
-				mapIdsJson, err = json.Marshal(matchingEventLocation.MapIds)
+	if matchingEventLocation != nil {
+		mapIdsJson, err = json.Marshal(matchingEventLocation.MapIds)
+		if err != nil {
+			return
+		}
+
+		if !matchingEventLocation.syncdb {
+			if dbHasData {
+				_, err = db.Exec("UPDATE gameLocations SET title = ?, titleJP = ?, depth = ?, minDepth = ?, mapIds = ? WHERE id = ?", matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson, gameLocation.Id)
+				if err != nil {
+					return
+				}
+			} else {
+				var res sql.Result
+				var locationId int64
+
+				res, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson)
 				if err != nil {
 					return gameLocation, err
 				}
 
-				res, err := db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson)
+				locationId, err = res.LastInsertId()
 				if err != nil {
-					return gameLocation, err
+					return
 				}
 
-				locationId, err := res.LastInsertId()
-				if err != nil {
-					return gameLocation, err
-				}
-
-				gameLocation = &GameLocation{
+				gameLocation = GameLocation{
 					Id:     int(locationId),
 					Game:   config.gameName,
 					Name:   matchingEventLocation.Title,
 					MapIds: matchingEventLocation.MapIds,
 				}
-
-				return gameLocation, nil
 			}
+			matchingEventLocation.syncdb = true
 		}
-
-		return gameLocation, err
-	}
+	} // matchingEventLocation != nil
 
 	err = json.Unmarshal([]byte(mapIdsJson), &gameLocation.MapIds)
 	if err != nil {
-		return gameLocation, err
+		return
 	}
-
-	return gameLocation, nil
+	return
 }
 
 func writePlayerGameLocation(uuid string, locationName string) error {
