@@ -24,7 +24,8 @@ func initUnconscious() {
 	now := time.Now().UTC()
 	midnight = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
-	scheduler.Every(1).Minute().Do(func() {
+	// 2 seconds backwards to account for network overhead
+	scheduler.CronWithSeconds("58 */1 * * * *").Do(func() {
 		randint = rand.IntN(256)
 		time := getUnconsciousTime()
 		for _, client := range clients.Get() {
@@ -39,7 +40,7 @@ func initUnconscious() {
 			}
 		}
 	})
-	scheduler.Every(2).Minutes().Do(func() {
+	scheduler.CronWithSeconds("58 */2 * * * *").Do(func() {
 		temperature += weatherDelta(temperature)
 		precipitation += weatherDelta(precipitation)
 
