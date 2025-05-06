@@ -960,8 +960,17 @@ func getPlayerEventLocationCount(playerUuid string) (eventLocationCount int, err
 }
 
 func getPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletion int, err error) {
-	// Relies on rankings but is much faster than calculating directly
-	err = db.QueryRow("SELECT FLOOR(valueFloat * 100) FROM rankingEntries WHERE uuid = ? AND categoryId = 'eventLocationCompletion' AND subCategoryId = 'all'", playerUuid).Scan(&eventLocationCompletion)
+	// err = db.QueryRow("SELECT FLOOR(valueFloat * 100) FROM rankingEntries WHERE uuid = ? AND categoryId = 'eventLocationCompletion' AND subCategoryId = 'all'", playerUuid).Scan(&eventLocationCompletion)
+	err = db.QueryRow(`
+	SELECT COUNT(locationId)
+	FROM (
+		SELECT DISTINCT(COALESCE(el.locationId, pel.locationId)) AS locationId
+		FROM eventCompletions ec
+		JOIN accounts a ON a.uuid = ec.uuid
+		LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0
+		LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1
+		LEFT JOIN ( SELECT gl.id, gl.secret FROM gameLocations gl ) gl ON COALESCE(el.locationId, pel.locationId) = gl.id
+		WHERE gl.secret = 0 AND ec.uuid = ? LIMIT 800) ael`, playerUuid).Scan(&eventLocationCompletion)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
