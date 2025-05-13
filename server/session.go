@@ -83,12 +83,6 @@ func initSession() {
 }
 
 func handleSession(w http.ResponseWriter, r *http.Request) {
-	ip := getIp(r)
-	if isIpBanned(ip) {
-		handleError(w, r, "user is banned")
-		return
-	}
-
 	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
 	if err != nil {
 		log.Println(err)
@@ -120,11 +114,6 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		c.account = true
 	} else {
 		c.uuid, c.banned, c.muted = getOrCreatePlayerData(ip)
-	}
-
-	if c.banned {
-		writeErrLog(c.uuid, "sess", "player is banned")
-		return
 	}
 
 	c.cacheParty() // don't log error because player is probably not in a party
@@ -176,13 +165,19 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		writeErrLog(c.uuid, "sess", err.Error())
 	}
 
+	if blockedPlayers, err := getBlockedPlayerData(c.uuid); err != nil {
+		for _, player := range blockedPlayers {
+			c.blockedUsers[player.Uuid] = true
+		}
+	}
+
 	writeLog(c.uuid, "sess", "connect", 200)
 }
 
 func (c *SessionClient) broadcast(msg []byte) {
 	for _, client := range clients.Get() {
 		select {
-		case client.outbox <- buildMsg(msg):
+		case client.outbox <- msg:
 		default:
 			writeErrLog(c.uuid, "sess", "send channel is full")
 		}
@@ -193,6 +188,12 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 	if !utf8.Valid(msg) {
 		return errors.New("invalid utf8")
 	}
+
+	defer func() {
+		if panicErr, ok := recover().(error); ok {
+			err = errors.Join(err, panicErr)
+		}
+	}()
 
 	var updateGameActivity bool
 
@@ -245,7 +246,7 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		err = errors.New("unknown message type")
 	}
 	if err != nil {
-		return err
+		return
 	}
 
 	if updateGameActivity {
@@ -257,5 +258,5 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 
 	writeLog(c.uuid, "sess", string(msg), 200)
 
-	return nil
+	return
 }

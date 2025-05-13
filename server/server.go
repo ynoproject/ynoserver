@@ -73,6 +73,7 @@ func Start() {
 
 	config = parseConfigFile(*configFile)
 	db = getDatabaseConn(config.dbUser, config.dbPass, config.dbAddr, config.dbName)
+	db.SetConnMaxIdleTime(1 * time.Minute)
 
 	isMainServer = config.gameName == mainGameId
 
@@ -112,7 +113,10 @@ func Start() {
 	}
 
 	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
-	scheduler.Every(1).Day().At("04:00").Do(doCleanupQueries)
+
+	if isMainServer {
+		scheduler.Every(1).Day().At("04:00").Do(doCleanupQueries)
+	}
 
 	scheduler.StartAsync()
 

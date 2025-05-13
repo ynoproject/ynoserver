@@ -71,6 +71,11 @@ type PlayerListFullData struct {
 	LastActive time.Time `json:"lastActive"`
 }
 
+const (
+	actionBan = iota
+	actionMute
+)
+
 type CheckUpdateData struct {
 	BadgeIds []string `json:"badgeIds"`
 	NewTags  bool     `json:"newTags"`
@@ -89,6 +94,9 @@ func initApi() {
 	http.HandleFunc("/admin/mute", adminBanMute)
 	http.HandleFunc("/admin/unban", adminBanMute)
 	http.HandleFunc("/admin/unmute", adminBanMute)
+	http.HandleFunc("/admin/tempban", adminBanMute)
+	http.HandleFunc("/admin/tempmute", adminBanMute)
+	http.HandleFunc("/admin/dban", adminBanMute)
 	http.HandleFunc("/admin/changeusername", adminChangeUsername)
 	http.HandleFunc("/admin/resetpw", adminResetPw)
 	http.HandleFunc("/admin/grantbadge", adminManageBadge)
@@ -1109,6 +1117,7 @@ func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
 
 	// "disconnect" them NOW!!!
 	if client, ok := clients.Load(uuid); ok {
+		client.blockedUsers[targetUuid] = true
 		if otherClient, ok := clients.Load(targetUuid); ok {
 			if (client.roomC != nil && otherClient.roomC != nil) && client.roomC.room == otherClient.roomC.room {
 				client.roomC.outbox <- buildMsg("d", otherClient.id)
@@ -1161,6 +1170,7 @@ func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
 
 	// "connect" them NOW!!!
 	if client, ok := clients.Load(uuid); ok {
+		client.blockedUsers[targetUuid] = false
 		if otherClient, ok := clients.Load(targetUuid); ok {
 			if (client.roomC != nil && otherClient.roomC != nil) && client.roomC.room == otherClient.roomC.room {
 				client.roomC.getPlayerData(otherClient.roomC)
@@ -1187,17 +1197,6 @@ func handleBlockList(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
-	}
-
-	// for hiding blocked players
-	if client, ok := clients.Load(uuid); ok {
-		blockedUsers := make(map[string]bool)
-
-		for _, player := range blockedPlayers {
-			blockedUsers[player.Uuid] = true
-		}
-
-		client.blockedUsers = blockedUsers
 	}
 
 	blockedPlayersJson, err := json.Marshal(blockedPlayers)

@@ -188,6 +188,10 @@ func updateLocationCache() {
 	}
 
 	locationCache = locations
+
+	for _, eventLocation := range gameEventLocations[config.gameName] {
+		eventLocation.syncdb = false
+	}
 }
 
 func updateLocationPlayerCounts() {

@@ -1107,6 +1107,10 @@ func (c *SessionClient) handleLp() error {
 }
 
 func (c *SessionClient) handlePf() error {
+	if c.banned {
+		return nil
+	}
+
 	playerFriendData, err := getPlayerFriendData(c.uuid)
 	if err != nil {
 		return err
@@ -1122,6 +1126,10 @@ func (c *SessionClient) handlePf() error {
 }
 
 func (c *SessionClient) handlePt() error {
+	if c.banned {
+		return nil
+	}
+
 	if c.partyId == 0 {
 		return errors.New("player not in a party")
 	}

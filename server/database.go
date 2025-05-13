@@ -92,10 +92,31 @@ func tryBanPlayer(senderUuid string, recipientUuid string, disconnect bool) erro
 	if senderUuid == recipientUuid {
 		return errors.New("attempted self-ban")
 	}
-	return banPlayerUnchecked(recipientUuid, true, disconnect)
+	return banPlayerUnchecked(recipientUuid, true, disconnect, false)
 }
 
-func banPlayerUnchecked(recipientUuid string, updateDb, disconnect bool) error {
+func tryBanPlayerWithDetail(senderUuid, recipientUuid string, expiry time.Time, reason string) error {
+	err := tryBanPlayer(senderUuid, recipientUuid, true)
+	if err != nil {
+		return err
+	}
+
+	return registerModAction(recipientUuid, actionBan, expiry, reason)
+}
+
+func registerModAction(uuid string, action int, expiry time.Time, reason string) error {
+	_, err := db.Exec(
+		"INSERT INTO playerModerationActions (uuid, action, reason, time, expiry) VALUES (?, ?, ?, NOW(), ?)",
+		uuid, action, reason, expiry)
+	if err != nil {
+		return err
+	}
+
+	return scheduleModActionReversal(uuid, action, expiry)
+}
+func banPlayerUnchecked(recipientUuid string, updateDb, disconnect, temporary bool) error {
+	name := getNameFromUuid(recipientUuid)
+
 	if updateDb {
 		_, err := db.Exec("UPDATE players SET banned = 1 WHERE uuid = ?", recipientUuid)
 		if err != nil {
@@ -114,6 +135,15 @@ func banPlayerUnchecked(recipientUuid string, updateDb, disconnect bool) error {
 		}
 
 		if disconnect {
+			var msg string
+			if temporary {
+				msg = fmt.Sprintf("*%s has been temporarily banned.*", name)
+			} else {
+				msg = fmt.Sprintf("*%s has been banned.*", name)
+			}
+			client.broadcast(buildMsg(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{})))
+			client.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12)))
+
 			if client.roomC != nil {
 				client.roomC.cancel()
 			}
@@ -133,15 +163,25 @@ func tryUnbanPlayer(senderUuid string, recipientUuid string) error { // called b
 		return errors.New("attempted self-unban")
 	}
 
+	return unbanPlayerUnchecked(recipientUuid)
+}
+
+func unbanPlayerUnchecked(recipientUuid string) error {
 	_, err := db.Exec("UPDATE players SET banned = 0 WHERE uuid = ?", recipientUuid)
 	if err != nil {
 		return err
 	}
 
+	if client, ok := clients.Load(recipientUuid); ok {
+		client.banned = false
+		client.outbox <- buildMsg(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
+		client.outbox <- buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, "You have been unbanned.", randString(12))
+	}
+
 	return nil
 }
 
-func tryMutePlayer(senderUuid string, recipientUuid string) error { // called by api only
+func tryMutePlayer(senderUuid string, recipientUuid string, temporary bool) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
@@ -149,10 +189,19 @@ func tryMutePlayer(senderUuid string, recipientUuid string) error { // called by
 	if senderUuid == recipientUuid {
 		return errors.New("attempted self-mute")
 	}
-	return mutePlayerUnchecked(recipientUuid, true)
+	return mutePlayerUnchecked(recipientUuid, true, temporary)
 }
 
-func mutePlayerUnchecked(recipientUuid string, updateDb bool) error {
+func tryMutePlayerWithDetail(senderUuid, recipientUuid string, expiry time.Time, reason string) error {
+	err := tryMutePlayer(senderUuid, recipientUuid, true)
+	if err != nil {
+		return err
+	}
+
+	return registerModAction(recipientUuid, actionMute, expiry, reason)
+}
+
+func mutePlayerUnchecked(recipientUuid string, updateDb, temporary bool) error {
 	if updateDb {
 		_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUuid)
 		if err != nil {
@@ -163,6 +212,17 @@ func mutePlayerUnchecked(recipientUuid string, updateDb bool) error {
 	if client, ok := clients.Load(recipientUuid); ok { // mute client if they're connected
 		client.muted = true
 	}
+
+	var session *SessionClient
+	name := getNameFromUuid(recipientUuid)
+	var msg string
+	if temporary {
+		msg = fmt.Sprintf("*%s has been temporarily muted.*", name)
+	} else {
+		msg = fmt.Sprintf("*%s has been muted.*", name)
+	}
+	session.broadcast(buildMsg(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{})))
+	session.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12)))
 
 	return nil
 }
@@ -176,6 +236,10 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { // called 
 		return errors.New("attempted self-unmute")
 	}
 
+	return unmutePlayerUnchecked(recipientUuid)
+}
+
+func unmutePlayerUnchecked(recipientUuid string) error {
 	_, err := db.Exec("UPDATE players SET muted = 0 WHERE uuid = ?", recipientUuid)
 	if err != nil {
 		return err
@@ -183,6 +247,8 @@ func tryUnmutePlayer(senderUuid string, recipientUuid string) error { // called 
 
 	if client, ok := clients.Load(recipientUuid); ok { // unmute client if they're connected
 		client.muted = false
+		client.outbox <- buildMsg(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
+		client.outbox <- buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, "You have been unmuted.", randString(12))
 	}
 
 	return nil
@@ -505,64 +571,88 @@ func deleteOldChatMessages() error {
 	return nil
 }
 
-func getGameLocationByName(locationName string) (gameLocation *GameLocation, err error) {
-	gameLocation = &GameLocation{}
+func getGameLocationByName(locationName string) (gameLocation GameLocation, err error) {
 	var mapIdsJson []byte
 	err = db.QueryRow("SELECT id, game, title, mapIds FROM gameLocations WHERE title = ? AND game = ?", locationName, config.gameName).Scan(&gameLocation.Id, &gameLocation.Game, &gameLocation.Name, &mapIdsJson)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			var matchingEventLocation *EventLocationData
 
-			if config.gameName == "2kki" {
-				matchingEventLocation, err = get2kkiEventLocationData(locationName)
-				if err != nil {
-					return gameLocation, err
+	if err != nil && err != sql.ErrNoRows {
+		return
+	}
+
+	dbHasData := err == nil
+
+	var matchingEventLocation *EventLocationData
+
+	for _, eventLocation := range gameEventLocations[config.gameName] {
+		if eventLocation.Title == locationName {
+			matchingEventLocation = eventLocation
+			break
+		}
+	}
+
+	if config.gameName == "2kki" {
+		if matchingEventLocation == nil || !matchingEventLocation.syncdb {
+			var eventLocationFromApi *EventLocationData
+			eventLocationFromApi, err = get2kkiEventLocationData(locationName)
+
+			if eventLocationFromApi == nil {
+				if !dbHasData && matchingEventLocation == nil {
+					err = errors.Join(err, errors.New("Got no response/error from 2kki API and no backing data"))
+					return
 				}
 			} else {
-				for _, eventLocation := range gameEventLocations[config.gameName] {
-					if eventLocation.Title == locationName {
-						matchingEventLocation = eventLocation
-						break
-					}
+				if matchingEventLocation == nil {
+					gameEventLocations[config.gameName] = append(gameEventLocations[config.gameName], eventLocationFromApi)
+					matchingEventLocation = eventLocationFromApi
+				} else {
+					*matchingEventLocation = *eventLocationFromApi
 				}
 			}
+		}
+	}
 
-			if matchingEventLocation != nil {
-				mapIdsJson, err = json.Marshal(matchingEventLocation.MapIds)
+	if matchingEventLocation != nil {
+		mapIdsJson, err = json.Marshal(matchingEventLocation.MapIds)
+		if err != nil {
+			return
+		}
+
+		if !matchingEventLocation.syncdb {
+			if dbHasData {
+				_, err = db.Exec("UPDATE gameLocations SET title = ?, titleJP = ?, depth = ?, minDepth = ?, mapIds = ? WHERE id = ?", matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson, gameLocation.Id)
+				if err != nil {
+					return
+				}
+			} else {
+				var res sql.Result
+				var locationId int64
+
+				res, err = db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson)
 				if err != nil {
 					return gameLocation, err
 				}
 
-				res, err := db.Exec("INSERT INTO gameLocations (game, title, titleJP, depth, minDepth, mapIds) VALUES (?, ?, ?, ?, ?, ?)", config.gameName, matchingEventLocation.Title, matchingEventLocation.TitleJP, matchingEventLocation.Depth, matchingEventLocation.MinDepth, mapIdsJson)
+				locationId, err = res.LastInsertId()
 				if err != nil {
-					return gameLocation, err
+					return
 				}
 
-				locationId, err := res.LastInsertId()
-				if err != nil {
-					return gameLocation, err
-				}
-
-				gameLocation = &GameLocation{
+				gameLocation = GameLocation{
 					Id:     int(locationId),
 					Game:   config.gameName,
 					Name:   matchingEventLocation.Title,
 					MapIds: matchingEventLocation.MapIds,
 				}
-
-				return gameLocation, nil
 			}
+			matchingEventLocation.syncdb = true
 		}
-
-		return gameLocation, err
-	}
+	} // matchingEventLocation != nil
 
 	err = json.Unmarshal([]byte(mapIdsJson), &gameLocation.MapIds)
 	if err != nil {
-		return gameLocation, err
+		return
 	}
-
-	return gameLocation, nil
+	return
 }
 
 func writePlayerGameLocation(uuid string, locationName string) error {
@@ -870,8 +960,17 @@ func getPlayerEventLocationCount(playerUuid string) (eventLocationCount int, err
 }
 
 func getPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletion int, err error) {
-	// Relies on rankings but is much faster than calculating directly
-	err = db.QueryRow("SELECT FLOOR(valueFloat * 100) FROM rankingEntries WHERE uuid = ? AND categoryId = 'eventLocationCompletion' AND subCategoryId = 'all'", playerUuid).Scan(&eventLocationCompletion)
+	// err = db.QueryRow("SELECT FLOOR(valueFloat * 100) FROM rankingEntries WHERE uuid = ? AND categoryId = 'eventLocationCompletion' AND subCategoryId = 'all'", playerUuid).Scan(&eventLocationCompletion)
+	err = db.QueryRow(`
+	SELECT COUNT(locationId)
+	FROM (
+		SELECT DISTINCT(COALESCE(el.locationId, pel.locationId)) AS locationId
+		FROM eventCompletions ec
+		JOIN accounts a ON a.uuid = ec.uuid
+		LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0
+		LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1
+		LEFT JOIN ( SELECT gl.id, gl.secret FROM gameLocations gl ) gl ON COALESCE(el.locationId, pel.locationId) = gl.id
+		WHERE gl.secret = 0 AND ec.uuid = ? LIMIT 800) ael`, playerUuid).Scan(&eventLocationCompletion)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
@@ -1445,7 +1544,9 @@ func getNameFromUuid(uuid string) (name string) {
 
 	// get name from sessionClients if they're connected
 	if client, ok := clients.Load(uuid); ok {
-		return client.name
+		if client.name != "" {
+			return client.name
+		}
 	}
 
 	// otherwise check accounts
@@ -1523,10 +1624,14 @@ func writeGamePlayerCount(playerCount int) error {
 }
 
 func getReportersForPlayer(targetUuid, msgId string) (result map[string]string, err error) {
+	var msgIdLink *string
+	if msgId != "" {
+		msgIdLink = &msgId
+	}
 	rows, err := db.Query(`
 		SELECT pgd.name, pr.reason FROM playerReports pr
 		JOIN playerGameData pgd ON pgd.uuid = pr.uuid
-		WHERE pr.targetUuid = ? AND pr.msgId = ? AND NOT actionTaken`, targetUuid, msgId)
+		WHERE pr.targetUuid = ? AND pr.msgId = ? AND NOT actionTaken`, targetUuid, msgIdLink)
 	if err != nil {
 		return result, err
 	}
