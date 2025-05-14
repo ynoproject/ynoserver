@@ -648,7 +648,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 			if condition.TimeTrial && value < 3600 {
 				if c.checkConditionCoords(condition) {
 					if !notifiedMaps[condition.Map] {
-						c.session.outbox <- buildMsg("ttr", condition.Map, value)
+						c.session.outbox <- buildMsg("ttr", c.room.id, value)
 						notifiedMaps[condition.Map] = true
 					}
 					success, err := tryWritePlayerTimeTrial(c.session.uuid, c.room.id, value)
