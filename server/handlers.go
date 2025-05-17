@@ -42,6 +42,11 @@ func (c *RoomClient) handleSr(msg []string) error {
 	}
 
 	c.leaveRoom()
+
+	if roomId == 0 {
+		c.notifiedMaps = make(map[int]bool)
+	}
+
 	c.joinRoom(room)
 
 	return nil
@@ -643,13 +648,15 @@ func (c *RoomClient) handleSv(msg []string) error {
 	conditions := append(globalConditions, c.room.conditions...)
 
 	if varId == 88 && config.gameName == "2kki" {
-		notifiedMaps := make(map[int]bool)
+		if c.notifiedMaps == nil {
+			c.notifiedMaps = make(map[int]bool)
+		}
 		for _, condition := range conditions {
 			if condition.TimeTrial && value < 3600 {
 				if c.checkConditionCoords(condition) {
-					if !notifiedMaps[condition.Map] {
+					if !c.notifiedMaps[condition.Map] {
 						c.session.outbox <- buildMsg("ttr", c.room.id, value)
-						notifiedMaps[condition.Map] = true
+						c.notifiedMaps[condition.Map] = true
 					}
 					success, err := tryWritePlayerTimeTrial(c.session.uuid, c.room.id, value)
 					if err != nil {

@@ -211,6 +211,8 @@ type RoomClient struct {
 
 	switchCache map[int]bool
 	varCache    map[int]int
+
+	notifiedMaps map[int]bool
 }
 
 func (c *RoomClient) msgReader() {
