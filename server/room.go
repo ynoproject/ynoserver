@@ -215,7 +215,7 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
-		if (client.session.private || c.session.private) && ((c.session.partyId == 0 || client.session.partyId != c.session.partyId) && !client.session.onlineFriends[c.session.uuid]) {
+		if client.session.isPrivatedTo(c.session) {
 			continue
 		}
 
@@ -326,7 +326,7 @@ func (c *RoomClient) getPlayerData(client *RoomClient) {
 		return
 	}
 
-	if (client.session.private || c.session.private) && ((c.session.partyId == 0 || client.session.partyId != c.session.partyId) && !client.session.onlineFriends[c.session.uuid]) {
+	if client.session.isPrivatedTo(c.session) {
 		return
 	}
 

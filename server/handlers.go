@@ -921,7 +921,7 @@ func (c *SessionClient) handleSay(msg []string) error {
 				continue
 			}
 
-			if (client.session.private || c.private) && ((c.partyId == 0 || client.session.partyId != c.partyId) && !client.session.onlineFriends[c.uuid]) {
+			if client.session.isPrivatedTo(c) {
 				continue
 			}
 
@@ -1322,7 +1322,8 @@ func (c *SessionClient) handlePr(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	c.private = msg[1] == "1"
+	c.singleplayer = msg[1] == "2"
+	c.private = c.singleplayer || msg[1] == "1"
 
 	return nil
 }
