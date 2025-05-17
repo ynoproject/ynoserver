@@ -13,6 +13,8 @@ const (
 	gameDaysPerGameMonth = 12
 	gameMonthInMinutes   = gameHoursPerGameDay * gameDaysPerGameMonth
 	gameMonthsInMillis   = gameMonthInMinutes * minutesInMillis
+
+	unconsciousEventsVar = 1237
 )
 
 var (
@@ -72,11 +74,29 @@ func getUnconsciousTime() int {
 	return int(time.Now().UTC().Sub(midnight).Milliseconds() / minutesInMillis % gameMonthInMinutes)
 }
 
-func didJoinRoomUnconscious(c *RoomClient) {
+func getUnconsciousEvents() (eventFlags int) {
+	today := time.Now().UTC()
+	_, month, date := today.Date()
+	if month == time.June && 4 <= date && date <= 11 {
+		eventFlags = 1
+	}
+
+	return
+}
+
+func didJoinRoomWsUnconscious(c *RoomClient) {
 	if c == nil {
 		return
 	}
 
 	c.outbox <- buildMsg("cut", getUnconsciousTime(), randint)
 	c.outbox <- buildMsg("cuw", temperature, precipitation)
+}
+
+func didJoinRoomUnconscious(c *RoomClient) {
+	if c == nil {
+		return
+	}
+
+	c.outbox <- buildMsg("ssv", unconsciousEventsVar, getUnconsciousEvents())
 }

@@ -87,7 +87,9 @@ type SessionClient struct {
 
 	system string
 
-	private      bool
+	// do not compare directly; use isPrivatedTo
+	private, singleplayer bool
+
 	hideLocation bool
 	partyId      int
 
@@ -166,6 +168,11 @@ func (c *SessionClient) disconnect() {
 	}
 
 	writeLog(c.uuid, "sess", "disconnect", 200)
+}
+
+func (c *SessionClient) isPrivatedTo(other *SessionClient) bool {
+	return (c.private || other.private) && ((c.singleplayer || other.singleplayer) ||
+		(other.partyId == 0 || c.partyId != other.partyId) && !c.onlineFriends[other.uuid])
 }
 
 // RoomClient
