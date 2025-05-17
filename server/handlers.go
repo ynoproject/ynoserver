@@ -643,10 +643,14 @@ func (c *RoomClient) handleSv(msg []string) error {
 	conditions := append(globalConditions, c.room.conditions...)
 
 	if varId == 88 && config.gameName == "2kki" {
+		notifiedMaps := make(map[int]bool)
 		for _, condition := range conditions {
 			if condition.TimeTrial && value < 3600 {
 				if c.checkConditionCoords(condition) {
-					c.session.outbox <- buildMsg("ttr", c.room.id, value)
+					if !notifiedMaps[condition.Map] {
+						c.session.outbox <- buildMsg("ttr", c.room.id, value)
+						notifiedMaps[condition.Map] = true
+					}
 					success, err := tryWritePlayerTimeTrial(c.session.uuid, c.room.id, value)
 					if err != nil {
 						return err
