@@ -970,7 +970,7 @@ func getPlayerEventLocationCompletion(playerUuid string) (eventLocationCompletio
 		LEFT JOIN eventLocations el ON el.id = ec.eventId AND ec.type = 0
 		LEFT JOIN playerEventLocations pel ON pel.id = ec.eventId AND ec.type = 1
 		LEFT JOIN ( SELECT gl.id, gl.secret FROM gameLocations gl ) gl ON COALESCE(el.locationId, pel.locationId) = gl.id
-		WHERE gl.secret = 0 AND ec.uuid = ? LIMIT 800) ael`, playerUuid).Scan(&eventLocationCompletion)
+		WHERE gl.secret = 0 AND ec.uuid = ?) ael`, playerUuid).Scan(&eventLocationCompletion)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
@@ -1653,20 +1653,20 @@ func getReportersForPlayer(targetUuid, msgId string) (result map[string]string, 
 }
 
 func doCleanupQueries() error {
-	// Remove player records with no game activity
-	_, err := db.Exec("DELETE IGNORE FROM players WHERE ip IS NOT NULL")
-	if err != nil {
-		return err
-	}
-
 	// Remove player sessions that have expired
-	_, err = db.Exec("DELETE FROM playerSessions WHERE expiration < NOW()")
+	_, err := db.Exec("DELETE FROM playerSessions WHERE expiration < NOW()")
 	if err != nil {
 		return err
 	}
 
 	// Remove player expeditions that were never completed
 	_, err = db.Exec("DELETE pel FROM playerEventLocations pel WHERE UTC_DATE() > pel.endDate AND NOT EXISTS (SELECT ec.eventId FROM eventCompletions ec WHERE ec.eventId = pel.id AND ec.type = 1)")
+	if err != nil {
+		return err
+	}
+
+	// Remove player records with no game activity
+	_, err = db.Exec("DELETE IGNORE FROM players WHERE ip IS NOT NULL")
 	if err != nil {
 		return err
 	}

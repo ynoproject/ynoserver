@@ -147,7 +147,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	}
 
 	if config.flags.unconscious {
-		didJoinRoomUnconscious(client)
+		didJoinRoomWsUnconscious(client)
 	}
 
 	writeLog(client.session.uuid, client.mapId, "connect", 200)
@@ -162,6 +162,9 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	if config.gameName == "2kki" && c.session.rank == 0 {
 		c.outbox <- buildMsg("ss", 11, 2)
+	}
+	if config.flags.unconscious {
+		didJoinRoomUnconscious(c)
 	}
 
 	if !c.room.singleplayer {
@@ -212,7 +215,7 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
-		if (client.session.private || c.session.private) && ((c.session.partyId == 0 || client.session.partyId != c.session.partyId) && !client.session.onlineFriends[c.session.uuid]) {
+		if client.session.isPrivatedTo(c.session) {
 			continue
 		}
 
@@ -323,7 +326,7 @@ func (c *RoomClient) getPlayerData(client *RoomClient) {
 		return
 	}
 
-	if (client.session.private || c.session.private) && ((c.session.partyId == 0 || client.session.partyId != c.session.partyId) && !client.session.onlineFriends[c.session.uuid]) {
+	if client.session.isPrivatedTo(c.session) {
 		return
 	}
 
