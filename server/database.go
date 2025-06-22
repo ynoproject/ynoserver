@@ -27,8 +27,9 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"slices"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
@@ -597,7 +598,7 @@ func getGameLocationByName(locationName string) (gameLocation GameLocation, err 
 
 			if eventLocationFromApi == nil {
 				if !dbHasData && matchingEventLocation == nil {
-					err = errors.Join(err, errors.New("Got no response/error from 2kki API and no backing data"))
+					err = errors.Join(err, errors.New("got no response/error from 2kki API and no backing data"))
 					return
 				}
 			} else {
@@ -814,9 +815,7 @@ func getGameCurrentEventPeriodsData() (gameEventPeriods map[string]*EventPeriod,
 }
 
 func setCurrentGameEventPeriodId() error {
-	var gamePeriodId int
-
-	err := db.QueryRow("SELECT id FROM gameEventPeriods WHERE game = ? AND periodId = ?", config.gameName, currentEventPeriodId).Scan(&gamePeriodId)
+	gamePeriodId, err := getGameEventPeriodIdForGame(config.gameName)
 	if err != nil {
 		currentGameEventPeriodId = 0
 		if err == sql.ErrNoRows {
@@ -830,7 +829,12 @@ func setCurrentGameEventPeriodId() error {
 	return nil
 }
 
-func getRandomGameForEventLocation(pool map[string][]*EventLocationData, eventLocationCountThreshold int) (gameId string, err error) {
+func getGameEventPeriodIdForGame(game string) (id int, err error) {
+	err = db.QueryRow("SELECT id FROM gameEventPeriods WHERE game = ? AND periodId = ?", game, currentEventPeriodId).Scan(&id)
+	return
+}
+
+func getRandomGameForEventPool[Event any](pool map[string][]Event, eventPoolMinPopulation int) (gameId string, err error) {
 	results, err := db.Query("SELECT CEIL(AVG(gpc.playerCount)), gpc.game FROM gamePlayerCounts gpc JOIN gameEventPeriods gep ON gep.periodId = ? AND gep.game = gpc.game GROUP BY gpc.game", currentEventPeriodId)
 	if err != nil {
 		return "", err
@@ -852,7 +856,7 @@ func getRandomGameForEventLocation(pool map[string][]*EventLocationData, eventLo
 		}
 
 		// Ignore games with no event locations in the current pool
-		if eventLocations, ok := pool[currentGameId]; currentGameId != "2kki" && (!ok || len(eventLocations) < eventLocationCountThreshold) {
+		if eventLocations, ok := pool[currentGameId]; currentGameId != "2kki" && (!ok || len(eventLocations) < eventPoolMinPopulation) {
 			continue
 		}
 
@@ -1292,16 +1296,31 @@ func getCurrentPlayerEventVmsData(playerUuid string) (eventVms []*EventVm, err e
 	return eventVms, nil
 }
 
-func getEventVmInfo(id int) (mapId int, eventId int, err error) {
-	err = db.QueryRow("SELECT mapId, eventId FROM eventVms WHERE id = ?", id).Scan(&mapId, &eventId)
+func getEventVmInfo(id int) (gameId string, mapId int, vmGroup []int, err error) {
+	var vmGroupJson []byte
+	err = db.QueryRow("SELECT gep.game, ev.mapId, ev.eventIds FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId WHERE ev.id = ?", id).Scan(&gameId, &mapId, &vmGroupJson)
+	err = errors.Join(err, json.Unmarshal(vmGroupJson, &vmGroup))
 	if err != nil {
-		return 0, 0, err
+		return "", 0, nil, err
 	}
 
-	return mapId, eventId, nil
+	return
 }
 
-func writeEventVmData(mapId int, eventId int, exp int) error {
+func writeEventVmData(gameId string, mapId int, vmGroup EventIds, exp int) error {
+	vmGroupJson, err := json.Marshal(vmGroup)
+	if err != nil {
+		return err
+	}
+
+	gameEventPeriod := currentGameEventPeriodId
+	if gameId != config.gameName {
+		gameEventPeriod, err = getGameEventPeriodIdForGame(gameId)
+		if err != nil {
+			return err
+		}
+	}
+
 	var days int
 	var offsetDays int
 	weekday := time.Now().UTC().Weekday()
@@ -1320,7 +1339,7 @@ func writeEventVmData(mapId int, eventId int, exp int) error {
 
 	days -= offsetDays
 
-	_, err := db.Exec("INSERT INTO eventVms (gamePeriodId, mapId, eventId, exp, startDate, endDate) VALUES (?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY))", currentGameEventPeriodId, mapId, eventId, exp, offsetDays, days)
+	_, err = db.Exec("INSERT INTO eventVms (gamePeriodId, mapId, eventIds, exp, startDate, endDate) VALUES (?, ?, ?, ?, DATE_SUB(UTC_DATE(), INTERVAL ? DAY), DATE_ADD(UTC_DATE(), INTERVAL ? DAY))", gameEventPeriod, mapId, vmGroupJson, exp, offsetDays, days)
 	if err != nil {
 		return err
 	}
@@ -1337,7 +1356,7 @@ func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err
 		// prevent race condition
 		clientMapId := client.roomC.mapId
 
-		results, err := db.Query("SELECT ev.id, ev.mapId, ev.eventId, ev.exp FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId WHERE gep.periodId = ? AND ev.mapId = ? AND ev.eventId = ? AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", currentEventPeriodId, mapId, eventId)
+		results, err := db.Query("SELECT ev.id, ev.mapId, ev.exp FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId WHERE gep.periodId = ? AND ev.mapId = ? AND JSON_CONTAINS(ev.eventIds, ?) AND UTC_DATE() >= ev.startDate AND UTC_DATE() < ev.endDate ORDER BY 2", currentEventPeriodId, mapId, eventId)
 		if err != nil {
 			return -1, err
 		}
@@ -1355,18 +1374,17 @@ func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err
 		}
 
 		for results.Next() {
-			var eventId int
+			var eventVmId int
 			var eventMapId int
-			var eventEvId int
 			var eventExp int
 
-			err := results.Scan(&eventId, &eventMapId, &eventEvId, &eventExp)
+			err := results.Scan(&eventVmId, &eventMapId, &eventExp)
 			if err != nil {
 				return exp, err
 			}
 
 			for _, eventVm := range currentEventVmsData {
-				if eventVm.Id == eventId {
+				if eventVm.Id == eventVmId {
 					if eventVm.Complete {
 						return -1, nil
 					}
@@ -1383,7 +1401,7 @@ func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err
 				eventExp = weeklyExpCap - weekEventExp
 			}
 
-			_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 2, ?, ?)", eventId, playerUuid, time.Now(), eventExp)
+			_, err = db.Exec("INSERT INTO eventCompletions (eventId, uuid, type, timestampCompleted, exp) VALUES (?, ?, 2, ?, ?)", eventVmId, playerUuid, time.Now(), eventExp)
 			if err != nil {
 				break
 			}

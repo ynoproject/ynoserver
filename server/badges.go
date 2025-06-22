@@ -23,6 +23,7 @@ import (
 	"errors"
 	"math"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -412,14 +413,15 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 
 					var eventTriggerType int
 					if condition.Trigger == "eventAction" {
-						if roomId > 0 && roomId == currentEventVmMapId {
-							if eventIds, hasVms := eventVms[roomId]; hasVms {
+						eventVms, hasGameVms := gameEventVms[config.gameName]
+						if hasGameVms && config.gameName == currentEventVmGame && roomId > 0 && roomId == currentEventVmMapId {
+							if vmGroups, hasVms := eventVms[roomId]; hasVms {
 								var skipEvSync bool
-								for _, eventId := range eventIds {
-									if eventId != currentEventVmEventId {
+								for _, vmGroup := range vmGroups {
+									if !slices.Equal(vmGroup, currentEventVmGroup) {
 										continue
 									}
-									if valueInt == eventId {
+									if slices.Contains(vmGroup, valueInt) {
 										skipEvSync = true
 										break
 									}
