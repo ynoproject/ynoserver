@@ -19,6 +19,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -180,16 +181,10 @@ func initEvents() {
 
 	setGameEventLocationPoolsAndLocationColors()
 
-	weekday, lastVmWeekday := getVmWeekdays()
 	// vending machine expedition
-	var (
-		eventVmId    int
-		eventIdsJson []byte
-	)
-	db.QueryRow("SELECT ev.id, gep.game, ev.mapId, ev.eventIds FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday-lastVmWeekday)).Scan(&eventVmId, &currentEventVmGame, &currentEventVmMapId, &eventIdsJson)
-	vmErr := json.Unmarshal(eventIdsJson, &currentEventVmGroup)
-	if vmErr != nil && eventIdsJson != nil {
-		handleInternalEventError(4, fmt.Errorf("invalid event VM (id=%d), please manually delete and restart server", eventVmId))
+	eventVmId, err := updateEventVmInfo()
+	if err != nil {
+		handleInternalEventError(4, errors.Join(fmt.Errorf("invalid event VM (id=%d), please manually delete and restart server", eventVmId), err))
 	}
 	if !isMainServer {
 		return
@@ -267,6 +262,8 @@ func initEvents() {
 		addDailyEventLocation(true)
 	}
 
+	weekday := time.Now().UTC().Weekday()
+
 	// weekly expedition
 	db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE el.type = 1 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday)).Scan(&count)
 	if count == 0 {
@@ -285,6 +282,14 @@ func initEvents() {
 	if currentEventVmGame == "" && currentEventVmMapId == 0 && currentEventVmGroup == nil {
 		addEventVm()
 	}
+}
+
+func updateEventVmInfo() (eventVmId int, err error) {
+	weekday, lastVmWeekday := getVmWeekdays()
+	var eventIdsJson []byte
+	err = db.QueryRow("SELECT ev.id, gep.game, ev.mapId, ev.eventIds FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday-lastVmWeekday)).Scan(&eventVmId, &currentEventVmGame, &currentEventVmMapId, &eventIdsJson)
+	err = errors.Join(err, json.Unmarshal(eventIdsJson, &currentEventVmGroup))
+	return
 }
 
 func getVmWeekdays() (time.Weekday, time.Weekday) {
@@ -515,6 +520,9 @@ func addEventVm() {
 		currentEventVmGame = gameId
 		currentEventVmMapId = mapId
 		currentEventVmGroup = vmGroup
+		for game := range gameIdToName {
+			go notifyVmUpdated(game)
+		}
 	} else {
 		writeErrLog("SERVER", "VM", err.Error())
 	}

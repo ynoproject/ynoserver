@@ -170,6 +170,9 @@ type SimplePlayerBadge struct {
 	Game        string `json:"game"`
 	Group       string `json:"group"`
 	Bp          int    `json:"bp"`
+	MapId       int    `json:"mapId"`
+	MapX        int    `json:"mapX"`
+	MapY        int    `json:"mapY"`
 	Hidden      bool   `json:"hidden"`
 	OverlayType int    `json:"overlayType"`
 	Animated    bool   `json:"animated"`
@@ -700,7 +703,7 @@ func getSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []st
 	}
 
 	for _, badge := range badgeData {
-		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Bp: badge.Bp, Hidden: badge.Hidden, OverlayType: badge.OverlayType, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock}
+		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Bp: badge.Bp, Hidden: badge.Hidden, OverlayType: badge.OverlayType, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock, MapId: badge.MapId, MapX: badge.MapX, MapY: badge.MapY}
 		playerBadges = append(playerBadges, simpleBadge)
 	}
 
