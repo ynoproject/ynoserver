@@ -792,11 +792,11 @@ func (c *RoomClient) handleSev(msg []string) error {
 		return err
 	}
 
-	if currentEventVmEventId != eventIdInt {
+	if !slices.Contains(currentEventVmGroup, eventIdInt) {
 		return errors.New("event vm id mismatch")
 	}
 
-	exp, err := tryCompleteEventVm(c.session.uuid, currentEventVmMapId, currentEventVmEventId)
+	exp, err := tryCompleteEventVm(c.session.uuid, currentEventVmMapId, eventIdInt)
 	if err != nil {
 		return err
 	}

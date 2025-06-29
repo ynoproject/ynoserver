@@ -392,12 +392,16 @@ func (c *RoomClient) getRoomEventData() {
 		return
 	}
 
-	if eventIds, hasVms := eventVms[c.room.id]; hasVms {
-		for _, eventId := range eventIds {
-			if eventId != currentEventVmEventId {
-				continue
+	if mapVmGroups, hasVms := gameEventVms[config.gameName]; hasVms {
+		if vmGroups, hasMapVms := mapVmGroups[c.room.id]; hasMapVms {
+			for _, vmGroup := range vmGroups {
+				if !slices.Equal(vmGroup, currentEventVmGroup) {
+					continue
+				}
+				for _, eventId := range vmGroup {
+					c.outbox <- buildMsg("sev", eventId, 1)
+				}
 			}
-			c.outbox <- buildMsg("sev", eventId, 1)
 		}
 	}
 }

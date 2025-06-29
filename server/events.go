@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021-2024  The YNOproject Developers
+	Copyright (C) 2021-2025  The YNOproject Developers
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -84,6 +85,9 @@ type EventLocationData struct {
 	syncdb bool // is this location synced yet?
 }
 
+// A group of VMs that logically belong together
+type EventIds []int
+
 const (
 	dailyEventLocationMinDepth = 2
 	dailyEventLocationMaxDepth = 3
@@ -104,6 +108,7 @@ const (
 	eventLocationCountDailyThreshold   = 8
 	eventLocationCountWeeklyThreshold  = 3
 	eventLocationCountWeekendThreshold = 5
+	eventVmCountThreshold              = 2
 
 	freeEventLocationMinDepth = 2
 
@@ -131,8 +136,9 @@ const (
 var (
 	currentEventPeriodId     = -1
 	currentGameEventPeriodId = -1
+	currentEventVmGame       string
 	currentEventVmMapId      int
-	currentEventVmEventId    int
+	currentEventVmGroup      EventIds
 	eventsCount              int
 
 	gameCurrentEventPeriods       map[string]*EventPeriod
@@ -141,7 +147,8 @@ var (
 	gameWeeklyEventLocationPools  map[string][]*EventLocationData
 	gameWeekendEventLocationPools map[string][]*EventLocationData
 	freeEventLocationPool         []*EventLocationData
-	eventVms                      map[int][]int
+
+	gameEventVms map[string]map[int][]EventIds
 
 	// in 2kki, only used for cache bookkeeping
 	gameEventLocations map[string][]*EventLocationData = make(map[string][]*EventLocationData)
@@ -174,6 +181,11 @@ func initEvents() {
 
 	setGameEventLocationPoolsAndLocationColors()
 
+	// vending machine expedition
+	eventVmId, err := updateEventVmInfo()
+	if err != nil {
+		handleInternalEventError(4, errors.Join(fmt.Errorf("invalid event VM (id=%d), please manually delete and restart server", eventVmId), err))
+	}
 	if !isMainServer {
 		return
 	}
@@ -258,8 +270,31 @@ func initEvents() {
 		addWeeklyEventLocation()
 	}
 
-	var lastVmWeekday time.Weekday
+	switch weekday {
+	case time.Friday, time.Saturday:
+		// weekend expedition
+		db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday-time.Friday)).Scan(&count)
+		if count == 0 {
+			addWeekendEventLocation()
+		}
+	}
 
+	if currentEventVmGame == "" && currentEventVmMapId == 0 && currentEventVmGroup == nil {
+		addEventVm()
+	}
+}
+
+func updateEventVmInfo() (eventVmId int, err error) {
+	weekday, lastVmWeekday := getVmWeekdays()
+	var eventIdsJson []byte
+	err = db.QueryRow("SELECT ev.id, gep.game, ev.mapId, ev.eventIds FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday-lastVmWeekday)).Scan(&eventVmId, &currentEventVmGame, &currentEventVmMapId, &eventIdsJson)
+	err = errors.Join(err, json.Unmarshal(eventIdsJson, &currentEventVmGroup))
+	return
+}
+
+func getVmWeekdays() (time.Weekday, time.Weekday) {
+	weekday := time.Now().UTC().Weekday()
+	var lastVmWeekday time.Weekday
 	switch weekday {
 	case time.Sunday, time.Monday:
 		lastVmWeekday = time.Sunday
@@ -267,19 +302,9 @@ func initEvents() {
 		lastVmWeekday = time.Tuesday
 	case time.Friday, time.Saturday:
 		// weekend expedition
-		db.QueryRow("SELECT COUNT(el.id) FROM eventLocations el JOIN gameEventPeriods gep ON gep.id = el.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE el.type = 2 AND ep.id = ? AND el.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday-time.Friday)).Scan(&count)
-		if count == 0 {
-			addWeekendEventLocation()
-		}
-
 		lastVmWeekday = time.Friday
 	}
-
-	// vending machine expedition
-	db.QueryRow("SELECT ev.mapId, ev.eventId FROM eventVms ev JOIN gameEventPeriods gep ON gep.id = ev.gamePeriodId JOIN eventPeriods ep ON ep.id = gep.periodId WHERE ep.id = ? AND ev.startDate = DATE_SUB(UTC_DATE(), INTERVAL ? DAY)", currentEventPeriodId, int(weekday-lastVmWeekday)).Scan(&currentEventVmMapId, &currentEventVmEventId)
-	if currentEventVmMapId == 0 && currentEventVmEventId == 0 {
-		addEventVm()
-	}
+	return weekday, lastVmWeekday
 }
 
 func sendEventsUpdate() {
@@ -298,7 +323,7 @@ func addDailyEventLocation(deeper bool) {
 		pools = gameDailyEventLocation2Pools
 	}
 
-	gameId, err := getRandomGameForEventLocation(pools, eventLocationCountDailyThreshold)
+	gameId, err := getRandomGameForEventPool(pools, eventLocationCountDailyThreshold)
 	if err != nil {
 		handleInternalEventError(0, err)
 		return
@@ -320,7 +345,7 @@ func addDailyEventLocation(deeper bool) {
 }
 
 func addWeeklyEventLocation() {
-	gameId, err := getRandomGameForEventLocation(gameWeeklyEventLocationPools, eventLocationCountWeeklyThreshold)
+	gameId, err := getRandomGameForEventPool(gameWeeklyEventLocationPools, eventLocationCountWeeklyThreshold)
 	if err != nil {
 		handleInternalEventError(1, err)
 		return
@@ -334,7 +359,7 @@ func addWeeklyEventLocation() {
 }
 
 func addWeekendEventLocation() {
-	gameId, err := getRandomGameForEventLocation(gameWeekendEventLocationPools, eventLocationCountWeekendThreshold)
+	gameId, err := getRandomGameForEventPool(gameWeekendEventLocationPools, eventLocationCountWeekendThreshold)
 	if err != nil {
 		handleInternalEventError(2, err)
 		return
@@ -458,6 +483,27 @@ func get2kkiEventLocationData(locationName string) (*EventLocationData, error) {
 }
 
 func addEventVm() {
+	vmsPerGame := make(map[string][]int)
+	// count the number of VM groups per game
+	for game, vmMapIds := range gameEventVms {
+		for _, vmGroups := range vmMapIds {
+			for k := range vmGroups {
+				vmsPerGame[game] = append(vmsPerGame[game], k)
+			}
+		}
+	}
+	gameId, err := getRandomGameForEventPool(vmsPerGame, eventVmCountThreshold)
+	if err != nil {
+		handleInternalEventError(4, err)
+		return
+	}
+
+	eventVms, hasEventVms := gameEventVms[gameId]
+	if !hasEventVms || gameEventVms == nil {
+		handleInternalEventError(4, fmt.Errorf("missing VMs for %s", gameId))
+		return
+	}
+
 	mapIds := make([]int, 0, len(eventVms))
 	for k := range eventVms {
 		mapIds = append(mapIds, k)
@@ -467,12 +513,16 @@ func addEventVm() {
 	}
 
 	mapId := mapIds[rand.Intn(len(mapIds))]
-	eventId := eventVms[mapId][rand.Intn(len(eventVms[mapId]))]
+	vmGroup := eventVms[mapId][rand.Intn(len(eventVms[mapId]))]
 
-	err := writeEventVmData(mapId, eventId, eventVmExp)
+	err = writeEventVmData(gameId, mapId, vmGroup, eventVmExp)
 	if err == nil {
+		currentEventVmGame = gameId
 		currentEventVmMapId = mapId
-		currentEventVmEventId = eventId
+		currentEventVmGroup = vmGroup
+		for game := range gameIdToName {
+			go notifyVmUpdated(game)
+		}
 	} else {
 		writeErrLog("SERVER", "VM", err.Error())
 	}
@@ -487,31 +537,67 @@ func handleEventError(eventType int, payload string) {
 }
 
 func setEventVms() {
-	if !isMainServer {
-		return
-	}
-
 	logUpdateTask("event VMs")
 
-	vmsDir, err := os.ReadDir("vms/")
+	gamesVmDirs, err := os.ReadDir("vms/")
 	if err != nil {
 		return
 	}
 
-	eventVms = make(map[int][]int)
+	gameEventVms = make(map[string]map[int][]EventIds)
 
-	for _, vmFile := range vmsDir {
-		mapIdInt, err := strconv.Atoi(vmFile.Name()[3:7])
+	for _, gameVmDir := range gamesVmDirs {
+		game := gameVmDir.Name()
+		if _, has := gameIdToName[game]; !has || !gameVmDir.IsDir() {
+			eprintf("VM", "Ignoring %s", game)
+			continue
+		}
+
+		vmDir, err := os.ReadDir("vms/" + game)
 		if err != nil {
+			eprintf("VM", "Could not read VMs for %s: %s", game, err)
 			return
 		}
 
-		eventIdInt, err := strconv.Atoi(vmFile.Name()[10:14])
-		if err != nil {
-			return
-		}
+		gameEventVms[game] = make(map[int][]EventIds)
+		for _, vmFile := range vmDir {
+			var (
+				eventIds []int
+				eventId  int
+			)
 
-		eventVms[mapIdInt] = append(eventVms[mapIdInt], eventIdInt)
+			vmName := vmFile.Name()
+			mapId, vmErr := strconv.Atoi(vmName[3:7])
+			if vmErr != nil {
+				eprintf("VM", "%s does not match `Mapxxxx_EVxxxx.png`", vmName)
+				continue
+			}
+
+			vmBaseName := strings.TrimSuffix(vmName[10:], ".png")
+			eventIdCsv := strings.Split(vmBaseName, ",")
+			for _, eventIdRaw := range eventIdCsv {
+				if len(eventIdRaw) != 4 {
+					eprintf("VM", "%s must all have 4-padded events", vmName)
+					eventIds = nil
+					break
+				}
+				eventId, vmErr = strconv.Atoi(eventIdRaw)
+				if vmErr != nil {
+					break
+				}
+				eventIds = append(eventIds, eventId)
+			}
+			if vmErr != nil {
+				return
+			}
+
+			if eventIds == nil {
+				eprintf("VM", "%s has no events", vmName)
+				continue
+			}
+
+			gameEventVms[game][mapId] = append(gameEventVms[game][mapId], eventIds)
+		}
 	}
 }
 

@@ -46,7 +46,7 @@ var (
 		":6": "Underage player",
 		":7": "Spam",
 	}
-	msgIdPattern = regexp.MustCompile("msgid=(\\S*)$")
+	msgIdPattern = regexp.MustCompile(`msgid=(\S*)$`)
 	// main server only
 	modActionExpirations map[ModAction]oneshotJob
 )
@@ -362,7 +362,8 @@ func scheduleModActionReversalMainServer(uuid string, action int, expiry time.Ti
 	if !isMainServer {
 		return errors.New("cannot schedule mod action reversal from non-main server")
 	}
-	if expiry.Compare(time.Now()) <= 0 {
+	expiryDuration := time.Until(expiry)
+	if expiryDuration <= 0 {
 		return nil
 	}
 	key := ModAction{uuid, action}
@@ -373,7 +374,7 @@ func scheduleModActionReversalMainServer(uuid string, action int, expiry time.Ti
 		oldJob.timer.Stop()
 	}
 
-	timer := time.AfterFunc(expiry.Sub(time.Now()), func() {
+	timer := time.AfterFunc(expiryDuration, func() {
 		defer delete(modActionExpirations, key)
 
 		var err error
@@ -383,7 +384,7 @@ func scheduleModActionReversalMainServer(uuid string, action int, expiry time.Ti
 		case actionMute:
 			err = unmutePlayerUnchecked(uuid)
 		default:
-			err = errors.New(fmt.Sprintf("did not handle reversal for action %d", action))
+			err = fmt.Errorf("did not handle reversal for action %d", action)
 		}
 		_, dberr := db.Exec("DELETE FROM playerModerationActions WHERE action = ? AND uuid = ?", action, uuid)
 		err = errors.Join(err, dberr)

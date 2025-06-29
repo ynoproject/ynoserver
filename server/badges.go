@@ -23,6 +23,7 @@ import (
 	"errors"
 	"math"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -169,6 +170,9 @@ type SimplePlayerBadge struct {
 	Game        string `json:"game"`
 	Group       string `json:"group"`
 	Bp          int    `json:"bp"`
+	MapId       int    `json:"mapId"`
+	MapX        int    `json:"mapX"`
+	MapY        int    `json:"mapY"`
 	Hidden      bool   `json:"hidden"`
 	OverlayType int    `json:"overlayType"`
 	Animated    bool   `json:"animated"`
@@ -412,14 +416,15 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 
 					var eventTriggerType int
 					if condition.Trigger == "eventAction" {
-						if roomId > 0 && roomId == currentEventVmMapId {
-							if eventIds, hasVms := eventVms[roomId]; hasVms {
+						eventVms, hasGameVms := gameEventVms[config.gameName]
+						if hasGameVms && config.gameName == currentEventVmGame && roomId > 0 && roomId == currentEventVmMapId {
+							if vmGroups, hasVms := eventVms[roomId]; hasVms {
 								var skipEvSync bool
-								for _, eventId := range eventIds {
-									if eventId != currentEventVmEventId {
+								for _, vmGroup := range vmGroups {
+									if !slices.Equal(vmGroup, currentEventVmGroup) {
 										continue
 									}
-									if valueInt == eventId {
+									if slices.Contains(vmGroup, valueInt) {
 										skipEvSync = true
 										break
 									}
@@ -698,7 +703,7 @@ func getSimplePlayerBadgeData(playerUuid string, playerRank int, playerTags []st
 	}
 
 	for _, badge := range badgeData {
-		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Bp: badge.Bp, Hidden: badge.Hidden, OverlayType: badge.OverlayType, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock}
+		simpleBadge := &SimplePlayerBadge{BadgeId: badge.BadgeId, Game: badge.Game, Group: badge.Group, Bp: badge.Bp, Hidden: badge.Hidden, OverlayType: badge.OverlayType, Animated: badge.Animated, Unlocked: badge.Unlocked, NewUnlock: badge.NewUnlock, MapId: badge.MapId, MapX: badge.MapX, MapY: badge.MapY}
 		playerBadges = append(playerBadges, simpleBadge)
 	}
 
