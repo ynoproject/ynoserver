@@ -68,6 +68,11 @@ func (*IPC) ScheduleModActionReversal(args ScheduleModActionReversalArgs, _ *Voi
 	return scheduleModActionReversalMainServer(args.Uuid, args.Action, args.Expiry, true)
 }
 
+func (*IPC) UpdateEventVmInfo(args Void, _ *Void) error {
+	_, err := updateEventVmInfo()
+	return err
+}
+
 func banPlayerInGameUnchecked(game, uuid string, disconnect, temporary bool) error {
 	if game == config.gameName {
 		return banPlayerUnchecked(uuid, true, disconnect, temporary)
@@ -141,6 +146,29 @@ func scheduleModActionReversal(uuid string, action int, expiry time.Time) error 
 		return call.Error
 	case <-time.After(config.ipc.deadline):
 		return errors.New("scheduleModActionReversal: timed out")
+	}
+}
+
+func notifyVmUpdated(gameId string) {
+	if !isMainServer {
+		return
+	}
+
+	client, err := rpc.Dial("unix", fmt.Sprintf("/tmp/yno/%s.sck", gameId))
+	if err != nil {
+		eprintf("VM", "socket for %s not found", gameId)
+		return
+	}
+
+	defer client.Close()
+	call := client.Go("IPC.UpdateEventVmInfo", Void{}, new(Void), make(chan *rpc.Call, 1))
+	select {
+	case <-call.Done:
+		if err := call.Error; err != nil {
+			eprintf("VM", "error notifying %s: %s", gameId, err)
+		}
+	case <-time.After(config.ipc.deadline):
+		eprintf("VM", "%s not responding to IPC", gameId)
 	}
 }
 

@@ -552,13 +552,17 @@ func handleVm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mapId, eventId, err := getEventVmInfo(eventVmId)
+	gameId, mapId, vmGroup, err := getEventVmInfo(eventVmId)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
 	}
 
-	fileBytes, err := os.ReadFile("vms/Map" + fmt.Sprintf("%04d", mapId) + "_EV" + fmt.Sprintf("%04d", eventId) + ".png")
+	var eventFragments []string
+	for _, eventVm := range vmGroup {
+		eventFragments = append(eventFragments, fmt.Sprintf("%04d", eventVm))
+	}
+	fileBytes, err := os.ReadFile(fmt.Sprintf("vms/%s/Map%04d_EV%s.png", gameId, mapId, strings.Join(eventFragments, ",")))
 	if err != nil {
 		handleInternalError(w, r, err)
 		return

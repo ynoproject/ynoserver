@@ -163,6 +163,10 @@ func writeErrLog(uuid string, location string, payload string) {
 	writeLog(uuid, location, payload, 400)
 }
 
+func eprintf(category string, format string, args ...any) {
+	writeLog("SERVER", category, fmt.Sprintf(format, args...), 500)
+}
+
 const randRunes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 const lenRandRunes = len(randRunes)
 
