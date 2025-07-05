@@ -924,7 +924,7 @@ func (c *SessionClient) handleSay(msg []string) error {
 				continue
 			}
 
-			if client.session.blockedUsers[c.uuid] || c.blockedUsers[client.session.uuid] {
+			if c.isBlockedWith(client.session) {
 				continue
 			}
 
