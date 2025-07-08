@@ -1118,6 +1118,8 @@ func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
 		handleInternalError(w, r, err)
 		return
 	}
+	// after blocking, remove friend
+	_ = removePlayerFriend(uuid, targetUuid)
 
 	// "disconnect" them NOW!!!
 	if client, ok := clients.Load(uuid); ok {
