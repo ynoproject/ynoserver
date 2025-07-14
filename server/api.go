@@ -1065,6 +1065,14 @@ func handleAddRemovePlayerFriend(w http.ResponseWriter, r *http.Request, isAdd b
 	var err error
 
 	if isAdd {
+		if isPlayerBlocked(uuid, targetUuid) {
+			handleError(w, r, "cannot send friend request to blocked user")
+			return
+		}
+		if isPlayerBlocked(targetUuid, uuid) {
+			handleError(w, r, "cannot send friend request to user who has blocked you")
+			return
+		}
 		err = addPlayerFriend(uuid, targetUuid)
 	} else {
 		err = removePlayerFriend(uuid, targetUuid)
