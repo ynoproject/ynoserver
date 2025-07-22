@@ -126,8 +126,6 @@ func initApi() {
 
 	http.HandleFunc("/api/screenshot", handleScreenshot)
 
-	http.HandleFunc("/api/2kki", handle2kki)
-
 	http.HandleFunc("/api/explorer", handleExplorer)
 	http.HandleFunc("/api/explorercompletion", handleExplorerCompletion)
 	http.HandleFunc("/api/explorerlocations", handleExplorerLocations)
@@ -1455,35 +1453,6 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("ok"))
-}
-
-func handle2kki(w http.ResponseWriter, r *http.Request) {
-	if config.gameName != "2kki" {
-		handleError(w, r, "endpoint not supported")
-		return
-	}
-
-	actionParam := r.URL.Query().Get("action")
-	if actionParam == "" {
-		handleError(w, r, "action not specified")
-		return
-	}
-
-	query := r.URL.Query()
-	query.Del("action")
-
-	queryString := query.Encode()
-
-	response, err := query2kki(actionParam, queryString)
-	if err != nil {
-		if response == "" {
-			handleInternalError(w, r, err)
-		} else {
-			writeErrLog(getIp(r), r.URL.Path, err.Error())
-		}
-	}
-
-	w.Write([]byte(response))
 }
 
 func handleInfo(w http.ResponseWriter, r *http.Request) {
