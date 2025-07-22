@@ -410,7 +410,7 @@ func add2kkiEventLocation(eventType int, minDepth int, maxDepth int, exp int) {
 
 // eventType: 0 - daily, 1 - weekly, 2 - weekend, 3 - manual
 func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth int, maxDepth int, exp int, playerUuid string) {
-	url := "https://2kki.app/getRandomLocations?ignoreSecret=1&minDepth=" + strconv.Itoa(minDepth)
+	url := "https://explorer.yume.wiki/getRandomLocations?ignoreSecret=1&minDepth=" + strconv.Itoa(minDepth)
 	if maxDepth >= minDepth {
 		url += "&maxDepth=" + strconv.Itoa(maxDepth)
 	}
@@ -457,7 +457,7 @@ func get2kkiEventLocationData(locationName string) (*EventLocationData, error) {
 	v.Set("locationName", locationName)
 	v.Set("ignoreRemoved", "1")
 
-	url := fmt.Sprintf("https://2kki.app/getLocationInfo?%s", v.Encode())
+	url := fmt.Sprintf("https://explorer.yume.wiki/getLocationInfo?%s", v.Encode())
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
