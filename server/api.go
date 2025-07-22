@@ -1230,7 +1230,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 	if client, ok := clients.Load(uuid); ok {
 		if client.roomC != nil {
 			var allConnLocationNames []string
-			retUrl := "https://2kki.app/location?locations="
+			retUrl := "https://explorer.yume.wiki/location?locations="
 
 			for i, locationName := range client.roomC.locations {
 				var connLocationNames []string
@@ -1240,7 +1240,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 				}
 				retUrl += url.QueryEscape(locationName)
 
-				getConnectionsUrl := "https://2kki.app/getConnectedLocations?locationName=" + url.QueryEscape(locationName)
+				getConnectionsUrl := "https://explorer.yume.wiki/getConnectedLocations?locationName=" + url.QueryEscape(locationName)
 				resp, err := http.Get(getConnectionsUrl)
 				if err != nil {
 					writeErrLog(getIp(r), r.URL.Path, err.Error())
@@ -1544,7 +1544,7 @@ func query2kki(action string, queryString string) (response string, err error) {
 			return "", err
 		}
 
-		url := "https://2kki.app/" + action
+		url := "https://explorer.yume.wiki/" + action
 		if queryString != "" {
 			url += "?" + queryString
 		}
