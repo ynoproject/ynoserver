@@ -524,10 +524,6 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 			return &chatHistory, err
 		}
 
-		if isPlayerBlocked(uuid, chatMessage.Uuid) || isPlayerBlocked(chatMessage.Uuid, uuid) {
-			continue
-		}
-
 		chatHistory.Messages = append(chatHistory.Messages, &chatMessage)
 	}
 
@@ -568,10 +564,6 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 		err := playerResults.Scan(&chatPlayer.Uuid, &chatPlayer.Name, &chatPlayer.Rank, &chatPlayer.Account, &chatPlayer.Badge, &chatPlayer.SystemName, &chatPlayer.Medals[0], &chatPlayer.Medals[1], &chatPlayer.Medals[2], &chatPlayer.Medals[3], &chatPlayer.Medals[4])
 		if err != nil {
 			return &chatHistory, err
-		}
-
-		if isPlayerBlocked(uuid, chatPlayer.Uuid) || isPlayerBlocked(chatPlayer.Uuid, uuid) {
-			continue
 		}
 
 		chatHistory.Players = append(chatHistory.Players, &chatPlayer)
