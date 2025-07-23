@@ -1009,6 +1009,9 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		if !c.banned {
 			for _, client := range clients.Get() {
 				if client.partyId == c.partyId {
+					if c.isBlockedWith(client) {
+						continue
+					}
 					client.outbox <- buildMsg("psay", c.uuid, msgContents, msgId)
 				}
 			}
