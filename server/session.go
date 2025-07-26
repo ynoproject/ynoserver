@@ -137,26 +137,14 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		c.badge = "null"
 	}
 
-	for i := 0; i < 0xFFFF; i++ {
-		var used bool
-		for _, client := range clients.Get() {
-			if client.id == i {
-				used = true
-			}
-		}
-
-		if !used {
-			c.id = i
-			break
-		}
-	}
-
 	c.sprite, c.spriteIndex, c.system = getPlayerGameData(c.uuid)
 
 	go c.msgWriter()
 
-	// register client to the clients list
-	clients.Store(c.uuid, c)
+	// register client to the clients list;
+	// assign session-specific ID in the same critical section to ensure
+	// only one client gets the given ID
+	clients.StoreAndSetId(c.uuid, c)
 
 	go c.msgReader()
 
