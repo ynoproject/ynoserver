@@ -153,7 +153,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 		writeErrLog(c.uuid, "sess", err.Error())
 	}
 
-	if blockedPlayers, err := getBlockedPlayerData(c.uuid); err != nil {
+	if blockedPlayers, err := getBlockedPlayerData(c.uuid); err == nil {
 		for _, player := range blockedPlayers {
 			c.blockedUsers[player.Uuid] = true
 		}
