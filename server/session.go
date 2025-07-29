@@ -139,6 +139,12 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	c.sprite, c.spriteIndex, c.system = getPlayerGameData(c.uuid)
 
+	if blockedPlayers, err := getBlockedPlayerData(c.uuid); err == nil {
+		for _, player := range blockedPlayers {
+			c.blockedUsers[player.Uuid] = true
+		}
+	}
+
 	go c.msgWriter()
 
 	// register client to the clients list;
@@ -151,12 +157,6 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	err := c.addOrUpdatePlayerGameData()
 	if err != nil {
 		writeErrLog(c.uuid, "sess", err.Error())
-	}
-
-	if blockedPlayers, err := getBlockedPlayerData(c.uuid); err == nil {
-		for _, player := range blockedPlayers {
-			c.blockedUsers[player.Uuid] = true
-		}
 	}
 
 	writeLog(c.uuid, "sess", "connect", 200)
