@@ -211,7 +211,7 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
-		if client.session.blockedUsers[c.session.uuid] || c.session.blockedUsers[client.session.uuid] {
+		if c.session.isBlockedWith(client.session) {
 			continue
 		}
 
@@ -323,6 +323,10 @@ func (c *RoomClient) getRoomPlayerData() {
 
 func (c *RoomClient) getPlayerData(client *RoomClient) {
 	if client == c {
+		return
+	}
+
+	if c.session.isBlockedWith(client.session) {
 		return
 	}
 

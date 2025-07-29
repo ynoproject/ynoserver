@@ -332,6 +332,15 @@ func tryUnblockPlayer(uuid string, targetUuid string) error { // called by api o
 	return nil
 }
 
+func isPlayerBlocked(uuid string, targetUuid string) bool {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM playerBlocks WHERE uuid = ? AND targetUuid = ?", uuid, targetUuid).Scan(&count)
+	if err != nil {
+		return false
+	}
+	return count > 0
+}
+
 func getBlockedPlayerData(uuid string) ([]*PlayerListData, error) {
 	var blockedPlayers []*PlayerListData
 

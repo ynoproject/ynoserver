@@ -175,6 +175,10 @@ func (c *SessionClient) isPrivatedTo(other *SessionClient) bool {
 		(other.partyId == 0 || c.partyId != other.partyId) && !c.onlineFriends[other.uuid])
 }
 
+func (c *SessionClient) isBlockedWith(other *SessionClient) bool {
+	return c.blockedUsers[other.uuid] || other.blockedUsers[c.uuid]
+}
+
 // RoomClient
 type RoomClient struct {
 	room    *Room
