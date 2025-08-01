@@ -33,6 +33,8 @@ const (
 	maxMessageSize = 4096
 
 	maxPictures = 1000
+
+	defaultFacing = 2 // down
 )
 
 type Picture struct {
@@ -303,7 +305,7 @@ func (c *RoomClient) disconnect() {
 func (c *RoomClient) reset() {
 	c.x = -1
 	c.y = -1
-	c.facing = 0
+	c.facing = defaultFacing
 	c.speed = 0
 
 	c.flash = [5]int{}

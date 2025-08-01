@@ -341,7 +341,7 @@ func (c *RoomClient) getPlayerData(client *RoomClient) {
 	if client.x != -1 {
 		c.outbox <- buildMsg("m", client.session.id, client.x, client.y)
 	}
-	if client.facing != 0 {
+	if client.facing != defaultFacing {
 		c.outbox <- buildMsg("f", client.session.id, client.facing)
 	}
 	if client.speed != 0 {
