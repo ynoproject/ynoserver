@@ -67,7 +67,9 @@ func (c *RoomClient) handleM(msg []string) error {
 		return errconv
 	}
 
-	if msg[0] == "m" {
+	// c.x and c.y get set at the same time
+	// only one needs to be checked
+	if msg[0] == "m" && c.x != -1 {
 		switch {
 		case y < c.y:
 			c.facing = 0 // up
