@@ -85,7 +85,7 @@ func getPlayerRank(uuid string) (rank int) {
 	return rank
 }
 
-func tryBanPlayer(senderUuid string, recipientUuid string, disconnect bool) error { // called by api only
+func tryBanPlayer(senderUuid string, recipientUuid string, disconnect, broadcast bool) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
@@ -93,11 +93,11 @@ func tryBanPlayer(senderUuid string, recipientUuid string, disconnect bool) erro
 	if senderUuid == recipientUuid {
 		return errors.New("attempted self-ban")
 	}
-	return banPlayerUnchecked(recipientUuid, true, disconnect, false)
+	return banPlayerUnchecked(recipientUuid, true, disconnect, false, broadcast)
 }
 
-func tryBanPlayerWithDetail(senderUuid, recipientUuid string, expiry time.Time, reason string) error {
-	err := tryBanPlayer(senderUuid, recipientUuid, true)
+func tryBanPlayerWithExpiry(senderUuid, recipientUuid string, expiry time.Time, reason string, broadcast bool) error {
+	err := tryBanPlayer(senderUuid, recipientUuid, true, broadcast)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func registerModAction(uuid string, action int, expiry time.Time, reason string)
 
 	return scheduleModActionReversal(uuid, action, expiry)
 }
-func banPlayerUnchecked(recipientUuid string, updateDb, disconnect, temporary bool) error {
+func banPlayerUnchecked(recipientUuid string, updateDb, disconnect, temporary, broadcast bool) error {
 	name := getNameFromUuid(recipientUuid)
 
 	if updateDb {
@@ -135,16 +135,17 @@ func banPlayerUnchecked(recipientUuid string, updateDb, disconnect, temporary bo
 			}
 		}
 
-		if disconnect {
+		if broadcast {
 			var msg string
 			if temporary {
 				msg = fmt.Sprintf("*%s has been temporarily banned.*", name)
 			} else {
 				msg = fmt.Sprintf("*%s has been banned.*", name)
 			}
-			client.broadcast(buildMsg(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{})))
-			client.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12)))
+			systemMessage(msg, "")
+		}
 
+		if disconnect {
 			if client.roomC != nil {
 				client.roomC.cancel()
 			}
@@ -173,16 +174,12 @@ func unbanPlayerUnchecked(recipientUuid string) error {
 		return err
 	}
 
-	if client, ok := clients.Load(recipientUuid); ok {
-		client.banned = false
-		client.outbox <- buildMsg(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
-		client.outbox <- buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, "You have been unbanned.", randString(12))
-	}
+	systemMessage("You have been unbanned.", recipientUuid)
 
 	return nil
 }
 
-func tryMutePlayer(senderUuid string, recipientUuid string, temporary bool) error { // called by api only
+func tryMutePlayer(senderUuid string, recipientUuid string, temporary, broadcast bool) error { // called by api only
 	if getPlayerRank(senderUuid) <= getPlayerRank(recipientUuid) {
 		return errors.New("insufficient rank")
 	}
@@ -190,11 +187,11 @@ func tryMutePlayer(senderUuid string, recipientUuid string, temporary bool) erro
 	if senderUuid == recipientUuid {
 		return errors.New("attempted self-mute")
 	}
-	return mutePlayerUnchecked(recipientUuid, true, temporary)
+	return mutePlayerUnchecked(recipientUuid, true, temporary, broadcast)
 }
 
-func tryMutePlayerWithDetail(senderUuid, recipientUuid string, expiry time.Time, reason string) error {
-	err := tryMutePlayer(senderUuid, recipientUuid, true)
+func tryMutePlayerWithExpiry(senderUuid, recipientUuid string, expiry time.Time, reason string, broadcast bool) error {
+	err := tryMutePlayer(senderUuid, recipientUuid, true, broadcast)
 	if err != nil {
 		return err
 	}
@@ -202,7 +199,7 @@ func tryMutePlayerWithDetail(senderUuid, recipientUuid string, expiry time.Time,
 	return registerModAction(recipientUuid, actionMute, expiry, reason)
 }
 
-func mutePlayerUnchecked(recipientUuid string, updateDb, temporary bool) error {
+func mutePlayerUnchecked(recipientUuid string, updateDb, temporary, broadcast bool) error {
 	if updateDb {
 		_, err := db.Exec("UPDATE players SET muted = 1 WHERE uuid = ?", recipientUuid)
 		if err != nil {
@@ -212,18 +209,18 @@ func mutePlayerUnchecked(recipientUuid string, updateDb, temporary bool) error {
 
 	if client, ok := clients.Load(recipientUuid); ok { // mute client if they're connected
 		client.muted = true
-	}
 
-	var session *SessionClient
-	name := getNameFromUuid(recipientUuid)
-	var msg string
-	if temporary {
-		msg = fmt.Sprintf("*%s has been temporarily muted.*", name)
-	} else {
-		msg = fmt.Sprintf("*%s has been muted.*", name)
+		if broadcast {
+			name := getNameFromUuid(recipientUuid)
+			var msg string
+			if temporary {
+				msg = fmt.Sprintf("*%s has been temporarily muted.*", name)
+			} else {
+				msg = fmt.Sprintf("*%s has been muted.*", name)
+			}
+			systemMessage(msg, "")
+		}
 	}
-	session.broadcast(buildMsg(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{})))
-	session.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12)))
 
 	return nil
 }
@@ -246,11 +243,8 @@ func unmutePlayerUnchecked(recipientUuid string) error {
 		return err
 	}
 
-	if client, ok := clients.Load(recipientUuid); ok { // unmute client if they're connected
-		client.muted = false
-		client.outbox <- buildMsg(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
-		client.outbox <- buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, "You have been unmuted.", randString(12))
-	}
+	// unmute client if they're connected
+	systemMessage("You have been unmuted.", recipientUuid)
 
 	return nil
 }

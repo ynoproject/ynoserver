@@ -33,29 +33,29 @@ type IPC struct{}
 type Void struct{}
 
 type TryBanArgs struct {
-	TargetUuid            string
-	Disconnect, Temporary bool
+	TargetUuid                       string
+	Disconnect, Temporary, Broadcast bool
 }
 
 func (*IPC) TryBan(args TryBanArgs, _ *Void) error {
-	return banPlayerUnchecked(args.TargetUuid, false, args.Disconnect, args.Temporary)
+	return banPlayerUnchecked(args.TargetUuid, false, args.Disconnect, args.Temporary, args.Broadcast)
 }
 
 type TryMuteArgs struct {
-	TargetUuid string
-	Temporary  bool
+	TargetUuid           string
+	Temporary, Broadcast bool
 }
 
 func (*IPC) TryMute(args TryMuteArgs, _ *Void) error {
-	return mutePlayerUnchecked(args.TargetUuid, false, args.Temporary)
+	return mutePlayerUnchecked(args.TargetUuid, false, args.Temporary, args.Broadcast)
 }
 
 type SendReportLogArgs struct {
-	Uuid, YnoMsgId, OriginalMsg string
+	Uuid, YnoMsgId, OriginalMsg, Game string
 }
 
 func (*IPC) SendReportLog(args SendReportLogArgs, _ *Void) error {
-	return sendReportLogMainServer(args.Uuid, args.YnoMsgId, args.OriginalMsg)
+	return sendReportLogMainServer(args.Uuid, args.YnoMsgId, args.OriginalMsg, args.Game)
 }
 
 type ScheduleModActionReversalArgs struct {
@@ -73,9 +73,9 @@ func (*IPC) UpdateEventVmInfo(args Void, _ *Void) error {
 	return err
 }
 
-func banPlayerInGameUnchecked(game, uuid string, disconnect, temporary bool) error {
+func banPlayerInGameUnchecked(game, uuid string, disconnect, temporary, broadcast bool) error {
 	if game == config.gameName {
-		return banPlayerUnchecked(uuid, true, disconnect, temporary)
+		return banPlayerUnchecked(uuid, true, disconnect, temporary, broadcast)
 	}
 	client, err := rpc.Dial("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
 	if err != nil {
@@ -83,7 +83,7 @@ func banPlayerInGameUnchecked(game, uuid string, disconnect, temporary bool) err
 	}
 
 	defer client.Close()
-	call := client.Go("IPC.TryBan", TryBanArgs{uuid, disconnect, temporary}, new(Void), make(chan *rpc.Call, 1))
+	call := client.Go("IPC.TryBan", TryBanArgs{uuid, disconnect, temporary, broadcast}, new(Void), make(chan *rpc.Call, 1))
 	select {
 	case <-call.Done:
 		return call.Error
@@ -92,9 +92,9 @@ func banPlayerInGameUnchecked(game, uuid string, disconnect, temporary bool) err
 	}
 }
 
-func mutePlayerInGameUnchecked(game, uuid string, temporary bool) error {
+func mutePlayerInGameUnchecked(game, uuid string, temporary, broadcast bool) error {
 	if game == config.gameName {
-		return mutePlayerUnchecked(uuid, true, temporary)
+		return mutePlayerUnchecked(uuid, true, temporary, broadcast)
 	}
 	client, err := rpc.Dial("unix", fmt.Sprintf("/tmp/yno/%s.sck", game))
 	if err != nil {
@@ -102,7 +102,7 @@ func mutePlayerInGameUnchecked(game, uuid string, temporary bool) error {
 	}
 
 	defer client.Close()
-	call := client.Go("IPC.TryMute", TryMuteArgs{uuid, temporary}, new(Void), nil)
+	call := client.Go("IPC.TryMute", TryMuteArgs{uuid, temporary, broadcast}, new(Void), nil)
 	select {
 	case <-call.Done:
 		return call.Error
@@ -113,7 +113,7 @@ func mutePlayerInGameUnchecked(game, uuid string, temporary bool) error {
 
 func sendReportLog(uuid, ynoMsgId, originalMsg string) error {
 	if isMainServer {
-		return sendReportLogMainServer(uuid, ynoMsgId, originalMsg)
+		return sendReportLogMainServer(uuid, ynoMsgId, originalMsg, config.gameName)
 	}
 	client, err := rpc.Dial("unix", fmt.Sprintf("/tmp/yno/%s.sck", mainGameId))
 	if err != nil {
@@ -121,7 +121,7 @@ func sendReportLog(uuid, ynoMsgId, originalMsg string) error {
 	}
 
 	defer client.Close()
-	call := client.Go("IPC.SendReportLog", SendReportLogArgs{uuid, ynoMsgId, originalMsg}, new(Void), make(chan *rpc.Call, 1))
+	call := client.Go("IPC.SendReportLog", SendReportLogArgs{uuid, ynoMsgId, originalMsg, config.gameName}, new(Void), make(chan *rpc.Call, 1))
 	select {
 	case <-call.Done:
 		return call.Error

@@ -72,10 +72,11 @@ func adminBanMute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
+	broadcast := query.Has("broadcast")
 
-	targetUuid := r.URL.Query().Get("uuid")
+	targetUuid := query.Get("uuid")
 	if targetUuid == "" {
-		user := r.URL.Query().Get("user")
+		user := query.Get("user")
 		if user == "" {
 			handleError(w, r, "uuid or user not specified")
 			return
@@ -96,7 +97,7 @@ func adminBanMute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var expiry *time.Time
-	if expiryString := r.URL.Query().Get("expiry"); expiryString != "" {
+	if expiryString := query.Get("expiry"); expiryString != "" {
 		if parsedExpiry, err := time.Parse(time.RFC3339, expiryString); err == nil && parsedExpiry.Compare(time.Now()) > 0 {
 			expiry = &parsedExpiry
 		}
@@ -105,13 +106,13 @@ func adminBanMute(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch r.URL.Path {
 	case "/admin/ban":
-		err = tryBanPlayer(uuid, targetUuid, false)
+		err = tryBanPlayer(uuid, targetUuid, false, broadcast)
 	case "/admin/dban":
-		err = tryBanPlayer(uuid, targetUuid, true)
+		err = tryBanPlayer(uuid, targetUuid, true, broadcast)
 	case "/admin/unban":
 		err = tryUnbanPlayer(uuid, targetUuid)
 	case "/admin/mute":
-		err = tryMutePlayer(uuid, targetUuid, false)
+		err = tryMutePlayer(uuid, targetUuid, false, broadcast)
 	case "/admin/unmute":
 		err = tryUnmutePlayer(uuid, targetUuid)
 	case "/admin/tempban":
@@ -119,20 +120,20 @@ func adminBanMute(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "tempban requires expiry")
 			return
 		}
-		err = tryBanPlayerWithDetail(uuid, targetUuid, *expiry, query.Get("reason"))
+		err = tryBanPlayerWithExpiry(uuid, targetUuid, *expiry, query.Get("reason"), broadcast)
 	case "/admin/tempmute":
 		if expiry == nil {
 			handleError(w, r, "tempmute requires expiry")
 			return
 		}
-		err = tryMutePlayerWithDetail(uuid, targetUuid, *expiry, query.Get("reason"))
+		err = tryMutePlayerWithExpiry(uuid, targetUuid, *expiry, query.Get("reason"), broadcast)
 	}
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(200)
 }
 
 func adminChangeUsername(w http.ResponseWriter, r *http.Request) {

@@ -69,8 +69,7 @@ func initSession() {
 
 		<-stop
 
-		sender.broadcast(buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{}))
-		sender.broadcast(buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, "**The server is restarting.**", randString(12)))
+		systemMessage("**The server is restarting.**", "")
 
 		if bot != nil {
 			bot.Close()
@@ -169,6 +168,23 @@ func (c *SessionClient) broadcast(msg []byte) {
 		default:
 			writeErrLog(c.uuid, "sess", "send channel is full")
 		}
+	}
+}
+
+// leave targetUuid empty to broadcast to all clients
+func systemMessage(msg string, targetUuid string) {
+	pmsg := buildMsg("p", "0000000000000000", "YNO", "", 2, true, "null", [5]int{})
+	gsaymsg := buildMsg("gsay", "0000000000000000", "0000", "0000", "0", 0, 0, msg, randString(12))
+	if targetUuid == "" {
+		var session *SessionClient
+		session.broadcast(pmsg)
+		session.broadcast(gsaymsg)
+		return
+	}
+
+	if client, ok := clients.Load(targetUuid); ok {
+		client.outbox <- pmsg
+		client.outbox <- gsaymsg
 	}
 }
 

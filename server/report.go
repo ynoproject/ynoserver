@@ -115,30 +115,10 @@ func initModBot() {
 
 		ynoMsgId := parseMsgIdFromComponent(action.Interaction.Message)
 
-		switch cmd {
-		case "ban":
+		doMute := func(broadcast bool) {
 			targetName := getNameFromUuid(uuid)
 			for game := range gameIdToName {
-				banPlayerInGameUnchecked(game, uuid, false, false)
-			}
-
-			content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
-
-			resp.Type = discordgo.InteractionResponseUpdateMessage
-			resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: action.Message.Embeds}
-			if len(resp.Data.Embeds) >= 1 {
-				if desc := resp.Data.Embeds[0].Description; desc != "" {
-					if unquoted, ok := strings.CutPrefix(desc, "> "); ok {
-						resp.Data.Embeds[0].Description = fmt.Sprintf("> ||%s||", unquoted)
-					}
-				}
-			}
-			delete(reportLog[uuid], ynoMsgId)
-			markAsResolved(uuid)
-		case "mute":
-			targetName := getNameFromUuid(uuid)
-			for game := range gameIdToName {
-				mutePlayerInGameUnchecked(game, uuid, false)
+				mutePlayerInGameUnchecked(game, uuid, false, broadcast)
 			}
 
 			content := fmt.Sprintf("*%s has been muted by %s*", targetName, action.Member.DisplayName())
@@ -154,6 +134,34 @@ func initModBot() {
 			}
 			delete(reportLog[uuid], ynoMsgId)
 			markAsResolved(uuid)
+		}
+
+		doBan := func(disconnect, broadcast bool) {
+			targetName := getNameFromUuid(uuid)
+			for game := range gameIdToName {
+				banPlayerInGameUnchecked(game, uuid, disconnect, false, broadcast)
+			}
+
+			content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
+
+			resp.Type = discordgo.InteractionResponseUpdateMessage
+			resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: action.Message.Embeds}
+			if len(resp.Data.Embeds) >= 1 {
+				if desc := resp.Data.Embeds[0].Description; desc != "" {
+					if unquoted, ok := strings.CutPrefix(desc, "> "); ok {
+						resp.Data.Embeds[0].Description = fmt.Sprintf("> ||%s||", unquoted)
+					}
+				}
+			}
+			delete(reportLog[uuid], ynoMsgId)
+			markAsResolved(uuid)
+		}
+
+		switch cmd {
+		case "ban":
+			doBan(false, false)
+		case "mute":
+			doMute(false)
 		case "ack":
 			targetName := getNameFromUuid(uuid)
 			content := fmt.Sprintf("*Report on %s acknowledged by %s*", targetName, action.Member.DisplayName())
@@ -195,28 +203,17 @@ func initModBot() {
 					},
 				}
 			case "dban":
-				targetName := getNameFromUuid(uuid)
-				for game := range gameIdToName {
-					banPlayerInGameUnchecked(game, uuid, true, false)
-				}
-
-				content := fmt.Sprintf("*%s has been **banned** by %s*", targetName, action.Member.DisplayName())
-
-				resp.Type = discordgo.InteractionResponseUpdateMessage
-				resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: action.Message.Embeds}
-				if len(resp.Data.Embeds) >= 1 {
-					if desc := resp.Data.Embeds[0].Description; desc != "" {
-						if unquoted, ok := strings.CutPrefix(desc, "> "); ok {
-							resp.Data.Embeds[0].Description = fmt.Sprintf("> ||%s||", unquoted)
-						}
-					}
-				}
-				delete(reportLog[uuid], ynoMsgId)
-				markAsResolved(uuid)
+				doBan(true, true)
+			case "mute_broadcast":
+				doMute(true)
 			// handled by botHandleModalResponse
 			case "tempban":
 				fallthrough
+			case "tempban_broadcast":
+				fallthrough
 			case "tempmute":
+				fallthrough
+			case "tempmute_broadcast":
 				// keep this up to date with parseTempBanReportComponents
 				resp.Type = discordgo.InteractionResponseModal
 				resp.Data = &discordgo.InteractionResponseData{
@@ -293,7 +290,11 @@ func botHandleModalResponse(resp *discordgo.InteractionResponse, data discordgo.
 	switch cmd {
 	case "tempban":
 		fallthrough
+	case "tempban_broadcast":
+		fallthrough
 	case "tempmute":
+		fallthrough
+	case "tempmute_broadcast":
 		expiryRaw, reason := parseTempBanReportComponents(data.Components)
 		expiryDuration, err := time.ParseDuration(expiryRaw)
 		if err != nil {
@@ -308,15 +309,18 @@ func botHandleModalResponse(resp *discordgo.InteractionResponse, data discordgo.
 		expiry := time.Now().Add(expiryDuration)
 		var action string
 		name := getNameFromUuid(uuid)
+		broadcast := strings.HasSuffix(cmd, "_broadcast")
+		cmd := strings.TrimSuffix(cmd, "_broadcast")
+
 		if cmd == "tempban" {
 			for game := range gameIdToName {
-				banPlayerInGameUnchecked(game, uuid, true, true)
+				banPlayerInGameUnchecked(game, uuid, true, true, broadcast)
 			}
 			registerModAction(uuid, actionBan, expiry, reason)
 			action = "**banned**"
 		} else {
 			for game := range gameIdToName {
-				mutePlayerInGameUnchecked(game, uuid, true)
+				mutePlayerInGameUnchecked(game, uuid, true, broadcast)
 			}
 			registerModAction(uuid, actionMute, expiry, reason)
 			action = "muted"
@@ -334,7 +338,7 @@ func botHandleModalResponse(resp *discordgo.InteractionResponse, data discordgo.
 func initModActionExpirations() {
 	modActionExpirations = make(map[ModAction]oneshotJob)
 
-	rows, err := db.Query("SELECT uuid, action, expiry FROM playerModerationActions")
+	rows, err := db.Query("SELECT uuid, action, expiry FROM playerModerationActions WHERE expiry > NOW()")
 	if err != nil {
 		log.Print("initModActionExpirations", err)
 		return
@@ -396,8 +400,8 @@ func scheduleModActionReversalMainServer(uuid string, action int, expiry time.Ti
 	return nil
 }
 
-// obj should be an outpointer to one of the compatible message types
-func formatReportLog(obj interface{}, targetUuid, ynoMsgId, originalMsg string, reasons map[string]int) {
+// obj must be an outpointer to a [discordgo.MessageSend] or [discordgo.MessageEdit]
+func formatReportLog(obj any, targetUuid, ynoMsgId, originalMsg, game string, reasons map[string]int) {
 	targetName := getNameFromUuid(targetUuid)
 	if originalMsg != "" {
 		originalMsg = fmt.Sprintf("> *%s*", originalMsg)
@@ -414,7 +418,8 @@ func formatReportLog(obj interface{}, targetUuid, ynoMsgId, originalMsg string, 
 
 	metadataString := fmt.Sprintf(
 		`-# uid=%s
--# msgid=%s`, targetUuid, ynoMsgId)
+-# game=%s
+-# msgid=%s`, targetUuid, game, ynoMsgId)
 
 	embed := &discordgo.MessageEmbed{
 		Title:       fmt.Sprintf("Report received for **%s**", targetName),
@@ -464,12 +469,24 @@ func formatReportLog(obj interface{}, targetUuid, ynoMsgId, originalMsg string, 
 			Value: "dban",
 		},
 		{
-			Label: "Temporary Ban",
+			Label: "Mute (broadcast)",
+			Value: "mute_broadcast",
+		},
+		{
+			Label: "Tempban",
 			Value: "tempban",
 		},
 		{
-			Label: "Temporary Mute",
+			Label: "Tempban (broadcast)",
+			Value: "tempban_broadcast",
+		},
+		{
+			Label: "Tempmute",
 			Value: "tempmute",
+		},
+		{
+			Label: "Tempmute (broadcast)",
+			Value: "tempmute_broadcast",
 		},
 		{
 			Label: "Reveal Reporters",
@@ -566,7 +583,7 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func sendReportLogMainServer(uuid, ynoMsgId, originalMsg string) error {
+func sendReportLogMainServer(uuid, ynoMsgId, originalMsg, game string) error {
 	if !isMainServer {
 		return errors.New("cannot call sendReportMessage from non-main server")
 	}
@@ -595,11 +612,11 @@ GROUP BY reason`, uuid)
 	var msg *discordgo.Message
 	if discordMsgId, ok := reportLog[uuid][ynoMsgId]; ok {
 		payload := discordgo.NewMessageEdit(config.moderation.channelId, discordMsgId)
-		formatReportLog(payload, uuid, ynoMsgId, originalMsg, reasons)
+		formatReportLog(payload, uuid, ynoMsgId, originalMsg, game, reasons)
 		msg, err = bot.ChannelMessageEditComplex(payload)
 	} else {
 		payload := &discordgo.MessageSend{}
-		formatReportLog(payload, uuid, ynoMsgId, originalMsg, reasons)
+		formatReportLog(payload, uuid, ynoMsgId, originalMsg, game, reasons)
 		msg, err = bot.ChannelMessageSendComplex(config.moderation.channelId, payload)
 	}
 
