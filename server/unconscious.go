@@ -77,8 +77,42 @@ func getUnconsciousTime() int {
 func getUnconsciousEvents() (eventFlags int) {
 	today := time.Now().UTC()
 	_, month, date := today.Date()
-	if month == time.June && 4 <= date && date <= 11 {
-		eventFlags = 1
+
+	switch month {
+	case time.January:
+		if date <= 2 {
+			eventFlags = 2
+		}
+	case time.March:
+		if 19 <= date && date <= 21 {
+			eventFlags = 3
+		} else if 31 <= date {
+			eventFlags = 4
+		}
+	case time.April:
+		if date <= 2 {
+			eventFlags = 4
+		}
+	case time.June:
+		if 4 <= date && date <= 11 {
+			eventFlags = 1
+		} else if 18 <= date && date <= 24 {
+			eventFlags = 5
+		}
+	case time.October:
+		if 21 <= date {
+			eventFlags = 6
+		}
+	case time.November:
+		if date <= 4 {
+			eventFlags = 6
+		}
+	case time.December:
+		if 14 <= date && date <= 28 {
+			eventFlags = 7
+		} else if 30 <= date {
+			eventFlags = 2
+		}
 	}
 
 	return
