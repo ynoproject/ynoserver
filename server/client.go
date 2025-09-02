@@ -90,7 +90,12 @@ type SessionClient struct {
 	system string
 
 	// do not compare directly; use isPrivatedTo
-	private, singleplayer bool
+	private         bool
+	// 1 = hide everybody but party members and friends
+	// 2 = hide everybody (singleplayer)
+	// 4 = hide friends
+	// 8 = hide party members
+	privateHideType int
 
 	hideLocation bool
 	partyId      int
@@ -172,9 +177,37 @@ func (c *SessionClient) disconnect() {
 	writeLog(c.uuid, "sess", "disconnect", 200)
 }
 
+func (c *SessionClient) isSingleplayer() bool {
+	hideAll := 2
+	// hide strangers, friends, and party members
+	hideAllImplicit := 1 | 4 | 8
+	return (c.privateHideType & hideAll) != 0 ||
+		(c.privateHideType & hideAllImplicit) == hideAllImplicit
+}
+
 func (c *SessionClient) isPrivatedTo(other *SessionClient) bool {
-	return (c.private || other.private) && ((c.singleplayer || other.singleplayer) ||
-		(other.partyId == 0 || c.partyId != other.partyId) && !c.onlineFriends[other.uuid])
+	if !c.private && !other.private {
+		return false
+	}
+
+	const hideStrangers = 1
+	const hideAll = 2
+	const hideFriends = 4
+	const hideParty = 8
+
+	privateHideType := c.privateHideType | other.privateHideType
+
+	if (privateHideType & hideAll) != 0 {
+		return true
+	}
+
+	areFriends := c.onlineFriends[other.uuid]
+	arePartyMembers := other.partyId != 0 && c.partyId == other.partyId
+	areStrangers := !areFriends && !arePartyMembers
+
+	return (areStrangers && (privateHideType & hideStrangers) != 0) ||
+		(areFriends && (privateHideType & hideFriends) != 0) ||
+		(arePartyMembers && (privateHideType & hideParty) != 0)
 }
 
 func (c *SessionClient) isBlockedWith(other *SessionClient) bool {
