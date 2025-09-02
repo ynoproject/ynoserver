@@ -133,13 +133,13 @@ func getPartyData(partyId int) (*Party, error) {
 		member.Badge = client.badge
 		member.Medals = client.medals
 
-		if client.roomC != nil && !(client.hideLocation && client.singleplayer) {
+		if client.roomC != nil && !(client.hideLocation && client.isSingleplayer()) {
 			member.MapId = client.roomC.mapId
 			member.PrevMapId = client.roomC.prevMapId
 			member.PrevLocations = client.roomC.prevLocations
 			member.X = client.roomC.x
 			member.Y = client.roomC.y
-		} else if client.roomC != nil && (client.hideLocation && client.singleplayer) {
+		} else if client.roomC != nil && (client.hideLocation && client.isSingleplayer()) {
 			member.MapId = "0000"
 			member.PrevMapId = "0000"
 			member.PrevLocations = ""
