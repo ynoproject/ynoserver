@@ -182,7 +182,6 @@ func adminResetPw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := r.URL.Query().Get("user")
-
 	if user == "" {
 		handleError(w, r, "user not specified")
 		return
@@ -195,6 +194,12 @@ func adminResetPw(w http.ResponseWriter, r *http.Request) {
 	}
 	if userUuid == "" {
 		handleError(w, r, "invalid user specified")
+		return
+	}
+	
+	userRank := getPlayerRank(userUuid)
+	if userRank >= rank {
+		handleError(w, r, "target rank too high")
 		return
 	}
 

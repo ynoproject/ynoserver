@@ -1301,7 +1301,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Write([]byte(""))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleExplorerCompletion(w http.ResponseWriter, r *http.Request) {
