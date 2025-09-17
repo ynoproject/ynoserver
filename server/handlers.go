@@ -24,6 +24,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func (c *RoomClient) handleSr(msg []string) error {
@@ -1004,6 +1005,12 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	msgId := randString(12)
 
 	if msg[0] == "gsay" {
+		if c.lastGlobalMessage.Add(time.Second * 5).After(time.Now().UTC()) {
+			return errors.New("rate limited")
+		}
+
+		c.lastGlobalMessage = time.Now().UTC()
+	
 		if !c.banned {
 			c.broadcast(buildMsg("p", c.uuid, c.name, c.system, c.rank, c.account, c.badge, c.medals[:]))
 			c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))

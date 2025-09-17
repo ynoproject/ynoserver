@@ -101,6 +101,8 @@ type SessionClient struct {
 
 	onlineFriends map[string]bool
 	blockedUsers  map[string]bool
+
+	lastGlobalMessage time.Time
 }
 
 func (c *SessionClient) msgReader() {
