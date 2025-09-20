@@ -209,6 +209,12 @@ func adminResetPw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = deletePlayerSessions(userUuid)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
+
 	w.Write([]byte(newPw))
 }
 

@@ -958,7 +958,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, loginUser, rank, _, _, _, _ := getPlayerInfoFromToken(token)
+	uuid, loginUser, rank, _, _, _, _ := getPlayerInfoFromToken(token)
 
 	// GET params user, new password
 	user, newPassword := r.URL.Query().Get("user"), r.URL.Query().Get("newPassword")
@@ -998,6 +998,12 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, username)
+
+	err = deletePlayerSessions(uuid)
+	if err != nil {
+		handleInternalError(w, r, err)
+		return
+	}
 
 	w.Write([]byte("ok"))
 }

@@ -588,6 +588,15 @@ func deleteOldChatMessages() error {
 	return nil
 }
 
+func deletePlayerSessions(uuid string) error {
+	_, err := db.Exec("DELETE FROM playerSessions WHERE uuid = ?", uuid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func getGameLocationByName(locationName string) (gameLocation GameLocation, err error) {
 	var mapIdsJson []byte
 	err = db.QueryRow("SELECT id, game, title, mapIds FROM gameLocations WHERE title = ? AND game = ?", locationName, config.gameName).Scan(&gameLocation.Id, &gameLocation.Game, &gameLocation.Name, &mapIdsJson)
