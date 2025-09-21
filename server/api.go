@@ -210,12 +210,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		partyListDataJson, err := json.Marshal(partyListData)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write(partyListDataJson)
+		json.NewEncoder(w).Encode(partyListData)
 		return
 	case "description":
 		partyIdParam := r.URL.Query().Get("partyId")
@@ -724,12 +719,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				handleInternalError(w, r, err)
 				return
 			}
-			simpleBadgeDataJson, err := json.Marshal(simpleBadgeData)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-			w.Write(simpleBadgeDataJson)
+			json.NewEncoder(w).Encode(simpleBadgeData)
 		} else {
 			if !pd.Registered {
 				handleError(w, r, "cannot retrieve player badge data for guest player")
@@ -740,12 +730,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				handleInternalError(w, r, err)
 				return
 			}
-			badgeDataJson, err := json.Marshal(badgeData)
-			if err != nil {
-				handleInternalError(w, r, err)
-				return
-			}
-			w.Write(badgeDataJson)
+			json.NewEncoder(w).Encode(badgeData)
 		}
 		return
 	case "new":
@@ -778,13 +763,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		response := &CheckUpdateData{BadgeIds: newUnlockedBadgeIds, NewTags: newTags}
-		responseJson, err := json.Marshal(response)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write(responseJson)
+		json.NewEncoder(w).Encode(CheckUpdateData{BadgeIds: newUnlockedBadgeIds, NewTags: newTags})
 		return
 	case "slotList":
 		badgeSlots, err := getPlayerBadgeSlots(pd.Name, badgeSlotRows, badgeSlotCols)
@@ -792,12 +771,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		badgeSlotsJson, err := json.Marshal(badgeSlots)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write(badgeSlotsJson)
+		json.NewEncoder(w).Encode(badgeSlots)
 		return
 	case "playerSlotList":
 		playerParam := r.URL.Query().Get("player")
@@ -813,12 +787,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		badgeSlotsJson, err := json.Marshal(badgeSlots)
-		if err != nil {
-			handleInternalError(w, r, err)
-			return
-		}
-		w.Write(badgeSlotsJson)
+		json.NewEncoder(w).Encode(badgeSlots)
 		return
 	case "presetGet":
 		preset, err := getPlayerBadgePreset(pd.Uuid, presetId)
@@ -1209,13 +1178,7 @@ func handleBlockList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	blockedPlayersJson, err := json.Marshal(blockedPlayers)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
-	w.Write(blockedPlayersJson)
+	json.NewEncoder(w).Encode(blockedPlayers)
 }
 
 func handleExplorer(w http.ResponseWriter, r *http.Request) {
@@ -1254,18 +1217,8 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 				defer resp.Body.Close()
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					writeErrLog(getIp(r), r.URL.Path, err.Error())
-					continue
-				}
 
-				if strings.HasPrefix(string(body), "{\"error\"") {
-					writeErrLog(getIp(r), r.URL.Path, "Invalid 2kki location info: "+string(body))
-					continue
-				}
-
-				err = json.Unmarshal(body, &connLocationNames)
+				err = json.NewDecoder(resp.Body).Decode(&connLocationNames)
 				if err != nil {
 					writeErrLog(getIp(r), r.URL.Path, err.Error())
 					continue
@@ -1350,13 +1303,7 @@ func handleExplorerLocations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	missingLocationNamesJson, err := json.Marshal(missingLocationNames)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
-	w.Write([]byte(missingLocationNamesJson))
+	json.NewEncoder(w).Encode(missingLocationNames)
 }
 
 func handleError(w http.ResponseWriter, r *http.Request, payload string) {
@@ -1419,13 +1366,7 @@ func handleChatHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chatHistoryJson, err := json.Marshal(chatHistory)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
-	w.Write(chatHistoryJson)
+	json.NewEncoder(w).Encode(chatHistory)
 }
 
 func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {

@@ -103,13 +103,7 @@ func initLocations() {
 }
 
 func handleGameLocations(w http.ResponseWriter, r *http.Request) {
-	gameLocationsJson, err := json.Marshal(locationCache)
-	if err != nil {
-		handleError(w, r, fmt.Sprintf("error while marshaling: %s", err.Error()))
-		return
-	}
-
-	w.Write([]byte(gameLocationsJson))
+	json.NewEncoder(w).Encode(locationCache)
 }
 
 func getNext2kkiLocations(originLocationName string, destLocationName string) (PathLocations, error) {

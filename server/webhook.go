@@ -58,16 +58,14 @@ func sendWebhookMessage(url, name, badge, message string, sanitize bool) error {
 		content = urlReplacer.Replace(message)
 	}
 
-	body, err := json.Marshal(WebhookRequest{
+	body := new(bytes.Buffer)
+	json.NewEncoder(body).Encode(WebhookRequest{
 		Username:  name,
 		AvatarUrl: avatarUrl,
 		Content:   content,
 	})
-	if err != nil {
-		return err
-	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewReader(body))
+	resp, err := http.Post(url, "application/json", body)
 	if err != nil {
 		return err
 	}

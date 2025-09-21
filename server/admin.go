@@ -43,13 +43,7 @@ func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	responseJson, err := json.Marshal(response)
-	if err != nil {
-		handleError(w, r, "error while marshaling")
-		return
-	}
-
-	w.Write(responseJson)
+	json.NewEncoder(w).Encode(response)
 }
 
 func adminGetBansMutes(w http.ResponseWriter, r *http.Request) {
@@ -63,13 +57,7 @@ func adminGetBansMutes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseJson, err := json.Marshal(getBannedMutedPlayers(r.URL.Path == "/admin/getbans"))
-	if err != nil {
-		handleError(w, r, "error while marshaling")
-		return
-	}
-
-	w.Write(responseJson)
+	json.NewEncoder(w).Encode(getBannedMutedPlayers(r.URL.Path == "/admin/getbans"))
 }
 
 func adminBanMute(w http.ResponseWriter, r *http.Request) {

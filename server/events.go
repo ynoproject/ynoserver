@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"math/rand"
 	"net/http"
@@ -420,20 +419,11 @@ func addPlayer2kkiEventLocation(gameEventPeriodId int, eventType int, minDepth i
 		handleInternalEventError(eventType, err)
 		return
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		handleInternalEventError(eventType, err)
-		return
-	}
 
-	if strings.HasPrefix(string(body), "{\"error\"") {
-		handleEventError(eventType, "Invalid event location data: "+string(body))
-		return
-	}
+	defer resp.Body.Close()
 
 	var eventLocations []EventLocationData
-	err = json.Unmarshal(body, &eventLocations)
+	err = json.NewDecoder(resp.Body).Decode(&eventLocations)
 	if err != nil {
 		handleInternalEventError(eventType, err)
 		return
@@ -462,19 +452,11 @@ func get2kkiEventLocationData(locationName string) (*EventLocationData, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
 
-	if strings.HasPrefix(string(body), "{\"error\"") {
-		writeErrLog("SERVER", locationName, "Invalid 2kki location info: "+string(body))
-		return nil, nil
-	}
+	defer resp.Body.Close()
 
 	var locationData EventLocationData
-	err = json.Unmarshal(body, &locationData)
+	err = json.NewDecoder(resp.Body).Decode(&locationData)
 	if err != nil {
 		return nil, err
 	}
@@ -628,13 +610,15 @@ func setGameEventLocationPoolsAndLocationColors() {
 	for _, gameId := range gameIds {
 		var eventLocations []*EventLocationData
 
-		data, err := os.ReadFile(configPath + gameId + ".json")
+		f, err := os.Open(configPath + gameId + ".json")
 		if err != nil {
 			gameEventLocations[gameId] = nil
 			continue
 		}
 
-		err = json.Unmarshal(data, &eventLocations)
+		defer f.Close()
+
+		err = json.NewDecoder(f).Decode(&eventLocations)
 		if err != nil {
 			continue
 		}

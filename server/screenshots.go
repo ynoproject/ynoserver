@@ -176,13 +176,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		screenshotsJson, err := json.Marshal(screenshots)
-		if err != nil {
-			handleError(w, r, "error while marshaling")
-			return
-		}
-
-		w.Write(screenshotsJson)
+		json.NewEncoder(w).Encode(screenshots)
 		return
 	case "getPlayerScreenshots":
 		uuidParam := r.URL.Query().Get("uuid")
@@ -200,13 +194,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		playerScreenshotsJson, err := json.Marshal(playerScreenshots)
-		if err != nil {
-			handleError(w, r, "error while marshaling")
-			return
-		}
-
-		w.Write(playerScreenshotsJson)
+		json.NewEncoder(w).Encode(playerScreenshots)
 		return
 	case "getScreenshotGames":
 		screenshotGames, err := getScreenshotGames()
@@ -215,13 +203,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		screenshotGamesJson, err := json.Marshal(screenshotGames)
-		if err != nil {
-			handleError(w, r, "error while marshaling")
-			return
-		}
-
-		w.Write(screenshotGamesJson)
+		json.NewEncoder(w).Encode(screenshotGames)
 		return
 	case "upload":
 		body, err := io.ReadAll(io.LimitReader(r.Body, int64(config.maxImageSize+1)))

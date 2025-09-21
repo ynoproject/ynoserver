@@ -116,12 +116,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "error listing schedules: "+err.Error())
 			return
 		}
-		schedulesJson, err := json.Marshal(schedules)
-		if err != nil {
-			handleError(w, r, "error marshalling schedules: "+err.Error())
-			return
-		}
-		w.Write(schedulesJson)
+		json.NewEncoder(w).Encode(schedules)
 	case "update":
 		var id int
 		var err error
