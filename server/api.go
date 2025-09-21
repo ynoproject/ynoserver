@@ -460,7 +460,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handlePartyMemberLeave(partyId int, playerUuid string) error {
@@ -554,7 +554,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleVm(w http.ResponseWriter, r *http.Request) {
@@ -863,7 +863,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -901,7 +901,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, NOW(), ?, ?, ?)", ip, pd.Uuid, user, hashedPassword)
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -957,7 +957,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleChangePw(w http.ResponseWriter, r *http.Request) {
@@ -1010,7 +1010,7 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 
 	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, username)
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleResetPw(uuid string) (newPassword string, err error) {
@@ -1093,7 +1093,7 @@ func handleAddRemovePlayerFriend(w http.ResponseWriter, r *http.Request, isAdd b
 		return
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
@@ -1144,7 +1144,7 @@ func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
@@ -1193,7 +1193,7 @@ func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleBlockList(w http.ResponseWriter, r *http.Request) {
@@ -1455,7 +1455,7 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 		updatePlayerLastChatMessage(pd.Uuid, lastPartyMsgId, true)
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleInfo(w http.ResponseWriter, r *http.Request) {

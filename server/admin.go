@@ -186,7 +186,7 @@ func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }
 
 func adminResetPw(w http.ResponseWriter, r *http.Request) {
@@ -296,5 +296,5 @@ func adminManageBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("ok"))
+	w.WriteHeader(http.StatusOK)
 }

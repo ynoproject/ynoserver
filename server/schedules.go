@@ -265,7 +265,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "error cancelling schedule")
 			return
 		}
-		w.Write([]byte("ok"))
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
