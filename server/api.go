@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -515,24 +516,14 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	case "get":
 		saveData, err := getSaveData(pd.Uuid)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				w.Write([]byte("{}"))
-				return
-			}
 			handleInternalError(w, r, err)
 			return
 		}
-		w.Write(saveData)
+
+		io.Copy(w, saveData)
 		return
 	case "push":
-		const limit = 8 * 1024 * 1024
-		data, err := io.ReadAll(io.LimitReader(r.Body, limit+1))
-		defer r.Body.Close()
-		if err != nil || len(data) > limit {
-			handleError(w, r, "invalid data")
-			return
-		}
-		err = createGameSaveData(pd.Uuid, data)
+		err = createGameSaveData(pd.Uuid, http.MaxBytesReader(w, r.Body, 1024*1024*8))
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -575,14 +566,17 @@ func handleVm(w http.ResponseWriter, r *http.Request) {
 	for _, eventVm := range vmGroup {
 		eventFragments = append(eventFragments, fmt.Sprintf("%04d", eventVm))
 	}
-	fileBytes, err := os.ReadFile(fmt.Sprintf("vms/%s/Map%04d_EV%s.png", gameId, mapId, strings.Join(eventFragments, ",")))
+
+	f, err := os.Open(filepath.Join("vms", gameId, fmt.Sprintf("Map%04d_EV%s.png", mapId, strings.Join(eventFragments, ","))))
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(fileBytes)
+	defer f.Close()
+
+	w.Header().Set("Content-Type", "application/octet-stream") // is this needed?
+	io.Copy(w, f)
 }
 
 func handleBadge(w http.ResponseWriter, r *http.Request) {

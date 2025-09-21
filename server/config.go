@@ -123,14 +123,15 @@ type ConfigFile struct {
 }
 
 func parseConfigFile(filename string) *Config {
-	yamlFile, err := os.ReadFile(filename)
+	f, err := os.Open(filename)
 	if err != nil {
 		panic(err)
 	}
 
-	var configFile ConfigFile
+	defer f.Close()
 
-	err = yaml.Unmarshal(yamlFile, &configFile)
+	var configFile ConfigFile
+	err = yaml.NewDecoder(f).Decode(&configFile)
 	if err != nil {
 		panic(err)
 	}

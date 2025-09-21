@@ -18,14 +18,13 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"image/png"
-	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -206,14 +205,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(screenshotGames)
 		return
 	case "upload":
-		body, err := io.ReadAll(io.LimitReader(r.Body, int64(config.maxImageSize+1)))
-		defer r.Body.Close()
-		if err != nil || len(body) > config.maxImageSize {
-			handleError(w, r, "failed to read body")
-			return
-		}
-
-		img, err := png.Decode(bytes.NewReader(body))
+		img, err := png.Decode(http.MaxBytesReader(w, r.Body, 1024*1024))
 		if err != nil {
 			handleError(w, r, "invalid png")
 			return
@@ -273,7 +265,15 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = os.WriteFile(directory+"/"+id+".png", body, 0644)
+		f, err := os.OpenFile(filepath.Join(directory, id+".png"), os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			handleInternalError(w, r, err)
+			return
+		}
+
+		defer f.Close()
+
+		err = png.Encode(f, img)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return

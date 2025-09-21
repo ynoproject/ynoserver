@@ -18,14 +18,17 @@
 package server
 
 import (
+	"bytes"
+	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
 )
 
 func getSaveDataTimestamp(playerUuid string) (time.Time, error) { // called by api only
-	info, err := os.Stat("saves/" + config.gameName + "/" + playerUuid + ".osd")
+	info, err := os.Stat(filepath.Join("saves", config.gameName, playerUuid+".osd"))
 	if err != nil {
 		return time.UnixMilli(0), nil // HACK: no error return because it breaks forest-orb
 	}
@@ -33,40 +36,52 @@ func getSaveDataTimestamp(playerUuid string) (time.Time, error) { // called by a
 	return info.ModTime().UTC(), nil
 }
 
-func getSaveData(playerUuid string) ([]byte, error) { // called by api only
-	file, err := os.ReadFile("saves/" + config.gameName + "/" + playerUuid + ".osd")
+// it's the caller's responsibility to close the returned Decoder
+func getSaveData(playerUuid string) (io.Reader, error) { // called by api only
+	f, err := os.Open(filepath.Join("saves", config.gameName, playerUuid+".osd"))
 	if err != nil {
 		return nil, err
 	}
 
-	dec, err := zstd.NewReader(nil)
+	defer f.Close()
+
+	zd, err := zstd.NewReader(f)
 	if err != nil {
 		return nil, err
 	}
 
-	defer dec.Close()
-
-	decompressed, err := dec.DecodeAll(file, []byte{})
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, zd)
 	if err != nil {
 		return nil, err
 	}
 
-	return decompressed, nil
+	return buf, nil
 }
 
-func createGameSaveData(playerUuid string, data []byte) error { // called by api only
-	enc, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+func createGameSaveData(playerUuid string, data io.Reader) error { // called by api only
+	f, err := os.OpenFile(filepath.Join("saves", config.gameName, playerUuid+".osd"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 06444)
 	if err != nil {
 		return err
 	}
 
-	defer enc.Close()
+	defer f.Close()
 
-	os.WriteFile("saves/"+config.gameName+"/"+playerUuid+".osd", enc.EncodeAll(data, []byte{}), 0644)
+	ze, err := zstd.NewWriter(f, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	if err != nil {
+		return err
+	}
+
+	defer ze.Close()
+
+	_, err = io.Copy(ze, data)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func clearGameSaveData(playerUuid string) error { // called by api only
-	return os.Remove("saves/" + config.gameName + "/" + playerUuid + ".osd")
+	return os.Remove(filepath.Join("saves", config.gameName, playerUuid+".osd"))
 }
