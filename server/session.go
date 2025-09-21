@@ -88,13 +88,13 @@ func handleSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	joinSessionWs(conn, getIp(r), r.URL.Query().Get("token"))
+	joinSessionWs(conn, r)
 }
 
-func joinSessionWs(conn *websocket.Conn, ip string, token string) {
+func joinSessionWs(conn *websocket.Conn, r *http.Request) {
 	c := &SessionClient{
 		conn:          conn,
-		ip:            ip,
+		ip:            getIp(r),
 		outbox:        make(chan []byte, 8),
 		onlineFriends: make(map[string]bool),
 		blockedUsers:  make(map[string]bool),
@@ -102,15 +102,19 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 
-	if token != "" {
-		c.uuid, c.name, c.rank, c.badge, c.banned, c.muted = getPlayerDataFromToken(token)
+	pd, err := getPlayerData(r)
+	if err != nil {
+		writeErrLog("unknown", "sess", "failed to get player data")
+		return
 	}
 
-	if c.uuid != "" {
-		c.account = true
-	} else {
-		c.uuid, c.banned, c.muted = getOrCreatePlayerData(ip)
-	}
+	c.uuid = pd.Uuid
+	c.account = pd.Registered
+	c.name = pd.Name
+	c.rank = pd.Rank
+	c.badge = pd.Badge
+	c.banned = pd.Banned
+	c.muted = pd.Muted
 
 	c.cacheParty() // don't log error because player is probably not in a party
 
@@ -125,7 +129,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	var sameIp int
 	for _, client := range clients.Get() {
-		if client.ip == ip {
+		if client.ip == getIp(r) {
 			sameIp++
 		}
 	}
@@ -155,7 +159,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	go c.msgReader()
 
-	err := c.addOrUpdatePlayerGameData()
+	err = c.addOrUpdatePlayerGameData()
 	if err != nil {
 		writeErrLog(c.uuid, "sess", err.Error())
 	}

@@ -24,12 +24,14 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"net/http"
 	"strings"
 	"time"
 
 	"slices"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-jwt/jwt"
 )
 
 var db *sql.DB
@@ -43,33 +45,74 @@ func getDatabaseConn(user, password, addr, database string) *sql.DB {
 	return conn
 }
 
-func getOrCreatePlayerData(ip string) (uuid string, banned bool, muted bool) {
-	err := db.QueryRow("SELECT uuid, banned, muted FROM players WHERE ip = ?", ip).Scan(&uuid, &banned, &muted)
+func getPlayerData(r *http.Request) (PlayerData, error) {
+	_, err := r.Cookie("auth")
+	if err != nil {
+		// try guest auth
+		return getUnauthenticatedPlayerData(getIp(r))
+	}
+
+	return getAuthenticatedPlayerData(r)
+}
+
+func getUnauthenticatedPlayerData(ip string) (PlayerData, error) {
+	var pd PlayerData
+	err := db.QueryRow("SELECT uuid, banned, muted FROM players WHERE ip = ?", ip).Scan(&pd.Uuid, &pd.Banned, &pd.Muted)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return "", false, false
+			// something has gone very wrong
+			return PlayerData{}, err
 		}
 
 		// create new guest account
-		uuid = randString(16)
-		createPlayerData(ip, uuid, banned)
+		pd.Uuid = randString(16)
 
-		// recheck moderation status
-		if !banned {
-			banned, muted = getPlayerModerationStatus(uuid)
+		_, err := db.Exec("INSERT INTO players (ip, uuid) VALUES (?, ?, ?)", ip, pd.Uuid)
+		if err != nil {
+			return PlayerData{}, err
 		}
+
+		// recheck moderation status (automatic ban)
+		pd.Banned, pd.Muted = getPlayerModerationStatus(pd.Uuid)
 	}
 
-	return uuid, banned, muted
+	return pd, nil
 }
 
-func getPlayerDataFromToken(token string) (uuid string, name string, rank int, badge string, banned bool, muted bool) {
-	err := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned, pd.muted FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token).Scan(&uuid, &name, &rank, &badge, &banned, &muted)
+func getAuthenticatedPlayerData(r *http.Request) (PlayerData, error) {
+	authCookie, err := r.Cookie("auth")
 	if err != nil {
-		return "", "", 0, "", false, false
+		return PlayerData{}, err
 	}
 
-	return uuid, name, rank, badge, banned, muted
+	var claims jwt.StandardClaims
+	token, err := jwt.ParseWithClaims(authCookie.Value, &claims, func(token *jwt.Token) (any, error) { return jwtKeyPub, nil })
+	if err != nil {
+		return PlayerData{}, err
+	}
+	if !token.Valid {
+		return PlayerData{}, errors.New("invalid token")
+	}
+
+	claimsSplit := strings.Split(claims.Subject, "/")
+	if len(claimsSplit) != 2 {
+		return PlayerData{}, errors.New("invalid subject segments")
+	}
+	if claimsSplit[1] != getIp(r) {
+		return PlayerData{}, errors.New("token for other ip")
+	}
+
+	uuid := claimsSplit[0]
+
+	var pd PlayerData
+	err = db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned, pd.muted FROM accounts a JOIN players pd ON a.uuid = pd.uuid WHERE a.uuid = ?", uuid).Scan(&pd.Uuid, &pd.Name, &pd.Rank, &pd.Badge, &pd.Banned, &pd.Muted)
+	if err != nil {
+		return PlayerData{}, err
+	}
+
+	pd.Registered = true
+
+	return pd, nil
 }
 
 func getPlayerRank(uuid string) (rank int) {
@@ -287,7 +330,7 @@ func getPlayerMedals(uuid string) (medals [5]int) {
 		}
 	}
 
-	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3], &medals[4])
+	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.Uuid WHERE pd.Uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3], &medals[4])
 	if err != nil {
 		return [5]int{}
 	}
@@ -342,7 +385,7 @@ func isPlayerBlocked(uuid string, targetUuid string) bool {
 func getBlockedPlayerData(uuid string) ([]*PlayerListData, error) {
 	var blockedPlayers []*PlayerListData
 
-	results, err := db.Query("SELECT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerBlocks pb ON pb.targetUuid = pd.uuid AND pb.uuid = ? JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? ORDER BY pb.timestamp", uuid, config.gameName)
+	results, err := db.Query("SELECT pd.Uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.spriteName, pgd.spriteIndex, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerBlocks pb ON pb.targetUuid = pd.Uuid AND pb.uuid = ? JOIN playerGameData pgd ON pgd.uuid = pd.Uuid LEFT JOIN accounts a ON a.uuid = pd.Uuid WHERE pgd.game = ? ORDER BY pb.timestamp", uuid, config.gameName)
 	if err != nil {
 		return blockedPlayers, err
 	}
@@ -363,17 +406,8 @@ func getBlockedPlayerData(uuid string) ([]*PlayerListData, error) {
 	return blockedPlayers, nil
 }
 
-func createPlayerData(ip string, uuid string, banned bool) error {
-	_, err := db.Exec("INSERT INTO players (ip, uuid, banned) VALUES (?, ?, ?)", ip, uuid, banned)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func getPlayerGameData(uuid string) (spriteName string, spriteIndex int, systemName string) {
-	err := db.QueryRow("SELECT pgd.spriteName, pgd.spriteIndex, pgd.systemName FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&spriteName, &spriteIndex, &systemName)
+	err := db.QueryRow("SELECT pgd.spriteName, pgd.spriteIndex, pgd.systemName FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.Uuid WHERE pd.Uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&spriteName, &spriteIndex, &systemName)
 	if err != nil {
 		return "", 0, ""
 	}
@@ -397,24 +431,6 @@ func (c *SessionClient) updatePlayerGameActivity(online bool) error {
 	}
 
 	return nil
-}
-
-func getPlayerInfo(ip string) (uuid string, name string, rank int) {
-	err := db.QueryRow("SELECT pd.uuid, pgd.name, pd.rank FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.ip = ? AND (pgd.uuid IS NULL OR pgd.game = ?)", ip, config.gameName).Scan(&uuid, &name, &rank)
-	if err != nil {
-		return "", "", 0
-	}
-
-	return uuid, name, rank
-}
-
-func getPlayerInfoFromToken(token string) (uuid string, name string, rank int, badge string, badgeSlotRows int, badgeSlotCols int, screenshotLimit int) {
-	err := db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, a.badgeSlotRows, a.badgeSlotCols, a.screenshotLimit FROM accounts a JOIN playerSessions ps ON ps.uuid = a.uuid JOIN players pd ON pd.uuid = a.uuid WHERE ps.sessionId = ? AND NOW() < ps.expiration", token).Scan(&uuid, &name, &rank, &badge, &badgeSlotRows, &badgeSlotCols, &screenshotLimit)
-	if err != nil {
-		return "", "", 0, "", 0, 0, 0
-	}
-
-	return uuid, name, rank, badge, badgeSlotRows, badgeSlotCols, screenshotLimit
 }
 
 func updatePlayerActivity() error {
@@ -477,7 +493,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	globalSelectClause := selectClause + "0"
 	partySelectClause := selectClause + "1"
 
-	fromClause := " FROM chatMessages cm JOIN players pd ON pd.uuid = cm.uuid JOIN playerGameData pgd ON pgd.uuid = pd.uuid AND pgd.game = cm.game "
+	fromClause := " FROM chatMessages cm JOIN players pd ON pd.Uuid = cm.uuid JOIN playerGameData pgd ON pgd.uuid = pd.Uuid AND pgd.game = cm.game "
 
 	whereClause := "WHERE cm.game = ? AND pd.banned = 0"
 
@@ -542,7 +558,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 		lastTimestamp = chatHistory.Messages[len(chatHistory.Messages)-1].Timestamp
 	}
 
-	playersQuery := "SELECT DISTINCT pd.uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.uuid LEFT JOIN accounts a ON a.uuid = pd.uuid WHERE pgd.game = ? AND EXISTS (SELECT cm.uuid FROM chatMessages cm WHERE cm.uuid = pd.uuid AND cm.game = pgd.game AND cm.timestamp BETWEEN ? AND ? "
+	playersQuery := "SELECT DISTINCT pd.Uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.Uuid LEFT JOIN accounts a ON a.uuid = pd.Uuid WHERE pgd.game = ? AND EXISTS (SELECT cm.uuid FROM chatMessages cm WHERE cm.uuid = pd.Uuid AND cm.game = pgd.game AND cm.timestamp BETWEEN ? AND ? "
 
 	var playerQueryArgs []interface{}
 
@@ -581,15 +597,6 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 func deleteOldChatMessages() error {
 	_, err := db.Exec("DELETE FROM chatMessages WHERE timestamp < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func deletePlayerSessions(uuid string) error {
-	_, err := db.Exec("DELETE FROM playerSessions WHERE uuid = ?", uuid)
 	if err != nil {
 		return err
 	}
@@ -1535,7 +1542,7 @@ func tryWritePlayerTimeTrial(playerUuid string, mapId int, seconds int) (success
 	return true, nil
 }
 
-func getBannedMutedPlayers(banned bool) (players []PlayerInfo) {
+func getBannedMutedPlayers(banned bool) (players []PlayerData) {
 	var actionStr string
 
 	if banned {
@@ -1560,7 +1567,7 @@ func getBannedMutedPlayers(banned bool) (players []PlayerInfo) {
 			return players
 		}
 
-		players = append(players, PlayerInfo{
+		players = append(players, PlayerData{
 			Uuid: uuid,
 			Name: getNameFromUuid(uuid),
 			Rank: rank,
@@ -1636,12 +1643,6 @@ func isIpBanned(ip string) bool {
 	}
 
 	return banned == 1
-}
-
-func getUuidFromToken(token string) (uuid string) {
-	db.QueryRow("SELECT uuid FROM playerSessions WHERE sessionId = ? AND NOW() < expiration", token).Scan(&uuid)
-
-	return uuid
 }
 
 func writeGamePlayerCount(playerCount int) error {
@@ -1738,14 +1739,8 @@ func getChatMessageContext(msgId string) (result []ChatContext, err error) {
 }
 
 func doCleanupQueries() error {
-	// Remove player sessions that have expired
-	_, err := db.Exec("DELETE FROM playerSessions WHERE expiration < NOW()")
-	if err != nil {
-		return err
-	}
-
 	// Remove player expeditions that were never completed
-	_, err = db.Exec("DELETE pel FROM playerEventLocations pel WHERE UTC_DATE() > pel.endDate AND NOT EXISTS (SELECT ec.eventId FROM eventCompletions ec WHERE ec.eventId = pel.id AND ec.type = 1)")
+	_, err := db.Exec("DELETE pel FROM playerEventLocations pel WHERE UTC_DATE() > pel.endDate AND NOT EXISTS (SELECT ec.eventId FROM eventCompletions ec WHERE ec.eventId = pel.id AND ec.type = 1)")
 	if err != nil {
 		return err
 	}

@@ -49,39 +49,24 @@ func (n *Notification) SetDefaults() {
 }
 
 func handleRegisterSubscriber(w http.ResponseWriter, r *http.Request) {
-	var sub webpush.Subscription
-	var uuid string
-	var banned bool
-
-	if r.Method != "POST" {
-		handleError(w, r, "unsupported HTTP method")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
 		return
 	}
-
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		uuid, banned, _ = getOrCreatePlayerData(getIp(r))
-	} else {
-		uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
-		if uuid == "" {
-			handleError(w, r, "invalid token")
-			return
-		}
-	}
-
-	if banned {
+	if pd.Banned {
 		handleError(w, r, "player is banned")
 		return
 	}
 
-	defer r.Body.Close()
-	err := json.NewDecoder(r.Body).Decode(&sub)
+	var sub webpush.Subscription
+	err = json.NewDecoder(r.Body).Decode(&sub)
 	if err != nil {
 		handleError(w, r, "invalid web notification subscription")
 		return
 	}
 
-	_, err = db.Exec("INSERT IGNORE INTO pushSubscriptions (uuid, endpoint, p256dh, auth) VALUES (?, ?, ?, ?)", uuid, sub.Endpoint, sub.Keys.P256dh, sub.Keys.Auth)
+	_, err = db.Exec("INSERT IGNORE INTO pushSubscriptions (uuid, endpoint, p256dh, auth) VALUES (?, ?, ?, ?)", pd.Uuid, sub.Endpoint, sub.Keys.P256dh, sub.Keys.Auth)
 	if err != nil {
 		handleError(w, r, "error adding push subscription")
 		return
@@ -96,33 +81,19 @@ func handleRegisterSubscriber(w http.ResponseWriter, r *http.Request) {
 			YnoIcon:  "global",
 			NoRelay:  true,
 		},
-	}, []string{uuid})
+	}, []string{pd.Uuid})
 	if err != nil {
 		log.Println("post-registration notification failed", err)
 	}
 }
 
 func handleUnregisterSubscriber(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-	var banned bool
-
-	if r.Method != "POST" {
-		handleError(w, r, "unsupported HTTP method")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
 		return
 	}
-
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		uuid, banned, _ = getOrCreatePlayerData(getIp(r))
-	} else {
-		uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
-		if uuid == "" {
-			handleError(w, r, "invalid token")
-			return
-		}
-	}
-
-	if banned {
+	if pd.Banned {
 		handleError(w, r, "player is banned")
 		return
 	}
@@ -130,14 +101,14 @@ func handleUnregisterSubscriber(w http.ResponseWriter, r *http.Request) {
 	var sub struct {
 		Endpoint string `json:"endpoint"`
 	}
-	defer r.Body.Close()
-	err := json.NewDecoder(r.Body).Decode(&sub)
+
+	err = json.NewDecoder(r.Body).Decode(&sub)
 	if err != nil {
 		handleError(w, r, "invalid payload")
 		return
 	}
 
-	_, err = db.Exec("DELETE FROM pushSubscriptions WHERE uuid = ? AND endpoint = ?", uuid, sub.Endpoint)
+	_, err = db.Exec("DELETE FROM pushSubscriptions WHERE uuid = ? AND endpoint = ?", pd.Uuid, sub.Endpoint)
 	if err != nil {
 		handleError(w, r, "error removing push subscription")
 		return

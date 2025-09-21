@@ -25,6 +25,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -86,41 +87,31 @@ func initSchedules() {
 }
 
 func handleSchedules(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-	var banned bool
-	var rank int
-
 	commandParam := r.URL.Query().Get("command")
 	if commandParam == "" {
 		handleError(w, r, "command not specified")
 		return
 	}
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		if commandParam == "list" || commandParam == "follow" {
-			uuid, banned, _ = getOrCreatePlayerData(getIp(r))
-		} else {
-			handleError(w, r, "token not specified")
-			return
-		}
-	} else {
-		uuid, _, rank, _, banned, _ = getPlayerDataFromToken(token)
-		if uuid == "" {
-			handleError(w, r, "invalid token")
-			return
-		}
-	}
 
-	if banned {
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
+	}
+	if pd.Banned {
 		handleError(w, r, "player is banned")
 		return
 	}
+	if !pd.Registered && !slices.Contains([]string{"list", "follow"}, commandParam) {
+		handleError(w, r, "not registered")
+		return
+	}
 
-	isMod := rank > 0
+	isMod := pd.Rank > 0
 
 	switch commandParam {
 	case "list":
-		schedules, err := listSchedules(uuid, rank)
+		schedules, err := listSchedules(pd.Uuid, pd.Rank)
 		if err != nil {
 			handleError(w, r, "error listing schedules: "+err.Error())
 			return
@@ -181,14 +172,14 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 				handleError(w, r, "invalid partyId")
 				return
 			}
-			playerPartyId, err := getPlayerPartyId(uuid)
+			playerPartyId, err := getPlayerPartyId(pd.Uuid)
 			if err != nil || (!isMod && playerPartyId != partyId) {
 				handleError(w, r, "invalid partyId")
 				return
 			}
 		}
 		ownerUuid := query.Get("ownerUuid")
-		if !isMod && ownerUuid != uuid {
+		if !isMod && ownerUuid != pd.Uuid {
 			handleError(w, r, "cannot create/modify events for other people")
 			return
 		}
@@ -240,7 +231,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			SystemName:        themeParam,
 			SchedulePlatforms: platforms,
 		}
-		id, err = updateSchedule(id, rank, uuid, payload)
+		id, err = updateSchedule(id, pd.Rank, pd.Uuid, payload)
 		if err != nil {
 			fmt.Printf("updateSchedules: %s", err)
 			handleError(w, r, fmt.Sprintf("error creating/updating schedule: %s", err))
@@ -255,7 +246,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		shouldFollow := query.Get("value") == "true"
-		followCount, err := followSchedule(uuid, rank, scheduleId, shouldFollow)
+		followCount, err := followSchedule(pd.Uuid, pd.Rank, scheduleId, shouldFollow)
 		if err != nil {
 			fmt.Printf("followSchedules: %s", err)
 			handleError(w, r, "error following schedule")
@@ -268,7 +259,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid scheduleId")
 			return
 		}
-		err = cancelSchedule(uuid, rank, scheduleId)
+		err = cancelSchedule(pd.Uuid, pd.Rank, scheduleId)
 		if err != nil {
 			fmt.Printf("cancelSchedules: %s", err)
 			handleError(w, r, "error cancelling schedule")
@@ -321,7 +312,7 @@ SELECT s.id, s.name, s.description, s.ownerUuid, acc.user AS ownerName, pd.rank 
 FROM schedules s
 JOIN accounts acc ON acc.uuid = s.ownerUuid
 JOIN playerGameData pgd ON pgd.uuid = s.ownerUuid AND pgd.game = ?
-JOIN players pd ON pd.uuid = s.ownerUuid
+JOIN players pd ON pd.Uuid = s.ownerUuid
 LEFT JOIN tally ON tally.scheduleId = s.id
 WHERE COALESCE(s.partyId, 0) IN (0, ?) OR ?`
 

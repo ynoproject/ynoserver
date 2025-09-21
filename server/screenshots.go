@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -90,23 +91,14 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := r.Header.Get("Authorization")
-	accountRequired := commandParam != "getScreenshotFeed" && commandParam != "getPlayerScreenshots" && commandParam != "getScreenshotGames"
-
-	if token == "" && accountRequired {
-		handleError(w, r, "token not specified")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
 		return
 	}
-
-	var uuid string
-
-	if token != "" {
-		uuid = getUuidFromToken(token)
-
-		if uuid == "" && accountRequired {
-			handleError(w, r, "invalid token")
-			return
-		}
+	if !pd.Registered && !slices.Contains([]string{"getScreenshotFeed", "getPlayerScreenshots", "getScreenshotGames"}, commandParam) {
+		handleError(w, r, "not registered")
+		return
 	}
 
 	switch commandParam {
@@ -178,7 +170,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			intervalParam = "day"
 		}
 
-		screenshots, err := getScreenshotFeed(uuid, limit, offset, offsetIdParam, gameParam, sortOrderParam, intervalParam)
+		screenshots, err := getScreenshotFeed(pd.Uuid, limit, offset, offsetIdParam, gameParam, sortOrderParam, intervalParam)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -195,11 +187,11 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 	case "getPlayerScreenshots":
 		uuidParam := r.URL.Query().Get("uuid")
 		if uuidParam == "" {
-			if uuid == "" {
-				handleError(w, r, "invalid token")
-				return
+			if !pd.Registered {
+				handleError(w, r, "not registered")
 			}
-			uuidParam = uuid
+
+			uuidParam = pd.Uuid
 		}
 
 		playerScreenshots, err := getPlayerScreenshots(uuidParam)
@@ -281,7 +273,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 
 		id := getNanoId()
 
-		err = writeScreenshotData(id, uuid, config.gameName, mapIdParam, mapX, mapY, temp)
+		err = writeScreenshotData(id, pd.Uuid, config.gameName, mapIdParam, mapX, mapY, temp)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -291,7 +283,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		if temp {
 			directory += "temp/"
 		}
-		directory += uuid
+		directory += pd.Uuid
 
 		err = os.Mkdir(directory, 0755)
 		if err != nil && os.IsNotExist(err) {
@@ -329,9 +321,9 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				var success bool
 				var err error
 				if commandParam == "setPublic" {
-					success, err = setPlayerScreenshotPublic(idParam, uuid, value)
+					success, err = setPlayerScreenshotPublic(idParam, pd.Uuid, value)
 				} else {
-					success, err = setPlayerScreenshotSpoiler(idParam, uuid, value)
+					success, err = setPlayerScreenshotSpoiler(idParam, pd.Uuid, value)
 				}
 				if err != nil {
 					handleInternalError(w, r, err)
@@ -344,9 +336,7 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if commandParam == "setPublic" && valueParam == "1" {
-					_, name, _, badge, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-
-					err = sendWebhookMessage(config.screenshotWebhook, name, badge, fmt.Sprintf("https://connect.ynoproject.net/%s/screenshots/%s/%s.png", config.gameName, uuid, idParam), false)
+					err = sendWebhookMessage(config.screenshotWebhook, pd.Name, pd.Badge, fmt.Sprintf("https://connect.ynoproject.net/%s/screenshots/%s/%s.png", config.gameName, pd.Uuid, idParam), false)
 					if err != nil {
 						handleError(w, r, "failed to send to webhook")
 						return
@@ -356,9 +346,9 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				var err error
 				var success bool
 				if value {
-					success, err = writePlayerScreenshotLike(idParam, uuid)
+					success, err = writePlayerScreenshotLike(idParam, pd.Uuid)
 				} else {
-					success, err = deletePlayerScreenshotLike(idParam, uuid)
+					success, err = deletePlayerScreenshotLike(idParam, pd.Uuid)
 				}
 				if err != nil {
 					handleInternalError(w, r, err)
@@ -377,12 +367,12 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 
 			uuidParam := r.URL.Query().Get("uuid")
 			if uuidParam == "" {
-				ownerUuid = uuid
+				ownerUuid = pd.Uuid
 			} else {
 				ownerUuid = uuidParam
 			}
 
-			success, err := deleteScreenshot(idParam, uuid)
+			success, err := deleteScreenshot(idParam, pd.Uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return

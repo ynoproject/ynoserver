@@ -18,6 +18,7 @@
 package server
 
 import (
+	"crypto"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -27,17 +28,24 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type PlayerInfo struct {
-	Uuid            string `json:"uuid"`
-	Name            string `json:"name"`
-	Rank            int    `json:"rank"`
+type PlayerData struct {
+	Uuid       string `json:"uuid"`
+	Registered bool   `json:"registered"`
+	Name       string `json:"name"`
+	Rank       int    `json:"rank"`
+
+	Banned bool `json:"-"`
+	Muted  bool `json:"-"`
+
 	Badge           string `json:"badge"`
 	BadgeSlotRows   int    `json:"badgeSlotRows"`
 	BadgeSlotCols   int    `json:"badgeSlotCols"`
@@ -81,6 +89,12 @@ type CheckUpdateData struct {
 	BadgeIds []string `json:"badgeIds"`
 	NewTags  bool     `json:"newTags"`
 }
+
+// JWT
+var (
+	jwtKey    crypto.PrivateKey
+	jwtKeyPub crypto.PublicKey
+)
 
 func initApi() {
 	logInitTask("API")
@@ -136,30 +150,41 @@ func initApi() {
 	http.HandleFunc("/api/players", handlePlayers)
 
 	http.HandleFunc("/api/schedule", handleSchedules)
-	http.HandleFunc("/api/registernotification", handleRegisterSubscriber)
-	http.HandleFunc("/api/unregisternotification", handleUnregisterSubscriber)
+	http.HandleFunc("POST /api/registernotification", handleRegisterSubscriber)
+	http.HandleFunc("POST /api/unregisternotification", handleUnregisterSubscriber)
 	http.HandleFunc("/api/vapidpublickey", handleVapidPublicKeyRequest)
 
-	http.HandleFunc("/api/report", handleReport)
+	http.HandleFunc("POST /api/report", handleReport)
+
+	// JWT
+	keyFile, err := os.ReadFile("jwt.pem")
+	if err != nil {
+		panic(err)
+	}
+
+	jwtKey, err = jwt.ParseEdPrivateKeyFromPEM(keyFile)
+	if err != nil {
+		panic(err)
+	}
+
+	keyFile, err = os.ReadFile("jwtpub.pem")
+	if err != nil {
+		panic(err)
+	}
+
+	jwtKeyPub, err = jwt.ParseEdPublicKeyFromPEM(keyFile)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func handleParty(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-	var rank int
-	var banned bool
-
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		uuid, banned, _ = getOrCreatePlayerData(getIp(r))
-	} else {
-		uuid, _, rank, _, banned, _ = getPlayerDataFromToken(token)
-		if uuid == "" {
-			handleError(w, r, "invalid token")
-			return
-		}
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
 	}
-
-	if banned {
+	if pd.Banned {
 		handleError(w, r, "player is banned")
 		return
 	}
@@ -172,7 +197,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 
 	switch commandParam {
 	case "id":
-		partyId, err := getPlayerPartyId(uuid)
+		partyId, err := getPlayerPartyId(pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -211,7 +236,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(party.Description))
 		return
 	case "create", "update":
-		partyId, err := getPlayerPartyId(uuid)
+		partyId, err := getPlayerPartyId(pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -219,7 +244,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		create := commandParam == "create"
 		if create {
 			if partyId != 0 {
-				err = handlePartyMemberLeave(partyId, uuid)
+				err = handlePartyMemberLeave(partyId, pd.Uuid)
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
@@ -235,7 +260,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 				handleInternalError(w, r, err)
 				return
 			}
-			if ownerUuid != uuid {
+			if ownerUuid != pd.Uuid {
 				handleError(w, r, "attempted party update from non-owner")
 				return
 			}
@@ -281,16 +306,16 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if create {
-			partyId, err = createPartyData(nameParam, public, pass, themeParam, description, uuid)
+			partyId, err = createPartyData(nameParam, public, pass, themeParam, description, pd.Uuid)
 		} else {
-			err = updatePartyData(partyId, nameParam, public, pass, themeParam, description, uuid)
+			err = updatePartyData(partyId, nameParam, public, pass, themeParam, description, pd.Uuid)
 		}
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 		if create {
-			err = joinPlayerParty(partyId, uuid)
+			err = joinPlayerParty(partyId, pd.Uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -309,7 +334,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid partyId value")
 			return
 		}
-		if rank == 0 {
+		if pd.Rank == 0 {
 			party, ok := parties[partyId]
 			if !ok {
 				handleInternalError(w, r, errors.New("party id not in cache"))
@@ -327,25 +352,25 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		playerPartyId, err := getPlayerPartyId(uuid)
+		playerPartyId, err := getPlayerPartyId(pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 		if playerPartyId != 0 {
-			err = handlePartyMemberLeave(partyId, uuid)
+			err = handlePartyMemberLeave(partyId, pd.Uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
 			}
 		}
-		err = joinPlayerParty(partyId, uuid)
+		err = joinPlayerParty(partyId, pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 	case "leave":
-		partyId, err := getPlayerPartyId(uuid)
+		partyId, err := getPlayerPartyId(pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -354,14 +379,14 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "player not in a party")
 			return
 		}
-		err = handlePartyMemberLeave(partyId, uuid)
+		err = handlePartyMemberLeave(partyId, pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 	case "kick", "transfer":
 		kick := commandParam == "kick"
-		partyId, err := getPlayerPartyId(uuid)
+		partyId, err := getPlayerPartyId(pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -375,7 +400,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		if ownerUuid != uuid {
+		if ownerUuid != pd.Uuid {
 			if kick {
 				handleError(w, r, "attempted party kick non-owner")
 			} else {
@@ -411,7 +436,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "disband":
-		partyId, err := getPlayerPartyId(uuid)
+		partyId, err := getPlayerPartyId(pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -421,7 +446,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleInternalError(w, r, err)
 			return
 		}
-		if ownerUuid != uuid {
+		if ownerUuid != pd.Uuid {
 			handleError(w, r, "attempted party disband from non-owner")
 			return
 		}
@@ -464,22 +489,12 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 }
 
 func handleSaveSync(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-	var banned bool
-
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		handleError(w, r, "token not specified")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data: "+err.Error())
 		return
-	} else {
-		uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
-		if uuid == "" {
-			handleError(w, r, "invalid token")
-			return
-		}
 	}
-
-	if banned {
+	if pd.Banned {
 		handleError(w, r, "player is banned")
 		return
 	}
@@ -492,7 +507,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 
 	switch commandParam {
 	case "timestamp":
-		timestamp, err := getSaveDataTimestamp(uuid)
+		timestamp, err := getSaveDataTimestamp(pd.Uuid)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return
@@ -503,7 +518,7 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(timestamp.Format(time.RFC3339)))
 		return
 	case "get":
-		saveData, err := getSaveData(uuid)
+		saveData, err := getSaveData(pd.Uuid)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				w.Write([]byte("{}"))
@@ -522,14 +537,14 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid data")
 			return
 		}
-		err = createGameSaveData(uuid, data)
+		err = createGameSaveData(pd.Uuid, data)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 		return
 	case "clear":
-		err := clearGameSaveData(uuid)
+		err := clearGameSaveData(pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -576,49 +591,34 @@ func handleVm(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleBadge(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-	var name string
-	var rank int
-	var badge string
-	var badgeSlotRows int
-	var badgeSlotCols int
-	var banned bool
-	var presetId int
-
 	commandParam := r.URL.Query().Get("command")
 	if commandParam == "" {
 		handleError(w, r, "command not specified")
 		return
 	}
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		// commands available for guest players
-		if commandParam == "list" || commandParam == "playerSlotList" {
-			uuid, banned, _ = getOrCreatePlayerData(getIp(r))
-		} else {
-			handleError(w, r, "token not specified")
-			return
-		}
-	} else {
-		uuid, name, rank, badge, banned, _ = getPlayerDataFromToken(token)
-		if uuid == "" {
-			handleError(w, r, "invalid token")
-			return
-		}
-	}
 
-	if banned {
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
+	}
+	if pd.Banned {
 		handleError(w, r, "player is banned")
 		return
 	}
-
-	if strings.HasPrefix(commandParam, "slot") || strings.HasPrefix(commandParam, "preset") {
-		badgeSlotRows, badgeSlotCols = getPlayerBadgeSlotCounts(name)
+	if !pd.Registered && !slices.Contains([]string{"list", "playerSlotList"}, commandParam) {
+		handleError(w, r, "not registered")
+		return
 	}
 
+	var badgeSlotRows, badgeSlotCols int
+	if strings.HasPrefix(commandParam, "slot") || strings.HasPrefix(commandParam, "preset") {
+		badgeSlotRows, badgeSlotCols = getPlayerBadgeSlotCounts(pd.Name)
+	}
+
+	var presetId int
 	if strings.HasPrefix(commandParam, "preset") {
 		raw := r.URL.Query().Get("preset")
-		var err error
 		presetId, err = strconv.Atoi(raw)
 		if raw == "" || err != nil {
 			handleError(w, r, "invalid preset")
@@ -634,19 +634,19 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if idParam != badge {
+		if idParam != pd.Badge {
 			var unlocked bool
 
 			switch idParam {
 			case "null":
 				unlocked = true
 			default:
-				tags, _, err := getPlayerTags(uuid)
+				tags, _, err := getPlayerTags(pd.Uuid)
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
 				}
-				badgeData, err := getPlayerBadgeData(uuid, rank, tags, true, true)
+				badgeData, err := getPlayerBadgeData(pd.Uuid, pd.Rank, tags, true, true)
 				if err != nil {
 					handleInternalError(w, r, err)
 					return
@@ -665,14 +665,14 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			if rank < 2 && !unlocked {
+			if pd.Rank < 2 && !unlocked {
 				handleError(w, r, "specified badge is locked")
 				return
 			}
 		}
 
 		if commandParam == "set" {
-			err := setPlayerBadge(uuid, idParam)
+			err := setPlayerBadge(pd.Uuid, idParam)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -702,7 +702,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			err = setPlayerBadgeSlot(uuid, idParam, slotRow, slotCol)
+			err = setPlayerBadgeSlot(pd.Uuid, idParam, slotRow, slotCol)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -710,16 +710,16 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		}
 	case "list":
 		var tags []string
-		if token != "" {
+		if pd.Registered {
 			var err error
-			tags, _, err = getPlayerTags(uuid)
+			tags, _, err = getPlayerTags(pd.Uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
 			}
 		}
 		if r.URL.Query().Get("simple") == "true" {
-			simpleBadgeData, err := getSimplePlayerBadgeData(uuid, rank, tags, token != "")
+			simpleBadgeData, err := getSimplePlayerBadgeData(pd.Uuid, pd.Rank, tags, pd.Registered)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -731,11 +731,11 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			}
 			w.Write(simpleBadgeDataJson)
 		} else {
-			if token == "" {
+			if !pd.Registered {
 				handleError(w, r, "cannot retrieve player badge data for guest player")
 				return
 			}
-			badgeData, err := getPlayerBadgeData(uuid, rank, tags, true, false)
+			badgeData, err := getPlayerBadgeData(pd.Uuid, pd.Rank, tags, true, false)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -756,23 +756,23 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		}
 		var tags []string
 		var newTags bool
-		if token != "" {
+		if pd.Registered {
 			var err error
 			var lastUnlocked time.Time
-			tags, lastUnlocked, err = getPlayerTags(uuid)
+			tags, lastUnlocked, err = getPlayerTags(pd.Uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
 			}
 			newTags = lastUnlocked.UTC().After(sinceTimestamp)
 		}
-		newUnlockedBadgeIds, err := getPlayerNewUnlockedBadgeIds(uuid, rank, tags)
+		newUnlockedBadgeIds, err := getPlayerNewUnlockedBadgeIds(pd.Uuid, pd.Rank, tags)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 		if len(newUnlockedBadgeIds) != 0 {
-			err := updatePlayerBadgeSlotCounts(uuid)
+			err := updatePlayerBadgeSlotCounts(pd.Uuid)
 			if err != nil {
 				handleInternalError(w, r, err)
 				return
@@ -787,7 +787,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		w.Write(responseJson)
 		return
 	case "slotList":
-		badgeSlots, err := getPlayerBadgeSlots(name, badgeSlotRows, badgeSlotCols)
+		badgeSlots, err := getPlayerBadgeSlots(pd.Name, badgeSlotRows, badgeSlotCols)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -821,7 +821,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		w.Write(badgeSlotsJson)
 		return
 	case "presetGet":
-		preset, err := getPlayerBadgePreset(uuid, presetId)
+		preset, err := getPlayerBadgePreset(pd.Uuid, presetId)
 		if err != nil {
 			handleError(w, r, "could not get badge preset")
 			return
@@ -830,7 +830,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(preset))
 		return
 	case "presetSave":
-		badgeSlots, err := getPlayerBadgeSlots(name, badgeSlotRows, badgeSlotCols)
+		badgeSlots, err := getPlayerBadgeSlots(pd.Name, badgeSlotRows, badgeSlotCols)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
@@ -842,20 +842,21 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := setPlayerBadgePreset(uuid, presetId, string(data)); err != nil {
+		err = setPlayerBadgePreset(pd.Uuid, presetId, string(data))
+		if err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		return
 	case "presetLoad":
-		if err := applyPlayerBadgePreset(uuid, presetId, badgeSlotRows, badgeSlotCols); err != nil {
+		if err := applyPlayerBadgePreset(pd.Uuid, presetId, badgeSlotRows, badgeSlotCols); err != nil {
 			handleInternalError(w, r, err)
 			return
 		}
 
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		return
 	default:
 		handleError(w, r, "unknown command")
@@ -866,8 +867,7 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	user, password := r.Form.Get("user"), r.Form.Get("password")
+	user, password := r.FormValue("user"), r.FormValue("password")
 
 	if user == "" || len(user) > 12 || !isOkString(user) || password == "" || len(password) > 72 {
 		handleError(w, r, "bad response")
@@ -889,11 +889,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var uuid string
-	db.QueryRow("SELECT uuid FROM players WHERE ip = ?", ip).Scan(&uuid) // no row causes a non-fatal error, uuid is still unset so it doesn't matter
-	if uuid == "" {
-		uuid, _, _ = getOrCreatePlayerData(ip)
-	}
+	pd, _ := getUnauthenticatedPlayerData(getIp(r)) // get current guest data otherwise create a player record
 
 	db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip) // set ip to null to disable ip-based login
 
@@ -903,15 +899,13 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, NOW(), ?, ?, ?)", ip, uuid, user, hashedPassword)
+	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, NOW(), ?, ?, ?)", ip, pd.Uuid, user, hashedPassword)
 
 	w.Write([]byte("ok"))
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	user, password := r.Form.Get("user"), r.Form.Get("password")
-
+	user, password := r.FormValue("user"), r.FormValue("password")
 	if user == "" || !isOkString(user) || password == "" || len(password) > 72 {
 		handleError(w, r, "bad response")
 		return
@@ -919,53 +913,70 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	var userPassHash string
 	db.QueryRow("SELECT pass FROM accounts WHERE user = ?", user).Scan(&userPassHash)
-
 	if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password)) != nil {
 		handleError(w, r, "bad login")
 		return
 	}
 
-	token := randString(32)
-	db.Exec("INSERT INTO playerSessions (sessionId, uuid, expiration) (SELECT ?, uuid, DATE_ADD(NOW(), INTERVAL 30 DAY) FROM accounts WHERE user = ?)", token, user)
 	db.Exec("UPDATE accounts SET timestampLoggedIn = NOW() WHERE user = ?", user)
 
-	w.Write([]byte(token))
+	var uuid string
+	db.QueryRow("SELECT uuid FROM accounts WHERE user = ?", user).Scan(&uuid)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, jwt.StandardClaims{
+		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+		IssuedAt:  time.Now().Unix(),
+		Issuer:    "yno/" + config.gameName,
+		Subject:   uuid + "/" + getIp(r),
+	})
+
+	signed, err := token.SignedString(jwtKey)
+	if err != nil {
+		handleError(w, r, "failed to sign token")
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth",
+		Path:     "/",
+		Value:    signed,
+		MaxAge:   60 * 60 * 24,
+		Secure:   true,
+		HttpOnly: true,
+	})
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		handleError(w, r, "token not specified")
-		return
-	}
-
-	if getUuidFromToken(token) == "" {
-		handleError(w, r, "invalid token")
-		return
-	}
-
-	db.Exec("DELETE FROM playerSessions WHERE sessionId = ?", token)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth",
+		Path:     "/",
+		MaxAge:   -1,
+		Secure:   true,
+		HttpOnly: true,
+	})
 
 	w.Write([]byte("ok"))
 }
 
 func handleChangePw(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		handleError(w, r, "token not specified")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
 		return
 	}
-
-	uuid, loginUser, rank, _, _, _, _ := getPlayerInfoFromToken(token)
+	if !pd.Registered {
+		handleError(w, r, "not registered")
+		return
+	}
 
 	// GET params user, new password
 	user, newPassword := r.URL.Query().Get("user"), r.URL.Query().Get("newPassword")
 
 	var username string
-	if rank < 1 || user == "" {
-		username = loginUser
+	if pd.Rank < 1 || user == "" {
+		username = pd.Name
 
 		// GET param password
 		password := r.URL.Query().Get("password")
@@ -999,12 +1010,6 @@ func handleChangePw(w http.ResponseWriter, r *http.Request) {
 
 	db.Exec("UPDATE accounts SET pass = ? WHERE user = ?", hashedPassword, username)
 
-	err = deletePlayerSessions(uuid)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
 	w.Write([]byte("ok"))
 }
 
@@ -1037,17 +1042,13 @@ func handleRemovePlayerFriend(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAddRemovePlayerFriend(w http.ResponseWriter, r *http.Request, isAdd bool) {
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		handleError(w, r, "token not specified")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		writeErrLog("unknown", "sess", "failed to get player data")
 		return
 	}
-
-	uuid := getUuidFromToken(token)
-
-	if uuid == "" {
-		handleError(w, r, "invalid token")
+	if !pd.Registered {
+		handleError(w, r, "not registered")
 		return
 	}
 
@@ -1073,20 +1074,18 @@ func handleAddRemovePlayerFriend(w http.ResponseWriter, r *http.Request, isAdd b
 		targetUuid = uuid
 	}
 
-	var err error
-
 	if isAdd {
-		if isPlayerBlocked(uuid, targetUuid) {
+		if isPlayerBlocked(pd.Uuid, targetUuid) {
 			handleError(w, r, "cannot send friend request to blocked user")
 			return
 		}
-		if isPlayerBlocked(targetUuid, uuid) {
+		if isPlayerBlocked(targetUuid, pd.Uuid) {
 			handleError(w, r, "cannot send friend request to user who has blocked you")
 			return
 		}
-		err = addPlayerFriend(uuid, targetUuid)
+		err = addPlayerFriend(pd.Uuid, targetUuid)
 	} else {
-		err = removePlayerFriend(uuid, targetUuid)
+		err = removePlayerFriend(pd.Uuid, targetUuid)
 	}
 
 	if err != nil {
@@ -1098,14 +1097,10 @@ func handleAddRemovePlayerFriend(w http.ResponseWriter, r *http.Request, isAdd b
 }
 
 func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	var uuid string
-
-	if token == "" {
-		uuid, _, _ = getPlayerInfo(getIp(r))
-	} else {
-		uuid = getUuidFromToken(token)
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
 	}
 
 	targetUuid := r.URL.Query().Get("uuid")
@@ -1130,16 +1125,16 @@ func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
 		targetUuid = uuid
 	}
 
-	err := tryBlockPlayer(uuid, targetUuid)
+	err = tryBlockPlayer(pd.Uuid, targetUuid)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
 	}
 	// after blocking, remove friend
-	_ = removePlayerFriend(uuid, targetUuid)
+	_ = removePlayerFriend(pd.Uuid, targetUuid)
 
 	// "disconnect" them NOW!!!
-	if client, ok := clients.Load(uuid); ok {
+	if client, ok := clients.Load(pd.Uuid); ok {
 		client.blockedUsers[targetUuid] = true
 		if otherClient, ok := clients.Load(targetUuid); ok {
 			if (client.roomC != nil && otherClient.roomC != nil) && client.roomC.room == otherClient.roomC.room {
@@ -1153,14 +1148,10 @@ func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	var uuid string
-
-	if token == "" {
-		uuid, _, _ = getPlayerInfo(getIp(r))
-	} else {
-		uuid = getUuidFromToken(token)
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
 	}
 
 	targetUuid := r.URL.Query().Get("uuid")
@@ -1185,14 +1176,14 @@ func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
 		targetUuid = uuid
 	}
 
-	err := tryUnblockPlayer(uuid, targetUuid)
+	err = tryUnblockPlayer(pd.Uuid, targetUuid)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
 	}
 
 	// "connect" them NOW!!!
-	if client, ok := clients.Load(uuid); ok {
+	if client, ok := clients.Load(pd.Uuid); ok {
 		client.blockedUsers[targetUuid] = false
 		if otherClient, ok := clients.Load(targetUuid); ok {
 			if (client.roomC != nil && otherClient.roomC != nil) && client.roomC.room == otherClient.roomC.room {
@@ -1206,17 +1197,13 @@ func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleBlockList(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	var uuid string
-
-	if token == "" {
-		uuid, _, _ = getPlayerInfo(getIp(r))
-	} else {
-		uuid = getUuidFromToken(token)
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
 	}
 
-	blockedPlayers, err := getBlockedPlayerData(uuid)
+	blockedPlayers, err := getBlockedPlayerData(pd.Uuid)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -1237,16 +1224,17 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		handleError(w, r, "token not specified")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
+	}
+	if !pd.Registered {
+		handleError(w, r, "not registered")
 		return
 	}
 
-	uuid := getUuidFromToken(token)
-
-	if client, ok := clients.Load(uuid); ok {
+	if client, ok := clients.Load(pd.Uuid); ok {
 		if client.roomC != nil {
 			var allConnLocationNames []string
 			retUrl := "https://explorer.yume.wiki/location?locations="
@@ -1286,7 +1274,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 				allConnLocationNames = append(allConnLocationNames, connLocationNames...)
 			}
 
-			hiddenLocationNames, err := getPlayerMissingGameLocationNames(uuid, allConnLocationNames)
+			hiddenLocationNames, err := getPlayerMissingGameLocationNames(pd.Uuid, allConnLocationNames)
 			if err != nil {
 				handleError(w, r, err.Error())
 				return
@@ -1316,16 +1304,17 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleExplorerCompletion(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		handleError(w, r, "token not specified")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
+	}
+	if !pd.Registered {
+		handleError(w, r, "not registered")
 		return
 	}
 
-	uuid := getUuidFromToken(token)
-
-	locationCompletion, err := getPlayerGameLocationCompletion(uuid, config.gameName)
+	locationCompletion, err := getPlayerGameLocationCompletion(pd.Uuid, config.gameName)
 	if err != nil {
 		handleError(w, r, err.Error())
 		return
@@ -1335,16 +1324,17 @@ func handleExplorerCompletion(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleExplorerLocations(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		handleError(w, r, "token not specified")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
+	}
+	if !pd.Registered {
+		handleError(w, r, "not registered")
 		return
 	}
 
-	uuid := getUuidFromToken(token)
-
-	locationCompletion, err := getPlayerGameLocationCompletion(uuid, config.gameName)
+	locationCompletion, err := getPlayerGameLocationCompletion(pd.Uuid, config.gameName)
 	if err != nil {
 		handleError(w, r, err.Error())
 		return
@@ -1354,7 +1344,7 @@ func handleExplorerLocations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	missingLocationNames, err := getPlayerAllMissingGameLocationNames(uuid)
+	missingLocationNames, err := getPlayerAllMissingGameLocationNames(pd.Uuid)
 	if err != nil {
 		handleError(w, r, err.Error())
 		return
@@ -1380,14 +1370,10 @@ func handleInternalError(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func handleChatHistory(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		uuid, _, _ = getOrCreatePlayerData(getIp(r))
-	} else {
-		uuid = getUuidFromToken(token)
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
 	}
 
 	lastMsgId := r.URL.Query().Get("lastMsgId")
@@ -1427,7 +1413,7 @@ func handleChatHistory(w http.ResponseWriter, r *http.Request) {
 		partyMsgLimit = 250
 	}
 
-	chatHistory, err := getChatMessageHistory(uuid, globalMsgLimit, partyMsgLimit, lastMsgId)
+	chatHistory, err := getChatMessageHistory(pd.Uuid, globalMsgLimit, partyMsgLimit, lastMsgId)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -1443,14 +1429,10 @@ func handleChatHistory(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-
-	token := r.Header.Get("Authorization")
-
-	if token == "" {
-		uuid, _, _ = getOrCreatePlayerData(getIp(r))
-	} else {
-		uuid = getUuidFromToken(token)
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
+		return
 	}
 
 	lastGlobalMsgId := r.URL.Query().Get("lastGlobalMsgId")
@@ -1460,7 +1442,7 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		updatePlayerLastChatMessage(uuid, lastGlobalMsgId, false)
+		updatePlayerLastChatMessage(pd.Uuid, lastGlobalMsgId, false)
 	}
 
 	lastPartyMsgId := r.URL.Query().Get("lastPartyMsgId")
@@ -1470,57 +1452,33 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		updatePlayerLastChatMessage(uuid, lastPartyMsgId, true)
+		updatePlayerLastChatMessage(pd.Uuid, lastPartyMsgId, true)
 	}
 
 	w.Write([]byte("ok"))
 }
 
 func handleInfo(w http.ResponseWriter, r *http.Request) {
-	var uuid string
-	var name string
-	var rank int
-	var badge string
-	var badgeSlotRows int
-	var badgeSlotCols int
-	var screenshotLimit int
-	var medals [5]int
-	var locationIds []int
+	pd, err := getPlayerData(r)
+	if err != nil {
+		writeErrLog("unknown", "sess", "failed to get player data")
+		return
+	}
 
-	var err error
-
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		uuid, name, rank = getPlayerInfo(getIp(r))
-	} else {
-		uuid, name, rank, badge, badgeSlotRows, badgeSlotCols, screenshotLimit = getPlayerInfoFromToken(token)
-		medals = getPlayerMedals(uuid)
-		locationIds, _ = getPlayerGameLocationIds(uuid, config.gameName)
+	if pd.Registered {
+		pd.BadgeSlotRows, pd.BadgeSlotCols = getPlayerBadgeSlotCounts(pd.Name)
+		pd.Medals = getPlayerMedals(pd.Uuid)
+		pd.LocationIds, _ = getPlayerGameLocationIds(pd.Uuid, config.gameName)
+		pd.ScreenshotLimit = getPlayerScreenshotLimit(pd.Uuid)
 	}
 
 	// guest accounts with no playerGameData records will return nothing
 	// if uuid is empty it breaks fetchAndUpdatePlayerInfo in forest-orb
-	if uuid == "" {
-		uuid = "null"
+	if pd.Uuid == "" {
+		pd.Uuid = "null"
 	}
 
-	playerInfo := PlayerInfo{
-		Uuid:            uuid,
-		Name:            name,
-		Rank:            rank,
-		Badge:           badge,
-		BadgeSlotRows:   badgeSlotRows,
-		BadgeSlotCols:   badgeSlotCols,
-		ScreenshotLimit: screenshotLimit,
-		Medals:          medals,
-		LocationIds:     locationIds,
-	}
-	playerInfoJson, err := json.Marshal(playerInfo)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-	w.Write(playerInfoJson)
+	json.NewEncoder(w).Encode(pd)
 }
 
 func handlePlayers(w http.ResponseWriter, r *http.Request) {

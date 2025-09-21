@@ -835,8 +835,8 @@ func (c *RoomClient) handleAnc(msg []string) error {
 
 func (c *SessionClient) handleI() error {
 	badgeSlotRows, badgeSlotCols := getPlayerBadgeSlotCounts(c.name)
-	screenshotLimit := getPlayerScreenshotLimit(c.name)
-	playerInfoJson, err := json.Marshal(PlayerInfo{
+	screenshotLimit := getPlayerScreenshotLimit(c.uuid)
+	playerInfoJson, err := json.Marshal(PlayerData{
 		Uuid:            c.uuid,
 		Name:            c.name,
 		Rank:            c.rank,
@@ -1010,7 +1010,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		}
 
 		c.lastGlobalMessage = time.Now().UTC()
-	
+
 		if !c.banned {
 			c.broadcast(buildMsg("p", c.uuid, c.name, c.system, c.rank, c.account, c.badge, c.medals[:]))
 			c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))

@@ -79,10 +79,10 @@ func handleRoom(w http.ResponseWriter, r *http.Request) {
 		playerToken = token
 	}
 
-	joinRoomWs(conn, getIp(r), playerToken, idInt)
+	joinRoomWs(conn, r, playerToken, idInt)
 }
 
-func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
+func joinRoomWs(conn *websocket.Conn, r *http.Request, token string, roomId int) {
 	// we don't need the value of room until later but it would be silly to do
 	// the database lookups then close the socket after due to a bad room id
 	room, ok := rooms[roomId]
@@ -90,13 +90,10 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		return
 	}
 
-	var uuid string
-	if token != "" {
-		uuid = getUuidFromToken(token)
-	}
-
-	if uuid == "" {
-		uuid, _, _ = getOrCreatePlayerData(ip)
+	pd, err := getPlayerData(r)
+	if err != nil {
+		writeErrLog("unknown", "0000", "failed to get player data")
+		return
 	}
 
 	client := &RoomClient{
@@ -105,7 +102,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		key:    serverSecurity.NewClientKey(),
 	}
 
-	if session, ok := clients.Load(uuid); ok {
+	if session, ok := clients.Load(pd.Uuid); ok {
 		if session.roomC != nil {
 			session.roomC.cancel()
 		}
@@ -114,14 +111,14 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 		client.session = session
 	} else {
 		// use 0000 as a placeholder since client.mapId isn't set until later
-		writeErrLog(uuid, "0000", "player has no session")
+		writeErrLog(pd.Uuid, "0000", "player has no session")
 		return
 	}
 
 	client.ctx, client.cancel = context.WithCancel(client.session.ctx)
 
-	if tags, _, err := getPlayerTags(uuid); err != nil {
-		writeErrLog(uuid, "0000", "failed to read player tags")
+	if tags, _, err := getPlayerTags(pd.Uuid); err != nil {
+		writeErrLog(pd.Uuid, "0000", "failed to read player tags")
 	} else {
 		client.tags = tags
 	}
@@ -129,7 +126,7 @@ func joinRoomWs(conn *websocket.Conn, ip string, token string, roomId int) {
 	go client.msgWriter()
 
 	// send client info about itself
-	client.outbox <- buildMsg("s", client.session.id, int(client.key), uuid, client.session.rank, client.session.account, client.session.badge, client.session.medals[:])
+	client.outbox <- buildMsg("s", client.session.id, int(client.key), pd.Uuid, client.session.rank, client.session.account, client.session.badge, client.session.medals[:])
 
 	// register client to room
 	client.joinRoom(room)

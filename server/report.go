@@ -661,34 +661,15 @@ func formatReportLog(obj any, targetUuid, ynoMsgId, originalMsg, game string, re
 }
 
 func handleReport(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		handleError(w, r, "Invalid request")
+	pd, err := getPlayerData(r)
+	if err != nil {
+		handleError(w, r, "failed to get player data")
 		return
 	}
-
-	var uuid string
-	var banned bool
-
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		handleError(w, r, "token not specified")
-		return
-	}
-
-	uuid, _, _, _, banned, _ = getPlayerDataFromToken(token)
-	if uuid == "" {
-		handleError(w, r, "invalid token")
-		return
-	}
-
-	if banned {
+	if pd.Banned {
 		handleError(w, r, "player is banned")
 		return
 	}
-
-	defer r.Body.Close()
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
 
 	var req struct {
 		Uuid        string `json:"uuid"`
@@ -696,25 +677,25 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		OriginalMsg string `json:"original_msg"`
 		MsgId       string `json:"msg_id"`
 	}
-	err := dec.Decode(&req)
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		handleError(w, r, "Invalid request")
+		handleError(w, r, "invalid request")
 		return
 	}
 
-	msgid, originalMsg, err := createReport(uuid, req.Uuid, req.Reason, req.MsgId, req.OriginalMsg)
+	msgid, originalMsg, err := createReport(pd.Uuid, req.Uuid, req.Reason, req.MsgId, req.OriginalMsg)
 	if err != nil {
-		writeErrLog(uuid, r.URL.Path, "createReport failed: "+err.Error())
+		writeErrLog(pd.Uuid, r.URL.Path, "createReport failed: "+err.Error())
 		handleError(w, r, "Could not create report")
 		return
 	}
 
 	err = sendReportLog(req.Uuid, msgid, originalMsg)
 	if err != nil {
-		writeErrLog(uuid, r.URL.Path, "sendReportMessage failed: "+err.Error())
+		writeErrLog(pd.Uuid, r.URL.Path, "sendReportMessage failed: "+err.Error())
 	}
 
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }
 
 func sendReportLogMainServer(uuid, ynoMsgId, originalMsg, game string) error {

@@ -24,15 +24,19 @@ import (
 )
 
 func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
+	pd, err := getAuthenticatedPlayerData(r)
+	if err != nil {
+		handleError(w, r, "invalid token")
+		return
+	}
+	if pd.Rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
 
-	response := make([]PlayerInfo, 0, clients.GetAmount())
+	response := make([]PlayerData, 0, clients.GetAmount())
 	for _, client := range clients.Get() {
-		response = append(response, PlayerInfo{
+		response = append(response, PlayerData{
 			Uuid: client.uuid,
 			Name: client.name,
 			Rank: client.rank,
@@ -49,8 +53,12 @@ func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminGetBansMutes(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
+	pd, err := getAuthenticatedPlayerData(r)
+	if err != nil {
+		handleError(w, r, "invalid token")
+		return
+	}
+	if pd.Rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -65,8 +73,12 @@ func adminGetBansMutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBanMute(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
+	pd, err := getAuthenticatedPlayerData(r)
+	if err != nil {
+		handleError(w, r, "invalid token")
+		return
+	}
+	if pd.Rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -103,42 +115,45 @@ func adminBanMute(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var err error
 	switch r.URL.Path {
 	case "/admin/ban":
-		err = tryBanPlayer(uuid, targetUuid, false, broadcast)
+		err = tryBanPlayer(pd.Uuid, targetUuid, false, broadcast)
 	case "/admin/dban":
-		err = tryBanPlayer(uuid, targetUuid, true, broadcast)
+		err = tryBanPlayer(pd.Uuid, targetUuid, true, broadcast)
 	case "/admin/unban":
-		err = tryUnbanPlayer(uuid, targetUuid)
+		err = tryUnbanPlayer(pd.Uuid, targetUuid)
 	case "/admin/mute":
-		err = tryMutePlayer(uuid, targetUuid, false, broadcast)
+		err = tryMutePlayer(pd.Uuid, targetUuid, false, broadcast)
 	case "/admin/unmute":
-		err = tryUnmutePlayer(uuid, targetUuid)
+		err = tryUnmutePlayer(pd.Uuid, targetUuid)
 	case "/admin/tempban":
 		if expiry == nil {
 			handleError(w, r, "tempban requires expiry")
 			return
 		}
-		err = tryBanPlayerWithExpiry(uuid, targetUuid, *expiry, query.Get("reason"), broadcast)
+		err = tryBanPlayerWithExpiry(pd.Uuid, targetUuid, *expiry, query.Get("reason"), broadcast)
 	case "/admin/tempmute":
 		if expiry == nil {
 			handleError(w, r, "tempmute requires expiry")
 			return
 		}
-		err = tryMutePlayerWithExpiry(uuid, targetUuid, *expiry, query.Get("reason"), broadcast)
+		err = tryMutePlayerWithExpiry(pd.Uuid, targetUuid, *expiry, query.Get("reason"), broadcast)
 	}
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
 	}
 
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }
 
 func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
-	uuid, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
+	pd, err := getAuthenticatedPlayerData(r)
+	if err != nil {
+		handleError(w, r, "invalid token")
+		return
+	}
+	if pd.Rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -165,7 +180,7 @@ func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = tryChangePlayerUsername(uuid, userUuid, newUser)
+	err = tryChangePlayerUsername(pd.Uuid, userUuid, newUser)
 	if err != nil {
 		handleInternalError(w, r, err)
 		return
@@ -175,8 +190,12 @@ func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminResetPw(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
+	pd, err := getAuthenticatedPlayerData(r)
+	if err != nil {
+		handleError(w, r, "invalid token")
+		return
+	}
+	if pd.Rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -196,9 +215,9 @@ func adminResetPw(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "invalid user specified")
 		return
 	}
-	
+
 	userRank := getPlayerRank(userUuid)
-	if userRank >= rank {
+	if userRank >= pd.Rank {
 		handleError(w, r, "target rank too high")
 		return
 	}
@@ -209,18 +228,16 @@ func adminResetPw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = deletePlayerSessions(userUuid)
-	if err != nil {
-		handleInternalError(w, r, err)
-		return
-	}
-
 	w.Write([]byte(newPw))
 }
 
 func adminManageBadge(w http.ResponseWriter, r *http.Request) {
-	_, _, rank, _, _, _ := getPlayerDataFromToken(r.Header.Get("Authorization"))
-	if rank == 0 {
+	pd, err := getAuthenticatedPlayerData(r)
+	if err != nil {
+		handleError(w, r, "invalid token")
+		return
+	}
+	if pd.Rank < 1 {
 		handleError(w, r, "access denied")
 		return
 	}
@@ -269,7 +286,6 @@ func adminManageBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var err error
 	if r.URL.Path == "/admin/grantbadge" {
 		err = unlockPlayerBadge(uuidParam, idParam)
 	} else {
