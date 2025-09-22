@@ -487,7 +487,7 @@ func handlePartyMemberLeave(partyId int, playerUuid string) error {
 func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 	pd, err := getPlayerData(r)
 	if err != nil {
-		handleError(w, r, "failed to get player data: "+err.Error())
+		handleError(w, r, "failed to get player data")
 		return
 	}
 	if pd.Banned {
@@ -1032,7 +1032,7 @@ func handleRemovePlayerFriend(w http.ResponseWriter, r *http.Request) {
 func handleAddRemovePlayerFriend(w http.ResponseWriter, r *http.Request, isAdd bool) {
 	pd, err := getPlayerData(r)
 	if err != nil {
-		writeErrLog("unknown", "sess", "failed to get player data")
+		handleError(w, r, "failed to get player data")
 		return
 	}
 	if !pd.Registered {
