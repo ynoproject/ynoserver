@@ -844,15 +844,21 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var userExists int
-	db.QueryRow("SELECT EXISTS(SELECT * FROM accounts WHERE user = ?)", user).Scan(&userExists)
-
-	if userExists > 0 {
+	var exists int
+	db.QueryRow("SELECT EXISTS(SELECT * FROM accounts WHERE user = ?)", user).Scan(&exists)
+	if exists > 0 {
 		handleError(w, r, "user exists")
 		return
 	}
 
-	pd, _ := getUnauthenticatedPlayerData(getIp(r)) // get current guest data otherwise create a player record
+	var accounts int
+	db.QueryRow("SELECT * FROM accounts WHERE ip = ?", ip).Scan(&accounts)
+	if accounts >= 5 {
+		handleError(w, r, "too many accounts")
+		return
+	}
+
+	pd, _ := getUnauthenticatedPlayerData(ip) // get current guest data otherwise create a player record
 
 	db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip) // set ip to null to disable ip-based login
 
