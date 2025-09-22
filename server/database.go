@@ -67,7 +67,7 @@ func getUnauthenticatedPlayerData(ip string) (PlayerData, error) {
 		// create new guest account
 		pd.Uuid = randString(16)
 
-		_, err := db.Exec("INSERT INTO players (ip, uuid) VALUES (?, ?, ?)", ip, pd.Uuid)
+		_, err := db.Exec("INSERT INTO players (ip, uuid) VALUES (?, ?)", ip, pd.Uuid)
 		if err != nil {
 			return PlayerData{}, err
 		}
