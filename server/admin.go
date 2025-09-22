@@ -24,9 +24,9 @@ import (
 )
 
 func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
-	pd, err := getAuthenticatedPlayerData(r)
+	pd, err := getPlayerData(r)
 	if err != nil {
-		handleError(w, r, "invalid token")
+		handleError(w, r, "failed to get player data")
 		return
 	}
 	if pd.Rank < 1 {
@@ -47,9 +47,9 @@ func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminGetBansMutes(w http.ResponseWriter, r *http.Request) {
-	pd, err := getAuthenticatedPlayerData(r)
+	pd, err := getPlayerData(r)
 	if err != nil {
-		handleError(w, r, "invalid token")
+		handleError(w, r, "failed to get player data")
 		return
 	}
 	if pd.Rank < 1 {
@@ -61,9 +61,9 @@ func adminGetBansMutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBanMute(w http.ResponseWriter, r *http.Request) {
-	pd, err := getAuthenticatedPlayerData(r)
+	pd, err := getPlayerData(r)
 	if err != nil {
-		handleError(w, r, "invalid token")
+		handleError(w, r, "failed to get player data")
 		return
 	}
 	if pd.Rank < 1 {
@@ -136,9 +136,9 @@ func adminBanMute(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
-	pd, err := getAuthenticatedPlayerData(r)
+	pd, err := getPlayerData(r)
 	if err != nil {
-		handleError(w, r, "invalid token")
+		handleError(w, r, "failed to get player data")
 		return
 	}
 	if pd.Rank < 1 {
@@ -178,9 +178,9 @@ func adminChangeUsername(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminResetPw(w http.ResponseWriter, r *http.Request) {
-	pd, err := getAuthenticatedPlayerData(r)
+	pd, err := getPlayerData(r)
 	if err != nil {
-		handleError(w, r, "invalid token")
+		handleError(w, r, "failed to get player data")
 		return
 	}
 	if pd.Rank < 1 {
@@ -220,9 +220,9 @@ func adminResetPw(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminManageBadge(w http.ResponseWriter, r *http.Request) {
-	pd, err := getAuthenticatedPlayerData(r)
+	pd, err := getPlayerData(r)
 	if err != nil {
-		handleError(w, r, "invalid token")
+		handleError(w, r, "failed to get player data")
 		return
 	}
 	if pd.Rank < 1 {
