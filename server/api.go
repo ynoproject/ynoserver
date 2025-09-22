@@ -831,7 +831,6 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	user, password := r.FormValue("user"), r.FormValue("password")
-
 	if user == "" || len(user) > 12 || !isOkString(user) || password == "" || len(password) > 72 {
 		handleError(w, r, "bad response")
 		return
@@ -858,6 +857,16 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ok, err := verifyTurnstile(r)
+	if err != nil {
+		handleError(w, r, "failed to check with verification provider")
+		return
+	}
+	if !ok {
+		handleError(w, r, "verification failed")
+		return
+	}
+
 	pd, _ := getUnauthenticatedPlayerData(ip) // get current guest data otherwise create a player record
 
 	db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip) // set ip to null to disable ip-based login
@@ -877,6 +886,16 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	user, password := r.FormValue("user"), r.FormValue("password")
 	if user == "" || !isOkString(user) || password == "" || len(password) > 72 {
 		handleError(w, r, "bad response")
+		return
+	}
+
+	ok, err := verifyTurnstile(r)
+	if err != nil {
+		handleError(w, r, "failed to check with verification provider")
+		return
+	}
+	if !ok {
+		handleError(w, r, "verification failed")
 		return
 	}
 

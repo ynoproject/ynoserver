@@ -16,6 +16,9 @@
 ## Database name
 #db_name: ""
 
+## Cloudflare Turnstile secret key
+#turnstile_key: ""
+
 ## Maps to exclude from multiplayer
 #sp_rooms: ""
 
