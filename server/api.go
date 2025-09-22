@@ -1421,7 +1421,7 @@ func handleClearChatHistory(w http.ResponseWriter, r *http.Request) {
 func handleInfo(w http.ResponseWriter, r *http.Request) {
 	pd, err := getPlayerData(r)
 	if err != nil {
-		writeErrLog("unknown", "sess", "failed to get player data")
+		handleError(w, r, "failed to get player data")
 		return
 	}
 
