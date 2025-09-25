@@ -60,7 +60,7 @@ func getSaveData(playerUuid string) (io.Reader, error) { // called by api only
 }
 
 func createGameSaveData(playerUuid string, data io.Reader) error { // called by api only
-	f, err := os.OpenFile(filepath.Join("saves", config.gameName, playerUuid+".osd"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 06444)
+	f, err := os.OpenFile(filepath.Join("saves", config.gameName, playerUuid+".osd"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
