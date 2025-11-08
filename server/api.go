@@ -123,9 +123,6 @@ func initApi() {
 	http.HandleFunc("/api/vm", handleVm)
 	http.HandleFunc("/api/badge", handleBadge)
 
-	http.HandleFunc("/api/register", handleRegister)
-	http.HandleFunc("/api/login", handleLogin)
-	http.HandleFunc("/api/logout", handleLogout)
 	http.HandleFunc("/api/changepw", handleChangePw)
 
 	http.HandleFunc("/api/addplayerfriend", handleAddPlayerFriend)
@@ -825,125 +822,6 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, "unknown command")
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleRegister(w http.ResponseWriter, r *http.Request) {
-	user, password := r.FormValue("user"), r.FormValue("password")
-	if user == "" || len(user) > 12 || !isOkString(user) || password == "" || len(password) > 72 {
-		handleError(w, r, "bad response")
-		return
-	}
-
-	ip := getIp(r)
-
-	if isIpBanned(ip) {
-		handleError(w, r, "banned users cannot create accounts")
-		return
-	}
-
-	var exists int
-	db.QueryRow("SELECT EXISTS(SELECT * FROM accounts WHERE user = ?)", user).Scan(&exists)
-	if exists > 0 {
-		handleError(w, r, "user exists")
-		return
-	}
-
-	var accounts int
-	db.QueryRow("SELECT * FROM accounts WHERE ip = ?", ip).Scan(&accounts)
-	if accounts >= 5 {
-		handleError(w, r, "too many accounts")
-		return
-	}
-
-	ok, err := verifyTurnstile(r)
-	if err != nil {
-		handleError(w, r, "failed to check with verification provider")
-		return
-	}
-	if !ok {
-		handleError(w, r, "verification failed")
-		return
-	}
-
-	pd, _ := getUnauthenticatedPlayerData(ip) // get current guest data otherwise create a player record
-
-	db.Exec("UPDATE players SET ip = NULL WHERE ip = ?", ip) // set ip to null to disable ip-based login
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		handleError(w, r, "bcrypt error")
-		return
-	}
-
-	db.Exec("INSERT INTO accounts (ip, timestampRegistered, uuid, user, pass) VALUES (?, NOW(), ?, ?, ?)", ip, pd.Uuid, user, hashedPassword)
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleLogin(w http.ResponseWriter, r *http.Request) {
-	user, password := r.FormValue("user"), r.FormValue("password")
-	if user == "" || !isOkString(user) || password == "" || len(password) > 72 {
-		handleError(w, r, "bad response")
-		return
-	}
-
-	ok, err := verifyTurnstile(r)
-	if err != nil {
-		handleError(w, r, "failed to check with verification provider")
-		return
-	}
-	if !ok {
-		handleError(w, r, "verification failed")
-		return
-	}
-
-	var userPassHash string
-	db.QueryRow("SELECT pass FROM accounts WHERE user = ?", user).Scan(&userPassHash)
-	if userPassHash == "" || bcrypt.CompareHashAndPassword([]byte(userPassHash), []byte(password)) != nil {
-		handleError(w, r, "bad login")
-		return
-	}
-
-	db.Exec("UPDATE accounts SET timestampLoggedIn = NOW() WHERE user = ?", user)
-
-	var uuid string
-	db.QueryRow("SELECT uuid FROM accounts WHERE user = ?", user).Scan(&uuid)
-
-	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, jwt.StandardClaims{
-		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
-		IssuedAt:  time.Now().Unix(),
-		Issuer:    "yno/" + config.gameName,
-		Subject:   uuid + "/" + getIp(r),
-	})
-
-	signed, err := token.SignedString(jwtKey)
-	if err != nil {
-		handleError(w, r, "failed to sign token")
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "auth",
-		Path:     "/",
-		Value:    signed,
-		MaxAge:   60 * 60 * 24,
-		Secure:   true,
-		HttpOnly: true,
-	})
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleLogout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "auth",
-		Path:     "/",
-		MaxAge:   -1,
-		Secure:   true,
-		HttpOnly: true,
-	})
 
 	w.WriteHeader(http.StatusOK)
 }
