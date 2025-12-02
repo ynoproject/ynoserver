@@ -809,6 +809,29 @@ func (c *RoomClient) handleSev(msg []string) error {
 	return nil
 }
 
+const (
+	animStart = iota
+	animStop
+)
+
+func (c *RoomClient) handleAnc(msg []string) error {
+	if len(msg) != 2 {
+		return errors.New("segment count mismatch")
+	}
+
+	cmd, err := strconv.Atoi(msg[1])
+	if err != nil {
+		return err
+	}
+	if cmd > animStop || cmd < animStart {
+		return errors.New("invalid command")
+	}
+
+	c.broadcast(buildMsg("anc", cmd))
+
+	return nil
+}
+
 // SESSION
 
 func (c *SessionClient) handleI() error {
