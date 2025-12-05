@@ -104,9 +104,6 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	if token != "" {
 		c.uuid, c.name, c.rank, c.badge, c.banned, c.muted = getPlayerDataFromToken(token)
-		if c.uuid != "" {
-			c.medals = getPlayerMedals(c.uuid)
-		}
 	}
 
 	if c.uuid != "" {
@@ -119,6 +116,11 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 
 	if client, ok := clients.Load(c.uuid); ok {
 		client.cancel()
+	}
+
+	// get medals after canceling existing client
+	if token != "" && c.uuid != "" {
+		c.medals = getPlayerMedals(c.uuid)
 	}
 
 	var sameIp int

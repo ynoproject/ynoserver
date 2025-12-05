@@ -280,7 +280,11 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 
 func getPlayerMedals(uuid string) (medals [5]int) {
 	if client, ok := clients.Load(uuid); ok {
-		return client.medals // return medals from session if client is connected
+		select {
+		case <-client.ctx.Done(): // disconnecting, fetch from DB
+		default:
+			return client.medals
+		}
 	}
 
 	err := db.QueryRow("SELECT pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd LEFT JOIN playerGameData pgd ON pgd.uuid = pd.uuid WHERE pd.uuid = ? AND pgd.game = ?", uuid, config.gameName).Scan(&medals[0], &medals[1], &medals[2], &medals[3], &medals[4])
