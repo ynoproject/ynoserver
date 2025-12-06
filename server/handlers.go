@@ -1349,3 +1349,13 @@ func (c *SessionClient) handleHl(msg []string) error {
 
 	return nil
 }
+
+func (c *SessionClient) handleHunp(msg []string) error {
+	if len(msg) != 2 {
+		return errors.New("segment count mismatch")
+	}
+
+	c.hideUnnamedPlayers = msg[1] == "1"
+
+	return nil
+}
