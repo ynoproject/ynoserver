@@ -468,7 +468,9 @@ func (c *RoomClient) handleP(msg []string) error {
 	pic.effectMode = effectMode
 	pic.effectPower = effectPower
 
-	c.pictures[id-1] = pic
+	if !pic.spritesheetPlayOnce {
+		c.pictures[id-1] = pic
+	}
 
 	c.broadcast(buildMsg(msg[0], c.session.id, msg[1:]))
 
