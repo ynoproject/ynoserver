@@ -295,6 +295,8 @@ func (c *RoomClient) processMsg(msgStr string) (err error) {
 		err = c.handleSv(msgFields)
 	case "sev":
 		err = c.handleSev(msgFields)
+	case "anc":
+		err = c.handleAnc(msgFields)
 	default:
 		err = errors.New("unknown message type")
 	}
