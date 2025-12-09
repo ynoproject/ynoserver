@@ -246,6 +246,8 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 	case "hl": // hide location
 		err = c.handleHl(msgFields)
 		updateGameActivity = true
+	case "hunp": // hide unnamed players
+		err = c.handleHunp(msgFields)
 	default:
 		err = errors.New("unknown message type")
 	}

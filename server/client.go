@@ -92,8 +92,9 @@ type SessionClient struct {
 	// do not compare directly; use isPrivatedTo
 	private, singleplayer bool
 
-	hideLocation bool
-	partyId      int
+	hideLocation       bool
+	hideUnnamedPlayers bool
+	partyId            int
 
 	onlineFriends map[string]bool
 	blockedUsers  map[string]bool
@@ -179,6 +180,14 @@ func (c *SessionClient) isPrivatedTo(other *SessionClient) bool {
 
 func (c *SessionClient) isBlockedWith(other *SessionClient) bool {
 	return c.blockedUsers[other.uuid] || other.blockedUsers[c.uuid]
+}
+
+func (c *SessionClient) isUnnamed() bool {
+	return !c.account && c.name == ""
+}
+
+func (c *SessionClient) isUnnamedPlayerHiddenBy(other *SessionClient) bool {
+	return c.isUnnamed() && other.hideUnnamedPlayers
 }
 
 // RoomClient

@@ -219,6 +219,10 @@ func (c *RoomClient) broadcast(msg []byte) {
 			continue
 		}
 
+		if c.session.isUnnamedPlayerHiddenBy(client.session) {
+			continue
+		}
+
 		select {
 		case client.outbox <- msg:
 		default:
@@ -333,6 +337,10 @@ func (c *RoomClient) getPlayerData(client *RoomClient) {
 	}
 
 	if client.session.isPrivatedTo(c.session) {
+		return
+	}
+
+	if client.session.isUnnamedPlayerHiddenBy(c.session) {
 		return
 	}
 
