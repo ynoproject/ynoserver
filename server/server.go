@@ -75,6 +75,11 @@ func Start() {
 	db = getDatabaseConn(config.dbUser, config.dbPass, config.dbAddr, config.dbName)
 	db.SetConnMaxIdleTime(1 * time.Minute)
 
+	err := setActivePlayersOffline(config.gameName) // clean up players when server starts
+	if err != nil {
+		log.Printf("failed to set active players offline: %s", err)
+	}
+
 	isMainServer = config.gameName == mainGameId
 
 	serverSecurity = security.New()

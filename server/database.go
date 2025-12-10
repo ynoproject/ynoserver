@@ -422,6 +422,15 @@ func updatePlayerActivity() error {
 	return nil
 }
 
+func setActivePlayersOffline(game string) error {
+	_, err := db.Exec("UPDATE playerGameData SET online = 0 WHERE game = ? AND online = 1", game)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func writeGlobalChatMessage(msgId, uuid, mapId, prevMapId, prevLocations string, x, y int, contents string) error {
 	_, err := db.Exec("INSERT INTO chatMessages (msgId, game, uuid, mapId, prevMapId, prevLocations, x, y, contents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", msgId, config.gameName, uuid, mapId, prevMapId, prevLocations, x, y, contents)
 	if err != nil {
