@@ -119,7 +119,7 @@ func joinSessionWs(conn *websocket.Conn, ip string, token string) {
 	}
 
 	// get medals after canceling existing client
-	if token != "" && c.uuid != "" {
+	if c.account {
 		c.medals = getPlayerMedals(c.uuid)
 	}
 
