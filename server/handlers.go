@@ -146,8 +146,20 @@ func (c *RoomClient) handleSpr(msg []string) error {
 		return errors.New("invalid sprite")
 	}
 
-	if config.gameName == "2kki" && !isValid2kkiSprite(msg[1], c.room.id) {
-		return errors.New("invalid 2kki sprite")
+	if config.gameName == "2kki" {
+		if !isValid2kkiSprite(msg[1], c.room.id){
+			return errors.New("invalid 2kki sprite")
+		}
+	} else if !config.pictures[msg[1]] {
+		found := false
+		for _, prefix := range config.picturePrefixes {
+			if strings.HasPrefix(msg[1], prefix) {
+				found = true
+			}
+		}
+		if !found {
+			return errors.New("sprite not allowed in config")
+		}
 	}
 
 	index, errconv := strconv.Atoi(msg[2])
