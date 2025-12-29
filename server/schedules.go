@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"strconv"
@@ -164,8 +165,8 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		payload := &ScheduleUpdate{
-			Name:          query.Get("name"),
-			Description:   query.Get("description"),
+			Name:          html.EscapeString(query.Get("name")),
+			Description:   html.EscapeString(query.Get("description")),
 			OwnerUuid:     query.Get("ownerUuid"),
 			Game:          query.Get("game"),
 			PartyId:       partyId,

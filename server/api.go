@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -247,10 +248,11 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "name too long")
 			return
 		}
+		nameParam = html.EscapeString(nameParam)
 		var description string
 		descriptionParam := r.URL.Query().Get("description")
 		if descriptionParam != "" {
-			description = descriptionParam
+			description = html.EscapeString(descriptionParam)
 		}
 		var public bool
 		publicParam := r.URL.Query().Get("public")
