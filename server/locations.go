@@ -133,8 +133,8 @@ func updateLocationCache() {
 	var locationsResponse LocationsResponse
 
 	// if multiple protagonists, get locations for each protagonist
-	if len(config.protagonists) > 0 {
-		for _, protag := range config.protagonists {
+	if len(config.protagNames) > 0 {
+		for _, protag := range config.protagNames {
 			continueKey := "0"
 			for continueKey != "" {
 				queryStr := fmt.Sprintf("protag=%s&continueKey=%s", protag, continueKey)
