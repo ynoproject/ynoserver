@@ -131,26 +131,52 @@ func updateLocationCache() {
 	var locations []*Location
 	var wikiLocations []LocationResponse
 	var locationsResponse LocationsResponse
-	continueKey := "0"
 
-	for continueKey != "" {
-		response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
-		if err != nil {
-			writeErrLog("SERVER", "Locations", err.Error())
-			return
+	// if multiple protagonists, get locations for each protagonist
+	if len(config.protagonists) > 0 {
+		for _, protag := range config.protagonists {
+			continueKey := "0"
+			for continueKey != "" {
+				queryStr := fmt.Sprintf("protag=%s&continueKey=%s", protag, continueKey)
+				response, err := queryWiki("locations", queryStr)
+				if err != nil {
+					writeErrLog("SERVER", "Locations", err.Error())
+					return
+				}
+
+				err = json.Unmarshal([]byte(response), &locationsResponse)
+				if err != nil {
+					writeErrLog("SERVER", "Locations", err.Error())
+					return
+				}
+
+				wikiLocations = append(wikiLocations, locationsResponse.Locations...)
+
+				continueKey = locationsResponse.ContinueKey
+				locationsResponse.ContinueKey = ""
+			}
 		}
+	} else {
+		continueKey := "0"
+		for continueKey != "" {
+			response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
+			if err != nil {
+				writeErrLog("SERVER", "Locations", err.Error())
+				return
+			}
 
-		err = json.Unmarshal([]byte(response), &locationsResponse)
-		if err != nil {
-			writeErrLog("SERVER", "Locations", err.Error())
-			return
+			err = json.Unmarshal([]byte(response), &locationsResponse)
+			if err != nil {
+				writeErrLog("SERVER", "Locations", err.Error())
+				return
+			}
+
+			wikiLocations = append(wikiLocations, locationsResponse.Locations...)
+
+			continueKey = locationsResponse.ContinueKey
+
+			locationsResponse.ContinueKey = ""
 		}
-
-		wikiLocations = append(wikiLocations, locationsResponse.Locations...)
-
-		continueKey = locationsResponse.ContinueKey
-
-		locationsResponse.ContinueKey = ""
 	}
 
 	locationsMap := make(map[string]*Location)

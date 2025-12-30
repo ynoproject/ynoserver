@@ -27,8 +27,9 @@ import (
 )
 
 type Config struct {
-	gameName string
-	gamePath string
+	gameName     string
+	gamePath     string
+	protagonists []string
 
 	dbUser, dbPass, dbAddr, dbName string
 
@@ -68,8 +69,9 @@ type Config struct {
 }
 
 type ConfigFile struct {
-	GameName string `yaml:"game_name"`
-	GamePath string `yaml:"game_path"`
+	GameName     string `yaml:"game_name"`
+	GamePath     string `yaml:"game_path"`
+	Protagonists string `yaml:"protagonists"`
 
 	DbUser string `yaml:"db_user"`
 	DbPass string `yaml:"db_pass"`
@@ -128,6 +130,10 @@ func parseConfigFile(filename string) *Config {
 
 	config.gameName = configFile.GameName
 	config.gamePath = configFile.GamePath
+
+	if configFile.Protagonists != "" {
+		config.protagonists = strings.Split(configFile.Protagonists, ",")
+	}
 
 	config.dbUser = configFile.DbUser
 	config.dbPass = configFile.DbPass
