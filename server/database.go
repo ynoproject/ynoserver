@@ -1167,7 +1167,7 @@ func tryCompleteEventLocation(playerUuid string, location string) (exp int, err 
 		// prevent race condition
 		clientMapId := client.roomC.mapId
 
-		results, err := db.Query("SELECT el.id, el.type, el.exp, l.mapIds FROM eventLocations el JOIN gameLocations l ON l.id = el.locationId WHERE el.gamePeriodId = ? AND l.title = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", currentGameEventPeriodId, location)
+		results, err := db.Query("SELECT el.id, el.type, el.exp, l.mapIds FROM eventLocations el JOIN gameLocations l ON l.id = el.locationId WHERE el.gamePeriodId = ? AND l.title = ? AND l.game = ? AND UTC_DATE() >= el.startDate AND UTC_DATE() < el.endDate ORDER BY 2", currentGameEventPeriodId, location, config.gameName)
 		if err != nil {
 			return -1, err
 		}
@@ -1232,7 +1232,7 @@ func tryCompletePlayerEventLocation(playerUuid string, location string) (success
 		// prevent race condition
 		clientMapId := client.roomC.mapId
 
-		results, err := db.Query("SELECT pel.id, pl.mapIds FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId WHERE pel.gamePeriodId = ? AND pl.title = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", currentGameEventPeriodId, location, playerUuid)
+		results, err := db.Query("SELECT pel.id, pl.mapIds FROM playerEventLocations pel JOIN gameLocations pl ON pl.id = pel.locationId WHERE pel.gamePeriodId = ? AND pl.title = ? AND pl.game = ? AND pel.uuid = ? AND UTC_DATE() >= pel.startDate AND UTC_DATE() < pel.endDate ORDER BY 2", currentGameEventPeriodId, location, config.gameName, playerUuid)
 		if err != nil {
 			return false, err
 		}
