@@ -942,6 +942,12 @@ func (c *SessionClient) handleSay(msg []string) error {
 		return errors.New("invalid message")
 	}
 
+	if c.lastMessage.Add(time.Second * 5).After(time.Now().UTC()) {
+		return errors.New("rate limited")
+	}
+
+	c.lastMessage = time.Now().UTC()
+
 	if !c.banned {
 		for _, client := range c.roomC.room.clients {
 			if client.session == c {
@@ -988,6 +994,12 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("player not in a party")
 	}
 
+	if c.lastMessage.Add(time.Second * 5).After(time.Now().UTC()) {
+		return errors.New("rate limited")
+	}
+
+	c.lastMessage = time.Now().UTC()
+
 	mapId := "0000"
 	prevMapId := "0000"
 	prevLocations := ""
@@ -1005,12 +1017,6 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	msgId := randString(12)
 
 	if msg[0] == "gsay" {
-		if c.lastGlobalMessage.Add(time.Second * 5).After(time.Now().UTC()) {
-			return errors.New("rate limited")
-		}
-
-		c.lastGlobalMessage = time.Now().UTC()
-
 		if !c.banned {
 			c.broadcast(buildMsg("p", c.uuid, c.name, c.system, c.rank, c.account, c.badge, c.medals[:]))
 			c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
