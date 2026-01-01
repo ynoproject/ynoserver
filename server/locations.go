@@ -60,6 +60,7 @@ type LocationResponse struct {
 	VersionsUpdated     []string `json:"versionsUpdated"`
 	VersionRemoved      string   `json:"versionRemoved,omitempty"`
 	VersionGaps         []string `json:"versionGaps"`
+	Protags             []string `json:"protags,omitempty"`
 }
 
 type LocationsResponse struct {
@@ -80,6 +81,7 @@ type Location struct {
 	VersionAdded        string   `json:"versionAdded"`
 	VersionsUpdated     []string `json:"versionsUpdated"`
 	Secret              bool     `json:"secret"`
+	Protags             []string `json:"protags,omitempty"`
 }
 
 var locationCache []*Location
@@ -129,37 +131,25 @@ func getNext2kkiLocations(originLocationName string, destLocationName string) (P
 
 func updateLocationCache() {
 	var locations []*Location
-	var wikiLocations []LocationResponse
 	var locationsResponse LocationsResponse
 
-	// if multiple protagonists, get locations for each protagonist
-	if len(config.protagNames) > 0 {
-		for _, protag := range config.protagNames {
-			continueKey := "0"
-			for continueKey != "" {
-				queryStr := fmt.Sprintf("protag=%s&continueKey=%s", protag, continueKey)
-				response, err := queryWiki("locations", queryStr)
-				if err != nil {
-					writeErrLog("SERVER", "Locations", err.Error())
-					return
-				}
+	protags := config.protagNames
+	if len(protags) == 0 {
+		protags = []string{""}
+	}
 
-				err = json.Unmarshal([]byte(response), &locationsResponse)
-				if err != nil {
-					writeErrLog("SERVER", "Locations", err.Error())
-					return
-				}
-
-				wikiLocations = append(wikiLocations, locationsResponse.Locations...)
-
-				continueKey = locationsResponse.ContinueKey
-				locationsResponse.ContinueKey = ""
-			}
-		}
-	} else {
+	wikiLocationsMap := make(map[string]*LocationResponse)
+	for _, protag := range protags {
 		continueKey := "0"
 		for continueKey != "" {
-			response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
+			queryStr := ""
+			if protag != "" {
+				queryStr = fmt.Sprintf("protag=%s&continueKey=%s", protag, continueKey)
+			} else {
+				queryStr = fmt.Sprintf("continueKey=%s", continueKey)
+			}
+
+			response, err := queryWiki("locations", queryStr)
 			if err != nil {
 				writeErrLog("SERVER", "Locations", err.Error())
 				return
@@ -171,12 +161,24 @@ func updateLocationCache() {
 				return
 			}
 
-			wikiLocations = append(wikiLocations, locationsResponse.Locations...)
+			// Merge locations for duplicate locations if multiple protagonists
+			for i := range locationsResponse.Locations {
+				wikiLoc := &locationsResponse.Locations[i]
+				if existing, ok := wikiLocationsMap[wikiLoc.Title]; ok {
+					existing.Protags = append(existing.Protags, wikiLoc.Protags...)
+				} else {
+					wikiLocationsMap[wikiLoc.Title] = wikiLoc
+				}
+			}
 
 			continueKey = locationsResponse.ContinueKey
-
 			locationsResponse.ContinueKey = ""
 		}
+	}
+
+	wikiLocations := make([]LocationResponse, 0, len(wikiLocationsMap))
+	for _, loc := range wikiLocationsMap {
+		wikiLocations = append(wikiLocations, *loc)
 	}
 
 	locationsMap := make(map[string]*Location)
@@ -208,6 +210,7 @@ func updateLocationCache() {
 			location.ContributingAuthors = wikiLocation.ContributingAuthors
 			location.VersionAdded = wikiLocation.VersionAdded
 			location.VersionsUpdated = wikiLocation.VersionsUpdated
+			location.Protags = wikiLocation.Protags
 
 			locations = append(locations, location)
 		}
