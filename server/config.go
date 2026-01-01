@@ -43,6 +43,7 @@ type Config struct {
 
 	moderation struct {
 		botToken  string
+		guildId   string
 		channelId string
 		modRoleId string
 	}
@@ -88,6 +89,7 @@ type ConfigFile struct {
 	Moderation *struct {
 		BotToken  string `yaml:"bot_token"`
 		ChannelID string `yaml:"channel_id"`
+		GuildID   string `yaml:"guild_id"`
 		ModRoleID string `yaml:"mod_role_id"`
 	} `yaml:"moderation"`
 
@@ -182,6 +184,7 @@ func parseConfigFile(filename string) *Config {
 		config.moderation.botToken = mod.BotToken
 		config.moderation.channelId = mod.ChannelID
 		config.moderation.modRoleId = mod.ModRoleID
+		config.moderation.guildId = mod.GuildID
 	}
 
 	if ipc := configFile.Ipc; ipc != nil {

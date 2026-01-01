@@ -102,6 +102,9 @@ func initModBot() {
 		case discordgo.InteractionModalSubmit:
 			botHandleModalResponse(&resp, action.ModalSubmitData(), action.Interaction)
 			return
+		case discordgo.InteractionApplicationCommand:
+			botHandleCommandResponse(&resp, action.ApplicationCommandData())
+			return
 		}
 
 		if action.Type != discordgo.InteractionMessageComponent {
@@ -255,10 +258,17 @@ func initModBot() {
 		}
 	})
 
+	bot.Identify.Intents = discordgo.IntentsGuilds
 	if err = bot.Open(); err != nil {
 		log.Printf("bot/open: %s", err)
 		return
 	}
+
+	if err = registerBotCommands(); err != nil {
+		log.Printf("bot/registerBotCommands: %s", err)
+		return
+	}
+
 }
 
 func parseMsgIdFromComponent(msgObj *discordgo.Message) string {
@@ -332,6 +342,90 @@ func botHandleModalResponse(resp *discordgo.InteractionResponse, data discordgo.
 		}
 		resp.Type = discordgo.InteractionResponseUpdateMessage
 		resp.Data = &discordgo.InteractionResponseData{Content: content, Embeds: embeds}
+	}
+}
+
+func botHandleCommandResponse(resp *discordgo.InteractionResponse, data discordgo.ApplicationCommandInteractionData) {
+	args := data.Options
+	switch data.Name {
+	case "pinfo":
+		if len(args) != 1 {
+			setResponse(resp, "Usage: /pinfo <NAME|UUID>")
+			return
+		}
+		playerid := args[0].StringValue()
+		var (
+			onlineGames   []string
+			name, uuid    string
+			banned, muted bool
+			err           error
+		)
+		rows, err := db.Query(`
+SELECT
+	pgd.name, pgd.uuid, pgd.game, pgd.online, players.banned, players.muted
+FROM playerGameData pgd
+JOIN players ON players.uuid = pgd.uuid
+WHERE pgd.name = ? OR pgd.uuid = ?`, playerid, playerid)
+		if err != nil {
+			setResponse(resp, fmt.Sprintf("pinfo: sql error: %s", err))
+			return
+		}
+
+		defer rows.Close()
+		for rows.Next() {
+			var (
+				game   string
+				online bool
+			)
+			err = rows.Scan(&name, &uuid, &game, &online, &banned, &muted)
+			if err != nil {
+				setResponse(resp, fmt.Sprintf("pinfo: sql error: %s", err))
+				return
+			}
+			if online {
+				onlineGames = append(onlineGames, game)
+			}
+		}
+		msg := fmt.Sprintf(`##### Player Info
+name=%s uuid=%s
+banned=%t muted=%t
+online in: %s`, name, uuid, banned, muted, strings.Join(onlineGames, ", "))
+		setResponse(resp, msg)
+	default:
+		setResponse(resp, "Unknown command")
+	}
+}
+
+func registerBotCommands() (err error) {
+	if bot == nil {
+		return
+	}
+
+	_, err = bot.ApplicationCommandCreate(
+		bot.State.User.ID,
+		config.moderation.guildId,
+		&discordgo.ApplicationCommand{
+			Name:        "pinfo",
+			Description: "Show player info",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "name",
+					Description: "player name or uuid",
+					Required:    true,
+				},
+			},
+		},
+	)
+
+	return
+}
+
+func setResponse(resp *discordgo.InteractionResponse, err string) {
+	resp.Type = discordgo.InteractionResponseChannelMessageWithSource
+	resp.Data = &discordgo.InteractionResponseData{
+		Flags:   discordgo.MessageFlagsEphemeral,
+		Content: err,
 	}
 }
 
