@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 )
 
 type GameLocation struct {
@@ -66,6 +67,7 @@ type LocationResponse struct {
 type LocationsResponse struct {
 	Locations   []LocationResponse `json:"locations"`
 	Game        string             `json:"game"`
+	Protags     []string           `json:"protags,omitempty"`
 	ContinueKey string             `json:"continueKey,omitempty"`
 }
 
@@ -133,23 +135,31 @@ func updateLocationCache() {
 	var locations []*Location
 	var locationsResponse LocationsResponse
 
-	protags := config.protagNames
-	if len(protags) == 0 {
-		protags = []string{""}
+	response, err := queryWiki("locations", "continueKey=0")
+	if err != nil {
+		writeErrLog("SERVER", "Locations", err.Error())
+		return
 	}
 
-	wikiLocationsMap := make(map[string]*LocationResponse)
-	for _, protag := range protags {
-		continueKey := "0"
-		for continueKey != "" {
-			queryStr := ""
-			if protag != "" {
-				queryStr = fmt.Sprintf("protag=%s&continueKey=%s", protag, continueKey)
-			} else {
-				queryStr = fmt.Sprintf("continueKey=%s", continueKey)
-			}
+	err = json.Unmarshal([]byte(response), &locationsResponse)
+	if err != nil {
+		writeErrLog("SERVER", "Locations", err.Error())
+		return
+	}
 
-			response, err := queryWiki("locations", queryStr)
+	protags := locationsResponse.Protags
+
+	wikiLocationsMap := make(map[string]*LocationResponse)
+
+	if len(protags) == 0 {
+		continueKey := locationsResponse.ContinueKey
+		for i := range locationsResponse.Locations {
+			wikiLoc := &locationsResponse.Locations[i]
+			wikiLocationsMap[wikiLoc.Title] = wikiLoc
+		}
+
+		for continueKey != "" {
+			response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
 			if err != nil {
 				writeErrLog("SERVER", "Locations", err.Error())
 				return
@@ -161,18 +171,49 @@ func updateLocationCache() {
 				return
 			}
 
-			// Merge locations for duplicate locations if multiple protagonists
 			for i := range locationsResponse.Locations {
 				wikiLoc := &locationsResponse.Locations[i]
-				if existing, ok := wikiLocationsMap[wikiLoc.Title]; ok {
-					existing.Protags = append(existing.Protags, wikiLoc.Protags...)
-				} else {
-					wikiLocationsMap[wikiLoc.Title] = wikiLoc
-				}
+				wikiLocationsMap[wikiLoc.Title] = wikiLoc
 			}
 
 			continueKey = locationsResponse.ContinueKey
 			locationsResponse.ContinueKey = ""
+		}
+	} else {
+		for _, protag := range protags {
+			continueKey := "0"
+			for continueKey != "" {
+				queryStr := fmt.Sprintf("protag=%s&continueKey=%s", protag, continueKey)
+
+				response, err := queryWiki("locations", queryStr)
+				if err != nil {
+					writeErrLog("SERVER", "Locations", err.Error())
+					return
+				}
+
+				err = json.Unmarshal([]byte(response), &locationsResponse)
+				if err != nil {
+					writeErrLog("SERVER", "Locations", err.Error())
+					return
+				}
+
+				// Merge locations for duplicate locations if multiple protagonists
+				for i := range locationsResponse.Locations {
+					wikiLoc := &locationsResponse.Locations[i]
+					if existing, ok := wikiLocationsMap[wikiLoc.Title]; ok {
+						for _, p := range wikiLoc.Protags {
+							if !slices.Contains(existing.Protags, p) {
+								existing.Protags = append(existing.Protags, p)
+							}
+						}
+					} else {
+						wikiLocationsMap[wikiLoc.Title] = wikiLoc
+					}
+				}
+
+				continueKey = locationsResponse.ContinueKey
+				locationsResponse.ContinueKey = ""
+			}
 		}
 	}
 
