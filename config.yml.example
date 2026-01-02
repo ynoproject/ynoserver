@@ -4,11 +4,6 @@
 ## Path to game files
 #game_path: ""
 
-## Protagonist names for games with multiple protagonists (comma-separated)
-## Leave empty or omit for single protagonist games
-## Example: "kubotsuki,totsutsuki" for "unevendream"
-#protag_names: ""
-
 ## Database user
 #db_user: ""
 
