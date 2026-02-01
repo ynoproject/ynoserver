@@ -1021,7 +1021,7 @@ func getOrWriteLocationIdForEventLocation(gameId string, gameEventPeriodId int, 
 		return locationId, err
 	}
 
-	db.QueryRow("SELECT l.id FROM gameLocations l JOIN gameEventPeriods gep ON gep.game = l.game WHERE gep.id = ? AND l.title = ?", gameEventPeriodId, title).Scan(&locationId)
+	db.QueryRow("SELECT l.id FROM gameLocations l JOIN gameEventPeriods gep ON gep.game = l.game WHERE gep.id = ? AND l.game = ? AND l.title = ?", gameEventPeriodId, gameId, title).Scan(&locationId)
 
 	return locationId, nil
 }
