@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"sort"
 )
 
 type GameLocation struct {
@@ -151,13 +152,14 @@ func updateLocationCache() {
 
 	wikiLocationsMap := make(map[string]*LocationResponse)
 
+	for i := range locationsResponse.Locations {
+		loc := new(LocationResponse)
+		*loc = locationsResponse.Locations[i]
+		wikiLocationsMap[loc.Title] = loc
+	}
+
 	if len(protags) == 0 {
 		continueKey := locationsResponse.ContinueKey
-		for i := range locationsResponse.Locations {
-			wikiLoc := &locationsResponse.Locations[i]
-			wikiLocationsMap[wikiLoc.Title] = wikiLoc
-		}
-
 		for continueKey != "" {
 			response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
 			if err != nil {
@@ -172,8 +174,9 @@ func updateLocationCache() {
 			}
 
 			for i := range locationsResponse.Locations {
-				wikiLoc := &locationsResponse.Locations[i]
-				wikiLocationsMap[wikiLoc.Title] = wikiLoc
+				loc := new(LocationResponse)
+				*loc = locationsResponse.Locations[i]
+				wikiLocationsMap[loc.Title] = loc
 			}
 
 			continueKey = locationsResponse.ContinueKey
@@ -199,15 +202,16 @@ func updateLocationCache() {
 
 				// Merge locations for duplicate locations if multiple protagonists
 				for i := range locationsResponse.Locations {
-					wikiLoc := &locationsResponse.Locations[i]
-					if existing, ok := wikiLocationsMap[wikiLoc.Title]; ok {
-						for _, p := range wikiLoc.Protags {
+					loc := new(LocationResponse)
+					*loc = locationsResponse.Locations[i]
+					if existing, ok := wikiLocationsMap[loc.Title]; ok {
+						for _, p := range loc.Protags {
 							if !slices.Contains(existing.Protags, p) {
 								existing.Protags = append(existing.Protags, p)
 							}
 						}
 					} else {
-						wikiLocationsMap[wikiLoc.Title] = wikiLoc
+						wikiLocationsMap[loc.Title] = loc
 					}
 				}
 
@@ -217,9 +221,15 @@ func updateLocationCache() {
 		}
 	}
 
+	titles := make([]string, 0, len(wikiLocationsMap))
+	for title := range wikiLocationsMap {
+		titles = append(titles, title)
+	}
+	sort.Strings(titles)
+
 	wikiLocations := make([]LocationResponse, 0, len(wikiLocationsMap))
-	for _, loc := range wikiLocationsMap {
-		wikiLocations = append(wikiLocations, *loc)
+	for _, title := range titles {
+		wikiLocations = append(wikiLocations, *wikiLocationsMap[title])
 	}
 
 	locationsMap := make(map[string]*Location)
@@ -239,8 +249,8 @@ func updateLocationCache() {
 			writeErrLog("SERVER", "Locations", err.Error())
 			return
 		}
-
-		locationsMap[location.Title] = location
+		locCopy := &Location{Id: location.Id, Title: location.Title, Depth: location.Depth, MinDepth: location.MinDepth, Secret: location.Secret}
+		locationsMap[location.Title] = locCopy
 	}
 
 	for _, wikiLocation := range wikiLocations {
