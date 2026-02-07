@@ -250,6 +250,7 @@ func (c *SessionClient) processMsg(msg []byte) (err error) {
 		updateGameActivity = true
 	case "hunp": // hide unnamed players
 		err = c.handleHunp(msgFields)
+		updateGameActivity = true
 	default:
 		err = errors.New("unknown message type")
 	}
