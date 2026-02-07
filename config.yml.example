@@ -48,6 +48,9 @@ moderation:
 ## Mod role to be pinged in report posts
   #mod_role_id: ""
 
+## Guild ID to scope bot commands to (optional, needed for prompt updates)
+  #guild_id: ""
+
 ## Logging settings
 logging:
   ## Size of log file (MB)
