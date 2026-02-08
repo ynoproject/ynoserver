@@ -226,6 +226,12 @@ func initBadges() {
 	updateActiveBadgesAndConditions()
 }
 
+func getCurrentBatch() int {
+	firstBatchDate := time.Date(2022, time.April, 15, 20, 0, 0, 0, time.UTC)
+	days := time.Now().UTC().Sub(firstBatchDate).Hours() / 24
+	return int(math.Floor(days/7)) + 1
+}
+
 func setBadgeData() {
 	if len(badges) == 0 {
 		return
@@ -247,9 +253,7 @@ func setBadgeData() {
 func updateActiveBadgesAndConditions() {
 	logUpdateTask("badge visibility")
 
-	firstBatchDate := time.Date(2022, time.April, 15, 20, 0, 0, 0, time.UTC)
-	days := time.Now().UTC().Sub(firstBatchDate).Hours() / 24
-	currentBatch := int(math.Floor(days/7)) + 1
+	currentBatch := getCurrentBatch()
 
 	for game, gameBadges := range badges {
 		for _, gameBadge := range gameBadges {
@@ -845,6 +849,18 @@ func setBadges() {
 			})
 
 			sortedBadgeIds[gameId] = badgeIds
+		}
+	}
+
+	currentBatch := getCurrentBatch()
+	for _, gameBadges := range badgeConfig {
+		for _, gameBadge := range gameBadges {
+			if gameBadge.Batch == 0 {
+				continue
+			}
+			if !gameBadge.Dev {
+				gameBadge.Dev = gameBadge.Batch > currentBatch
+			}
 		}
 	}
 
