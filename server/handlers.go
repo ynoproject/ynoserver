@@ -1359,8 +1359,13 @@ func (c *SessionClient) handlePr(msg []string) error {
 		return errors.New("segment count mismatch")
 	}
 
-	c.singleplayer = msg[1] == "2"
-	c.private = c.singleplayer || msg[1] == "1"
+	privateHideType, err := strconv.Atoi(msg[1])
+	if err != nil {
+		return err
+	}
+
+	c.privateHideType = privateHideType
+	c.private = privateHideType != 0
 
 	return nil
 }
