@@ -589,7 +589,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 					playerBadge.Seconds = gameBadge.ReqInt
 					for _, record := range timeTrialRecords {
 						if record.MapId == gameBadge.Map {
-							playerBadge.Unlocked = record.Seconds < gameBadge.ReqInt
+							playerBadge.Unlocked = record.Seconds <= gameBadge.ReqInt
 						}
 					}
 				case "medal":
