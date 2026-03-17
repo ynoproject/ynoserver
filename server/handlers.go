@@ -146,10 +146,6 @@ func (c *RoomClient) handleSpr(msg []string) error {
 		return errors.New("invalid sprite")
 	}
 
-	if config.gameName == "2kki" && !isValid2kkiSprite(msg[1], c.room.id) {
-		return errors.New("invalid 2kki sprite")
-	}
-
 	index, errconv := strconv.Atoi(msg[2])
 	if errconv != nil || index < 0 {
 		return errconv
