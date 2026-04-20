@@ -63,6 +63,10 @@ func getSounds(gamePath string) map[string]bool {
 	root := gamePath + "/Sound"
 	sounds := make(map[string]bool)
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if !d.IsDir() {
 			path, err := filepath.Rel(root, path)
 			if err != nil {
@@ -74,6 +78,7 @@ func getSounds(gamePath string) map[string]bool {
 			alias := strings.Replace(path, "/", "\\", 1)
 			sounds[alias] = true
 		}
+
 		return err
 	})
 	if err != nil {
