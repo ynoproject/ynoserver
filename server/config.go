@@ -37,8 +37,6 @@ type Config struct {
 
 	dbUser, dbPass, dbAddr, dbName string
 
-	turnstileKey string
-
 	spRooms         []int
 	badSounds       map[string]bool
 	pictures        map[string]bool
@@ -85,8 +83,6 @@ type ConfigFile struct {
 	DbPass string `yaml:"db_pass"`
 	DbAddr string `yaml:"db_addr"`
 	DbName string `yaml:"db_name"`
-
-	TurnstileKey string `yaml:"turnstile_key"`
 
 	SpRooms         string `yaml:"sp_rooms"`
 	BadSounds       string `yaml:"bad_sounds"`
@@ -149,8 +145,6 @@ func parseConfigFile(filename string) *Config {
 	config.dbPass = configFile.DbPass
 	config.dbAddr = configFile.DbAddr
 	config.dbName = configFile.DbName
-
-	config.turnstileKey = configFile.TurnstileKey
 
 	if configFile.SpRooms != "" {
 		for _, str := range strings.Split(configFile.SpRooms, ",") {
