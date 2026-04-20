@@ -31,7 +31,7 @@ import (
 	"slices"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var db *sql.DB
@@ -85,8 +85,7 @@ func getAuthenticatedPlayerData(r *http.Request) (PlayerData, error) {
 		return PlayerData{}, err
 	}
 
-	var claims jwt.StandardClaims
-	token, err := jwt.ParseWithClaims(authCookie.Value, &claims, func(token *jwt.Token) (any, error) { return jwtKeyPub, nil })
+	token, err := jwt.Parse(authCookie.Value, func(token *jwt.Token) (any, error) { return jwtKeyPub, nil })
 	if err != nil {
 		return PlayerData{}, err
 	}
@@ -94,7 +93,12 @@ func getAuthenticatedPlayerData(r *http.Request) (PlayerData, error) {
 		return PlayerData{}, errors.New("invalid token")
 	}
 
-	claimsSplit := strings.Split(claims.Subject, "/")
+	subject, err := token.Claims.GetSubject()
+	if err != nil {
+		return PlayerData{}, err
+	}
+
+	claimsSplit := strings.Split(subject, "/")
 	if len(claimsSplit) != 2 {
 		return PlayerData{}, errors.New("invalid subject segments")
 	}
