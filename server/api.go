@@ -91,11 +91,7 @@ type CheckUpdateData struct {
 	NewTags  bool     `json:"newTags"`
 }
 
-// JWT
-var (
-	jwtKey    crypto.PrivateKey
-	jwtKeyPub crypto.PublicKey
-)
+var jwtKeyPub crypto.PublicKey
 
 func initApi() {
 	logInitTask("API")
@@ -155,17 +151,7 @@ func initApi() {
 	http.HandleFunc("POST /api/report", handleReport)
 
 	// JWT
-	keyFile, err := os.ReadFile("jwt.pem")
-	if err != nil {
-		panic(err)
-	}
-
-	jwtKey, err = jwt.ParseEdPrivateKeyFromPEM(keyFile)
-	if err != nil {
-		panic(err)
-	}
-
-	keyFile, err = os.ReadFile("jwtpub.pem")
+	keyFile, err := os.ReadFile("jwtpub.pem")
 	if err != nil {
 		panic(err)
 	}
