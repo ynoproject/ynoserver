@@ -144,10 +144,6 @@ func joinRoomWs(conn *websocket.Conn, r *http.Request, token string, roomId int)
 		client.outbox <- buildMsg("bas", config.battleAnimIds)
 	}
 
-	if config.flags.unconscious {
-		didJoinRoomWsUnconscious(client)
-	}
-
 	writeLog(client.session.uuid, client.mapId, "connect", 200)
 }
 
@@ -160,9 +156,6 @@ func (c *RoomClient) joinRoom(room *Room) {
 
 	if config.gameName == "2kki" && c.session.rank == 0 {
 		c.outbox <- buildMsg("ss", 11, 2)
-	}
-	if config.flags.unconscious {
-		didJoinRoomUnconscious(c)
 	}
 
 	if !c.room.singleplayer {

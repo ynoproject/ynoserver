@@ -67,12 +67,6 @@ type Config struct {
 		private string
 		public  string
 	}
-
-	flags struct {
-		unconscious bool
-	}
-
-	maxImageSize int
 }
 
 type ConfigFile struct {
@@ -114,12 +108,6 @@ type ConfigFile struct {
 		MaxBackups int `yaml:"max_backups"`
 		MaxAge     int `yaml:"max_age"`
 	} `yaml:"logging"`
-
-	Flags struct {
-		Unconscious bool `yaml:"unconscious"`
-	} `yaml:"flags"`
-
-	MaxImageSize int `yaml:"max_image_size"`
 }
 
 func parseConfigFile(filename string) *Config {
@@ -221,14 +209,6 @@ func parseConfigFile(filename string) *Config {
 
 	config.vapidKeys.private = configFile.VapidKeys.Private
 	config.vapidKeys.public = configFile.VapidKeys.Public
-
-	config.flags.unconscious = configFile.Flags.Unconscious
-
-	if configFile.MaxImageSize > 0 {
-		config.maxImageSize = configFile.MaxImageSize
-	} else {
-		config.maxImageSize = DEFAULT_MAX_IMAGE_SIZE
-	}
 
 	return &config
 }

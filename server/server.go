@@ -113,10 +113,6 @@ func Start() {
 	initReports()
 	initRpc()
 
-	if config.flags.unconscious {
-		initUnconscious()
-	}
-
 	scheduler.Every(1).Day().At("03:00").Do(updatePlayerActivity)
 
 	if isMainServer {
