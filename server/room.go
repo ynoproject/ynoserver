@@ -57,7 +57,7 @@ func createRooms(roomIds []int, spRooms []int) {
 }
 
 func handleRoom(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
