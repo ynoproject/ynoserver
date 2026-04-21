@@ -102,9 +102,9 @@ func getAuthenticatedPlayerData(r *http.Request) (PlayerData, error) {
 	if len(claimsSplit) != 2 {
 		return PlayerData{}, errors.New("invalid subject segments")
 	}
-	if claimsSplit[1] != getIp(r) {
-		return PlayerData{}, errors.New("token for other ip")
-	}
+	//if claimsSplit[1] != getIp(r) {
+	//	return PlayerData{}, errors.New("token for other ip")
+	//}
 
 	uuid := claimsSplit[0]
 
