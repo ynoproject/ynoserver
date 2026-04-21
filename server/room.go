@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -59,7 +58,7 @@ func createRooms(roomIds []int, spRooms []int) {
 func handleRoom(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		writeErrLog("unknown", "0000", fmt.Sprintf("failed to upgrade connection: %s", err))
 		return
 	}
 
@@ -69,7 +68,7 @@ func handleRoom(w http.ResponseWriter, r *http.Request) {
 func joinRoomWs(conn *websocket.Conn, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil {
-		writeErrLog("unknown", "0000", "invalid room id")
+		writeErrLog("unknown", "0000", fmt.Sprintf("invalid room id: %s", err))
 		return
 	}
 
@@ -82,7 +81,7 @@ func joinRoomWs(conn *websocket.Conn, r *http.Request) {
 
 	pd, err := getPlayerData(r)
 	if err != nil {
-		writeErrLog("unknown", "0000", "failed to get player data")
+		writeErrLog("unknown", "0000", fmt.Sprintf("failed to get player data: %s", err))
 		return
 	}
 

@@ -20,7 +20,7 @@ package server
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -84,7 +84,7 @@ func initSession() {
 func handleSession(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		writeErrLog("unknown", "0000", fmt.Sprintf("failed to upgrade connection: %s", err))
 		return
 	}
 
