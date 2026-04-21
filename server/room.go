@@ -63,24 +63,19 @@ func handleRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		return
-	}
-
-	idInt, err := strconv.Atoi(id)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	joinRoomWs(conn, r, idInt)
+	joinRoomWs(conn, r)
 }
 
-func joinRoomWs(conn *websocket.Conn, r *http.Request, roomId int) {
+func joinRoomWs(conn *websocket.Conn, r *http.Request) {
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil {
+		writeErrLog("unknown", "0000", "invalid room id")
+		return
+	}
+
 	// we don't need the value of room until later but it would be silly to do
 	// the database lookups then close the socket after due to a bad room id
-	room, ok := rooms[roomId]
+	room, ok := rooms[id]
 	if !ok {
 		return
 	}
