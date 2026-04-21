@@ -74,15 +74,10 @@ func handleRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var playerToken string
-	if token := r.URL.Query().Get("token"); len(token) == 32 {
-		playerToken = token
-	}
-
-	joinRoomWs(conn, r, playerToken, idInt)
+	joinRoomWs(conn, r, idInt)
 }
 
-func joinRoomWs(conn *websocket.Conn, r *http.Request, token string, roomId int) {
+func joinRoomWs(conn *websocket.Conn, r *http.Request, roomId int) {
 	// we don't need the value of room until later but it would be silly to do
 	// the database lookups then close the socket after due to a bad room id
 	room, ok := rooms[roomId]
