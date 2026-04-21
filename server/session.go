@@ -82,7 +82,7 @@ func initSession() {
 }
 
 func handleSession(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(w, r, http.Header{"Sec-Websocket-Protocol": {r.Header.Get("Sec-Websocket-Protocol")}})
 	if err != nil {
 		writeErrLog("unknown", "0000", fmt.Sprintf("failed to upgrade connection: %s", err))
 		return
