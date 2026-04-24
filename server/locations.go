@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
+	"sort"
 )
 
 type GameLocation struct {
@@ -60,11 +62,13 @@ type LocationResponse struct {
 	VersionsUpdated     []string `json:"versionsUpdated"`
 	VersionRemoved      string   `json:"versionRemoved,omitempty"`
 	VersionGaps         []string `json:"versionGaps"`
+	Protags             []string `json:"protags,omitempty"`
 }
 
 type LocationsResponse struct {
 	Locations   []LocationResponse `json:"locations"`
 	Game        string             `json:"game"`
+	Protags     []string           `json:"protags,omitempty"`
 	ContinueKey string             `json:"continueKey,omitempty"`
 }
 
@@ -80,6 +84,7 @@ type Location struct {
 	VersionAdded        string   `json:"versionAdded"`
 	VersionsUpdated     []string `json:"versionsUpdated"`
 	Secret              bool     `json:"secret"`
+	Protags             []string `json:"protags,omitempty"`
 }
 
 var locationCache []*Location
@@ -129,28 +134,102 @@ func getNext2kkiLocations(originLocationName string, destLocationName string) (P
 
 func updateLocationCache() {
 	var locations []*Location
-	var wikiLocations []LocationResponse
 	var locationsResponse LocationsResponse
-	continueKey := "0"
 
-	for continueKey != "" {
-		response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
-		if err != nil {
-			writeErrLog("SERVER", "Locations", err.Error())
-			return
+	response, err := queryWiki("locations", "continueKey=0")
+	if err != nil {
+		writeErrLog("SERVER", "Locations", err.Error())
+		return
+	}
+
+	err = json.Unmarshal([]byte(response), &locationsResponse)
+	if err != nil {
+		writeErrLog("SERVER", "Locations", err.Error())
+		return
+	}
+
+	protags := locationsResponse.Protags
+
+	wikiLocationsMap := make(map[string]*LocationResponse)
+
+	for i := range locationsResponse.Locations {
+		loc := new(LocationResponse)
+		*loc = locationsResponse.Locations[i]
+		wikiLocationsMap[loc.Title] = loc
+	}
+
+	if len(protags) == 0 {
+		continueKey := locationsResponse.ContinueKey
+		for continueKey != "" {
+			response, err := queryWiki("locations", fmt.Sprintf("continueKey=%s", continueKey))
+			if err != nil {
+				writeErrLog("SERVER", "Locations", err.Error())
+				return
+			}
+
+			err = json.Unmarshal([]byte(response), &locationsResponse)
+			if err != nil {
+				writeErrLog("SERVER", "Locations", err.Error())
+				return
+			}
+
+			for i := range locationsResponse.Locations {
+				loc := new(LocationResponse)
+				*loc = locationsResponse.Locations[i]
+				wikiLocationsMap[loc.Title] = loc
+			}
+
+			continueKey = locationsResponse.ContinueKey
+			locationsResponse.ContinueKey = ""
 		}
+	} else {
+		for _, protag := range protags {
+			continueKey := "0"
+			for continueKey != "" {
+				queryStr := fmt.Sprintf("protag=%s&continueKey=%s", protag, continueKey)
 
-		err = json.Unmarshal([]byte(response), &locationsResponse)
-		if err != nil {
-			writeErrLog("SERVER", "Locations", err.Error())
-			return
+				response, err := queryWiki("locations", queryStr)
+				if err != nil {
+					writeErrLog("SERVER", "Locations", err.Error())
+					return
+				}
+
+				err = json.Unmarshal([]byte(response), &locationsResponse)
+				if err != nil {
+					writeErrLog("SERVER", "Locations", err.Error())
+					return
+				}
+
+				// Merge locations for duplicate locations if multiple protagonists
+				for i := range locationsResponse.Locations {
+					loc := new(LocationResponse)
+					*loc = locationsResponse.Locations[i]
+					if existing, ok := wikiLocationsMap[loc.Title]; ok {
+						for _, p := range loc.Protags {
+							if !slices.Contains(existing.Protags, p) {
+								existing.Protags = append(existing.Protags, p)
+							}
+						}
+					} else {
+						wikiLocationsMap[loc.Title] = loc
+					}
+				}
+
+				continueKey = locationsResponse.ContinueKey
+				locationsResponse.ContinueKey = ""
+			}
 		}
+	}
 
-		wikiLocations = append(wikiLocations, locationsResponse.Locations...)
+	titles := make([]string, 0, len(wikiLocationsMap))
+	for title := range wikiLocationsMap {
+		titles = append(titles, title)
+	}
+	sort.Strings(titles)
 
-		continueKey = locationsResponse.ContinueKey
-
-		locationsResponse.ContinueKey = ""
+	wikiLocations := make([]LocationResponse, 0, len(wikiLocationsMap))
+	for _, title := range titles {
+		wikiLocations = append(wikiLocations, *wikiLocationsMap[title])
 	}
 
 	locationsMap := make(map[string]*Location)
@@ -170,8 +249,8 @@ func updateLocationCache() {
 			writeErrLog("SERVER", "Locations", err.Error())
 			return
 		}
-
-		locationsMap[location.Title] = location
+		locCopy := &Location{Id: location.Id, Title: location.Title, Depth: location.Depth, MinDepth: location.MinDepth, Secret: location.Secret}
+		locationsMap[location.Title] = locCopy
 	}
 
 	for _, wikiLocation := range wikiLocations {
@@ -182,6 +261,7 @@ func updateLocationCache() {
 			location.ContributingAuthors = wikiLocation.ContributingAuthors
 			location.VersionAdded = wikiLocation.VersionAdded
 			location.VersionsUpdated = wikiLocation.VersionsUpdated
+			location.Protags = wikiLocation.Protags
 
 			locations = append(locations, location)
 		}
