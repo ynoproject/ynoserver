@@ -620,7 +620,7 @@ func getGameLocationByName(locationName string) (gameLocation GameLocation, err 
 
 	var matchingEventLocation *EventLocationData
 
-	for _, eventLocation := range gameEventLocations[config.gameName] {
+	for _, eventLocation := range gameEventLocations.Load(config.gameName) {
 		if eventLocation.Title == locationName {
 			matchingEventLocation = eventLocation
 			break
@@ -639,7 +639,7 @@ func getGameLocationByName(locationName string) (gameLocation GameLocation, err 
 				}
 			} else {
 				if matchingEventLocation == nil {
-					gameEventLocations[config.gameName] = append(gameEventLocations[config.gameName], eventLocationFromApi)
+					gameEventLocations.Store(config.gameName, append(gameEventLocations.Load(config.gameName), eventLocationFromApi))
 					matchingEventLocation = eventLocationFromApi
 				} else {
 					*matchingEventLocation = *eventLocationFromApi

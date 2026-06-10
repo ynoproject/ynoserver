@@ -263,7 +263,7 @@ func updateLocationCache() {
 
 	locationCache = locations
 
-	for _, eventLocation := range gameEventLocations[config.gameName] {
+	for _, eventLocation := range gameEventLocations.Load(config.gameName) {
 		eventLocation.syncdb = false
 	}
 }

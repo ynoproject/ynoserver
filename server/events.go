@@ -150,7 +150,7 @@ var (
 	gameEventVms map[string]map[int][]EventIds
 
 	// in 2kki, only used for cache bookkeeping
-	gameEventLocations map[string][]*EventLocationData = make(map[string][]*EventLocationData)
+	gameEventLocations = NewSyncMap[string, []*EventLocationData]()
 	gameLocationColors map[string][]string
 )
 
@@ -612,7 +612,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 
 		f, err := os.Open(configPath + gameId + ".json")
 		if err != nil {
-			gameEventLocations[gameId] = nil
+			gameEventLocations.Delete(gameId)
 			continue
 		}
 
@@ -624,7 +624,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 		}
 
 		if len(eventLocations) > 0 {
-			gameEventLocations[gameId] = eventLocations
+			gameEventLocations.Store(gameId, eventLocations)
 			gameMaxDepths[gameId] = 0
 		}
 
@@ -638,7 +638,7 @@ func setGameEventLocationPoolsAndLocationColors() {
 		}
 	}
 
-	for gameId, eventLocations := range gameEventLocations {
+	for gameId, eventLocations := range gameEventLocations.GetClone() {
 		gameMaxDepth := math.Min(float64(gameMaxDepths[gameId]), 15)
 
 		for _, eventLocation := range eventLocations {

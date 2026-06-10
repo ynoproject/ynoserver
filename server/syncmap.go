@@ -17,7 +17,10 @@
 
 package server
 
-import "sync"
+import (
+	"maps"
+	"sync"
+)
 
 type SyncMap[K comparable, V any] struct {
 	Data map[K]V
@@ -70,4 +73,11 @@ func (m *SyncMap[K, V]) Len() int {
 	defer m.Mtx.RUnlock()
 
 	return len(m.Data)
+}
+
+func (m *SyncMap[K, V]) GetClone() map[K]V {
+	m.Mtx.RLock()
+	defer m.Mtx.RUnlock()
+
+	return maps.Clone(m.Data)
 }
