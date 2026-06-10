@@ -1672,14 +1672,17 @@ func writeGamePlayerCount(playerCount int) error {
 }
 
 func getReportersForPlayer(targetUuid, msgId string) (result map[string]string, err error) {
-	var msgIdLink *string
+	query := `SELECT pgd.name, pr.reason FROM playerReports pr
+	JOIN playerGameData pgd ON pgd.uuid = pr.uuid 
+	WHERE pr.targetUuid = ? AND NOT actionTaken`
+	args := []any{targetUuid}
+
 	if msgId != "" {
-		msgIdLink = &msgId
+		query += ` AND pr.msgId = ?`
+		args = append(args, msgId)
 	}
-	rows, err := db.Query(`
-		SELECT pgd.name, pr.reason FROM playerReports pr
-		JOIN playerGameData pgd ON pgd.uuid = pr.uuid
-		WHERE pr.targetUuid = ? AND pr.msgId = ? AND NOT actionTaken`, targetUuid, msgIdLink)
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return
 	}
