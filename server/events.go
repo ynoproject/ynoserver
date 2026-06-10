@@ -307,7 +307,7 @@ func getVmWeekdays() (time.Weekday, time.Weekday) {
 }
 
 func sendEventsUpdate() {
-	for _, client := range clients.Get() {
+	for _, client := range clients.GetClone() {
 		if client.account {
 			client.handleE()
 		}

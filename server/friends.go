@@ -13,7 +13,7 @@ type PlayerFriend struct {
 }
 
 func sendFriendsUpdate() {
-	for _, client := range clients.Get() {
+	for _, client := range clients.GetClone() {
 		if !client.account {
 			continue
 		}

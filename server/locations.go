@@ -273,7 +273,7 @@ func updateLocationPlayerCounts() {
 		delete(locationPlayerCounts, k)
 	}
 
-	for _, client := range clients.Get() {
+	for _, client := range clients.GetClone() {
 		if client.private || client.hideLocation || client.roomC == nil {
 			continue
 		}

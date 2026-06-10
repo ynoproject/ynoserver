@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -32,7 +33,7 @@ import (
 	"github.com/fasthttp/websocket"
 )
 
-var clients = NewSCMap()
+var clients = NewSyncMap[string, *SessionClient]()
 
 func initSession() {
 	logInitTask("session")
@@ -126,7 +127,7 @@ func joinSessionWs(conn *websocket.Conn, r *http.Request) {
 	}
 
 	var sameIp int
-	for _, client := range clients.Get() {
+	for _, client := range clients.GetClone() {
 		if client.ip == getIp(r) {
 			sameIp++
 		}
@@ -153,7 +154,25 @@ func joinSessionWs(conn *websocket.Conn, r *http.Request) {
 	// register client to the clients list;
 	// assign session-specific ID in the same critical section to ensure
 	// only one client gets the given ID
-	clients.StoreAndSetID(c.uuid, c)
+	clients.Mtx.Lock()
+
+	ids := make([]int, 0, len(clients.Data))
+	for _, client := range clients.Data {
+		ids = append(ids, client.id)
+	}
+
+	for i := range 0xFFFF {
+		if slices.Contains(ids, i) {
+			continue
+		}
+
+		c.id = i
+		break
+	}
+
+	clients.Data[c.uuid] = c
+
+	clients.Mtx.Unlock()
 
 	go c.msgReader()
 
@@ -166,7 +185,7 @@ func joinSessionWs(conn *websocket.Conn, r *http.Request) {
 }
 
 func (c *SessionClient) broadcast(msg []byte) {
-	for _, client := range clients.Get() {
+	for _, client := range clients.GetClone() {
 		select {
 		case client.outbox <- msg:
 		default:

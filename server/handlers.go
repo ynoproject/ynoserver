@@ -1043,7 +1043,7 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		}
 	} else {
 		if !c.banned {
-			for _, client := range clients.Get() {
+			for _, client := range clients.GetClone() {
 				if client.partyId == c.partyId {
 					if c.isBlockedWith(client) {
 						continue

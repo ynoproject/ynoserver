@@ -175,7 +175,7 @@ func banPlayerUnchecked(recipientUuid string, updateDb, disconnect, temporary, b
 	if client, ok := clients.LoadOK(recipientUuid); ok {
 		client.banned = true
 		if client.roomC != nil {
-			for _, other := range clients.Get() {
+			for _, other := range clients.GetClone() {
 				if other.roomC != nil && other.roomC.room == client.roomC.room {
 					other.roomC.outbox <- buildMsg("d", client.id)
 				}
