@@ -51,7 +51,7 @@ func sendPartyUpdate() {
 
 		for _, member := range party.Members { // for every member
 			if member.Online {
-				if client, ok := clients.Load(member.Uuid); ok {
+				if client, ok := clients.LoadOK(member.Uuid); ok {
 					client.outbox <- buildMsg("pt", partyDataJson) // send JSON to client
 				}
 			}
@@ -102,7 +102,7 @@ func getPartyData(partyId int) (*Party, error) {
 
 	var hasOnlineMember bool
 	for _, member := range party.Members {
-		client, ok := clients.Load(member.Uuid)
+		client, ok := clients.LoadOK(member.Uuid)
 		if !ok {
 			member.Online = false
 
@@ -287,7 +287,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		return nil
 	}
 
-	client, ok := clients.Load(playerUuid)
+	client, ok := clients.LoadOK(playerUuid)
 	if !ok {
 		return errors.New("client not online")
 	}
@@ -348,7 +348,7 @@ func leavePlayerParty(playerUuid string) error {
 		}
 	}
 
-	if client, ok := clients.Load(playerUuid); ok {
+	if client, ok := clients.LoadOK(playerUuid); ok {
 		client.partyId = 0
 	}
 
@@ -386,7 +386,7 @@ func assumeNextPartyOwner(partyId int) error {
 	var nextOnlinePlayerUuid string
 
 	for _, uuid := range partyMemberUuids {
-		if client, ok := clients.Load(uuid); ok {
+		if client, ok := clients.LoadOK(uuid); ok {
 			if client.roomC != nil {
 				nextOnlinePlayerUuid = uuid
 				break

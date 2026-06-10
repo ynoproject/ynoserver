@@ -32,9 +32,7 @@ import (
 	"github.com/fasthttp/websocket"
 )
 
-var (
-	clients = NewSCMap()
-)
+var clients = NewSCMap()
 
 func initSession() {
 	logInitTask("session")
@@ -44,7 +42,7 @@ func initSession() {
 
 	var lastSentPlayerCount int
 	scheduler.Every(5).Seconds().Do(func() {
-		count := clients.GetAmount()
+		count := clients.Len()
 
 		if count != lastSentPlayerCount {
 			sender.broadcast(buildMsg("pc", count))
@@ -59,7 +57,7 @@ func initSession() {
 	})
 
 	scheduler.Cron("0 2,8,14,20 * * *").Do(func() {
-		writeGamePlayerCount(clients.GetAmount())
+		writeGamePlayerCount(clients.Len())
 	})
 
 	go func() {
@@ -118,7 +116,7 @@ func joinSessionWs(conn *websocket.Conn, r *http.Request) {
 
 	c.cacheParty() // don't log error because player is probably not in a party
 
-	if client, ok := clients.Load(c.uuid); ok {
+	if client, ok := clients.LoadOK(c.uuid); ok {
 		client.cancel()
 	}
 
@@ -155,7 +153,7 @@ func joinSessionWs(conn *websocket.Conn, r *http.Request) {
 	// register client to the clients list;
 	// assign session-specific ID in the same critical section to ensure
 	// only one client gets the given ID
-	clients.StoreAndSetId(c.uuid, c)
+	clients.StoreAndSetID(c.uuid, c)
 
 	go c.msgReader()
 
@@ -188,7 +186,7 @@ func systemMessage(msg string, targetUuid string) {
 		return
 	}
 
-	if client, ok := clients.Load(targetUuid); ok {
+	if client, ok := clients.LoadOK(targetUuid); ok {
 		client.outbox <- pmsg
 		client.outbox <- gsaymsg
 	}

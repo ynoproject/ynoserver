@@ -120,7 +120,7 @@ func getAuthenticatedPlayerData(r *http.Request) (PlayerData, error) {
 }
 
 func getPlayerRank(uuid string) (rank int) {
-	if client, ok := clients.Load(uuid); ok {
+	if client, ok := clients.LoadOK(uuid); ok {
 		return client.rank // return rank from session if client is connected
 	}
 
@@ -172,7 +172,7 @@ func banPlayerUnchecked(recipientUuid string, updateDb, disconnect, temporary, b
 		}
 	}
 
-	if client, ok := clients.Load(recipientUuid); ok {
+	if client, ok := clients.LoadOK(recipientUuid); ok {
 		client.banned = true
 		if client.roomC != nil {
 			for _, other := range clients.Get() {
@@ -254,7 +254,7 @@ func mutePlayerUnchecked(recipientUuid string, updateDb, temporary, broadcast bo
 		}
 	}
 
-	if client, ok := clients.Load(recipientUuid); ok { // mute client if they're connected
+	if client, ok := clients.LoadOK(recipientUuid); ok { // mute client if they're connected
 		client.muted = true
 
 		if broadcast {
@@ -314,7 +314,7 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 		return err
 	}
 
-	if client, ok := clients.Load(recipientUuid); ok { // change client username if they're connected
+	if client, ok := clients.LoadOK(recipientUuid); ok { // change client username if they're connected
 		client.name = newUsername
 
 		if client.roomC != nil {
@@ -326,7 +326,7 @@ func tryChangePlayerUsername(senderUuid string, recipientUuid string, newUsernam
 }
 
 func getPlayerMedals(uuid string) (medals [5]int) {
-	if client, ok := clients.Load(uuid); ok {
+	if client, ok := clients.LoadOK(uuid); ok {
 		select {
 		case <-client.ctx.Done(): // disconnecting, fetch from DB
 		default:
@@ -1179,7 +1179,7 @@ func getCurrentPlayerEventLocationsData(playerUuid string) (eventLocations []*Ev
 }
 
 func tryCompleteEventLocation(playerUuid string, location string) (exp int, err error) {
-	if client, ok := clients.Load(playerUuid); ok {
+	if client, ok := clients.LoadOK(playerUuid); ok {
 		if client.roomC == nil {
 			return -1, err
 		}
@@ -1244,7 +1244,7 @@ func tryCompleteEventLocation(playerUuid string, location string) (exp int, err 
 }
 
 func tryCompletePlayerEventLocation(playerUuid string, location string) (success bool, err error) {
-	if client, ok := clients.Load(playerUuid); ok {
+	if client, ok := clients.LoadOK(playerUuid); ok {
 		if client.roomC == nil {
 			return false, err
 		}
@@ -1384,7 +1384,7 @@ func writeEventVmData(gameId string, mapId int, vmGroup EventIds, exp int) error
 }
 
 func tryCompleteEventVm(playerUuid string, mapId int, eventId int) (exp int, err error) {
-	if client, ok := clients.Load(playerUuid); ok {
+	if client, ok := clients.LoadOK(playerUuid); ok {
 		if client.roomC == nil {
 			return -1, err
 		}
@@ -1477,7 +1477,7 @@ func getPlayerTags(playerUuid string) (tags []string, lastUnlocked time.Time, er
 }
 
 func tryWritePlayerTag(playerUuid string, name string) (success bool, err error) {
-	if client, ok := clients.Load(playerUuid); ok { // Player must be online to add a tag
+	if client, ok := clients.LoadOK(playerUuid); ok { // Player must be online to add a tag
 		if client.roomC == nil {
 			return false, nil
 		}
@@ -1597,7 +1597,7 @@ func getNameFromUuid(uuid string) (name string) {
 	default_ := fmt.Sprintf("`%s`", uuid)
 
 	// get name from sessionClients if they're connected
-	if client, ok := clients.Load(uuid); ok {
+	if client, ok := clients.LoadOK(uuid); ok {
 		if client.name != "" {
 			return client.name
 		}

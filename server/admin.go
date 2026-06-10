@@ -34,7 +34,7 @@ func adminGetPlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := make([]PlayerData, 0, clients.GetAmount())
+	response := make([]PlayerData, 0, clients.Len())
 	for _, client := range clients.Get() {
 		response = append(response, PlayerData{
 			Uuid: client.uuid,

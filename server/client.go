@@ -20,7 +20,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/fasthttp/websocket"
@@ -356,28 +355,17 @@ func (c *RoomClient) reset() {
 }
 
 type SClientMap struct {
-	clients map[string]*SessionClient
-	mutex   sync.RWMutex
+	SyncMap[string, *SessionClient]
 }
 
 func NewSCMap() *SClientMap {
-	return &SClientMap{
-		clients: make(map[string]*SessionClient),
-	}
-}
-
-func (m *SClientMap) Store(uuid string, client *SessionClient) {
-	m.mutex.Lock()
-
-	m.clients[uuid] = client
-
-	m.mutex.Unlock()
+	return &SClientMap{SyncMap: NewSyncMap[string, *SessionClient]()}
 }
 
 func (m *SClientMap) nextFreeId() (id int) {
-	for i := 0; i < 0xFFFF; i++ {
+	for i := range 0xFFFF {
 		var used bool
-		for _, client := range m.clients {
+		for _, client := range m.Data {
 			if client.id == i {
 				used = true
 			}
@@ -388,61 +376,26 @@ func (m *SClientMap) nextFreeId() (id int) {
 			break
 		}
 	}
+
 	return id
 }
 
-func (m *SClientMap) StoreAndSetId(uuid string, client *SessionClient) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+func (m *SClientMap) StoreAndSetID(uuid string, client *SessionClient) {
+	m.Mtx.Lock()
+	defer m.Mtx.Unlock()
 
 	client.id = m.nextFreeId()
-	m.clients[uuid] = client
-}
-
-func (m *SClientMap) Load(uuid string) (*SessionClient, bool) {
-	m.mutex.RLock()
-
-	client, ok := m.clients[uuid]
-
-	m.mutex.RUnlock()
-
-	return client, ok
-}
-
-func (m *SClientMap) Delete(uuid string) {
-	m.mutex.Lock()
-
-	delete(m.clients, uuid)
-
-	m.mutex.Unlock()
+	m.Data[uuid] = client
 }
 
 func (m *SClientMap) Get() []*SessionClient {
-	m.mutex.RLock()
+	m.Mtx.RLock()
+	defer m.Mtx.RUnlock()
 
-	clients := make([]*SessionClient, 0, len(m.clients))
-	for _, client := range m.clients {
+	clients := make([]*SessionClient, 0, len(m.Data))
+	for _, client := range m.Data {
 		clients = append(clients, client)
 	}
 
-	m.mutex.RUnlock()
-
 	return clients
-}
-
-func (m *SClientMap) GetAmount() int {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-
-	return len(m.clients)
-}
-
-func (m *SClientMap) Exists(uuid string) bool {
-	m.mutex.RLock()
-
-	_, ok := m.clients[uuid]
-
-	m.mutex.RUnlock()
-
-	return ok
 }

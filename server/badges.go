@@ -35,7 +35,7 @@ var (
 
 	conditions             map[string]map[string]*Condition
 	badges                 map[string]map[string]*Badge
-	badgeUnlockPercentages map[string]float32
+	badgeUnlockPercentages SyncMap[string, float32]
 	sortedBadgeIds         map[string][]string
 )
 
@@ -514,7 +514,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				continue
 			}
 
-			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, OverlayType: gameBadge.OverlayType, Art: gameBadge.Art, Animated: gameBadge.Animated, Percent: badgeUnlockPercentages[badgeId], Hidden: gameBadge.Hidden || gameBadge.Dev, Tags: []string{}}
+			playerBadge := &PlayerBadge{BadgeId: badgeId, Game: game, Group: gameBadge.Group, Bp: gameBadge.Bp, MapId: gameBadge.Map, MapX: gameBadge.MapX, MapY: gameBadge.MapY, Secret: gameBadge.Secret, SecretCondition: gameBadge.SecretCondition, OverlayType: gameBadge.OverlayType, Art: gameBadge.Art, Animated: gameBadge.Animated, Percent: badgeUnlockPercentages.Load(badgeId), Hidden: gameBadge.Hidden || gameBadge.Dev, Tags: []string{}}
 			if gameBadge.SecretMap {
 				playerBadge.MapId = 0
 			}
@@ -662,7 +662,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				if err != nil {
 					return playerBadges, err
 				}
-				badge.Percent = badgeUnlockPercentages[badge.BadgeId]
+				badge.Percent = badgeUnlockPercentages.Load(badge.BadgeId)
 				badge.NewUnlock = true
 				unlockedBadge = true
 			}
@@ -686,7 +686,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				if err != nil {
 					return playerBadges, err
 				}
-				playerBadge.Percent = badgeUnlockPercentages[playerBadge.BadgeId]
+				playerBadge.Percent = badgeUnlockPercentages.Load(playerBadge.BadgeId)
 				playerBadge.NewUnlock = true
 			}
 		}
@@ -898,7 +898,7 @@ func updatePlayerBadgeSlotCounts(uuid string) (err error) {
 }
 
 func setPlayerBadge(uuid string, badge string) error {
-	if client, ok := clients.Load(uuid); ok {
+	if client, ok := clients.LoadOK(uuid); ok {
 		client.badge = badge
 	}
 
@@ -1081,7 +1081,7 @@ func writeGameBadges() error {
 	for badgeGame := range badges {
 		for badgeId, badge := range badges[badgeGame] {
 			if _, ok := badges[config.gameName]; ok {
-				badgeUnlockPercentage := badgeUnlockPercentages[badgeId]
+				badgeUnlockPercentage := badgeUnlockPercentages.Load(badgeId)
 				_, err = db.Exec("INSERT INTO badges (badgeId, game, bp, hidden, percentUnlocked) VALUES (?, ?, ?, ?, ?)", badgeId, badgeGame, badge.Bp, badge.Hidden || badge.Dev, badgeUnlockPercentage)
 				if err != nil {
 					return err
@@ -1119,10 +1119,12 @@ func unlockPlayerBadge(playerUuid string, badgeId string) error {
 		return err
 	}
 
-	badgeUnlockPercentages[badgeId], err = getBadgeUnlockPercentage(badgeId)
+	percent, err := getBadgeUnlockPercentage(badgeId)
 	if err != nil {
 		return err
 	}
+
+	badgeUnlockPercentages.Store(badgeId, percent)
 
 	return nil
 }
@@ -1155,15 +1157,15 @@ func getBadgeUnlockPercentage(badgeId string) (unlockPercentage float32, err err
 	return unlockPercentage, err
 }
 
-func getBadgeUnlockPercentages() (unlockPercentages map[string]float32, err error) {
+func getBadgeUnlockPercentages() (SyncMap[string, float32], error) {
 	results, err := db.Query("SELECT b.badgeId, (COUNT(b.uuid) / aa.count) * 100 FROM playerBadges b JOIN accounts a ON a.uuid = b.uuid JOIN (SELECT COUNT(aa.uuid) count FROM accounts aa WHERE EXISTS(SELECT * FROM playerBadges aab WHERE aab.uuid = aa.uuid AND aa.inactive = 0)) aa WHERE EXISTS(SELECT * FROM playerBadges ab WHERE ab.uuid = a.uuid AND a.inactive = 0) GROUP BY b.badgeId")
 	if err != nil {
-		return unlockPercentages, err
+		return SyncMap[string, float32]{}, err
 	}
 
 	defer results.Close()
 
-	unlockPercentages = make(map[string]float32)
+	unlockPercentages := make(map[string]float32)
 
 	for results.Next() {
 		var badgeId string
@@ -1171,11 +1173,11 @@ func getBadgeUnlockPercentages() (unlockPercentages map[string]float32, err erro
 
 		err := results.Scan(&badgeId, &percentUnlocked)
 		if err != nil {
-			return unlockPercentages, err
+			return SyncMap[string, float32]{}, err
 		}
 
 		unlockPercentages[badgeId] = percentUnlocked
 	}
 
-	return unlockPercentages, nil
+	return SyncMap[string, float32]{Data: unlockPercentages}, nil
 }

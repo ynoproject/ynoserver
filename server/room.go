@@ -91,7 +91,7 @@ func joinRoomWs(conn *websocket.Conn, r *http.Request) {
 		key:    serverSecurity.NewClientKey(),
 	}
 
-	if session, ok := clients.Load(pd.Uuid); ok {
+	if session, ok := clients.LoadOK(pd.Uuid); ok {
 		if session.roomC != nil {
 			session.roomC.cancel()
 		}

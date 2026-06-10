@@ -986,9 +986,9 @@ func handleBlockPlayer(w http.ResponseWriter, r *http.Request) {
 	_ = removePlayerFriend(pd.Uuid, targetUuid)
 
 	// "disconnect" them NOW!!!
-	if client, ok := clients.Load(pd.Uuid); ok {
+	if client, ok := clients.LoadOK(pd.Uuid); ok {
 		client.blockedUsers[targetUuid] = true
-		if otherClient, ok := clients.Load(targetUuid); ok {
+		if otherClient, ok := clients.LoadOK(targetUuid); ok {
 			if (client.roomC != nil && otherClient.roomC != nil) && client.roomC.room == otherClient.roomC.room {
 				client.roomC.outbox <- buildMsg("d", otherClient.id)
 				otherClient.roomC.outbox <- buildMsg("d", client.id)
@@ -1035,9 +1035,9 @@ func handleUnblockPlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// "connect" them NOW!!!
-	if client, ok := clients.Load(pd.Uuid); ok {
+	if client, ok := clients.LoadOK(pd.Uuid); ok {
 		client.blockedUsers[targetUuid] = false
-		if otherClient, ok := clients.Load(targetUuid); ok {
+		if otherClient, ok := clients.LoadOK(targetUuid); ok {
 			if (client.roomC != nil && otherClient.roomC != nil) && client.roomC.room == otherClient.roomC.room {
 				client.roomC.getPlayerData(otherClient.roomC)
 				otherClient.roomC.getPlayerData(client.roomC)
@@ -1080,7 +1080,7 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if client, ok := clients.Load(pd.Uuid); ok {
+	if client, ok := clients.LoadOK(pd.Uuid); ok {
 		if client.roomC != nil {
 			var allConnLocationNames []string
 			retUrl := "https://explorer.yume.wiki/location?locations="
@@ -1306,7 +1306,7 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePlayers(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(strconv.Itoa(clients.GetAmount())))
+	w.Write([]byte(strconv.Itoa(clients.Len())))
 }
 
 func query2kki(action string, queryString string) (response string, err error) {

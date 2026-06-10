@@ -104,7 +104,7 @@ func getPlayerFriendData(uuid string) (playerFriends []*PlayerFriend, err error)
 		}
 
 		if playerFriend.Accepted && playerFriend.Game == config.gameName {
-			client, ok := clients.Load(playerFriend.Uuid)
+			client, ok := clients.LoadOK(playerFriend.Uuid)
 			if ok {
 				if client.system != "" {
 					playerFriend.SystemName = client.system
