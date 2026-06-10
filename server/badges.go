@@ -735,7 +735,7 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 				}
 
 
-				badge.Percent = 
+				badge.Percent = percent
 				badge.NewUnlock = true
 				unlockedBadge = true
 			}
