@@ -35,7 +35,7 @@ type Party struct {
 	Members     []*PlayerListFullData `json:"members"`
 }
 
-var parties = make(map[int]*Party)
+var parties = NewSyncMap[int, *Party]()
 
 func sendPartyUpdate() {
 	parties, err := getAllPartyData()
@@ -67,7 +67,7 @@ func (c *SessionClient) cacheParty() error {
 
 	c.partyId = partyId
 
-	if _, ok := parties[partyId]; ok { // it's already in the cache
+	if parties.Exists(partyId) { // it's already in the cache
 		return nil
 	}
 
@@ -76,7 +76,7 @@ func (c *SessionClient) cacheParty() error {
 		return err
 	}
 
-	parties[party.Id] = &party
+	parties.Store(party.Id, &party)
 
 	return nil
 }
@@ -95,7 +95,7 @@ func getPlayerPartyId(uuid string) (partyId int, err error) {
 }
 
 func getPartyData(partyId int) (*Party, error) {
-	party, ok := parties[partyId]
+	party, ok := parties.LoadOK(partyId)
 	if !ok {
 		return nil, errors.New("party id not in cache")
 	}
@@ -151,7 +151,7 @@ func getPartyData(partyId int) (*Party, error) {
 	}
 
 	if !hasOnlineMember {
-		delete(parties, partyId)
+		parties.Delete(partyId)
 		return nil, errors.New("no members online")
 	}
 
@@ -160,7 +160,7 @@ func getPartyData(partyId int) (*Party, error) {
 
 func getAllPartyData() ([]*Party, error) {
 	var partyData []*Party
-	for partyId := range parties {
+	for partyId := range parties.GetClone() {
 		party, err := getPartyData(partyId)
 		if err != nil {
 			continue
@@ -243,7 +243,7 @@ func updatePartyData(partyId int, name string, public bool, pass string, theme s
 		return err
 	}
 
-	party, ok := parties[partyId]
+	party, ok := parties.LoadOK(partyId)
 	if !ok {
 		return errors.New("party id not in cache")
 	}
@@ -269,7 +269,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 		return err
 	}
 
-	party, ok := parties[partyId]
+	party, ok := parties.LoadOK(partyId)
 	if !ok {
 		// this only happens when someone creates a party
 		party, err := getPartyDataFromDatabase(playerUuid)
@@ -277,7 +277,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 			return err
 		}
 
-		parties[partyId] = &party
+		parties.Store(partyId, &party)
 
 		client, ok := clients.Load(playerUuid)
 		if ok {
@@ -331,7 +331,7 @@ func leavePlayerParty(playerUuid string) error {
 		return err
 	}
 
-	party, ok := parties[partyId]
+	party, ok := parties.LoadOK(partyId)
 	if !ok {
 		return errors.New("party id not in cache")
 	}
@@ -356,7 +356,7 @@ func leavePlayerParty(playerUuid string) error {
 }
 
 func getPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
-	party, ok := parties[partyId]
+	party, ok := parties.LoadOK(partyId)
 	if !ok {
 		return nil, errors.New("party id not in cache")
 	}
@@ -369,7 +369,7 @@ func getPartyMemberUuids(partyId int) (partyMemberUuids []string, err error) {
 }
 
 func getPartyOwnerUuid(partyId int) (ownerUuid string, err error) {
-	party, ok := parties[partyId]
+	party, ok := parties.LoadOK(partyId)
 	if !ok {
 		return "", errors.New("party id not in cache")
 	}
@@ -415,7 +415,7 @@ func setPartyOwner(partyId int, playerUuid string) error {
 		return err
 	}
 
-	party, ok := parties[partyId]
+	party, ok := parties.LoadOK(partyId)
 	if !ok {
 		return errors.New("party id not in cache")
 	}
@@ -426,7 +426,7 @@ func setPartyOwner(partyId int, playerUuid string) error {
 }
 
 func checkDeleteOrphanedParty(partyId int) (deleted bool, err error) {
-	party, ok := parties[partyId]
+	party, ok := parties.LoadOK(partyId)
 	if !ok {
 		return false, errors.New("party id not in cache")
 	}
@@ -437,7 +437,7 @@ func checkDeleteOrphanedParty(partyId int) (deleted bool, err error) {
 			return true, err
 		}
 
-		delete(parties, partyId)
+		parties.Delete(partyId)
 
 		return true, nil
 	}
@@ -456,7 +456,7 @@ func deletePartyAndMembers(partyId int) error {
 		return err
 	}
 
-	delete(parties, partyId)
+	parties.Delete(partyId)
 
 	return nil
 }

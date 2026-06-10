@@ -207,7 +207,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			handleError(w, r, "invalid partyId value")
 			return
 		}
-		party, ok := parties[partyId]
+		party, ok := parties.LoadOK(partyId)
 		if !ok {
 			handleInternalError(w, r, errors.New("party id not in cache"))
 			return
@@ -314,7 +314,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if pd.Rank == 0 {
-			party, ok := parties[partyId]
+			party, ok := parties.LoadOK(partyId)
 			if !ok {
 				handleInternalError(w, r, errors.New("party id not in cache"))
 				return
