@@ -825,7 +825,7 @@ func (c *RoomClient) handleAnc(msg []string) error {
 		return errors.New("invalid command")
 	}
 
-	c.broadcast(buildMsg("anc", cmd))
+	c.broadcast(buildMsg("anc", c.session.id, cmd))
 
 	return nil
 }
