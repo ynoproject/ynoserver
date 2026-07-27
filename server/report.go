@@ -56,6 +56,12 @@ type ModAction struct {
 	action int
 }
 
+type ChatContext struct {
+	timestamp                   time.Time
+	name, uuid, msgId, contents string
+	partyId, partyName          sql.NullString
+}
+
 type oneshotJob struct {
 	timer  *time.Timer
 	expiry time.Time
@@ -180,6 +186,8 @@ func initModBot() {
 			}
 			delete(reportLog[uuid], ynoMsgId)
 			markAsResolved(uuid)
+		case "ctx":
+			provideChatMessageContext(&resp, ynoMsgId)
 		case "cmd":
 			if len(data.Values) != 1 {
 				return
@@ -191,9 +199,9 @@ func initModBot() {
 					log.Printf("getReportersForPlayer: %s", err)
 					return
 				}
-				reportsContent := ""
+				var reportsContent strings.Builder
 				for reporter, reason := range reports {
-					reportsContent += fmt.Sprintf("%s: `%s`  \n", reporter, getReadableReportReason(reason))
+					fmt.Fprintf(&reportsContent, "%s: `%s`  \n", reporter, getReadableReportReason(reason))
 				}
 				resp.Type = discordgo.InteractionResponseChannelMessageWithSource
 				resp.Data = &discordgo.InteractionResponseData{
@@ -201,7 +209,7 @@ func initModBot() {
 					Embeds: []*discordgo.MessageEmbed{
 						{
 							Title:       fmt.Sprintf("Reporters for `msgid=%s`", ynoMsgId),
-							Description: reportsContent,
+							Description: reportsContent.String(),
 						},
 					},
 				}
@@ -265,7 +273,6 @@ func initModBot() {
 	}
 
 	if err = registerBotCommands(); err != nil {
-		log.Printf("bot/registerBotCommands: %s", err)
 		return
 	}
 
@@ -308,11 +315,7 @@ func botHandleModalResponse(resp *discordgo.InteractionResponse, data discordgo.
 		expiryRaw, reason := parseTempBanReportComponents(data.Components)
 		expiryDuration, err := time.ParseDuration(expiryRaw)
 		if err != nil {
-			resp.Type = discordgo.InteractionResponseChannelMessageWithSource
-			resp.Data = &discordgo.InteractionResponseData{
-				Flags:   discordgo.MessageFlagsEphemeral,
-				Content: fmt.Sprintf("`%s` is not a valid duration string", expiryRaw),
-			}
+			setResponse(resp, fmt.Sprintf("`%s` is not a valid duration string", expiryRaw))
 			return
 		}
 
@@ -386,11 +389,19 @@ WHERE pgd.name = ? OR pgd.uuid = ?`, playerid, playerid)
 				onlineGames = append(onlineGames, game)
 			}
 		}
-		msg := fmt.Sprintf(`##### Player Info
+		msg := fmt.Sprintf(`### Player Info
 name=%s uuid=%s
 banned=%t muted=%t
 online in: %s`, name, uuid, banned, muted, strings.Join(onlineGames, ", "))
 		setResponse(resp, msg)
+	case "msgContext":
+		if len(args) != 1 {
+			setResponse(resp, "Usage: /msgContext <MSGID>")
+			return
+		}
+
+		ynoMsgId := args[0].StringValue()
+		provideChatMessageContext(resp, ynoMsgId)
 	default:
 		setResponse(resp, "Unknown command")
 	}
@@ -417,6 +428,29 @@ func registerBotCommands() (err error) {
 			},
 		},
 	)
+	if err != nil {
+		log.Printf("registerBotCommands/pinfo: %s", err)
+	}
+
+	_, err = bot.ApplicationCommandCreate(
+		bot.State.User.ID,
+		config.moderation.guildId,
+		&discordgo.ApplicationCommand{
+			Name:        "msgContext",
+			Description: "Show 1-minute context of message",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "msgid",
+					Description: "message id in database",
+					Required:    true,
+				},
+			},
+		},
+	)
+	if err != nil {
+		log.Printf("registerBotCommands/msgContext: %s", err)
+	}
 
 	return
 }
@@ -500,9 +534,9 @@ func formatReportLog(obj any, targetUuid, ynoMsgId, originalMsg, game string, re
 	if originalMsg != "" {
 		originalMsg = fmt.Sprintf("> *%s*", originalMsg)
 	}
-	reasonsString := ""
+	var reasonsString strings.Builder
 	for reason, count := range reasons {
-		reasonsString += fmt.Sprintf("- `%s`: %d\n", getReadableReportReason(reason), count)
+		fmt.Fprintf(&reasonsString, "- `%s`: %d\n", getReadableReportReason(reason), count)
 	}
 
 	verifiedString := "false"
@@ -521,7 +555,7 @@ func formatReportLog(obj any, targetUuid, ynoMsgId, originalMsg, game string, re
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Reasons",
-				Value: reasonsString,
+				Value: reasonsString.String(),
 			},
 			{
 				Name:   "Verified",
@@ -538,6 +572,7 @@ func formatReportLog(obj any, targetUuid, ynoMsgId, originalMsg, game string, re
 
 	components := []discordgo.MessageComponent{
 		discordgo.ActionsRow{
+			// up to 5 only, everything else goes in options
 			Components: []discordgo.MessageComponent{
 				discordgo.Button{
 					Label:    "Ban",
@@ -552,6 +587,11 @@ func formatReportLog(obj any, targetUuid, ynoMsgId, originalMsg, game string, re
 				discordgo.Button{
 					Label:    "Acknowledge",
 					CustomID: "ack:" + targetUuid,
+					Style:    discordgo.SecondaryButton,
+				},
+				discordgo.Button{
+					Label:    "Context",
+					CustomID: "ctx:" + targetUuid,
 					Style:    discordgo.SecondaryButton,
 				},
 			},
@@ -754,6 +794,40 @@ VALUES
 	(?, ?, ?, ?, ?, ?, NOW(), 0)`,
 		uuid, targetUuid, msgIdLink, config.gameName, urlReplacer.Replace(reason), originalMsg)
 	return msgId, originalMsg, err
+}
+
+func provideChatMessageContext(resp *discordgo.InteractionResponse, ynoMsgId string) {
+	context, err := getChatMessageContext(ynoMsgId)
+	if err != nil {
+		setResponse(resp, fmt.Sprintf("Error getting message context:\n%s", err))
+		return
+	}
+
+	if len(context) == 0 {
+		setResponse(resp, "No context available for this message")
+		return
+	}
+
+	var responseContent strings.Builder
+	fmt.Fprint(&responseContent, "```\n")
+	for _, line := range context {
+		if line.partyName.Valid {
+			fmt.Fprintf(&responseContent, "(%s) ", line.partyName.String)
+		}
+		fmt.Fprintf(&responseContent, "[%s msgid:%s %s] %s\n", line.timestamp.Format(time.DateTime), line.msgId, line.name, line.contents)
+	}
+	fmt.Fprint(&responseContent, "```")
+
+	resp.Type = discordgo.InteractionResponseChannelMessageWithSource
+	resp.Data = &discordgo.InteractionResponseData{
+		Flags: discordgo.MessageFlagsEphemeral,
+		Embeds: []*discordgo.MessageEmbed{
+			{
+				Title:       fmt.Sprintf("Context for `msgid=%s`", ynoMsgId),
+				Description: responseContent.String(),
+			},
+		},
+	}
 }
 
 func markAsResolved(targetUuid string) {

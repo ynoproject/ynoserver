@@ -1667,7 +1667,7 @@ func getReportersForPlayer(targetUuid, msgId string) (result map[string]string, 
 		JOIN playerGameData pgd ON pgd.uuid = pr.uuid
 		WHERE pr.targetUuid = ? AND pr.msgId = ? AND NOT actionTaken`, targetUuid, msgIdLink)
 	if err != nil {
-		return result, err
+		return
 	}
 
 	result = make(map[string]string)
@@ -1684,6 +1684,48 @@ func getReportersForPlayer(targetUuid, msgId string) (result map[string]string, 
 	}
 
 	return result, nil
+}
+
+func getChatMessageContext(msgId string) (result []ChatContext, err error) {
+	if msgId == "" {
+		err = errors.New("msgId must be nonempty")
+		return
+	}
+
+	var (
+		timestamp time.Time
+		game      string
+		partyId   any // string | nil
+	)
+	err = db.QueryRow("SELECT timestamp, game, partyId FROM chatMessage WHERE msgId = ?", msgId).Scan(&timestamp, &game, &partyId)
+	if err != nil {
+		return
+	}
+
+	rows, err := db.Query(`
+		SELECT m.timestamp, pgd.name, m.uuid, m.msgId, m.contents, m.partyId, p.name AS partyName
+		FROM chatMessages m
+		JOIN playerGameData pgd ON pgd.uuid = m.uuid AND pgd.game = m.game
+		LEFT JOIN parties p ON p.id = m.partyId AND p.game = m.game
+		WHERE m.game = ? AND m.partyId <=> ? AND m.timestamp BETWEEN DATE_SUB(?, INTERVAL 1 MINUTE) AND ?
+		ORDER BY m.timestamp
+	`, game, partyId, timestamp, timestamp)
+	if err != nil {
+		return
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var ctx ChatContext
+		err = rows.Scan(&ctx.timestamp, &ctx.name, &ctx.uuid, &ctx.msgId, &ctx.contents, &ctx.partyId, &ctx.partyName)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, ctx)
+	}
+
+	return
 }
 
 func doCleanupQueries() error {
