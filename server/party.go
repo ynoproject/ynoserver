@@ -279,6 +279,11 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 
 		parties[partyId] = &party
 
+		client, ok := clients.Load(playerUuid)
+		if ok {
+			client.partyId = partyId
+		}
+
 		return nil
 	}
 
