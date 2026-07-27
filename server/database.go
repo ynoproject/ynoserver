@@ -1714,7 +1714,7 @@ func getChatMessageContext(msgId string) (result []ChatContext, err error) {
 		game      string
 		partyId   any // string | nil
 	)
-	err = db.QueryRow("SELECT timestamp, game, partyId FROM chatMessage WHERE msgId = ?", msgId).Scan(&timestamp, &game, &partyId)
+	err = db.QueryRow("SELECT timestamp, game, partyId FROM chatMessages WHERE msgId = ?", msgId).Scan(&timestamp, &game, &partyId)
 	if err != nil {
 		return
 	}
