@@ -279,7 +279,7 @@ func joinPlayerParty(partyId int, playerUuid string) error {
 
 		parties.Store(partyId, &party)
 
-		client, ok := clients.Load(playerUuid)
+		client, ok := clients.LoadOK(playerUuid)
 		if ok {
 			client.partyId = partyId
 		}
