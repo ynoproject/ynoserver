@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"regexp"
+	"strings"
 )
 
 func setWordFilter() error {
@@ -16,20 +17,21 @@ func setWordFilter() error {
 
 	scanner.Split(bufio.ScanLines)
 
-	regexStr := "(?i)("
+	var regexStr strings.Builder
+	regexStr.WriteString("(?i)(")
 
 	var wordAdded bool
 	for scanner.Scan() {
 		if wordAdded {
-			regexStr += "|"
+			regexStr.WriteString("|")
 		}
 
-		regexStr += scanner.Text()
+		regexStr.WriteString(scanner.Text())
 
 		wordAdded = true
 	}
 
-	regex, err := regexp.Compile(regexStr + ")")
+	regex, err := regexp.Compile(regexStr.String() + ")")
 	if err != nil {
 		return err
 	}

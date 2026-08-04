@@ -336,11 +336,8 @@ func (c *RoomClient) checkCondition(condition *Condition, roomId int, minigames 
 		if len(condition.Values) == 0 {
 			valueMatched = value == condition.Value
 		} else {
-			for _, val := range condition.Values {
-				if value == val {
-					valueMatched = true
-					break
-				}
+			if slices.Contains(condition.Values, value) {
+				valueMatched = true
 			}
 		}
 	}
@@ -522,11 +519,8 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 			if account {
 				switch gameBadge.ReqType {
 				case "tag":
-					for _, tag := range playerTags {
-						if tag == gameBadge.ReqString {
-							playerBadge.Unlocked = true
-							break
-						}
+					if slices.Contains(playerTags, gameBadge.ReqString) {
+						playerBadge.Unlocked = true
 					}
 				case "tags":
 					if gameBadge.ReqCount == 0 || gameBadge.ReqCount >= len(gameBadge.ReqStrings) {
@@ -535,12 +529,9 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 						playerBadge.GoalsTotal = gameBadge.ReqCount
 					}
 					for _, tag := range playerTags {
-						for _, cTag := range gameBadge.ReqStrings {
-							if tag == cTag {
-								playerBadge.Goals++
-								playerBadge.Tags = append(playerBadge.Tags, tag)
-								break
-							}
+						if slices.Contains(gameBadge.ReqStrings, tag) {
+							playerBadge.Goals++
+							playerBadge.Tags = append(playerBadge.Tags, tag)
 						}
 					}
 				case "tagArrays":
@@ -552,13 +543,10 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 					for _, cTags := range gameBadge.ReqStringArrays {
 						var tagFound bool
 						for _, tag := range playerTags {
-							for _, cTag := range cTags {
-								if tag == cTag {
-									tagFound = true
-									playerBadge.Goals++
-									playerBadge.Tags = append(playerBadge.Tags, tag)
-									break
-								}
+							if slices.Contains(cTags, tag) {
+								tagFound = true
+								playerBadge.Goals++
+								playerBadge.Tags = append(playerBadge.Tags, tag)
 							}
 							if tagFound {
 								break
@@ -609,11 +597,8 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 						playerBadge.Unlocked = true
 						playerBadge.Tags = []string{} // no need to do styling anymore
 					} else {
-						for _, unlockedBadgeId := range playerUnlockedBadgeIds {
-							if playerBadge.BadgeId == unlockedBadgeId {
-								playerBadge.Unlocked = true
-								break
-							}
+						if slices.Contains(playerUnlockedBadgeIds, playerBadge.BadgeId) {
+							playerBadge.Unlocked = true
 						}
 					}
 				}
@@ -651,11 +636,8 @@ func getPlayerBadgeData(playerUuid string, playerRank int, playerTags []string, 
 	for _, badge := range playerBadges {
 		if badge.Unlocked {
 			var unlocked bool
-			for _, unlockedBadgeId := range playerUnlockedBadgeIds {
-				if badge.BadgeId == unlockedBadgeId {
-					unlocked = true
-					break
-				}
+			if slices.Contains(playerUnlockedBadgeIds, badge.BadgeId) {
+				unlocked = true
 			}
 			if !unlocked {
 				err := unlockPlayerBadge(playerUuid, badge.BadgeId)

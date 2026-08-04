@@ -556,8 +556,8 @@ func setEventVms() {
 			}
 
 			vmBaseName := strings.TrimSuffix(vmName[10:], ".png")
-			eventIdCsv := strings.Split(vmBaseName, ",")
-			for _, eventIdRaw := range eventIdCsv {
+			eventIdCsv := strings.SplitSeq(vmBaseName, ",")
+			for eventIdRaw := range eventIdCsv {
 				if len(eventIdRaw) != 4 {
 					eprintf("VM", "%s must all have 4-padded events", vmName)
 					eventIds = nil

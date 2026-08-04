@@ -1083,15 +1083,16 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 	if client, ok := clients.LoadOK(pd.Uuid); ok {
 		if client.roomC != nil {
 			var allConnLocationNames []string
-			retUrl := "https://explorer.yume.wiki/location?locations="
+			var retUrl strings.Builder
+			retUrl.WriteString("https://explorer.yume.wiki/location?locations=")
 
 			for i, locationName := range client.roomC.locations {
 				var connLocationNames []string
 
 				if i > 0 {
-					retUrl += "|"
+					retUrl.WriteString("|")
 				}
-				retUrl += url.QueryEscape(locationName)
+				retUrl.WriteString(url.QueryEscape(locationName))
 
 				getConnectionsUrl := "https://explorer.yume.wiki/getConnectedLocations?locationName=" + url.QueryEscape(locationName)
 				resp, err := http.Get(getConnectionsUrl)
@@ -1117,22 +1118,22 @@ func handleExplorer(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if len(hiddenLocationNames) > 0 {
-				retUrl += "&hiddenConnLocations="
+				retUrl.WriteString("&hiddenConnLocations=")
 
 				for i, hiddenLocationName := range hiddenLocationNames {
 					if i > 0 {
-						retUrl += "|"
+						retUrl.WriteString("|")
 					}
-					retUrl += url.QueryEscape(hiddenLocationName)
+					retUrl.WriteString(url.QueryEscape(hiddenLocationName))
 				}
 			}
 
 			trackedLocations := r.URL.Query().Get("trackedLocations")
 			if trackedLocations != "" {
-				retUrl += "&trackedConnLocations=" + trackedLocations
+				retUrl.WriteString("&trackedConnLocations=" + trackedLocations)
 			}
 
-			w.Write([]byte(retUrl))
+			w.Write([]byte(retUrl.String()))
 		}
 	}
 

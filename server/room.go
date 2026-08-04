@@ -237,7 +237,7 @@ func (c *RoomClient) processMsgs(msg []byte) (errs []error) {
 	}
 
 	// message processing
-	for _, msgStr := range strings.Split(string(msg), mdelim) {
+	for msgStr := range strings.SplitSeq(string(msg), mdelim) {
 		if err := c.processMsg(msgStr); err != nil {
 			errs = append(errs, err)
 		}

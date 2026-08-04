@@ -508,7 +508,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 	globalWhereClause := whereClause + " AND cm.partyId IS NULL AND (pgd.lastGlobalMsgId IS NULL OR cm.timestamp > (SELECT cmg.timestamp FROM chatMessages cmg WHERE cmg.msgId = pgd.lastGlobalMsgId)) ORDER BY 9 DESC"
 	partyWhereClause := whereClause + " AND cm.partyId = ? AND (pgd.lastPartyMsgId IS NULL OR cm.timestamp > (SELECT cmp.timestamp FROM chatMessages cmp WHERE cmp.msgId = pgd.lastPartyMsgId)) ORDER BY 9 DESC"
 
-	var messageQueryArgs []interface{}
+	var messageQueryArgs []any
 
 	messageQueryArgs = append(messageQueryArgs, config.gameName)
 
@@ -564,7 +564,7 @@ func getChatMessageHistory(uuid string, globalMsgLimit, partyMsgLimit int, lastM
 
 	playersQuery := "SELECT DISTINCT pd.Uuid, COALESCE(a.user, pgd.name), pd.rank, CASE WHEN a.user IS NULL THEN 0 ELSE 1 END, COALESCE(a.badge, ''), pgd.systemName, pgd.medalCountBronze, pgd.medalCountSilver, pgd.medalCountGold, pgd.medalCountPlatinum, pgd.medalCountDiamond FROM players pd JOIN playerGameData pgd ON pgd.uuid = pd.Uuid LEFT JOIN accounts a ON a.uuid = pd.Uuid WHERE pgd.game = ? AND EXISTS (SELECT cm.uuid FROM chatMessages cm WHERE cm.uuid = pd.Uuid AND cm.game = pgd.game AND cm.timestamp BETWEEN ? AND ? "
 
-	var playerQueryArgs []interface{}
+	var playerQueryArgs []any
 
 	playerQueryArgs = append(playerQueryArgs, config.gameName, firstTimestamp, lastTimestamp)
 

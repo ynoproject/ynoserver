@@ -135,7 +135,7 @@ func parseConfigFile(filename string) *Config {
 	config.dbName = configFile.DbName
 
 	if configFile.SpRooms != "" {
-		for _, str := range strings.Split(configFile.SpRooms, ",") {
+		for str := range strings.SplitSeq(configFile.SpRooms, ",") {
 			num, err := strconv.Atoi(str)
 			if err != nil {
 				continue
@@ -147,14 +147,14 @@ func parseConfigFile(filename string) *Config {
 
 	config.badSounds = make(map[string]bool)
 	if configFile.BadSounds != "" {
-		for _, name := range strings.Split(configFile.BadSounds, ",") {
+		for name := range strings.SplitSeq(configFile.BadSounds, ",") {
 			config.badSounds[name] = true
 		}
 	}
 
 	config.pictures = make(map[string]bool)
 	if configFile.PictureNames != "" {
-		for _, name := range strings.Split(configFile.PictureNames, ",") {
+		for name := range strings.SplitSeq(configFile.PictureNames, ",") {
 			config.pictures[name] = true
 		}
 	}
@@ -165,7 +165,7 @@ func parseConfigFile(filename string) *Config {
 
 	config.battleAnimIds = make(map[int]bool)
 	if configFile.BattleAnimIds != "" {
-		for _, id := range strings.Split(configFile.BattleAnimIds, ",") {
+		for id := range strings.SplitSeq(configFile.BattleAnimIds, ",") {
 			idInt, errconv := strconv.Atoi(id)
 			if errconv != nil {
 				continue
