@@ -206,6 +206,7 @@ func (c *RoomClient) broadcast(msg []byte) {
 		select {
 		case client.outbox <- msg:
 		default:
+			client.cancel()
 			writeErrLog(c.session.uuid, c.mapId, "send channel is full")
 		}
 	}

@@ -189,6 +189,7 @@ func (c *SessionClient) broadcast(msg []byte) {
 		select {
 		case client.outbox <- msg:
 		default:
+			client.cancel()
 			writeErrLog(c.uuid, "sess", "send channel is full")
 		}
 	}
