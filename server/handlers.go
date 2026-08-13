@@ -479,7 +479,7 @@ func (c *RoomClient) handleRp(msg []string) error {
 	}
 
 	id, errconv := strconv.Atoi(msg[1])
-	if errconv != nil || id == 0 || id > maxPictures {
+	if errconv != nil || id <= 0 || id > maxPictures {
 		return errconv
 	}
 
@@ -532,11 +532,11 @@ func (c *RoomClient) handleSs(msg []string) error {
 		}
 	} else {
 		if len(c.room.minigames) != 0 {
-			for m, minigame := range c.room.minigames {
+			for _, minigame := range c.room.minigames {
 				if minigame.Dev && c.session.rank < 1 {
 					continue
 				}
-				if minigame.SwitchId == switchId && minigame.SwitchValue == value && c.minigameScores[m] < c.varCache[minigame.VarId] {
+				if minigame.SwitchId == switchId && minigame.SwitchValue == value && c.minigameScores[minigame.Id] < c.varCache[minigame.VarId] {
 					tryWritePlayerMinigameScore(c.session.uuid, minigame.Id, c.varCache[minigame.VarId])
 				}
 			}
@@ -670,11 +670,11 @@ func (c *RoomClient) handleSv(msg []string) error {
 		}
 	} else {
 		if len(c.room.minigames) != 0 {
-			for m, minigame := range c.room.minigames {
+			for _, minigame := range c.room.minigames {
 				if minigame.Dev && c.session.rank < 1 {
 					continue
 				}
-				if minigame.VarId == varId && c.minigameScores[m] < value {
+				if minigame.VarId == varId && c.minigameScores[minigame.Id] < value {
 					if minigame.SwitchId > 0 {
 						c.outbox <- buildMsg("ss", minigame.SwitchId, 0)
 					} else {

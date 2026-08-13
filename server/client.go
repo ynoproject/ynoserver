@@ -222,7 +222,7 @@ type RoomClient struct {
 
 	syncCoords bool
 
-	minigameScores []int
+	minigameScores map[string]int
 
 	switchCache map[int]bool
 	varCache    map[int]int
@@ -334,7 +334,7 @@ func (c *RoomClient) reset() {
 
 	c.syncCoords = false
 
-	c.minigameScores = nil
+	c.minigameScores = make(map[string]int)
 
 	c.switchCache = make(map[int]bool)
 	c.varCache = make(map[int]int)
