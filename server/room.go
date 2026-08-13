@@ -232,6 +232,12 @@ func (c *RoomClient) broadcast(msg []byte) {
 }
 
 func (c *RoomClient) processMsgs(msg []byte) (errs []error) {
+	defer func() {
+		if panicErr, ok := recover().(error); ok {
+			errs = append(errs, panicErr)
+		}
+	}()
+
 	if len(msg) < 8 {
 		return append(errs, errors.New("bad request size"))
 	}
@@ -393,7 +399,7 @@ func (c *RoomClient) getRoomEventData() {
 		if err != nil {
 			writeErrLog(c.session.uuid, c.mapId, "failed to read player minigame score for "+minigame.Id)
 		}
-		c.minigameScores = append(c.minigameScores, score)
+		c.minigameScores[minigame.Id] = score
 		varSyncType := 1
 		if minigame.InitialVarSync {
 			varSyncType = 2
