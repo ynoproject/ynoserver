@@ -70,6 +70,8 @@ var (
 
 const (
 	YEAR time.Duration = 366 * 24 * time.Hour
+
+	NAME_MAX = 255
 )
 
 func initSchedules() {
@@ -109,6 +111,8 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isMod := rank > 0
+
 	switch commandParam {
 	case "list":
 		schedules, err := listSchedules(uuid, rank)
@@ -133,10 +137,19 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		game := query.Get("game")
+		if _, ok := gameIdToName[game]; !ok {
+			handleError(w, r, "invalid game")
+			return
+		}
 		var interval, partyId int
 		var intervalType string
 		recurring := query.Get("recurring") == "true"
 		official := query.Get("official") == "true"
+		if !isMod && query.Has("official") {
+			handleError(w, r, "cannot set official status")
+			return
+		}
 		if recurring {
 			interval, err = strconv.Atoi(query.Get("interval"))
 			if err != nil || interval <= 0 {
@@ -164,11 +177,21 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		ownerUuid := query.Get("ownerUuid")
+		if !isMod && ownerUuid != uuid {
+			handleError(w, r, "cannot create/modify events for other people")
+			return
+		}
+		name := html.EscapeString(query.Get("name"))
+		if len(name) > NAME_MAX {
+			handleError(w, r, "name too long")
+			return
+		}
 		payload := &ScheduleUpdate{
-			Name:          html.EscapeString(query.Get("name")),
+			Name:          name,
 			Description:   html.EscapeString(query.Get("description")),
-			OwnerUuid:     query.Get("ownerUuid"),
-			Game:          query.Get("game"),
+			OwnerUuid:     ownerUuid,
+			Game:          game,
 			PartyId:       partyId,
 			Recurring:     recurring,
 			Official:      official,

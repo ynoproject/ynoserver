@@ -61,3 +61,6 @@ logging:
 
   ## After how many days to remove logs
   #max_age: 28
+
+## Max image size for screenshot uploads, in bytes; optional
+#max_image_size: 25e3

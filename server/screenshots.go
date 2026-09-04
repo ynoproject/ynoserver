@@ -221,8 +221,9 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		w.Write(screenshotGamesJson)
 		return
 	case "upload":
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
+		body, err := io.ReadAll(io.LimitReader(r.Body, int64(config.maxImageSize+1)))
+		defer r.Body.Close()
+		if err != nil || len(body) > config.maxImageSize {
 			handleError(w, r, "failed to read body")
 			return
 		}

@@ -513,9 +513,10 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		w.Write(saveData)
 		return
 	case "push":
-		data, err := io.ReadAll(r.Body)
+		const limit = 8 * 1024 * 1024
+		data, err := io.ReadAll(io.LimitReader(r.Body, limit+1))
 		defer r.Body.Close()
-		if err != nil || len(data) > 1024*1024*8 {
+		if err != nil || len(data) > limit {
 			handleError(w, r, "invalid data")
 			return
 		}
