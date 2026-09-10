@@ -70,6 +70,8 @@ type ScreenshotData struct {
 
 const (
 	defaultPlayerScreenshotLimit = 10
+
+	maxScreenshotFeedOffset = 10000
 )
 
 func initScreenshots() {
@@ -119,6 +121,9 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 				handleError(w, r, "invalid limit")
 				return
 			}
+			if limit <= 0 {
+				limit = 10
+			}
 			if limit > 50 {
 				limit = 50
 			}
@@ -132,6 +137,12 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				handleError(w, r, "invalid offset")
 				return
+			}
+			if offset < 0 {
+				offset = 0
+			}
+			if offset > maxScreenshotFeedOffset {
+				offset = maxScreenshotFeedOffset
 			}
 		} else {
 			offset = 0

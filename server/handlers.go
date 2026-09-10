@@ -515,7 +515,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 	}
 
 	switchId, errconv := strconv.Atoi(msg[1])
-	if errconv != nil {
+	if errconv != nil || switchId <= 0 || switchId > maxSwitchId {
 		return errconv
 	}
 
@@ -636,7 +636,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 	}
 
 	varId, errconv := strconv.Atoi(msg[1])
-	if errconv != nil {
+	if errconv != nil || varId <= 0 || varId > maxVarId {
 		return errconv
 	}
 	value, errconv := strconv.Atoi(msg[2])
