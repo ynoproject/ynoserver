@@ -542,7 +542,7 @@ func (c *RoomClient) handleSs(msg []string) error {
 			}
 		}
 
-		for _, condition := range append(globalConditions, c.room.conditions...) {
+		for _, condition := range slices.Concat(globalConditions, c.room.conditions) {
 			validVars := !condition.VarTrigger
 			if condition.VarTrigger {
 				if condition.VarId > 0 {
@@ -645,7 +645,7 @@ func (c *RoomClient) handleSv(msg []string) error {
 	}
 	c.varCache[varId] = value
 
-	conditions := append(globalConditions, c.room.conditions...)
+	conditions := slices.Concat(globalConditions, c.room.conditions)
 
 	if varId == 88 && config.gameName == "2kki" {
 		if c.notifiedMaps == nil {

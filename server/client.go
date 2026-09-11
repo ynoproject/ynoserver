@@ -263,6 +263,8 @@ func (c *RoomClient) msgReader() {
 func (c *RoomClient) msgWriter() {
 	ticker := time.NewTicker(pingPeriod)
 
+	var batch []byte
+
 	defer func() {
 		ticker.Stop()
 
@@ -278,13 +280,21 @@ func (c *RoomClient) msgWriter() {
 
 			return
 		case message := <-c.outbox:
-			for len(c.outbox) != 0 { // for each extra message in the channel
-				if len(message) > maxMessageSize-256 { // stop if we're close to the message size limit
-					break
+			if len(c.outbox) != 0 {
+				// drain the outbox
+				// we'll prepare our own message without mutating the original slice
+				batch = append(batch[:0], message...)
+
+				for len(c.outbox) != 0 {
+					if len(batch) > maxMessageSize-256 { // stop if we're close to the message size limit
+						break
+					}
+
+					batch = append(batch, []byte(mdelim)...) // add message delimiter
+					batch = append(batch, <-c.outbox...)     // write next message contents
 				}
 
-				message = append(message, []byte(mdelim)...) // add message delimiter
-				message = append(message, <-c.outbox...)     // write next message contents
+				message = batch
 			}
 
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
