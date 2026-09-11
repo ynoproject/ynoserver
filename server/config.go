@@ -26,11 +26,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	// empirically determined size of 320x240 png, with some buffer
-	DEFAULT_MAX_IMAGE_SIZE = 22e3 * 4
-)
-
 type Config struct {
 	gameName string
 	gamePath string
