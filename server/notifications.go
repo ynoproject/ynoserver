@@ -181,6 +181,9 @@ func sendPushNotification(notification *Notification, uuids []string) error {
 			VAPIDPublicKey:  config.vapidKeys.public,
 			VAPIDPrivateKey: config.vapidKeys.private,
 			TTL:             30, // seconds,
+			HTTPClient: &http.Client{
+				Timeout: 10 * time.Second,
+			},
 		})
 		if err != nil {
 			log.Printf("error sending notifications: %s", err)
@@ -196,11 +199,11 @@ func sendPushNotification(notification *Notification, uuids []string) error {
 	return errors.Join(failures...)
 }
 
-func getPlaceholders(values ...string) (placeholders string, parameters []interface{}) {
+func getPlaceholders(values ...string) (placeholders string, parameters []any) {
 	n := len(values)
 	p := make([]string, n)
-	parameters = make([]interface{}, n)
-	for i := 0; i < n; i++ {
+	parameters = make([]any, n)
+	for i := range n {
 		p[i] = "?"
 		parameters[i] = values[i]
 	}

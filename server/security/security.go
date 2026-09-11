@@ -57,7 +57,7 @@ func (s *Security) VerifySignature(clientKey uint32, msg []byte) bool {
 }
 
 func (s *Security) VerifyCounter(counter *uint32, msg []byte) bool {
-	if cnt := binary.BigEndian.Uint32(msg[4 : len(msg)-4]); *counter < cnt {
+	if cnt := binary.BigEndian.Uint32(msg[4:]); *counter < cnt {
 		*counter = cnt
 		return true
 	}
