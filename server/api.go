@@ -206,6 +206,7 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 		party, ok := parties[partyId]
 		if !ok {
 			handleInternalError(w, r, errors.New("party id not in cache"))
+			return
 		}
 		w.Write([]byte(party.Description))
 		return
@@ -406,7 +407,8 @@ func handleParty(w http.ResponseWriter, r *http.Request) {
 			err = setPartyOwner(partyId, playerParam)
 		}
 		if err != nil {
-			handleInternalError(w, r, nil)
+			handleInternalError(w, r, err)
+			return
 		}
 	case "disband":
 		partyId, err := getPlayerPartyId(uuid)
@@ -513,9 +515,10 @@ func handleSaveSync(w http.ResponseWriter, r *http.Request) {
 		w.Write(saveData)
 		return
 	case "push":
-		data, err := io.ReadAll(r.Body)
+		const limit = 8 * 1024 * 1024
+		data, err := io.ReadAll(io.LimitReader(r.Body, limit+1))
 		defer r.Body.Close()
-		if err != nil || len(data) > 1024*1024*8 {
+		if err != nil || len(data) > limit {
 			handleError(w, r, "invalid data")
 			return
 		}
@@ -688,13 +691,13 @@ func handleBadge(w http.ResponseWriter, r *http.Request) {
 			}
 
 			slotRow, err := strconv.Atoi(rowParam)
-			if err != nil || slotRow == 0 || slotRow > badgeSlotRows {
+			if err != nil || slotRow <= 0 || slotRow > badgeSlotRows {
 				handleError(w, r, "invalid row value")
 				return
 			}
 
 			slotCol, err := strconv.Atoi(colParam)
-			if err != nil || slotCol == 0 || slotCol > badgeSlotCols {
+			if err != nil || slotCol <= 0 || slotCol > badgeSlotCols {
 				handleError(w, r, "invalid col value")
 				return
 			}

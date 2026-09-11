@@ -24,7 +24,9 @@ import (
 	"html"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -65,11 +67,16 @@ type SchedulePlatforms struct {
 }
 
 var (
-	timers = make(map[int]*time.Timer)
+	timers      = make(map[int]*time.Timer)
+	timersMutex sync.Mutex
 )
 
 const (
 	YEAR time.Duration = 366 * 24 * time.Hour
+
+	NAME_MAX        = 255
+	DESCRIPTION_MAX = 2000 // text, but modern URLs can be pretty long so just call it somewhere
+	URL_MAX         = 255
 )
 
 func initSchedules() {
@@ -109,6 +116,8 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isMod := rank > 0
+
 	switch commandParam {
 	case "list":
 		schedules, err := listSchedules(uuid, rank)
@@ -133,10 +142,19 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		game := query.Get("game")
+		if _, ok := gameIdToName[game]; !ok {
+			handleError(w, r, "invalid game")
+			return
+		}
 		var interval, partyId int
 		var intervalType string
 		recurring := query.Get("recurring") == "true"
 		official := query.Get("official") == "true"
+		if !isMod && query.Has("official") {
+			handleError(w, r, "cannot set official status")
+			return
+		}
 		if recurring {
 			interval, err = strconv.Atoi(query.Get("interval"))
 			if err != nil || interval <= 0 {
@@ -163,27 +181,64 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 				handleError(w, r, "invalid partyId")
 				return
 			}
+			playerPartyId, err := getPlayerPartyId(uuid)
+			if err != nil || (!isMod && playerPartyId != partyId) {
+				handleError(w, r, "invalid partyId")
+				return
+			}
+		}
+		ownerUuid := query.Get("ownerUuid")
+		if !isMod && ownerUuid != uuid {
+			handleError(w, r, "cannot create/modify events for other people")
+			return
+		}
+		name := html.EscapeString(query.Get("name"))
+		if len(name) > NAME_MAX {
+			handleError(w, r, "name too long")
+			return
+		}
+		themeParam := query.Get("systemName")
+		if themeParam == "" {
+			handleError(w, r, "theme not specified")
+			return
+		}
+		if !assets.IsValidSystem(themeParam, true) {
+			handleError(w, r, "invalid system name for theme")
+			return
+		}
+		description := query.Get("description")
+		if len(description) > DESCRIPTION_MAX {
+			handleError(w, r, "description is too long")
+			return
+		}
+		description = html.EscapeString(description)
+		platforms := SchedulePlatforms{
+			Discord:  query.Get("discord"),
+			Youtube:  query.Get("youtube"),
+			Twitch:   query.Get("twitch"),
+			Niconico: query.Get("niconico"),
+			Openrec:  query.Get("openrec"),
+			Bilibili: query.Get("bilibili"),
+		}
+		for _, platformUrl := range []string{platforms.Discord, platforms.Youtube, platforms.Twitch, platforms.Niconico, platforms.Openrec, platforms.Bilibili} {
+			if err := validatePlatformUrl(platformUrl); err != nil {
+				handleError(w, r, err.Error())
+				return
+			}
 		}
 		payload := &ScheduleUpdate{
-			Name:          html.EscapeString(query.Get("name")),
-			Description:   html.EscapeString(query.Get("description")),
-			OwnerUuid:     query.Get("ownerUuid"),
-			Game:          query.Get("game"),
-			PartyId:       partyId,
-			Recurring:     recurring,
-			Official:      official,
-			IntervalValue: interval,
-			IntervalType:  intervalType,
-			Datetime:      datetime,
-			SystemName:    query.Get("systemName"),
-			SchedulePlatforms: SchedulePlatforms{
-				Discord:  query.Get("discord"),
-				Youtube:  query.Get("youtube"),
-				Twitch:   query.Get("twitch"),
-				Niconico: query.Get("niconico"),
-				Openrec:  query.Get("openrec"),
-				Bilibili: query.Get("bilibili"),
-			},
+			Name:              name,
+			Description:       description,
+			OwnerUuid:         ownerUuid,
+			Game:              game,
+			PartyId:           partyId,
+			Recurring:         recurring,
+			Official:          official,
+			IntervalValue:     interval,
+			IntervalType:      intervalType,
+			Datetime:          datetime,
+			SystemName:        themeParam,
+			SchedulePlatforms: platforms,
 		}
 		id, err = updateSchedule(id, rank, uuid, payload)
 		if err != nil {
@@ -200,7 +255,7 @@ func handleSchedules(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		shouldFollow := query.Get("value") == "true"
-		followCount, err := followSchedule(uuid, scheduleId, shouldFollow)
+		followCount, err := followSchedule(uuid, rank, scheduleId, shouldFollow)
 		if err != nil {
 			fmt.Printf("followSchedules: %s", err)
 			handleError(w, r, "error following schedule")
@@ -232,6 +287,23 @@ func clampDatetime(datetime, now time.Time) time.Time {
 		return oneYearLater
 	}
 	return datetime
+}
+
+func validatePlatformUrl(rawUrl string) error {
+	if rawUrl == "" {
+		return nil
+	}
+	if len(rawUrl) > URL_MAX {
+		return errors.New("url is too long")
+	}
+	parsed, err := url.Parse(rawUrl)
+	if err != nil {
+		return errors.New("invalid url")
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" && !(parsed.Scheme == "" && parsed.Host == "") {
+		return errors.New("url must be http(s) or relative to the platform")
+	}
+	return nil
 }
 
 func listSchedules(uuid string, rank int) ([]*ScheduleDisplay, error) {
@@ -285,9 +357,8 @@ VALUES
 		idLarge, err := results.LastInsertId()
 		if err != nil {
 			return id, err
-		} else {
-			setScheduleNotification(id, s.Datetime)
 		}
+		setScheduleNotification(int(idLarge), s.Datetime)
 		return int(idLarge), nil
 	}
 
@@ -321,6 +392,9 @@ WHERE id = ? AND (? OR ownerUuid = ?)`
 func setScheduleNotification(scheduleId int, datetime time.Time) {
 	timeTillEvent := datetime.Sub(time.Now().UTC()) - 15*time.Minute
 	if timeTillEvent > 0 {
+		timersMutex.Lock()
+		defer timersMutex.Unlock()
+
 		if oldTimer, ok := timers[scheduleId]; ok && oldTimer != nil {
 			oldTimer.Stop()
 		}
@@ -329,12 +403,25 @@ func setScheduleNotification(scheduleId int, datetime time.Time) {
 			if err != nil {
 				log.Printf("error sending notification: %s", err)
 			}
-			delete(timers, scheduleId)
+			clearScheduleNotification(scheduleId)
 		})
 	}
 }
 
+func clearScheduleNotification(scheduleId int) {
+	timersMutex.Lock()
+	defer timersMutex.Unlock()
+
+	if timer, ok := timers[scheduleId]; ok && timer != nil {
+		timer.Stop()
+	}
+	delete(timers, scheduleId)
+}
+
 func clearTimers() {
+	timersMutex.Lock()
+	defer timersMutex.Unlock()
+
 	for _, timer := range timers {
 		if timer != nil {
 			timer.Stop()
@@ -366,14 +453,23 @@ func initScheduleTimers() {
 	}
 }
 
-func followSchedule(uuid string, scheduleId int, shouldFollow bool) (followCount int, _ error) {
+func followSchedule(uuid string, rank int, scheduleId int, shouldFollow bool) (followCount int, _ error) {
 	var query string
+	var queryArgs []any
 	if shouldFollow {
-		query = "INSERT IGNORE INTO playerScheduleFollows (uuid, scheduleId) VALUES (?, ?)"
+		partyId, err := getPlayerPartyId(uuid)
+		if err != nil {
+			return 0, err
+		}
+		query = `
+INSERT IGNORE INTO playerScheduleFollows (uuid, scheduleId)
+SELECT ?, id FROM schedules WHERE id = ? AND (COALESCE(partyId, 0) IN (0, ?) OR ?)`
+		queryArgs = []any{uuid, scheduleId, partyId, rank > 0}
 	} else {
 		query = "DELETE FROM playerScheduleFollows WHERE uuid = ? AND scheduleId = ?"
+		queryArgs = []any{uuid, scheduleId}
 	}
-	results, err := db.Exec(query, uuid, scheduleId)
+	results, err := db.Exec(query, queryArgs...)
 	if err != nil {
 		return 0, err
 	}
@@ -388,14 +484,19 @@ func followSchedule(uuid string, scheduleId int, shouldFollow bool) (followCount
 }
 
 func cancelSchedule(uuid string, rank int, scheduleId int) error {
-	_, err := db.Exec("DELETE FROM schedules WHERE id = (SELECT id FROM schedules WHERE id = ? AND (? OR ownerUuid = ?))", scheduleId, rank > 0, uuid)
-	if err == nil {
-		if timer, ok := timers[scheduleId]; ok && timer != nil {
-			timer.Stop()
-		}
-		delete(timers, scheduleId)
+	results, err := db.Exec("DELETE FROM schedules WHERE id = (SELECT id FROM schedules WHERE id = ? AND (? OR ownerUuid = ?))", scheduleId, rank > 0, uuid)
+	if err != nil {
+		return err
 	}
-	return err
+	affected, err := results.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected < 1 {
+		return errors.New("did not cancel any schedules")
+	}
+	clearScheduleNotification(scheduleId)
+	return nil
 }
 
 func clearDoneSchedules() {

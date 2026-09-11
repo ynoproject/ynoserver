@@ -26,6 +26,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	// empirically determined size of 320x240 png, with some buffer
+	DEFAULT_MAX_IMAGE_SIZE = 22e3 * 4
+)
+
 type Config struct {
 	gameName string
 	gamePath string
@@ -66,6 +71,8 @@ type Config struct {
 	flags struct {
 		unconscious bool
 	}
+
+	maxImageSize int
 }
 
 type ConfigFile struct {
@@ -111,6 +118,8 @@ type ConfigFile struct {
 	Flags struct {
 		Unconscious bool `yaml:"unconscious"`
 	} `yaml:"flags"`
+
+	MaxImageSize int `yaml:"max_image_size"`
 }
 
 func parseConfigFile(filename string) *Config {
@@ -213,6 +222,12 @@ func parseConfigFile(filename string) *Config {
 	config.vapidKeys.public = configFile.VapidKeys.Public
 
 	config.flags.unconscious = configFile.Flags.Unconscious
+
+	if configFile.MaxImageSize > 0 {
+		config.maxImageSize = configFile.MaxImageSize
+	} else {
+		config.maxImageSize = DEFAULT_MAX_IMAGE_SIZE
+	}
 
 	return &config
 }

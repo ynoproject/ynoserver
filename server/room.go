@@ -20,6 +20,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"slices"
@@ -233,8 +234,8 @@ func (c *RoomClient) broadcast(msg []byte) {
 
 func (c *RoomClient) processMsgs(msg []byte) (errs []error) {
 	defer func() {
-		if panicErr, ok := recover().(error); ok {
-			errs = append(errs, panicErr)
+		if panicValue := recover(); panicValue != nil {
+			errs = append(errs, fmt.Errorf("panic in processMsgs: %v", panicValue))
 		}
 	}()
 
