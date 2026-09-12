@@ -86,9 +86,13 @@ func joinRoomWs(conn *websocket.Conn, r *http.Request) {
 	}
 
 	client := &RoomClient{
-		conn:   conn,
-		outbox: make(chan []byte, 256),
-		key:    serverSecurity.NewClientKey(),
+		conn:    conn,
+		outbox:  make(chan []byte, 256),
+		key:     serverSecurity.NewClientKey(),
+		// 2^32-1, the biggest number uint32 can hold
+		// will overflow to 0 when incremented to check the counter (cnt + 1)
+		// allowing 0 to be the first packet counter
+		counter: 4294967295,
 	}
 
 	if session, ok := clients.LoadOK(pd.Uuid); ok {
