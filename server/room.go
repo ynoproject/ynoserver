@@ -224,10 +224,12 @@ func (c *RoomClient) processMsgs(msg []byte) (errs []error) {
 	}
 
 	if !serverSecurity.VerifySignature(c.key, msg) {
+		c.disconnect()
 		return append(errs, errors.New("bad signature"))
 	}
 
 	if !serverSecurity.VerifyCounter(&c.counter, msg) {
+		c.disconnect()
 		return append(errs, errors.New("bad counter"))
 	}
 
