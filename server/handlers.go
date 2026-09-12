@@ -942,12 +942,6 @@ func (c *SessionClient) handleSay(msg []string) error {
 		return errors.New("invalid message")
 	}
 
-	if c.lastMessage.Add(time.Second * 5).After(time.Now().UTC()) {
-		return errors.New("rate limited")
-	}
-
-	c.lastMessage = time.Now().UTC()
-
 	if !c.banned {
 		for _, client := range c.roomC.room.clients {
 			if client.session == c {
