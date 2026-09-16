@@ -937,8 +937,9 @@ func (c *SessionClient) handleSay(msg []string) error {
 		return errors.New("no name or system graphic set")
 	}
 
-	msgContents := wordFilter.ReplaceAllString(strings.TrimSpace(msg[1]), ":2kkiSign:")
-	if msgContents == "" || len(msgContents) > 150 {
+	msgContents := strings.TrimSpace(msg[1])
+	cleanMsgContents := wordFilter.ReplaceAllString(msgContents, ":2kkiSign:")
+	if cleanMsgContents == "" || len(cleanMsgContents) > 150 {
 		return errors.New("invalid message")
 	}
 
@@ -962,7 +963,7 @@ func (c *SessionClient) handleSay(msg []string) error {
 				continue
 			}
 
-			client.session.outbox <- buildMsg("say", c.uuid, msgContents)
+			client.session.outbox <- buildMsg("say", c.uuid, cleanMsgContents)
 		}
 	}
 
@@ -985,8 +986,9 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 		return errors.New("no name set")
 	}
 
-	msgContents := wordFilter.ReplaceAllString(strings.TrimSpace(msg[1]), ":2kkiSign:")
-	if msgContents == "" || len(msgContents) > 150 {
+	msgContents := strings.TrimSpace(msg[1])
+	cleanMsgContents := wordFilter.ReplaceAllString(msgContents, ":2kkiSign:")
+	if cleanMsgContents == "" || len(cleanMsgContents) > 150 {
 		return errors.New("invalid message")
 	}
 
@@ -1017,15 +1019,24 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 	msgId := randString(12)
 
 	if msg[0] == "gsay" {
+		c.outbox <- buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId)
 		if !c.banned {
 			c.broadcast(buildMsg("p", c.uuid, c.name, c.system, c.rank, c.account, c.badge, c.medals[:]))
-			c.broadcast(buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId))
+			for _, client := range clients.GetClone() {
+				if client.uuid != c.uuid {
+					select {
+					case client.outbox <- buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, cleanMsgContents, msgId):
+					default:
+						client.cancel()
+						writeErrLog(c.uuid, "sess", "send channel is full")
+					}
+				}
+			}
 		} else {
-			c.outbox <- buildMsg("gsay", c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, msgId)
 			return nil
 		}
 
-		err := writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents)
+		err := writeGlobalChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, cleanMsgContents)
 		if err != nil {
 			return err
 		}
@@ -1036,27 +1047,27 @@ func (c *SessionClient) handleGPSay(msg []string) error {
 				game = gameName
 			}
 
-			err = sendWebhookMessage(config.chatWebhook, fmt.Sprintf("%s (%s)", c.name, game), c.badge, msgContents, true)
+			err = sendWebhookMessage(config.chatWebhook, fmt.Sprintf("%s (%s)", c.name, game), c.badge, cleanMsgContents, true)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
+		c.outbox <- buildMsg("psay", c.uuid, msgContents, msgId)
 		if !c.banned {
 			for _, client := range clients.GetClone() {
-				if client.partyId == c.partyId {
+				if client.partyId == c.partyId && client.uuid != c.uuid {
 					if c.isBlockedWith(client) {
 						continue
 					}
-					client.outbox <- buildMsg("psay", c.uuid, msgContents, msgId)
+					client.outbox <- buildMsg("psay", c.uuid, cleanMsgContents, msgId)
 				}
 			}
 		} else {
-			c.outbox <- buildMsg("psay", c.uuid, msgContents, msgId)
 			return nil
 		}
 
-		err := writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, msgContents, c.partyId)
+		err := writePartyChatMessage(msgId, c.uuid, mapId, prevMapId, prevLocations, x, y, cleanMsgContents, c.partyId)
 		if err != nil {
 			return err
 		}
