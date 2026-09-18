@@ -85,7 +85,12 @@ func getAuthenticatedPlayerData(r *http.Request) (PlayerData, error) {
 		return PlayerData{}, err
 	}
 
-	token, err := jwt.Parse(authCookie.Value, func(token *jwt.Token) (any, error) { return jwtKeyPub, nil })
+	token, err := jwt.Parse(authCookie.Value, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
+			return nil, errors.New("unexpected token signing method")
+		}
+		return jwtKeyPub, nil
+	})
 	if err != nil {
 		return PlayerData{}, err
 	}
