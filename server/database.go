@@ -79,37 +79,41 @@ func getUnauthenticatedPlayerData(ip string) (PlayerData, error) {
 	return pd, nil
 }
 
+type JWTClaims struct {
+	Ip string `json:"ip"`
+	jwt.Claims
+}
+
 func getAuthenticatedPlayerData(r *http.Request) (PlayerData, error) {
 	authCookie, err := r.Cookie("auth")
 	if err != nil {
 		return PlayerData{}, err
 	}
 
-	token, err := jwt.Parse(authCookie.Value, func(token *jwt.Token) (any, error) { return jwtKeyPub, nil })
+	token, err := jwt.ParseWithClaims(authCookie.Value, &JWTClaims{}, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
+			return nil, errors.New("unexpected token signing method")
+		}
+		return jwtKeyPub, nil
+	})
 	if err != nil {
 		return PlayerData{}, err
 	}
-	if !token.Valid {
+	claims, ok := token.Claims.(*JWTClaims)
+	if aud, _ := token.Claims.GetAudience(); aud[0] != "seiko" || !token.Valid || !ok {
 		return PlayerData{}, errors.New("invalid token")
 	}
-
-	subject, err := token.Claims.GetSubject()
+	sub, err := claims.GetSubject()
 	if err != nil {
 		return PlayerData{}, err
 	}
 
-	claimsSplit := strings.Split(subject, "/")
-	if len(claimsSplit) != 2 {
-		return PlayerData{}, errors.New("invalid subject segments")
-	}
 	//if claimsSplit[1] != getIp(r) {
 	//	return PlayerData{}, errors.New("token for other ip")
 	//}
 
-	uuid := claimsSplit[0]
-
 	var pd PlayerData
-	err = db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned, pd.muted FROM accounts a JOIN players pd ON a.uuid = pd.uuid WHERE a.uuid = ?", uuid).Scan(&pd.Uuid, &pd.Name, &pd.Rank, &pd.Badge, &pd.Banned, &pd.Muted)
+	err = db.QueryRow("SELECT a.uuid, a.user, pd.rank, a.badge, pd.banned, pd.muted FROM accounts a JOIN players pd ON a.uuid = pd.uuid WHERE a.uuid = ?", sub).Scan(&pd.Uuid, &pd.Name, &pd.Rank, &pd.Badge, &pd.Banned, &pd.Muted)
 	if err != nil {
 		return PlayerData{}, err
 	}
@@ -1673,7 +1677,7 @@ func writeGamePlayerCount(playerCount int) error {
 
 func getReportersForPlayer(targetUuid, msgId string) (result map[string]string, err error) {
 	query := `SELECT pgd.name, pr.reason FROM playerReports pr
-	JOIN playerGameData pgd ON pgd.uuid = pr.uuid 
+	JOIN playerGameData pgd ON pgd.uuid = pr.uuid
 	WHERE pr.targetUuid = ? AND NOT actionTaken`
 	args := []any{targetUuid}
 
