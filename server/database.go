@@ -94,7 +94,7 @@ func getAuthenticatedPlayerData(r *http.Request) (PlayerData, error) {
 	if err != nil {
 		return PlayerData{}, err
 	}
-	if !token.Valid {
+	if aud, _ := token.Claims.GetAudience(); aud[0] != "seiko" || !token.Valid {
 		return PlayerData{}, errors.New("invalid token")
 	}
 
