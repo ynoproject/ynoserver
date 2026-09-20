@@ -119,7 +119,7 @@ func getPlayerFriendData(uuid string) (playerFriends []*PlayerFriend, err error)
 				playerFriend.Badge = client.badge
 				playerFriend.Medals = client.medals
 
-				if client.roomC != nil && !(client.hideLocation && client.singleplayer) {
+				if client.roomC != nil && !(client.hideLocation && client.isSingleplayer()) {
 					playerFriend.MapId = client.roomC.mapId
 					playerFriend.PrevMapId = client.roomC.prevMapId
 					playerFriend.PrevLocations = client.roomC.prevLocations
