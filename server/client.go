@@ -34,7 +34,7 @@ const (
 	maxPictures = 1000
 
 	maxSwitchId = 10000
-	maxVarId    = 10000
+	maxVarId    = 10001
 
 	defaultFacing = 2 // down
 )
