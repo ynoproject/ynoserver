@@ -178,16 +178,12 @@ func handleScreenshot(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(screenshots)
 		return
 	case "getPlayerScreenshots":
-		uuidParam := r.URL.Query().Get("uuid")
-		if uuidParam == "" {
-			if !pd.Registered {
-				handleError(w, r, "not registered")
-			}
-
-			uuidParam = pd.Uuid
+		if !pd.Registered {
+			handleError(w, r, "not registered")
+			return
 		}
 
-		playerScreenshots, err := getPlayerScreenshots(uuidParam)
+		playerScreenshots, err := getPlayerScreenshots(pd.Uuid)
 		if err != nil {
 			handleInternalError(w, r, err)
 			return
